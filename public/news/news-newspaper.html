@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電氣日報 — 전기기능사 일간 소식지</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Serif+KR:wght@300;400;500;600;700;900&family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper:        #f6f0e2;  /* 살짝 빛바랜 종이 톤 */
+            --paper-deep:   #efe6d2;
+            --paper-edge:   #d9cdb0;
+            --ink:          #14110d;
+            --ink-soft:     #2a2620;
+            --ink-mute:     #5b554a;
+            --accent:       #b8161a;  /* 신문 빨강 */
+            --accent-deep:  #8a1014;
+            --rule:         #2a2620;
+        }
+
+        html, body { background: #d8d2c1; }
+        body {
+            font-family: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+            color: var(--ink);
+            margin: 0;
+            padding: 18px 8px;
+            /* 종이 결 — repeating gradient */
+            background-image:
+              radial-gradient(circle at 12% 18%, rgba(0,0,0,0.04), transparent 40%),
+              radial-gradient(circle at 88% 82%, rgba(0,0,0,0.04), transparent 40%),
+              repeating-linear-gradient(135deg, rgba(0,0,0,0.018) 0 2px, transparent 2px 6px);
+        }
+
+        .paper {
+            width: 100%;
+            max-width: 1080px;
+            margin: 0 auto;
+            background-color: var(--paper);
+            color: var(--ink);
+            padding: 28px 22px 36px;
+            position: relative;
+            box-shadow:
+              0 1px 0 rgba(0,0,0,0.06),
+              0 12px 28px -8px rgba(0,0,0,0.28),
+              0 30px 60px -20px rgba(0,0,0,0.22);
+            border: 1px solid var(--paper-edge);
+            /* 빛바랜 얼룩 */
+            background-image:
+              radial-gradient(ellipse at 8% 5%, rgba(120,90,40,0.10), transparent 35%),
+              radial-gradient(ellipse at 95% 92%, rgba(120,90,40,0.08), transparent 35%),
+              radial-gradient(ellipse at 50% 50%, rgba(255,250,235,0.35), transparent 60%),
+              repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0 1px, transparent 1px 3px);
+        }
+        @media (min-width: 768px) {
+            .paper { padding: 44px 48px 56px; }
+        }
+
+        /* 종이 모서리 살짝 접힌 효과 */
+        .paper::before {
+            content: "";
+            position: absolute; top: 0; right: 0;
+            width: 38px; height: 38px;
+            background:
+              linear-gradient(225deg, rgba(0,0,0,0.18), rgba(0,0,0,0.02) 60%, transparent 70%),
+              linear-gradient(225deg, transparent 49%, var(--paper-deep) 50%);
+            border-left: 1px solid var(--paper-edge);
+            border-bottom: 1px solid var(--paper-edge);
+            box-shadow: -2px 2px 4px rgba(0,0,0,0.08) inset;
+        }
+
+        /* 마스트헤드 */
+        .masthead {
+            position: relative;
+            padding-bottom: 10px;
+            border-bottom: 4px double var(--ink);
+        }
+        .mast-row {
+            display: flex; align-items: center; justify-content: space-between;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 11px; letter-spacing: 1px;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--ink);
+        }
+        .mast-row .left, .mast-row .right { display: flex; gap: 14px; align-items: center; }
+        .mast-title {
+            text-align: center;
+            font-family: 'Black Han Sans', 'Nanum Myeongjo', serif;
+            font-size: 56px;
+            letter-spacing: 12px;
+            line-height: 1;
+            padding: 10px 0 4px;
+            color: var(--ink);
+            text-shadow:
+              0 1px 0 rgba(0,0,0,0.05),
+              0 0 1px rgba(0,0,0,0.4);
+        }
+        @media (min-width: 768px) {
+            .mast-title { font-size: 96px; letter-spacing: 24px; padding-top: 14px; }
+        }
+        .mast-subtitle {
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            padding-bottom: 6px;
+        }
+        @media (min-width: 768px) { .mast-subtitle { font-size: 12px; letter-spacing: 14px; } }
+
+        .mast-meta {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            font-size: 11px;
+            padding: 8px 0 2px;
+            font-family: 'Noto Serif KR', serif;
+        }
+        .mast-meta .l { text-align: left; }
+        .mast-meta .c { text-align: center; font-weight: 700; letter-spacing: 4px; }
+        .mast-meta .r { text-align: right; }
+
+        /* 인장 / 도장 */
+        .seal {
+            position: absolute;
+            top: 10px; right: 24px;
+            width: 64px; height: 64px;
+            border: 2.5px solid var(--accent);
+            color: var(--accent);
+            display: grid; place-items: center;
+            border-radius: 8px;
+            font-family: 'Black Han Sans', serif;
+            font-size: 11px;
+            line-height: 1.1;
+            text-align: center;
+            transform: rotate(-8deg);
+            background: rgba(255,255,255,0.2);
+            box-shadow: inset 0 0 0 1px var(--accent), 0 1px 0 rgba(0,0,0,0.05);
+            letter-spacing: 1px;
+        }
+        @media (max-width: 640px) { .seal { display: none; } }
+
+        /* 라이브 띠 */
+        .ticker {
+            margin-top: 10px;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 11px;
+            padding: 6px 8px;
+            border: 1px solid var(--ink);
+            background: rgba(0,0,0,0.04);
+            overflow: hidden; white-space: nowrap;
+        }
+        .ticker .dot {
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 0 3px rgba(184,22,26,0.18);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100% { transform: scale(1);   opacity: 1; }
+            50%     { transform: scale(1.3); opacity: 0.65; }
+        }
+        .ticker-track { display: inline-flex; gap: 28px; animation: scroll 36s linear infinite; }
+        .ticker-track span { color: var(--ink-soft); }
+        .ticker-track strong { color: var(--accent); font-weight: 700; }
+        @keyframes scroll {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
+
+        /* 헤드라인 */
+        .hero {
+            margin-top: 22px;
+            border-bottom: 1px solid var(--ink);
+            padding-bottom: 18px;
+        }
+        .kicker {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff8e7;
+            font-family: 'Noto Serif KR', serif;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 3px 10px;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+        .hero-title {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            line-height: 1.15;
+            font-size: 30px;
+            letter-spacing: -1.5px;
+            text-align: center;
+        }
+        @media (min-width: 768px) { .hero-title { font-size: 52px; } }
+        .hero-sub {
+            margin-top: 12px;
+            font-style: italic;
+            text-align: center;
+            color: var(--ink-soft);
+            font-size: 15px;
+            font-weight: 500;
+        }
+        @media (min-width: 768px) { .hero-sub { font-size: 18px; } }
+        .hero-byline {
+            display: flex; gap: 14px; justify-content: center;
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--ink-mute);
+            letter-spacing: 1px;
+        }
+
+        /* 본문 */
+        .lead-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 22px;
+            margin-top: 22px;
+        }
+        @media (min-width: 900px) {
+            .lead-grid { grid-template-columns: 2.1fr 1fr; gap: 30px; }
+        }
+
+        .article-body {
+            font-family: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+            font-size: 14.5px;
+            line-height: 1.85;
+            text-align: justify;
+            text-justify: inter-character;
+            word-break: keep-all;
+            color: var(--ink-soft);
+        }
+        @media (min-width: 768px) {
+            .article-body { column-count: 2; column-gap: 28px; column-rule: 1px solid #c8bea3; }
+        }
+        .article-body p { margin: 0 0 12px; break-inside: avoid; }
+        .article-body p:first-child::first-letter {
+            float: left;
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 58px;
+            line-height: 0.9;
+            padding: 6px 8px 0 0;
+            color: var(--accent);
+        }
+
+        .pull-quote {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 700;
+            font-size: 18px;
+            line-height: 1.4;
+            border-top: 2px solid var(--ink);
+            border-bottom: 2px solid var(--ink);
+            padding: 14px 4px;
+            margin: 14px 0;
+            color: var(--ink);
+            text-align: center;
+            break-inside: avoid;
+        }
+        .pull-quote::before { content: "“"; color: var(--accent); margin-right: 4px; font-size: 28px; line-height: 0; vertical-align: -8px; }
+        .pull-quote::after  { content: "”"; color: var(--accent); margin-left: 4px;  font-size: 28px; line-height: 0; vertical-align: -8px; }
+
+        /* 사진 자리 (SVG 카드) */
+        .photo {
+            background: #fbf6ea;
+            border: 1px solid var(--ink);
+            padding: 10px;
+            margin: 6px 0 4px;
+            position: relative;
+        }
+        .photo .frame {
+            background:
+              radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.7), transparent 60%),
+              linear-gradient(#f3ead4, #e8dcbe);
+            border: 1px solid #b9ad8a;
+            padding: 8px;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 180px;
+        }
+        .photo .frame svg { width: 100%; height: auto; max-height: 240px; }
+        .photo .caption {
+            font-size: 11.5px;
+            color: var(--ink-mute);
+            font-style: italic;
+            margin-top: 6px;
+            text-align: center;
+            letter-spacing: 0.2px;
+        }
+
+        /* 사이드 */
+        .sidebar { display: flex; flex-direction: column; gap: 18px; }
+        .panel {
+            border: 1px solid var(--ink);
+            padding: 14px;
+            background: rgba(255,250,235,0.45);
+        }
+        .panel h3 {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: var(--paper);
+            background: var(--ink);
+            display: inline-block;
+            padding: 4px 10px;
+            margin: -22px 0 10px -8px;
+        }
+        .panel-red h3 { background: var(--accent); }
+
+        .quote-of-day {
+            font-family: 'Nanum Myeongjo', serif;
+            font-size: 15.5px;
+            line-height: 1.6;
+            color: var(--ink);
+        }
+        .quote-of-day .src {
+            display: block;
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--ink-mute);
+            text-align: right;
+            font-style: italic;
+        }
+
+        /* 공식 박스 */
+        .formula-card {
+            background:
+              linear-gradient(180deg, #fffaee, #f3ead0);
+            border: 2px solid var(--ink);
+            box-shadow: 4px 4px 0 var(--ink);
+            padding: 12px;
+            font-family: 'Nanum Myeongjo', serif;
+        }
+        .formula-card .row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            padding: 6px 0;
+            border-bottom: 1px dashed #b8ac8a;
+            gap: 10px;
+        }
+        .formula-card .row:last-child { border-bottom: none; }
+        .formula-card .lbl { font-size: 12px; color: var(--ink-soft); flex: 1; }
+        .formula-card .eq  { font-weight: 800; color: var(--accent-deep); font-size: 16px; letter-spacing: 0.4px; }
+
+        /* 2단 기사 영역 */
+        .briefs {
+            margin-top: 28px;
+            border-top: 4px double var(--ink);
+            padding-top: 18px;
+        }
+        .briefs h2.section {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 22px;
+            letter-spacing: 6px;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+        .briefs-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 22px;
+        }
+        @media (min-width: 700px) {
+            .briefs-grid { grid-template-columns: 1fr 1fr; gap: 26px; column-rule: 1px solid #c8bea3; }
+        }
+        @media (min-width: 1000px) {
+            .briefs-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 22px; }
+        }
+        .brief {
+            border-top: 1px solid var(--ink);
+            padding-top: 10px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .brief .cat {
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .brief h4 {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 16px;
+            line-height: 1.3;
+            color: var(--ink);
+        }
+        .brief p {
+            font-size: 12.5px;
+            line-height: 1.7;
+            color: var(--ink-soft);
+            text-align: justify;
+            word-break: keep-all;
+        }
+        .brief .more {
+            margin-top: auto;
+            font-size: 11px;
+            color: var(--accent);
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+        .brief svg { display: block; margin: 6px auto; max-width: 100%; height: auto; }
+
+        /* 만평 */
+        .cartoon-wrap {
+            margin-top: 28px;
+            border: 1px solid var(--ink);
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+        @media (min-width: 780px) {
+            .cartoon-wrap { grid-template-columns: 1.4fr 1fr; }
+        }
+        .cartoon-panel {
+            padding: 14px;
+            background:
+              repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0 1px, transparent 1px 4px),
+              #faf3df;
+        }
+        .cartoon-panel .label {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 3px;
+            border-bottom: 1px solid var(--ink);
+            padding-bottom: 4px;
+            margin-bottom: 10px;
+            display: flex; justify-content: space-between;
+            color: var(--ink);
+        }
+        .cartoon-panel .label small { font-style: italic; color: var(--ink-mute); font-weight: 400; letter-spacing: 0; }
+        .cartoon-frame {
+            border: 1.5px solid var(--ink);
+            background: #fffaea;
+            display: grid; place-items: center;
+            min-height: 200px;
+            padding: 8px;
+        }
+        .cartoon-frame svg { max-width: 100%; height: auto; }
+        .cartoon-cap {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 12px;
+            font-style: italic;
+            color: var(--ink-mute);
+        }
+        .cartoon-side {
+            padding: 14px;
+            border-left: 1px solid var(--ink);
+            background: rgba(0,0,0,0.02);
+        }
+        @media (max-width: 779px) {
+            .cartoon-side { border-left: none; border-top: 1px solid var(--ink); }
+        }
+
+        /* 인터뷰 / 칼럼 */
+        .interview {
+            margin-top: 26px;
+            border-top: 4px double var(--ink);
+            padding-top: 18px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 22px;
+        }
+        @media (min-width: 900px) {
+            .interview { grid-template-columns: 1fr 1.4fr; gap: 30px; }
+        }
+        .interview .portrait {
+            background: #fbf6ea;
+            border: 1px solid var(--ink);
+            padding: 10px;
+        }
+        .interview .portrait .frame {
+            background: linear-gradient(#f3ead4,#e8dcbe);
+            border: 1px solid #b9ad8a;
+            display: grid; place-items: center;
+            min-height: 220px; padding: 10px;
+        }
+        .interview .portrait svg { width: 100%; height: auto; max-height: 280px; }
+        .interview .portrait .caption { font-size: 11.5px; color: var(--ink-mute); font-style: italic; text-align: center; margin-top: 6px; }
+        .interview h3 {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 26px;
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+        @media (min-width: 768px) { .interview h3 { font-size: 30px; } }
+        .interview .lead { font-style: italic; color: var(--ink-mute); margin-bottom: 12px; }
+        .qa { margin: 10px 0; font-size: 14px; line-height: 1.75; }
+        .qa .q { font-weight: 700; color: var(--accent); }
+        .qa .q::before { content: "Q. "; }
+        .qa .a { color: var(--ink-soft); margin-top: 2px; display: block; }
+        .qa .a::before { content: "A. "; font-weight: 700; color: var(--ink); }
+
+        /* 광고 */
+        .ad {
+            margin-top: 26px;
+            border: 2px solid var(--ink);
+            padding: 14px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            background:
+              repeating-linear-gradient(45deg, rgba(0,0,0,0.025) 0 8px, transparent 8px 16px),
+              #faf3df;
+        }
+        @media (min-width: 700px) { .ad { grid-template-columns: 1.4fr 1fr; } }
+        .ad .hd {
+            font-family: 'Black Han Sans', serif;
+            font-size: 26px;
+            letter-spacing: 2px;
+            color: var(--accent);
+            line-height: 1.05;
+        }
+        @media (min-width: 768px) { .ad .hd { font-size: 36px; } }
+        .ad .body { font-size: 13px; line-height: 1.7; color: var(--ink-soft); margin-top: 6px; }
+        .ad .price {
+            display: inline-block;
+            border: 2px solid var(--ink);
+            padding: 4px 10px;
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 15px;
+            margin-top: 8px;
+            background: #fff;
+            box-shadow: 3px 3px 0 var(--ink);
+        }
+        .ad .stamp {
+            display: grid; place-items: center;
+            font-family: 'Black Han Sans', serif;
+            color: var(--accent);
+            border: 3px double var(--accent);
+            padding: 12px;
+            text-align: center;
+            transform: rotate(-2deg);
+            background: rgba(255,255,255,0.5);
+            line-height: 1.1;
+        }
+        .ad .stamp .big { font-size: 26px; letter-spacing: 2px; }
+        .ad .stamp .small { font-size: 10px; color: var(--ink-soft); letter-spacing: 4px; margin-top: 6px; }
+
+        /* 미니 광고 */
+        .mini-ads {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (min-width: 768px) { .mini-ads { grid-template-columns: repeat(4, 1fr); } }
+        .mini-ad {
+            border: 1px dashed var(--ink);
+            padding: 10px;
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--ink-soft);
+            text-align: center;
+            background: rgba(255,255,255,0.25);
+        }
+        .mini-ad strong { display: block; font-family: 'Nanum Myeongjo', serif; font-size: 13px; color: var(--ink); margin-bottom: 4px; }
+
+        /* 푸터 */
+        .footer {
+            margin-top: 30px;
+            border-top: 4px double var(--ink);
+            padding-top: 14px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            font-size: 11px;
+            color: var(--ink-mute);
+        }
+        @media (min-width: 768px) { .footer { grid-template-columns: 1.4fr 1fr 1fr; } }
+        .footer h5 {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 13px;
+            color: var(--ink);
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .footer .barcode {
+            display: flex; align-items: end; gap: 1px; height: 36px;
+            margin-top: 4px;
+        }
+        .footer .barcode span {
+            display: block; width: 2px; background: var(--ink);
+        }
+        .footer .copy {
+            grid-column: 1 / -1;
+            border-top: 1px solid var(--paper-edge);
+            padding-top: 10px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* 호버 효과 */
+        .brief:hover h4, .interview h3:hover { color: var(--accent); transition: color 0.2s ease; }
+        .ad:hover .hd { letter-spacing: 3px; transition: letter-spacing 0.3s ease; }
+
+        /* 작은 가로 라벨 */
+        .label-line {
+            display: flex; align-items: center; gap: 10px;
+            margin: 18px 0 10px;
+        }
+        .label-line .l {
+            font-family: 'Nanum Myeongjo', serif;
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 6px;
+            padding: 3px 10px;
+            background: var(--ink);
+            color: var(--paper);
+        }
+        .label-line .l.red { background: var(--accent); }
+        .label-line .bar { flex: 1; height: 1px; background: var(--ink); }
+
+        sup { font-size: 0.7em; }
+        sub { font-size: 0.7em; }
+    </style>
+</head>
+<body>
+
+<main class="paper">
+
+    <!-- ========== 마스트헤드 ========== -->
+    <header class="masthead">
+        <div class="mast-row">
+            <div class="left">
+                <span>제 2026-137 호</span>
+                <span class="hidden sm:inline">·</span>
+                <span class="hidden sm:inline">통권 4,812호</span>
+            </div>
+            <div class="right">
+                <span>전기기능사 전문지</span>
+                <span class="hidden sm:inline">·</span>
+                <span class="hidden sm:inline">대한민국 서울 발행</span>
+            </div>
+        </div>
+
+        <div class="mast-title">電氣日報</div>
+        <div class="mast-subtitle">The Electric Daily — Established 2024</div>
+
+        <div class="mast-meta">
+            <div class="l">발행처 · 전기일보사</div>
+            <div class="c">2026年 5月 15日 金曜日</div>
+            <div class="r">정가 1,500원 · 月 35,000원</div>
+        </div>
+
+        <div class="seal">電氣<br>日報<br>認證</div>
+
+        <!-- 라이브 띠 -->
+        <div class="ticker" aria-hidden="true">
+            <span class="dot"></span>
+            <span style="font-weight:700; color: var(--accent); letter-spacing: 2px;">속보</span>
+            <div style="flex:1; overflow:hidden;">
+                <div class="ticker-track">
+                    <span><strong>제2회 필기</strong> 응시자 8만 4,210명 — 전년 대비 +12.4%</span>
+                    <span>· <strong>합격률</strong> 73.6% 사상 최고치 갱신</span>
+                    <span>· 실기시험 일정 6월 14일~7월 6일 공지</span>
+                    <span>· <strong>변압기 손실</strong> 출제 비중 상승세 — 무부하·부하손 단골</span>
+                    <span>· KEC 개정안 8월 시행 예정</span>
+                    <span><strong>제2회 필기</strong> 응시자 8만 4,210명 — 전년 대비 +12.4%</span>
+                    <span>· <strong>합격률</strong> 73.6% 사상 최고치 갱신</span>
+                    <span>· 실기시험 일정 6월 14일~7월 6일 공지</span>
+                    <span>· <strong>변압기 손실</strong> 출제 비중 상승세 — 무부하·부하손 단골</span>
+                    <span>· KEC 개정안 8월 시행 예정</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========== TOP 헤드라인 ========== -->
+    <section class="hero">
+        <div style="text-align:center;">
+            <span class="kicker">단독 · 종합</span>
+        </div>
+        <h1 class="hero-title">
+            2026 전기기능사 합격률<br class="hidden md:block">
+            <span style="color: var(--accent);">사상 최고</span> 73.6% 돌파
+        </h1>
+        <p class="hero-sub">— "변압기·삼상결선·KEC 개정"이 합격을 가른 세 갈래의 길</p>
+        <div class="hero-byline">
+            <span>편집국 종합</span>
+            <span>·</span>
+            <span>李 도훈 기자</span>
+            <span>·</span>
+            <span>입력 05:00 / 수정 11:42</span>
+        </div>
+    </section>
+
+    <!-- ========== 본문 + 사이드 ========== -->
+    <section class="lead-grid">
+        <!-- 본문 좌측 -->
+        <article>
+            <div class="photo">
+                <div class="frame">
+                    <!-- SVG 합격률 차트 -->
+                    <svg viewBox="0 0 520 240" preserveAspectRatio="xMidYMid meet" role="img" aria-label="연도별 합격률">
+                        <defs>
+                            <linearGradient id="barG" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0" stop-color="#b8161a"/>
+                                <stop offset="1" stop-color="#7d0c10"/>
+                            </linearGradient>
+                            <linearGradient id="barG2" x1="0" x2="0" y1="0" y2="1">
+                                <stop offset="0" stop-color="#2a2620"/>
+                                <stop offset="1" stop-color="#0a0907"/>
+                            </linearGradient>
+                            <pattern id="grid" width="40" height="30" patternUnits="userSpaceOnUse">
+                                <path d="M 40 0 L 0 0 0 30" fill="none" stroke="#c8bea3" stroke-width="0.5"/>
+                            </pattern>
+                        </defs>
+
+                        <rect x="40" y="20" width="460" height="180" fill="url(#grid)"/>
+
+                        <!-- 축 -->
+                        <line x1="40" y1="200" x2="500" y2="200" stroke="#2a2620" stroke-width="1.5"/>
+                        <line x1="40" y1="20"  x2="40"  y2="200" stroke="#2a2620" stroke-width="1.5"/>
+
+                        <!-- y축 라벨 -->
+                        <g font-family="Noto Serif KR, serif" font-size="10" fill="#5b554a">
+                            <text x="34" y="200" text-anchor="end">0%</text>
+                            <text x="34" y="155" text-anchor="end">25</text>
+                            <text x="34" y="110" text-anchor="end">50</text>
+                            <text x="34" y="65"  text-anchor="end">75</text>
+                            <text x="34" y="24"  text-anchor="end">100</text>
+                        </g>
+
+                        <!-- 막대 -->
+                        <g>
+                            <rect x="70"  y="118" width="48" height="82"  fill="url(#barG2)"/>
+                            <rect x="140" y="105" width="48" height="95"  fill="url(#barG2)"/>
+                            <rect x="210" y="92"  width="48" height="108" fill="url(#barG2)"/>
+                            <rect x="280" y="84"  width="48" height="116" fill="url(#barG2)"/>
+                            <rect x="350" y="76"  width="48" height="124" fill="url(#barG2)"/>
+                            <rect x="420" y="68"  width="48" height="132" fill="url(#barG)"/>
+                        </g>
+
+                        <!-- 수치 -->
+                        <g font-family="Noto Serif KR, serif" font-size="11" font-weight="700" fill="#14110d" text-anchor="middle">
+                            <text x="94"  y="112">45.4%</text>
+                            <text x="164" y="99">52.7%</text>
+                            <text x="234" y="86">60.0%</text>
+                            <text x="304" y="78">64.5%</text>
+                            <text x="374" y="70">68.9%</text>
+                            <text x="444" y="62" fill="#b8161a">73.6%</text>
+                        </g>
+
+                        <!-- x축 라벨 -->
+                        <g font-family="Noto Serif KR, serif" font-size="11" fill="#2a2620" text-anchor="middle">
+                            <text x="94"  y="218">'21</text>
+                            <text x="164" y="218">'22</text>
+                            <text x="234" y="218">'23</text>
+                            <text x="304" y="218">'24</text>
+                            <text x="374" y="218">'25</text>
+                            <text x="444" y="218" fill="#b8161a" font-weight="700">'26</text>
+                        </g>
+
+                        <!-- 추세선 -->
+                        <polyline points="94,112 164,99 234,86 304,78 374,70 444,62"
+                                  fill="none" stroke="#b8161a" stroke-width="1.5" stroke-dasharray="3 3"/>
+                        <g fill="#b8161a">
+                            <circle cx="94"  cy="112" r="2.5"/>
+                            <circle cx="164" cy="99"  r="2.5"/>
+                            <circle cx="234" cy="86"  r="2.5"/>
+                            <circle cx="304" cy="78"  r="2.5"/>
+                            <circle cx="374" cy="70"  r="2.5"/>
+                            <circle cx="444" cy="62"  r="3.5"/>
+                        </g>
+
+                        <text x="260" y="14" text-anchor="middle" font-family="Nanum Myeongjo, serif" font-size="12" font-weight="700" fill="#14110d">
+                            연도별 전기기능사 필기 합격률 추이
+                        </text>
+                    </svg>
+                </div>
+                <div class="caption">▲ 2021~2026 전기기능사 필기 합격률 추이. 본지 자체 집계 기준. 단위: %</div>
+            </div>
+
+            <div class="article-body">
+                <p>
+                    2026년 제2회 전기기능사 필기시험 합격률이 <strong>73.6%</strong>로 집계되며 사상 최고치를 갈아치웠다.
+                    한국산업인력공단이 14일 본지에 비공식 통보한 잠정 집계에 따르면, 응시자 8만 4,210명 가운데 6만 1,978명이 합격한 것으로 파악됐다.
+                    전년 동기 대비 합격률은 4.7%포인트 상승했으며, 응시자 수도 12.4% 증가했다.
+                </p>
+
+                <p class="pull-quote">
+                    "이젠 외우는 시험이 아니다. 회로를 그릴 줄 알아야 붙는다"
+                </p>
+
+                <p>
+                    합격률 급등의 배경에는 <em>출제 경향의 평준화</em>와 <em>온라인 학습 인프라의 보편화</em>가 자리한다.
+                    교육계는 "이전엔 변압기 손실·삼상결선 등 특정 단원이 합격을 갈랐다면, 올해는 단원 간 출제 비중이 균형을 잡으면서
+                    꾸준한 학습자에게 유리한 시험이 되었다"고 분석했다.
+                </p>
+
+                <p>
+                    특히 <strong>변압기 단원</strong>은 무부하손과 부하손, 전압변동률, 효율 등 핵심 개념이 회차마다 반복 출제되며 '단골 메뉴'로 자리잡았다.
+                    삼상결선의 경우 Y-Y, Δ-Δ, Y-Δ 변환과 위상각 30° 관계가 매회 1~2문제 비중으로 안정적인 출제 패턴을 보였다.
+                </p>
+
+                <p>
+                    한국전기기술교육원 김 모 교수(58)는 "올해부터 KEC(한국전기설비규정) 개정 항목이 본격 반영되면서
+                    안전관리·접지방식 관련 문제의 변별력이 높아졌다"며 "단순 암기를 넘어 시공 현장의 맥락을 이해해야 풀리는 문제가 늘었다"고 진단했다.
+                </p>
+
+                <p>
+                    한편 실기시험은 6월 14일부터 7월 6일까지 전국 67개 시험장에서 분산 시행된다.
+                    공단은 "수험자 동선 분산을 위해 회차별 인원을 25% 줄였다"며 "응시생은 수험표 발급 일정을 반드시 확인해달라"고 당부했다.
+                    <strong style="color:var(--accent-deep);">本紙는 합격생 100인의 학습법을 5月 22日字 특집호에 게재할 예정이다.</strong>
+                </p>
+            </div>
+
+            <!-- 강조 박스 -->
+            <div style="margin-top: 18px; border: 1px solid var(--ink); padding: 14px; background: rgba(184,22,26,0.05);">
+                <div style="font-family: 'Nanum Myeongjo', serif; font-weight:800; font-size: 15px; letter-spacing: 3px; color: var(--accent); margin-bottom: 6px; border-bottom: 1px solid var(--accent); padding-bottom: 4px;">
+                    ◈ 편집국 진단
+                </div>
+                <p style="font-size: 13.5px; line-height: 1.75; color: var(--ink-soft); word-break: keep-all;">
+                    합격률 상승이 '시험의 평이화'를 뜻하는 것은 아니다. 본지 분석 결과 회로 해석·계측 등 <em>실무 응용 문항</em>의 평균 정답률은
+                    오히려 41.2%로 낮게 나타났다. 단원별 평균점이 균질해진 반면, 응용 문항에서의 양극화는 심화된 것으로 풀이된다.
+                </p>
+            </div>
+        </article>
+
+        <!-- 사이드 -->
+        <aside class="sidebar">
+            <!-- 오늘의 명언 -->
+            <div class="panel panel-red">
+                <h3>오늘의 名言</h3>
+                <div class="quote-of-day">
+                    "전기를 두려워하지 마라.<br>
+                    다만, 모르고 만지지 마라.<br>
+                    <span style="color: var(--accent); font-weight: 700;">이해한 자만이 안전하다.</span>"
+                    <span class="src">— 토머스 에디슨이 했다는 말 (출처 미상)</span>
+                </div>
+            </div>
+
+            <!-- 공식 정리 -->
+            <div class="panel">
+                <h3>핵심 公式</h3>
+                <div class="formula-card">
+                    <div class="row">
+                        <span class="lbl">옴의 법칙</span>
+                        <span class="eq">V = I R</span>
+                    </div>
+                    <div class="row">
+                        <span class="lbl">전력</span>
+                        <span class="eq">P = V I = I²R</span>
+                    </div>
+                    <div class="row">
+                        <span class="lbl">변압비</span>
+                        <span class="eq">a = N₁/N₂ = V₁/V₂</span>
+                    </div>
+                    <div class="row">
+                        <span class="lbl">삼상 유효전력</span>
+                        <span class="eq">P = √3 V<sub>L</sub> I<sub>L</sub> cosθ</span>
+                    </div>
+                    <div class="row">
+                        <span class="lbl">동기속도</span>
+                        <span class="eq">N<sub>s</sub> = 120f / P</span>
+                    </div>
+                    <div class="row">
+                        <span class="lbl">역률 개선</span>
+                        <span class="eq">Q<sub>c</sub> = P(tanθ₁ − tanθ₂)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오늘의 출제 예상 -->
+            <div class="panel">
+                <h3>出題 예감</h3>
+                <ol style="font-size: 12.5px; line-height: 1.85; color: var(--ink-soft); padding-left: 18px; list-style-type: decimal;">
+                    <li>변압기 <strong>%임피던스</strong> 계산</li>
+                    <li>3상 <strong>Y-Δ 변환</strong> 등가저항</li>
+                    <li>KEC <strong>접지방식</strong> 분류</li>
+                    <li>유도전동기 <strong>슬립·토크</strong> 관계</li>
+                    <li><strong>R-L-C 직렬</strong> 공진 주파수</li>
+                </ol>
+                <div style="margin-top: 10px; font-size: 11px; color: var(--ink-mute); font-style: italic; text-align: right;">
+                    — 본지 출제경향 분석팀
+                </div>
+            </div>
+
+            <!-- 작은 광고 -->
+            <div style="border: 2px dashed var(--accent); padding: 12px; text-align: center; background: rgba(255,255,255,0.5);">
+                <div style="font-family: 'Black Han Sans', serif; color: var(--accent); font-size: 22px; line-height: 1.1; letter-spacing: 1px;">
+                    합격이<br>보인다.
+                </div>
+                <div style="font-size: 11px; color: var(--ink-soft); margin-top: 6px;">
+                    독끝(獨끝) 전기기능사 完全 정복.<br>
+                    1日 30분 · 30일 합격.
+                </div>
+                <div style="margin-top: 8px; font-size: 10px; letter-spacing: 2px; color: var(--ink-mute); border-top: 1px dashed var(--accent); padding-top: 6px;">
+                    — 본지 5/22 출간 예정 —
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    <!-- ========== 2단 기사 (브리프) ========== -->
+    <section class="briefs">
+        <div class="label-line">
+            <span class="l">綜合</span>
+            <span class="bar"></span>
+            <span style="font-size: 11px; color: var(--ink-mute); letter-spacing: 2px;">2026.05.15</span>
+        </div>
+        <h2 class="section">오늘의 短信</h2>
+
+        <div class="briefs-grid">
+            <!-- Brief 1: 변압기 손실 -->
+            <article class="brief">
+                <span class="cat">電氣機器</span>
+                <h4>변압기 손실, 어떻게 줄일까</h4>
+                <svg viewBox="0 0 200 90" preserveAspectRatio="xMidYMid meet">
+                    <!-- 변압기 도식 -->
+                    <rect x="20" y="20" width="160" height="50" fill="none" stroke="#14110d" stroke-width="1.5"/>
+                    <g stroke="#14110d" stroke-width="1" fill="none">
+                        <path d="M40 25 q5 -5 10 0 q5 5 10 0 q5 -5 10 0 q5 5 10 0"/>
+                        <path d="M40 65 q5 -5 10 0 q5 5 10 0 q5 -5 10 0 q5 5 10 0"/>
+                        <path d="M130 25 q5 -5 10 0 q5 5 10 0 q5 -5 10 0 q5 5 10 0"/>
+                        <path d="M130 65 q5 -5 10 0 q5 5 10 0 q5 -5 10 0 q5 5 10 0"/>
+                    </g>
+                    <line x1="100" y1="20" x2="100" y2="70" stroke="#14110d" stroke-width="1" stroke-dasharray="2 2"/>
+                    <text x="60"  y="14" text-anchor="middle" font-size="9" font-family="Noto Serif KR" fill="#14110d">1차</text>
+                    <text x="140" y="14" text-anchor="middle" font-size="9" font-family="Noto Serif KR" fill="#14110d">2차</text>
+                    <text x="100" y="83" text-anchor="middle" font-size="9" font-family="Noto Serif KR" fill="#b8161a" font-weight="700">P<tspan font-size="6" dy="2">i</tspan><tspan dy="-2">+P</tspan><tspan font-size="6" dy="2">c</tspan></text>
+                </svg>
+                <p>
+                    무부하손(철손 P<sub>i</sub>)은 규소강판·방향성 코어로, 부하손(동손 P<sub>c</sub>)은 권선 단면적 확대와 냉각 방식 개선으로 잡는다.
+                    최근 비정질 합금 코어 채택이 늘면서 무부하손이 30% 가까이 줄었다는 보고가 잇따른다.
+                </p>
+                <span class="more">→ 본지 3面 자세히</span>
+            </article>
+
+            <!-- Brief 2: 3상 결선 -->
+            <article class="brief">
+                <span class="cat">回路 마스터</span>
+                <h4>三相 결선, 한 장으로 끝낸다</h4>
+                <svg viewBox="0 0 200 90" preserveAspectRatio="xMidYMid meet">
+                    <!-- Y결선 -->
+                    <g transform="translate(50,45)" stroke="#14110d" stroke-width="1.5" fill="none">
+                        <line x1="0" y1="0" x2="0" y2="-25"/>
+                        <line x1="0" y1="0" x2="-22" y2="12"/>
+                        <line x1="0" y1="0" x2="22" y2="12"/>
+                        <circle cx="0"   cy="-25" r="3" fill="#b8161a"/>
+                        <circle cx="-22" cy="12"  r="3" fill="#b8161a"/>
+                        <circle cx="22"  cy="12"  r="3" fill="#b8161a"/>
+                    </g>
+                    <text x="50" y="82" text-anchor="middle" font-size="11" font-family="Nanum Myeongjo" font-weight="700" fill="#14110d">Y 결선</text>
+                    <!-- Δ결선 -->
+                    <g transform="translate(150,45)" stroke="#14110d" stroke-width="1.5" fill="none">
+                        <polygon points="0,-22 -22,14 22,14"/>
+                        <circle cx="0"   cy="-22" r="3" fill="#b8161a"/>
+                        <circle cx="-22" cy="14"  r="3" fill="#b8161a"/>
+                        <circle cx="22"  cy="14"  r="3" fill="#b8161a"/>
+                    </g>
+                    <text x="150" y="82" text-anchor="middle" font-size="11" font-family="Nanum Myeongjo" font-weight="700" fill="#14110d">Δ 결선</text>
+                </svg>
+                <p>
+                    Y결선은 선간전압이 상전압의 √3배, Δ결선은 선전류가 상전류의 √3배다.
+                    위상각은 30° 차이. 본지가 정리한 '한 장 표'에 모두 담겼다.
+                </p>
+                <span class="more">→ 4面 부록표 참조</span>
+            </article>
+
+            <!-- Brief 3: KEC 개정 -->
+            <article class="brief">
+                <span class="cat">法令 · 시행령</span>
+                <h4>KEC 개정안 8월 시행 — 무엇이 바뀌나</h4>
+                <svg viewBox="0 0 200 90" preserveAspectRatio="xMidYMid meet">
+                    <rect x="20" y="15" width="160" height="60" fill="#fffaea" stroke="#14110d" stroke-width="1"/>
+                    <g font-family="Noto Serif KR" fill="#14110d">
+                        <line x1="30" y1="30" x2="170" y2="30" stroke="#c8bea3"/>
+                        <line x1="30" y1="45" x2="170" y2="45" stroke="#c8bea3"/>
+                        <line x1="30" y1="60" x2="170" y2="60" stroke="#c8bea3"/>
+                        <text x="34" y="27" font-size="8">第142條 接地방식</text>
+                        <text x="34" y="42" font-size="8">第151條 절연저항</text>
+                        <text x="34" y="57" font-size="8">第163條 안전이격거리</text>
+                        <text x="34" y="72" font-size="8" fill="#b8161a" font-weight="700">— 시행 2026.08.01</text>
+                    </g>
+                    <g transform="translate(160,72) rotate(-12)">
+                        <rect width="30" height="14" fill="#b8161a"/>
+                        <text x="15" y="11" text-anchor="middle" font-size="9" fill="#fff8e7" font-weight="700" font-family="Nanum Myeongjo">改正</text>
+                    </g>
+                </svg>
+                <p>
+                    접지방식 분류가 TT·TN·IT 체계로 정비되고, 절연저항 측정 기준이 회로전압별로 세분화된다.
+                    8월 1일 이후 시행되는 시험부터 신규 조항이 출제 범위에 포함될 예정.
+                </p>
+                <span class="more">→ 法令面 단독</span>
+            </article>
+
+            <!-- Brief 4: 안전관리 -->
+            <article class="brief">
+                <span class="cat">安全 · 현장</span>
+                <h4>전기 안전관리 신규 지침 — 활선작업 최소화</h4>
+                <svg viewBox="0 0 200 90" preserveAspectRatio="xMidYMid meet">
+                    <!-- 안전모 -->
+                    <g transform="translate(100,55)">
+                        <path d="M-30 0 q30 -40 60 0 z" fill="#fde047" stroke="#14110d" stroke-width="1.5"/>
+                        <rect x="-32" y="-2" width="64" height="6" fill="#fde047" stroke="#14110d" stroke-width="1.5"/>
+                        <rect x="-4"  y="-30" width="8" height="6" fill="#b8161a"/>
+                        <!-- 번개 -->
+                        <path d="M-2 -28 L -8 -16 L -3 -16 L -10 -2" fill="none" stroke="#14110d" stroke-width="1.5"/>
+                    </g>
+                    <text x="100" y="80" text-anchor="middle" font-size="10" font-family="Nanum Myeongjo" font-weight="700" fill="#14110d">SAFETY FIRST</text>
+                </svg>
+                <p>
+                    고용노동부는 활선상태 작업을 원칙적으로 금지하고, 부득이한 경우 절연용 보호구·방호구 착용을 의무화하는 지침을 발표했다.
+                    위반 시 사업주에게 최대 5천만원의 과태료가 부과된다.
+                </p>
+                <span class="more">→ 社會面 1段</span>
+            </article>
+        </div>
+    </section>
+
+    <!-- ========== 만평 + 칼럼 ========== -->
+    <section class="cartoon-wrap">
+        <div class="cartoon-panel">
+            <div class="label">
+                <span>오늘의 漫評</span>
+                <small>畫 · 박 전압 화백</small>
+            </div>
+            <div class="cartoon-frame">
+                <svg viewBox="0 0 460 220" preserveAspectRatio="xMidYMid meet">
+                    <!-- 4컷 만화 -->
+                    <defs>
+                        <style>
+                            .cstroke{stroke:#14110d;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+                            .ctext{font-family:'Nanum Myeongjo',serif;font-size:9px;fill:#14110d}
+                        </style>
+                    </defs>
+
+                    <!-- 1컷 -->
+                    <g>
+                        <rect x="5"   y="5" width="110" height="100" class="cstroke"/>
+                        <!-- 인물 -->
+                        <circle cx="40" cy="55" r="14" class="cstroke"/>
+                        <line   x1="40" y1="69" x2="40" y2="90" class="cstroke"/>
+                        <line   x1="40" y1="75" x2="28" y2="85" class="cstroke"/>
+                        <line   x1="40" y1="75" x2="52" y2="85" class="cstroke"/>
+                        <!-- 표정 -->
+                        <circle cx="36" cy="53" r="1" fill="#14110d"/>
+                        <circle cx="44" cy="53" r="1" fill="#14110d"/>
+                        <path d="M36 60 q4 3 8 0" class="cstroke"/>
+                        <!-- 말풍선 -->
+                        <ellipse cx="85" cy="35" rx="22" ry="14" fill="#fff" class="cstroke"/>
+                        <path d="M70 45 L 65 55 L 76 47" fill="#fff" class="cstroke"/>
+                        <text x="85" y="33" text-anchor="middle" class="ctext">옴의</text>
+                        <text x="85" y="42" text-anchor="middle" class="ctext">법칙?</text>
+                    </g>
+
+                    <!-- 2컷 -->
+                    <g>
+                        <rect x="120" y="5" width="110" height="100" class="cstroke"/>
+                        <!-- 칠판 -->
+                        <rect x="135" y="15" width="80" height="55" fill="#1f3a2a" stroke="#14110d" stroke-width="1.5"/>
+                        <text x="175" y="35" text-anchor="middle" font-family="Nanum Myeongjo" font-size="14" font-weight="700" fill="#fff8e7">V=IR</text>
+                        <text x="175" y="55" text-anchor="middle" font-family="Nanum Myeongjo" font-size="10" fill="#fde047">쉽다 쉬워!</text>
+                        <!-- 선생 -->
+                        <circle cx="200" cy="80" r="10" class="cstroke"/>
+                        <line x1="200" y1="90" x2="200" y2="100" class="cstroke"/>
+                        <circle cx="197" cy="79" r="0.8" fill="#14110d"/>
+                        <circle cx="203" cy="79" r="0.8" fill="#14110d"/>
+                        <path d="M197 84 q3 2 6 0" class="cstroke"/>
+                    </g>
+
+                    <!-- 3컷 -->
+                    <g>
+                        <rect x="235" y="5" width="110" height="100" class="cstroke"/>
+                        <!-- 회로도 -->
+                        <g transform="translate(245,30)" class="cstroke">
+                            <rect x="0" y="0" width="90" height="50" />
+                            <circle cx="20" cy="0" r="6" fill="#fff8e7"/>
+                            <line x1="14" y1="0" x2="26" y2="0"/>
+                            <line x1="20" y1="-6" x2="20" y2="6"/>
+                            <!-- 저항 -->
+                            <path d="M50 50 l4 -6 l4 6 l4 -6 l4 6 l4 -6 l4 6"/>
+                            <text x="68" y="40" font-size="8" font-family="Nanum Myeongjo" fill="#14110d">R</text>
+                            <text x="20" y="-10" text-anchor="middle" font-size="8" font-family="Nanum Myeongjo" fill="#14110d">V</text>
+                        </g>
+                        <!-- ?? -->
+                        <text x="290" y="100" text-anchor="middle" font-family="Nanum Myeongjo" font-size="14" font-weight="700" fill="#b8161a">???</text>
+                    </g>
+
+                    <!-- 4컷 -->
+                    <g>
+                        <rect x="350" y="5" width="105" height="100" class="cstroke"/>
+                        <!-- 학생 좌절 -->
+                        <circle cx="385" cy="55" r="14" class="cstroke"/>
+                        <line   x1="385" y1="69" x2="385" y2="90" class="cstroke"/>
+                        <line   x1="385" y1="75" x2="373" y2="85" class="cstroke"/>
+                        <line   x1="385" y1="75" x2="397" y2="85" class="cstroke"/>
+                        <!-- 눈물 -->
+                        <line x1="381" y1="56" x2="379" y2="64" stroke="#3b82f6" stroke-width="1.5"/>
+                        <line x1="389" y1="56" x2="391" y2="64" stroke="#3b82f6" stroke-width="1.5"/>
+                        <circle cx="381" cy="53" r="0.8" fill="#14110d"/>
+                        <circle cx="389" cy="53" r="0.8" fill="#14110d"/>
+                        <path d="M381 62 q4 -3 8 0" class="cstroke"/>
+                        <!-- 말풍선 -->
+                        <ellipse cx="425" cy="40" rx="24" ry="16" fill="#fff" class="cstroke"/>
+                        <path d="M410 50 L 405 60 L 416 52" fill="#fff" class="cstroke"/>
+                        <text x="425" y="38" text-anchor="middle" class="ctext">전기는</text>
+                        <text x="425" y="48" text-anchor="middle" class="ctext">왜 미운가</text>
+                    </g>
+
+                    <!-- 하단 한 줄 -->
+                    <rect x="5" y="110" width="450" height="100" fill="#fffaea" stroke="#14110d" stroke-width="1.5"/>
+                    <text x="230" y="135" text-anchor="middle" font-family="Nanum Myeongjo" font-weight="700" font-size="14" fill="#14110d">
+                        — 그러나 다음 날 —
+                    </text>
+                    <!-- 큰 한 컷 -->
+                    <g transform="translate(50,150)">
+                        <circle cx="20" cy="20" r="14" class="cstroke"/>
+                        <line   x1="20" y1="34" x2="20" y2="55" class="cstroke"/>
+                        <line   x1="20" y1="40" x2="8"  y2="50" class="cstroke"/>
+                        <line   x1="20" y1="40" x2="32" y2="50" class="cstroke"/>
+                        <circle cx="16" cy="18" r="1" fill="#14110d"/>
+                        <circle cx="24" cy="18" r="1" fill="#14110d"/>
+                        <path d="M14 24 q6 4 12 0" stroke="#14110d" stroke-width="1.6" fill="none"/>
+                        <!-- 광선 -->
+                        <g stroke="#b8161a" stroke-width="1.5">
+                            <line x1="20" y1="0"  x2="20" y2="-8"/>
+                            <line x1="6"  y1="6"  x2="0"  y2="0"/>
+                            <line x1="34" y1="6"  x2="40" y2="0"/>
+                            <line x1="0"  y1="20" x2="-6" y2="20"/>
+                            <line x1="40" y1="20" x2="46" y2="20"/>
+                        </g>
+                    </g>
+                    <text x="160" y="180" font-family="Nanum Myeongjo" font-weight="700" font-size="13" fill="#b8161a">
+                        "V=IR을 외우려 하지 말고,
+                    </text>
+                    <text x="160" y="198" font-family="Nanum Myeongjo" font-weight="700" font-size="13" fill="#14110d">
+                        '왜 그렇게 되는지'를 그려보면…"
+                    </text>
+                </svg>
+            </div>
+            <div class="cartoon-cap">— 만평 〈전기의 깨달음〉 (1~4컷)</div>
+        </div>
+
+        <div class="cartoon-side">
+            <div class="label" style="font-family:'Nanum Myeongjo', serif; font-weight:800; font-size:13px; letter-spacing:3px; border-bottom:1px solid var(--ink); padding-bottom:4px; margin-bottom:10px;">
+                칼럼 · <span style="color: var(--accent);">電氣餘談</span>
+            </div>
+            <h4 style="font-family:'Nanum Myeongjo',serif; font-weight:800; font-size:18px; line-height:1.3; margin-bottom:8px;">
+                "공식은 외우는 게 아니라, 그리는 것이다"
+            </h4>
+            <p style="font-size:12.5px; line-height:1.85; color:var(--ink-soft); text-align:justify; word-break:keep-all; margin-bottom:8px;">
+                전기를 처음 배울 때 우리는 V=IR을 외운다. 그러나 시험장에서 막히는 순간, 외운 공식은 도망간다.
+                남는 것은 <em>그려본 회로</em>다. 손으로 한 번 그려본 사람은 잊지 못한다. 전압은 위에서 떨어지는 물처럼, 전류는 물길처럼,
+                저항은 좁아진 수로처럼 — 머릿속에 그림이 살아 있다.
+            </p>
+            <p style="font-size:12.5px; line-height:1.85; color:var(--ink-soft); text-align:justify; word-break:keep-all;">
+                기능사 시험은 어쩌면 그림 그리는 사람을 뽑는 시험인지도 모른다.
+            </p>
+            <div style="margin-top:14px; text-align:right; font-size:11px; color:var(--ink-mute); font-style:italic;">
+                — 논설위원 정 흐름
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== 합격생 인터뷰 ========== -->
+    <section class="interview">
+        <div class="portrait">
+            <div class="frame">
+                <!-- 인물 일러스트 -->
+                <svg viewBox="0 0 220 260" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="bg2" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#f3ead4"/>
+                            <stop offset="1" stop-color="#dccfa8"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="0" y="0" width="220" height="260" fill="url(#bg2)"/>
+                    <!-- 신문 텍스처 -->
+                    <g opacity="0.08" font-family="Nanum Myeongjo" font-size="6" fill="#14110d">
+                        <text x="10"  y="20">電氣日報 電氣日報 電氣日報 電氣日報</text>
+                        <text x="10"  y="32">電氣日報 電氣日報 電氣日報 電氣日報</text>
+                        <text x="10" y="248">電氣日報 電氣日報 電氣日報 電氣日報</text>
+                    </g>
+                    <!-- 인물 -->
+                    <g>
+                        <!-- 어깨 -->
+                        <path d="M40 240 q70 -70 140 0 z" fill="#1a4a6e" stroke="#14110d" stroke-width="1.5"/>
+                        <path d="M95 175 q15 8 30 0 l0 20 q-15 8 -30 0 z" fill="#f1c391" stroke="#14110d" stroke-width="1.2"/>
+                        <!-- 얼굴 -->
+                        <ellipse cx="110" cy="135" rx="42" ry="50" fill="#f4cc9b" stroke="#14110d" stroke-width="1.5"/>
+                        <!-- 머리 -->
+                        <path d="M70 120 q-2 -50 40 -55 q42 5 40 55 q-10 -15 -25 -15 q-15 0 -30 0 q-15 0 -25 15z" fill="#2a2620" stroke="#14110d" stroke-width="1.2"/>
+                        <!-- 눈 -->
+                        <ellipse cx="95"  cy="135" rx="3" ry="2" fill="#14110d"/>
+                        <ellipse cx="125" cy="135" rx="3" ry="2" fill="#14110d"/>
+                        <!-- 안경 -->
+                        <g fill="none" stroke="#14110d" stroke-width="1.4">
+                            <circle cx="95"  cy="135" r="10"/>
+                            <circle cx="125" cy="135" r="10"/>
+                            <line x1="105" y1="135" x2="115" y2="135"/>
+                            <line x1="85"  y1="135" x2="78"  y2="132"/>
+                            <line x1="135" y1="135" x2="142" y2="132"/>
+                        </g>
+                        <!-- 코·입 -->
+                        <path d="M108 150 q2 5 4 0" stroke="#14110d" stroke-width="1" fill="none"/>
+                        <path d="M100 165 q10 5 20 0" stroke="#14110d" stroke-width="1.4" fill="none"/>
+                        <!-- 합격 배지 -->
+                        <g transform="translate(165,205) rotate(15)">
+                            <circle cx="0" cy="0" r="22" fill="#b8161a" stroke="#14110d" stroke-width="1.5"/>
+                            <circle cx="0" cy="0" r="18" fill="none" stroke="#fff8e7" stroke-width="1"/>
+                            <text x="0" y="-3" text-anchor="middle" font-family="Nanum Myeongjo" font-size="9" font-weight="800" fill="#fff8e7">合格</text>
+                            <text x="0" y="9" text-anchor="middle" font-family="Nanum Myeongjo" font-size="6" fill="#fff8e7">2026</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="caption">▲ 인터뷰이 김 모(28) 씨. 본지가 촬영 인쇄</div>
+        </div>
+
+        <div>
+            <div class="kicker">人터뷰 · 합격생</div>
+            <h3>"하루 1시간 · 100일이면, 누구든 됩니다"</h3>
+            <p class="lead">— 2026 제2회 필기·실기 동시 합격한 김 모(28) 씨에게 묻다</p>
+
+            <div class="qa">
+                <span class="q">왜 전기기능사를 시작했나.</span>
+                <span class="a">대학 졸업 후 다섯 번 이력서를 냈고 다섯 번 떨어졌다. '내 손에 남는 자격이 있어야겠다'고 생각했다. 전기는 죽지 않는 산업이라고 들었다.</span>
+            </div>
+
+            <div class="qa">
+                <span class="q">학습 방법은.</span>
+                <span class="a">하루 1시간, 100일이었다. 처음 30일은 개념·공식, 다음 40일은 회로 그리기, 마지막 30일은 기출 5회독. 시험장에서 새로 본 문제는 거의 없었다.</span>
+            </div>
+
+            <div class="qa">
+                <span class="q">가장 어려운 단원은.</span>
+                <span class="a">변압기였다. 처음엔 무부하·부하라는 말 자체가 낯설었다. 그런데 손으로 등가회로를 그리니 비로소 이해됐다. <strong>"공식보다 그림"</strong>이 내 합격의 비결이다.</span>
+            </div>
+
+            <div class="qa">
+                <span class="q">후배 수험생에게.</span>
+                <span class="a">붙은 사람은 '특별한 사람'이 아니다. <em>매일 자리에 앉았던 사람</em>이다. 책상 앞에 앉는 것, 그 한 가지만 100일 동안 지키면 된다.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== 광고 ========== -->
+    <section class="ad">
+        <div>
+            <div style="font-size:10px; letter-spacing:4px; color: var(--ink-mute); margin-bottom: 4px;">— 廣告 · ADVERTISEMENT —</div>
+            <div class="hd">獨끝<br>전기기능사<br><span style="color: var(--ink);">완전정복</span></div>
+            <p class="body">
+                100일 합격생이 직접 쓴 <strong>그림으로 푸는</strong> 전기기능사.
+                개념부터 실기까지, 본지가 보증하는 단 한 권의 책.<br>
+                <span style="color: var(--accent);">★ 본지 독자 한정 · 20% 할인 코드 <strong>NEWS2026</strong></span>
+            </p>
+            <span class="price">정가 27,000원 → 21,600원</span>
+            <div style="margin-top:10px; font-size:11px; color: var(--ink-mute);">
+                전국 서점 · 온라인몰 5月 22日 동시 출간
+            </div>
+        </div>
+        <div class="stamp">
+            <div class="big">合 格 保 證</div>
+            <div class="small">EDITOR'S<br>CHOICE</div>
+        </div>
+    </section>
+
+    <!-- 미니 광고 -->
+    <div class="mini-ads">
+        <div class="mini-ad">
+            <strong>전기기능사 모의 CBT</strong>
+            무료 1회 / 회차별 분석<br>
+            <span style="color: var(--accent);">addto.co.kr</span>
+        </div>
+        <div class="mini-ad">
+            <strong>실기 키트 대여</strong>
+            전선·결선반·계측기<br>
+            일 5,000원
+        </div>
+        <div class="mini-ad">
+            <strong>야간 강의</strong>
+            화·목 19~22시<br>
+            서울·경기 5개 지점
+        </div>
+        <div class="mini-ad">
+            <strong>합격 후기 모집</strong>
+            상품권 5만원 증정<br>
+            news@addto.co.kr
+        </div>
+    </div>
+
+    <!-- ========== 하단 (발행 정보) ========== -->
+    <footer class="footer">
+        <div>
+            <h5>발행 정보</h5>
+            <div>발행인 · 편집인 : 본지 편집국장</div>
+            <div>발행처 : 電氣日報社 (대한민국 서울)</div>
+            <div>발행일 : 2026年 5月 15日 金曜日</div>
+            <div>제호번호 : 서울 다 12345 (등록일 2024.03.01)</div>
+            <div style="margin-top:6px; font-style: italic;">본지의 모든 콘텐츠는 학습 목적의 가상 신문이며 실제 보도가 아닙니다.</div>
+        </div>
+        <div>
+            <h5>구독 안내</h5>
+            <div>월정 구독 : 35,000원</div>
+            <div>연간 구독 : 380,000원 (1개월 무료)</div>
+            <div>학생 할인 : 20% (학생증 인증)</div>
+            <div>문의 : 02-XXXX-YYYY</div>
+            <div>전자우편 : news@addto.co.kr</div>
+        </div>
+        <div>
+            <h5>다음 호 예고</h5>
+            <div>· 합격생 100인의 학습 패턴 분석</div>
+            <div>· KEC 개정안 한 장 요약</div>
+            <div>· 실기 출제 경향 5년 비교</div>
+            <div class="barcode" aria-hidden="true">
+                <!-- 가짜 바코드 -->
+                <span style="height:36px;width:2px"></span>
+                <span style="height:30px;width:1px"></span>
+                <span style="height:36px;width:3px"></span>
+                <span style="height:24px;width:1px"></span>
+                <span style="height:36px;width:2px"></span>
+                <span style="height:30px;width:1px"></span>
+                <span style="height:36px;width:1px"></span>
+                <span style="height:28px;width:2px"></span>
+                <span style="height:36px;width:1px"></span>
+                <span style="height:36px;width:3px"></span>
+                <span style="height:30px;width:1px"></span>
+                <span style="height:36px;width:2px"></span>
+                <span style="height:24px;width:1px"></span>
+                <span style="height:36px;width:2px"></span>
+                <span style="height:30px;width:1px"></span>
+                <span style="height:36px;width:3px"></span>
+                <span style="height:28px;width:1px"></span>
+                <span style="height:36px;width:2px"></span>
+                <span style="height:30px;width:1px"></span>
+                <span style="height:36px;width:1px"></span>
+                <span style="height:24px;width:2px"></span>
+                <span style="height:36px;width:3px"></span>
+            </div>
+            <div style="font-size:10px; letter-spacing:2px; text-align:center; margin-top:2px;">9 771234 567890</div>
+        </div>
+
+        <div class="copy">
+            © 2026 電氣日報社 · The Electric Daily. All rights reserved.
+            ‹ 본 페이지는 전기기능사 학습 콘텐츠 일환으로 제작된 가상 신문지면입니다 ›
+        </div>
+    </footer>
+
+</main>
+
+</body>
+</html>

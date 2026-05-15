@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>addto 전기기능사 학습 · YouTube</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --yt-bg: #0f0f0f;
+    --yt-bg-2: #181818;
+    --yt-bg-3: #272727;
+    --yt-hover: #3f3f3f;
+    --yt-text: #f1f1f1;
+    --yt-text-2: #aaaaaa;
+    --yt-red: #ff0000;
+    --yt-red-hover: #cc0000;
+    --yt-border: #303030;
+  }
+  * { font-family: 'Roboto', sans-serif; }
+  body {
+    background: var(--yt-bg);
+    color: var(--yt-text);
+    overflow-x: hidden;
+  }
+  /* Scrollbar (YouTube-like) */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--yt-bg); }
+  ::-webkit-scrollbar-thumb { background: #555; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #777; }
+
+  /* Top bar logo */
+  .yt-logo {
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .yt-logo .play-icon {
+    background: var(--yt-red);
+    color: white;
+    border-radius: 6px;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Search */
+  .yt-search-input {
+    background: #121212;
+    border: 1px solid var(--yt-border);
+    color: var(--yt-text);
+    height: 40px;
+    border-radius: 40px 0 0 40px;
+    padding: 0 16px;
+    width: 100%;
+    outline: none;
+  }
+  .yt-search-input:focus {
+    border-color: #1c62b9;
+    background: #0f0f0f;
+  }
+  .yt-search-btn {
+    background: var(--yt-bg-3);
+    border: 1px solid var(--yt-border);
+    border-left: none;
+    border-radius: 0 40px 40px 0;
+    width: 64px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .yt-search-btn:hover { background: var(--yt-hover); }
+
+  /* Channel art - gradient background */
+  .channel-banner {
+    height: 200px;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(255,0,0,0.25), transparent 50%),
+      radial-gradient(circle at 80% 30%, rgba(0,150,255,0.20), transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(255,200,0,0.18), transparent 60%),
+      linear-gradient(135deg, #1a0a0a 0%, #0a1a2a 50%, #0a0a1a 100%);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .channel-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .channel-banner-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  }
+
+  /* Avatar */
+  .channel-avatar {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff0000, #ff6600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 56px;
+    font-weight: 900;
+    color: white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+  }
+
+  /* Subscribe button */
+  .subscribe-btn {
+    background: var(--yt-red);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 18px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s;
+  }
+  .subscribe-btn:hover { background: var(--yt-red-hover); }
+  .subscribe-btn.subscribed {
+    background: var(--yt-bg-3);
+    color: var(--yt-text);
+  }
+  .subscribe-btn.subscribed:hover { background: var(--yt-hover); }
+
+  /* Tabs */
+  .tab-btn {
+    padding: 14px 0;
+    margin-right: 24px;
+    color: var(--yt-text-2);
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--yt-text); }
+  .tab-btn.active {
+    color: var(--yt-text);
+    border-bottom-color: var(--yt-text);
+  }
+
+  /* Video thumbnail (fake) */
+  .video-thumb {
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+    cursor: pointer;
+  }
+  .video-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 70%, rgba(0,0,0,0.4));
+  }
+  .video-thumb .duration {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 2;
+    text-shadow: none;
+  }
+  .video-thumb .thumb-text {
+    position: relative;
+    z-index: 1;
+    font-size: clamp(16px, 2vw, 22px);
+    line-height: 1.2;
+  }
+  .video-card:hover .video-thumb {
+    border-radius: 0;
+  }
+
+  /* Gradient thumbnails */
+  .grad-1 { background: linear-gradient(135deg, #ff0844, #ffb199); }
+  .grad-2 { background: linear-gradient(135deg, #0061ff, #60efff); }
+  .grad-3 { background: linear-gradient(135deg, #fcb045, #fd1d1d); }
+  .grad-4 { background: linear-gradient(135deg, #7028e4, #e5b2ca); }
+  .grad-5 { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .grad-6 { background: linear-gradient(135deg, #fc466b, #3f5efb); }
+  .grad-7 { background: linear-gradient(135deg, #f7971e, #ffd200); }
+  .grad-8 { background: linear-gradient(135deg, #232526, #414345); }
+  .grad-popular { background:
+    radial-gradient(circle at 30% 40%, rgba(255,0,0,0.6), transparent 50%),
+    linear-gradient(135deg, #1a0033, #ff0040 50%, #ff8800 100%);
+  }
+
+  /* Playlist stack effect */
+  .playlist-thumb {
+    position: relative;
+  }
+  .playlist-thumb::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 4px;
+    right: 4px;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 4px 4px 0 0;
+  }
+  .playlist-thumb::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 8px;
+    right: 8px;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px 4px 0 0;
+  }
+  .playlist-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.85);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Video card text */
+  .video-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--yt-text);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .video-meta {
+    color: var(--yt-text-2);
+    font-size: 13px;
+  }
+
+  /* Modal (video player) */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    display: none;
+    overflow-y: auto;
+  }
+  .modal-backdrop.active { display: block; }
+  .modal-content {
+    max-width: 1280px;
+    margin: 24px auto;
+    padding: 0 24px;
+  }
+
+  /* Fake player */
+  .fake-player {
+    aspect-ratio: 16/9;
+    border-radius: 12px;
+    background: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .fake-player .play-pulse {
+    width: 80px;
+    height: 80px;
+    background: rgba(255,0,0,0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,0,0,0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(255,0,0,0); }
+  }
+
+  /* Action buttons */
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--yt-bg-3);
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    color: var(--yt-text);
+    transition: background 0.15s;
+  }
+  .action-btn:hover { background: var(--yt-hover); }
+  .action-btn.active { color: var(--yt-red); }
+
+  /* Comment */
+  .comment-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 16px;
+  }
+  .comment-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--yt-border);
+    color: var(--yt-text);
+    width: 100%;
+    padding: 8px 0;
+    outline: none;
+    font-size: 14px;
+  }
+  .comment-input:focus { border-bottom-color: var(--yt-text); }
+
+  /* Icon button */
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--yt-text);
+    transition: background 0.15s;
+    background: transparent;
+    border: none;
+  }
+  .icon-btn:hover { background: var(--yt-bg-3); }
+
+  /* Verified badge */
+  .verified-check {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    background: var(--yt-text-2);
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    color: var(--yt-bg);
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  /* Section title */
+  .section-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  /* Chip filter */
+  .chip {
+    background: var(--yt-bg-3);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .chip:hover { background: var(--yt-hover); }
+  .chip.active {
+    background: var(--yt-text);
+    color: var(--yt-bg);
+  }
+
+  /* Animations */
+  .fade-in { animation: fadeIn 0.3s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Avatar gradients */
+  .av-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+  .av-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+  .av-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+  .av-4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+  .av-5 { background: linear-gradient(135deg, #fa709a, #fee140); }
+  .av-6 { background: linear-gradient(135deg, #30cfd0, #330867); }
+
+  /* Hide scrollbar for tabs */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<header class="sticky top-0 z-50 bg-[#0f0f0f] border-b border-[#303030]">
+  <div class="flex items-center justify-between px-4 h-14">
+    <!-- Left: menu + logo -->
+    <div class="flex items-center gap-4">
+      <button class="icon-btn" aria-label="menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+      </button>
+      <a href="#" class="yt-logo text-xl">
+        <span class="play-icon">
+          <svg width="20" height="14" viewBox="0 0 24 17" fill="white"><path d="M23.5 2.65a3 3 0 0 0-2.11-2.12C19.52 0 12 0 12 0S4.48 0 2.61.53A3 3 0 0 0 .5 2.65 31.3 31.3 0 0 0 0 8.5a31.3 31.3 0 0 0 .5 5.85 3 3 0 0 0 2.11 2.12C4.48 17 12 17 12 17s7.52 0 9.39-.53a3 3 0 0 0 2.11-2.12A31.3 31.3 0 0 0 24 8.5a31.3 31.3 0 0 0-.5-5.85zM9.55 12.13V4.87L15.82 8.5z"/></svg>
+        </span>
+        <span>addto</span>
+      </a>
+    </div>
+
+    <!-- Center: search -->
+    <div class="flex-1 max-w-2xl mx-8 flex items-center">
+      <div class="flex-1 flex">
+        <input type="text" class="yt-search-input" placeholder="검색" />
+        <button class="yt-search-btn" aria-label="search">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M20.87 20.17l-5.59-5.59A6.95 6.95 0 0 0 17 10a7 7 0 1 0-7 7 6.95 6.95 0 0 0 4.58-1.71l5.59 5.59zM10 16a6 6 0 1 1 6-6 6 6 0 0 1-6 6z"/></svg>
+        </button>
+      </div>
+      <button class="icon-btn ml-2" aria-label="voice search" title="음성 검색">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+      </button>
+    </div>
+
+    <!-- Right: icons -->
+    <div class="flex items-center gap-2">
+      <button class="icon-btn" aria-label="create">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14 13h-3v3H9v-3H6v-2h3V8h2v3h3M17 6H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3.5l4 4v-11l-4 4V8a2 2 0 0 0-2-2z"/></svg>
+      </button>
+      <button class="icon-btn relative" aria-label="notifications">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M10 21h4a2 2 0 0 1-4 0M21 19v1H3v-1l2-2v-6a7 7 0 0 1 5-6.71V4a2 2 0 0 1 4 0v.29A7 7 0 0 1 19 11v6z"/></svg>
+        <span class="absolute top-1 right-1 bg-red-600 text-white text-[10px] rounded-full px-1.5 py-0.5 font-medium">3</span>
+      </button>
+      <div class="w-8 h-8 rounded-full av-3 flex items-center justify-center text-sm font-bold ml-2">나</div>
+    </div>
+  </div>
+</header>
+
+<!-- CHANNEL PAGE -->
+<main class="max-w-7xl mx-auto px-6 pt-6 pb-24">
+
+  <!-- Channel banner -->
+  <div class="channel-banner mb-6">
+    <div class="channel-banner-text">
+      <div class="text-xs uppercase tracking-widest text-white/70 mb-2">전기기능사 합격 채널</div>
+      <div class="text-4xl md:text-5xl font-black mb-2">⚡ 5분이면 외워지는 전기 ⚡</div>
+      <div class="text-base text-white/80">매주 화·금 새 영상 · 누적 합격생 12,400명+</div>
+    </div>
+  </div>
+
+  <!-- Channel header info -->
+  <div class="flex flex-col md:flex-row gap-6 mb-6">
+    <div class="channel-avatar">A+</div>
+    <div class="flex-1 min-w-0">
+      <h1 class="text-3xl font-bold mb-2 flex items-center">
+        addto 전기기능사 학습
+        <span class="verified-check ml-2" title="인증된 채널">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </span>
+      </h1>
+      <div class="text-[var(--yt-text-2)] text-sm mb-1">
+        <span class="font-medium text-white">@addto-electric</span>
+        <span class="mx-1">·</span>
+        <span>구독자 <span id="subCount" class="font-medium text-white">28.4만</span>명</span>
+        <span class="mx-1">·</span>
+        <span>동영상 247개</span>
+      </div>
+      <p class="text-sm text-[var(--yt-text-2)] max-w-xl mb-4 line-clamp-2">
+        전기기능사 자격증 준비, 이론 → 회로 → 기출까지. CBT 시뮬레이터와 함께 보는 합격 루트. 매주 화/금 업로드.
+        <span class="underline cursor-pointer text-white">더보기</span>
+      </p>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="subBtn" class="subscribe-btn" onclick="toggleSubscribe()">
+          <span id="subLabel">구독</span>
+        </button>
+        <button class="action-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 6h-4V4c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v2H3v15h18V6zM9 4h6v2H9V4zm10 15H5V8h14v11zm-7-1l5-5-1.41-1.41L13 14.17V10h-2v4.17l-2.59-2.58L7 13l5 5z"/></svg>
+          가입
+        </button>
+        <button class="action-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V5a3 3 0 0 0-6 0v4H5v11h14V9h-5zm-4-4a1 1 0 0 1 4 0v4h-4V5zm7 13H7v-7h10v7z"/></svg>
+          공유
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-b border-[var(--yt-border)] mb-6 overflow-x-auto no-scrollbar">
+    <div class="flex">
+      <button class="tab-btn active" data-tab="home">홈</button>
+      <button class="tab-btn" data-tab="videos">동영상</button>
+      <button class="tab-btn" data-tab="shorts">Shorts</button>
+      <button class="tab-btn" data-tab="playlists">재생목록</button>
+      <button class="tab-btn" data-tab="info">정보</button>
+    </div>
+  </div>
+
+  <!-- ====== TAB: HOME ====== -->
+  <section id="tab-home" class="tab-pane">
+
+    <!-- Featured (popular) video -->
+    <div class="mb-10">
+      <h2 class="section-title">인기 영상</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Big thumbnail -->
+        <div class="video-card cursor-pointer" onclick="openVideo(0)">
+          <div class="video-thumb grad-popular" style="border-radius:12px;">
+            <div class="thumb-text" style="font-size:clamp(22px,3vw,36px); line-height:1.1;">
+              ⚡<br/>옴의 법칙<br/>5분 완벽 정리
+            </div>
+            <span class="duration">5:42</span>
+            <!-- play hover -->
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
+              <div class="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs uppercase tracking-widest text-red-500 font-medium mb-2">조회수 1위</div>
+          <h3 class="text-2xl font-bold mb-3 leading-tight">옴의 법칙 5분 완벽 정리 — 외우지 말고 그려라</h3>
+          <div class="video-meta mb-3">
+            조회수 184만회 · 1년 전
+          </div>
+          <p class="text-sm text-[var(--yt-text-2)] mb-4 line-clamp-4">
+            V=IR, 이거 한 줄이 전부인데 왜 자꾸 헷갈릴까요? 이 영상에서는 V, I, R 사이의 관계를
+            "흐름과 막힘"으로 다시 보고, 기출 5문제로 바로 적용해봅니다. 시험장에서 멘붕 안 오는 사고법.
+          </p>
+          <div class="flex gap-2">
+            <button class="action-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+              52K
+            </button>
+            <button class="action-btn">댓글 1.2K</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="flex gap-3 mb-6 overflow-x-auto no-scrollbar">
+      <button class="chip active">전체</button>
+      <button class="chip">기초 이론</button>
+      <button class="chip">회로 해석</button>
+      <button class="chip">기출 풀이</button>
+      <button class="chip">3상</button>
+      <button class="chip">변압기</button>
+      <button class="chip">전기기기</button>
+      <button class="chip">실기 대비</button>
+      <button class="chip">암기 꿀팁</button>
+    </div>
+
+    <!-- Video grid -->
+    <h2 class="section-title">최근 업로드</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8 mb-12" id="videoGrid">
+      <!-- populated by JS -->
+    </div>
+
+    <!-- Playlists -->
+    <h2 class="section-title">재생목록</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8 mb-12">
+
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-3">
+          <div class="thumb-text">기초 이론<br/>로드맵</div>
+          <div class="playlist-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h13v2H4zm0 4h13v2H4zm0 4h9v2H4zm15-4v8l5-4z"/></svg>
+            전체 보기 · 24개
+          </div>
+        </div>
+        <div class="pt-3">
+          <div class="video-title">⚡ 0주차 → 1주차: 전기기능사 완전 기초 로드맵</div>
+          <div class="video-meta mt-1">addto 전기기능사 학습 <span class="verified-check"></span></div>
+          <div class="video-meta">재생목록 업데이트 2일 전</div>
+        </div>
+      </div>
+
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-2">
+          <div class="thumb-text">3상 결선<br/>마스터</div>
+          <div class="playlist-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h13v2H4zm0 4h13v2H4zm0 4h9v2H4zm15-4v8l5-4z"/></svg>
+            전체 보기 · 12개
+          </div>
+        </div>
+        <div class="pt-3">
+          <div class="video-title">Y결선·Δ결선 정복: 선전압·선전류 헷갈림 끝</div>
+          <div class="video-meta mt-1">addto 전기기능사 학습</div>
+          <div class="video-meta">재생목록 업데이트 1주 전</div>
+        </div>
+      </div>
+
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-5">
+          <div class="thumb-text">CBT 기출<br/>완전 풀이</div>
+          <div class="playlist-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h13v2H4zm0 4h13v2H4zm0 4h9v2H4zm15-4v8l5-4z"/></svg>
+            전체 보기 · 60개
+          </div>
+        </div>
+        <div class="pt-3">
+          <div class="video-title">최근 5개년 CBT 기출 60문제 영상 풀이 모음</div>
+          <div class="video-meta mt-1">addto 전기기능사 학습</div>
+          <div class="video-meta">재생목록 업데이트 3일 전</div>
+        </div>
+      </div>
+
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-7">
+          <div class="thumb-text">시험 전날<br/>몰아보기</div>
+          <div class="playlist-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h13v2H4zm0 4h13v2H4zm0 4h9v2H4zm15-4v8l5-4z"/></svg>
+            전체 보기 · 8개
+          </div>
+        </div>
+        <div class="pt-3">
+          <div class="video-title">🔥 시험 전날 보면 합격: 핵심 8개만 콕</div>
+          <div class="video-meta mt-1">addto 전기기능사 학습</div>
+          <div class="video-meta">재생목록 업데이트 5일 전</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Shorts row -->
+    <h2 class="section-title flex items-center gap-2">
+      <span class="text-red-500">▶</span> Shorts
+    </h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+
+      <div class="cursor-pointer">
+        <div style="aspect-ratio:9/16;" class="rounded-xl grad-1 flex items-end p-3 relative overflow-hidden">
+          <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7));"></div>
+          <div class="relative text-white font-bold leading-tight text-sm">변압기 권수비 외우는<br/>3초 트릭</div>
+        </div>
+        <div class="video-meta mt-2 text-xs">조회수 48만회</div>
+      </div>
+
+      <div class="cursor-pointer">
+        <div style="aspect-ratio:9/16;" class="rounded-xl grad-4 flex items-end p-3 relative overflow-hidden">
+          <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7));"></div>
+          <div class="relative text-white font-bold leading-tight text-sm">KCL·KVL 1분 정리</div>
+        </div>
+        <div class="video-meta mt-2 text-xs">조회수 31만회</div>
+      </div>
+
+      <div class="cursor-pointer">
+        <div style="aspect-ratio:9/16;" class="rounded-xl grad-6 flex items-end p-3 relative overflow-hidden">
+          <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7));"></div>
+          <div class="relative text-white font-bold leading-tight text-sm">콘덴서 직·병렬 헷갈리지 마</div>
+        </div>
+        <div class="video-meta mt-2 text-xs">조회수 22만회</div>
+      </div>
+
+      <div class="cursor-pointer">
+        <div style="aspect-ratio:9/16;" class="rounded-xl grad-2 flex items-end p-3 relative overflow-hidden">
+          <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7));"></div>
+          <div class="relative text-white font-bold leading-tight text-sm">합격생이 가장<br/>틀린 문제 TOP3</div>
+        </div>
+        <div class="video-meta mt-2 text-xs">조회수 18만회</div>
+      </div>
+
+      <div class="cursor-pointer">
+        <div style="aspect-ratio:9/16;" class="rounded-xl grad-3 flex items-end p-3 relative overflow-hidden">
+          <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7));"></div>
+          <div class="relative text-white font-bold leading-tight text-sm">전력·역률 계산기 없이</div>
+        </div>
+        <div class="video-meta mt-2 text-xs">조회수 14만회</div>
+      </div>
+
+      <div class="cursor-pointer">
+        <div style="aspect-ratio:9/16;" class="rounded-xl grad-5 flex items-end p-3 relative overflow-hidden">
+          <div class="absolute inset-0" style="background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7));"></div>
+          <div class="relative text-white font-bold leading-tight text-sm">시뮬레이터로 회로 진짜 보기</div>
+        </div>
+        <div class="video-meta mt-2 text-xs">조회수 9.7만회</div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ====== TAB: VIDEOS ====== -->
+  <section id="tab-videos" class="tab-pane hidden">
+    <div class="flex items-center gap-3 mb-6">
+      <button class="chip active">최신순</button>
+      <button class="chip">인기순</button>
+      <button class="chip">오래된순</button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8" id="videoGridAll">
+      <!-- populated by JS -->
+    </div>
+  </section>
+
+  <!-- ====== TAB: SHORTS ====== -->
+  <section id="tab-shorts" class="tab-pane hidden">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-1 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">변압기 권수비 3초 트릭</div></div><div class="video-meta mt-2 text-xs">48만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-4 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">KCL·KVL 1분 정리</div></div><div class="video-meta mt-2 text-xs">31만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-6 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">콘덴서 직·병렬</div></div><div class="video-meta mt-2 text-xs">22만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-2 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">가장 많이 틀린 TOP3</div></div><div class="video-meta mt-2 text-xs">18만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-3 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">역률 계산 없이</div></div><div class="video-meta mt-2 text-xs">14만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-5 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">시뮬레이터 회로</div></div><div class="video-meta mt-2 text-xs">9.7만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-7 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">시험장 꿀팁 5가지</div></div><div class="video-meta mt-2 text-xs">7.2만회</div></div>
+      <div class="cursor-pointer"><div style="aspect-ratio:9/16;" class="rounded-xl grad-8 flex items-end p-3 relative overflow-hidden"><div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.7));"></div><div class="relative text-white font-bold text-sm leading-tight">계산기 사용법</div></div><div class="video-meta mt-2 text-xs">5.4만회</div></div>
+    </div>
+  </section>
+
+  <!-- ====== TAB: PLAYLISTS ====== -->
+  <section id="tab-playlists" class="tab-pane hidden">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-3">
+          <div class="thumb-text">기초 이론<br/>로드맵</div>
+          <div class="playlist-badge">전체 보기 · 24개</div>
+        </div>
+        <div class="pt-3"><div class="video-title">⚡ 전기기능사 완전 기초 로드맵</div><div class="video-meta mt-1">addto 전기기능사 학습</div></div>
+      </div>
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-2"><div class="thumb-text">3상 결선<br/>마스터</div><div class="playlist-badge">전체 보기 · 12개</div></div>
+        <div class="pt-3"><div class="video-title">Y결선·Δ결선 정복</div><div class="video-meta mt-1">addto 전기기능사 학습</div></div>
+      </div>
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-5"><div class="thumb-text">CBT 기출<br/>완전 풀이</div><div class="playlist-badge">전체 보기 · 60개</div></div>
+        <div class="pt-3"><div class="video-title">최근 5개년 CBT 기출 60문제</div><div class="video-meta mt-1">addto 전기기능사 학습</div></div>
+      </div>
+      <div class="video-card cursor-pointer">
+        <div class="video-thumb playlist-thumb grad-7"><div class="thumb-text">시험 전날<br/>몰아보기</div><div class="playlist-badge">전체 보기 · 8개</div></div>
+        <div class="pt-3"><div class="video-title">🔥 시험 전날 보면 합격</div><div class="video-meta mt-1">addto 전기기능사 학습</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== TAB: INFO ====== -->
+  <section id="tab-info" class="tab-pane hidden">
+    <div class="max-w-3xl">
+      <h3 class="section-title">설명</h3>
+      <p class="text-sm text-[var(--yt-text-2)] leading-relaxed mb-8">
+        전기기능사 자격증을 가장 빠르게 합격할 수 있는 학습 채널입니다.
+        이론 → 회로 해석 → 기출 풀이 → 시뮬레이터까지, 시험에 나오는 것만 정리합니다.
+        addto.co.kr 본 사이트의 CBT, 플립카드, 회로 시뮬레이터와 함께 보세요.<br/><br/>
+        · 매주 화·금 새 영상<br/>
+        · 댓글로 받는 질문은 24시간 내 답변<br/>
+        · 비즈니스 문의: business@addto.co.kr
+      </p>
+
+      <h3 class="section-title">통계</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-[var(--yt-bg-2)] rounded-xl p-4">
+          <div class="text-xs text-[var(--yt-text-2)]">가입일</div>
+          <div class="font-medium mt-1">2023. 1. 18.</div>
+        </div>
+        <div class="bg-[var(--yt-bg-2)] rounded-xl p-4">
+          <div class="text-xs text-[var(--yt-text-2)]">총 조회수</div>
+          <div class="font-medium mt-1">42,180,394회</div>
+        </div>
+        <div class="bg-[var(--yt-bg-2)] rounded-xl p-4">
+          <div class="text-xs text-[var(--yt-text-2)]">구독자</div>
+          <div class="font-medium mt-1">28.4만명</div>
+        </div>
+        <div class="bg-[var(--yt-bg-2)] rounded-xl p-4">
+          <div class="text-xs text-[var(--yt-text-2)]">국가</div>
+          <div class="font-medium mt-1">대한민국</div>
+        </div>
+      </div>
+
+      <h3 class="section-title">링크</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-[var(--yt-text-2)]"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg>
+          <span class="text-blue-400 hover:underline cursor-pointer">addto.co.kr</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-[var(--yt-text-2)]"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg>
+          <span class="text-blue-400 hover:underline cursor-pointer">CBT 모의고사 바로가기</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-[var(--yt-text-2)]"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10z"/></svg>
+          <span class="text-blue-400 hover:underline cursor-pointer">회로 시뮬레이터</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- VIDEO PLAYER MODAL -->
+<div id="videoModal" class="modal-backdrop">
+  <div class="modal-content fade-in">
+    <!-- close -->
+    <div class="flex justify-end mb-2">
+      <button class="icon-btn" onclick="closeVideo()" aria-label="close">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- Left: player + info + comments -->
+      <div class="lg:col-span-2">
+
+        <!-- Fake player -->
+        <div class="fake-player mb-4">
+          <!-- visual background grid -->
+          <div class="absolute inset-0" style="background:
+            radial-gradient(circle at 30% 40%, rgba(255,0,0,0.3), transparent 50%),
+            radial-gradient(circle at 70% 60%, rgba(0,120,255,0.25), transparent 50%),
+            linear-gradient(180deg, #1a0a0a, #000);
+          "></div>
+          <div class="play-pulse">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <!-- bottom control bar (fake) -->
+          <div class="absolute bottom-0 left-0 right-0 px-3 py-2 bg-gradient-to-t from-black to-transparent">
+            <div class="h-1 bg-white/30 rounded-full overflow-hidden">
+              <div class="h-full bg-red-600" style="width: 34%;"></div>
+            </div>
+            <div class="flex items-center justify-between mt-2 text-xs text-white">
+              <div class="flex items-center gap-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <span>1:58 / 5:42</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span>HD</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Title + meta -->
+        <h2 id="modalTitle" class="text-xl font-bold mb-3">옴의 법칙 5분 완벽 정리 — 외우지 말고 그려라</h2>
+
+        <!-- Channel row + actions -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[var(--yt-border)]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center font-bold text-sm">A+</div>
+            <div>
+              <div class="font-medium flex items-center text-sm">
+                addto 전기기능사 학습
+                <span class="verified-check ml-1"><svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+              </div>
+              <div class="text-xs text-[var(--yt-text-2)]">구독자 28.4만명</div>
+            </div>
+            <button id="subBtnModal" class="subscribe-btn ml-2" onclick="toggleSubscribe()">
+              <span>구독</span>
+            </button>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <div class="flex bg-[var(--yt-bg-3)] rounded-full overflow-hidden">
+              <button id="likeBtn" class="action-btn rounded-none" style="border-radius:0;" onclick="toggleLike()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+                <span id="likeCount">52K</span>
+              </button>
+              <div class="w-px bg-[var(--yt-border)]"></div>
+              <button class="action-btn rounded-none" style="border-radius:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+              </button>
+            </div>
+            <button class="action-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+              공유
+            </button>
+            <button class="action-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 10H3v2h11v-2zm0-4H3v2h11V6zM3 16h7v-2H3v2zm11.5-2v3.5h-3v2.5h3V23l3.5-3-3.5-3z"/></svg>
+              저장
+            </button>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="bg-[var(--yt-bg-2)] rounded-xl p-3 mt-4 text-sm">
+          <div class="flex gap-3 text-xs text-[var(--yt-text-2)] mb-1">
+            <span class="font-medium text-white">조회수 184만회</span>
+            <span>1년 전</span>
+            <span>#전기기능사 #옴의법칙</span>
+          </div>
+          <p>
+            V=IR 한 줄이 전부인데 왜 자꾸 틀릴까요? V·I·R를 "전압=언덕, 전류=물, 저항=막힘"으로 다시 보고,
+            기출 5문제로 바로 적용해봅니다.<br/>
+            <span class="text-[var(--yt-text-2)]">00:00 인트로 / 01:10 비유 / 02:30 기출 / 04:50 정리</span>
+          </p>
+        </div>
+
+        <!-- Comments -->
+        <div class="mt-6">
+          <div class="flex items-center gap-6 mb-4">
+            <h3 class="font-bold">댓글 <span class="text-[var(--yt-text-2)] font-normal">1,213</span></h3>
+            <button class="flex items-center gap-2 text-sm">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+              정렬 기준
+            </button>
+          </div>
+
+          <!-- New comment input -->
+          <div class="flex items-start gap-3 mb-6">
+            <div class="comment-avatar av-3">나</div>
+            <div class="flex-1">
+              <input id="newCommentInput" type="text" class="comment-input" placeholder="댓글 추가..." />
+              <div id="newCommentActions" class="mt-2 flex justify-end gap-2 hidden">
+                <button id="newCommentCancel" class="px-3 py-1.5 text-sm rounded-full hover:bg-white/10 transition">취소</button>
+                <button id="newCommentSubmit" class="px-3 py-1.5 text-sm rounded-full bg-[#3ea6ff] text-black font-semibold disabled:opacity-40" disabled>댓글</button>
+              </div>
+            </div>
+          </div>
+          <script>
+            (function() {
+              const input = document.getElementById('newCommentInput');
+              const actions = document.getElementById('newCommentActions');
+              const submit = document.getElementById('newCommentSubmit');
+              const cancel = document.getElementById('newCommentCancel');
+              const list = document.getElementById('commentList');
+              if (!input || !list) return;
+              input.addEventListener('focus', () => { actions.classList.remove('hidden'); });
+              input.addEventListener('input', () => { submit.disabled = input.value.trim().length === 0; });
+              cancel.addEventListener('click', () => { input.value=''; submit.disabled=true; actions.classList.add('hidden'); input.blur(); });
+              function post() {
+                const txt = input.value.trim();
+                if (!txt) return;
+                const div = document.createElement('div');
+                div.className = 'flex items-start gap-3';
+                div.innerHTML = `
+                  <div class="comment-avatar av-3">나</div>
+                  <div class="flex-1">
+                    <div class="text-sm">
+                      <span class="font-medium">@나</span>
+                      <span class="opacity-60 ml-1">방금</span>
+                    </div>
+                    <p class="text-sm mt-0.5"></p>
+                    <div class="flex items-center gap-3 mt-1 text-xs opacity-70">
+                      <button class="hover:opacity-100">👍 0</button>
+                      <button class="hover:opacity-100">👎</button>
+                      <button class="hover:opacity-100">답글</button>
+                    </div>
+                  </div>`;
+                div.querySelector('p').textContent = txt;
+                list.prepend(div);
+                input.value=''; submit.disabled=true; actions.classList.add('hidden'); input.blur();
+              }
+              submit.addEventListener('click', post);
+              input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); post(); } });
+            })();
+          </script>
+
+          <!-- Comment list -->
+          <div class="space-y-5" id="commentList">
+
+            <div class="flex items-start gap-3">
+              <div class="comment-avatar av-1">전</div>
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-medium">@전기왕</span>
+                  <span class="text-[var(--yt-text-2)] ml-2 text-xs">1주 전</span>
+                </div>
+                <div class="text-sm mt-1">진짜 이 영상 보고 3회 시험 합격했어요... V=IR 외울 게 아니라 그려야 한다는 거 처음 알았네요 ㅠㅠ</div>
+                <div class="flex items-center gap-3 mt-2 text-xs text-[var(--yt-text-2)]">
+                  <button class="flex items-center gap-1 hover:text-white">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
+                    284
+                  </button>
+                  <button class="hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
+                  <button class="hover:text-white font-medium">답글</button>
+                </div>
+                <div class="text-xs text-blue-400 mt-2 cursor-pointer">답글 12개 보기 ▾</div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="comment-avatar av-2">합</div>
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-medium">@합격기원중</span>
+                  <span class="text-[var(--yt-text-2)] ml-2 text-xs">3일 전</span>
+                </div>
+                <div class="text-sm mt-1">02:30 기출 부분 진짜 친절해요... 다른 강의는 그냥 공식 던지고 끝인데 여기는 왜 그렇게 되는지를 설명해줘서 좋네요</div>
+                <div class="flex items-center gap-3 mt-2 text-xs text-[var(--yt-text-2)]">
+                  <button class="flex items-center gap-1 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> 142</button>
+                  <button class="hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
+                  <button class="hover:text-white font-medium">답글</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="comment-avatar av-4">시</div>
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-medium">@시험D-7</span>
+                  <span class="text-[var(--yt-text-2)] ml-2 text-xs">2주 전</span>
+                </div>
+                <div class="text-sm mt-1">선생님 시뮬레이터에서 옴의 법칙 회로 직접 만져보니까 진짜 머리에 박힘 ㅋㅋㅋ 학습 사이트 추천</div>
+                <div class="flex items-center gap-3 mt-2 text-xs text-[var(--yt-text-2)]">
+                  <button class="flex items-center gap-1 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> 88</button>
+                  <button class="hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
+                  <button class="hover:text-white font-medium">답글</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="comment-avatar av-5">초</div>
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-medium">@초보전기</span>
+                  <span class="text-[var(--yt-text-2)] ml-2 text-xs">5일 전</span>
+                </div>
+                <div class="text-sm mt-1">처음 보는데 설명이 너무 깔끔해요. 다른 영상에서 KCL/KVL 같이 보면 좋을 듯</div>
+                <div class="flex items-center gap-3 mt-2 text-xs text-[var(--yt-text-2)]">
+                  <button class="flex items-center gap-1 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> 47</button>
+                  <button class="hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
+                  <button class="hover:text-white font-medium">답글</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="comment-avatar av-6">현</div>
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-medium">@현장직진중</span>
+                  <span class="text-[var(--yt-text-2)] ml-2 text-xs">1개월 전</span>
+                </div>
+                <div class="text-sm mt-1">현장에서 일하면서 자격증 따려고 하는데 시간 짧은 영상 너무 좋네요. 5분만에 진짜 핵심 잡고 가요</div>
+                <div class="flex items-center gap-3 mt-2 text-xs text-[var(--yt-text-2)]">
+                  <button class="flex items-center gap-1 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> 31</button>
+                  <button class="hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
+                  <button class="hover:text-white font-medium">답글</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="comment-avatar av-2">재</div>
+              <div class="flex-1">
+                <div class="text-sm">
+                  <span class="font-medium">@재수생전기</span>
+                  <span class="text-[var(--yt-text-2)] ml-2 text-xs">2개월 전</span>
+                </div>
+                <div class="text-sm mt-1">한번 떨어졌다가 다시 보는데... 진짜 처음부터 다시 잡혀요. 감사합니다 🙏</div>
+                <div class="flex items-center gap-3 mt-2 text-xs text-[var(--yt-text-2)]">
+                  <button class="flex items-center gap-1 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> 23</button>
+                  <button class="hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleY(-1);"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg></button>
+                  <button class="hover:text-white font-medium">답글</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: related videos -->
+      <aside class="lg:col-span-1">
+        <h3 class="font-medium text-sm mb-3">관련 영상</h3>
+        <div class="space-y-3" id="relatedList"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========= DATA =========
+const videos = [
+  { id: 0, title: "옴의 법칙 5분 완벽 정리 — 외우지 말고 그려라", thumb: "옴의 법칙\n5분 정리", grad: "grad-popular", duration: "5:42", views: "184만회", uploaded: "1년 전" },
+  { id: 1, title: "3상 결선 한방에 — Y/Δ 변환, 선전압·선전류 정복", thumb: "3상 결선\n한방에", grad: "grad-2", duration: "8:14", views: "62만회", uploaded: "3주 전" },
+  { id: 2, title: "변압기 권수비 외우기 꿀팁 — 1차/2차 헷갈리지 않게", thumb: "변압기\n권수비", grad: "grad-4", duration: "6:30", views: "44만회", uploaded: "1개월 전" },
+  { id: 3, title: "회로해석 KCL/KVL 실전 — 기출 8문제 풀이", thumb: "KCL · KVL\n실전", grad: "grad-5", duration: "12:08", views: "38만회", uploaded: "2개월 전" },
+  { id: 4, title: "콘덴서 직렬·병렬 완전 정복", thumb: "콘덴서\n직·병렬", grad: "grad-1", duration: "7:22", views: "29만회", uploaded: "3개월 전" },
+  { id: 5, title: "역률 개선과 무효전력 — 시험에 꼭 나오는 공식", thumb: "역률 개선\n무효전력", grad: "grad-3", duration: "9:48", views: "24만회", uploaded: "4개월 전" },
+  { id: 6, title: "전동기 토크·회전수 — 동기·유도기 차이까지", thumb: "전동기\n토크·회전", grad: "grad-6", duration: "11:15", views: "21만회", uploaded: "5개월 전" },
+  { id: 7, title: "CBT 실전 60분 풀이 — 합격 컷 통과 전략", thumb: "CBT 실전\n60분", grad: "grad-7", duration: "1:02:30", views: "17만회", uploaded: "6개월 전" },
+];
+
+// ========= RENDER GRID =========
+function renderGrid(target, list) {
+  const el = document.getElementById(target);
+  if (!el) return;
+  el.innerHTML = list.map(v => `
+    <div class="video-card cursor-pointer" onclick="openVideo(${v.id})">
+      <div class="video-thumb ${v.grad}">
+        <div class="thumb-text">${v.thumb.replace(/\n/g, '<br/>')}</div>
+        <span class="duration">${v.duration}</span>
+      </div>
+      <div class="flex gap-3 pt-3">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center font-bold text-xs flex-shrink-0">A+</div>
+        <div class="min-w-0">
+          <div class="video-title">${v.title}</div>
+          <div class="video-meta mt-1">addto 전기기능사 학습</div>
+          <div class="video-meta">조회수 ${v.views} · ${v.uploaded}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+renderGrid('videoGrid', videos.slice(0, 8));
+renderGrid('videoGridAll', videos);
+
+// ========= RELATED (modal sidebar) =========
+function renderRelated(excludeId) {
+  const list = videos.filter(v => v.id !== excludeId).slice(0, 6);
+  document.getElementById('relatedList').innerHTML = list.map(v => `
+    <div class="flex gap-2 cursor-pointer" onclick="openVideo(${v.id})">
+      <div class="video-thumb ${v.grad}" style="width:168px; min-width:168px; height:94px; aspect-ratio:auto; border-radius:8px; padding:6px;">
+        <div class="thumb-text" style="font-size:11px;">${v.thumb.replace(/\n/g, '<br/>')}</div>
+        <span class="duration" style="font-size:10px;">${v.duration}</span>
+      </div>
+      <div class="min-w-0">
+        <div class="text-xs font-medium line-clamp-2">${v.title}</div>
+        <div class="text-[11px] text-[var(--yt-text-2)] mt-1">addto 전기기능사 학습</div>
+        <div class="text-[11px] text-[var(--yt-text-2)]">조회수 ${v.views} · ${v.uploaded}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========= TABS =========
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+    const pane = document.getElementById('tab-' + tab);
+    if (pane) {
+      pane.classList.remove('hidden');
+      pane.classList.add('fade-in');
+      setTimeout(() => pane.classList.remove('fade-in'), 400);
+    }
+  });
+});
+
+// ========= MODAL =========
+function openVideo(id) {
+  const v = videos.find(x => x.id === id) || videos[0];
+  document.getElementById('modalTitle').textContent = v.title;
+  document.getElementById('videoModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  renderRelated(v.id);
+  // sync subscribe state
+  syncSubButtons();
+}
+function closeVideo() {
+  document.getElementById('videoModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+// click outside to close
+document.getElementById('videoModal').addEventListener('click', (e) => {
+  if (e.target.id === 'videoModal') closeVideo();
+});
+// ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeVideo();
+});
+
+// ========= SUBSCRIBE TOGGLE =========
+let subscribed = false;
+function toggleSubscribe() {
+  subscribed = !subscribed;
+  syncSubButtons();
+  // bump sub count visually
+  document.getElementById('subCount').textContent = subscribed ? '28.4만 + 1' : '28.4만';
+}
+function syncSubButtons() {
+  ['subBtn', 'subBtnModal'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const label = btn.querySelector('span');
+    if (subscribed) {
+      btn.classList.add('subscribed');
+      if (label) label.textContent = '구독중 ✓';
+    } else {
+      btn.classList.remove('subscribed');
+      if (label) label.textContent = '구독';
+    }
+  });
+}
+
+// ========= LIKE TOGGLE =========
+let liked = false;
+function toggleLike() {
+  liked = !liked;
+  const btn = document.getElementById('likeBtn');
+  const count = document.getElementById('likeCount');
+  if (liked) {
+    btn.classList.add('active');
+    count.textContent = '52K + 1';
+  } else {
+    btn.classList.remove('active');
+    count.textContent = '52K';
+  }
+}
+
+// ========= CHIPS =========
+document.querySelectorAll('.chip').forEach(c => {
+  c.addEventListener('click', () => {
+    const parent = c.parentElement;
+    parent.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+  });
+});
+
+</script>
+</body>
+</html>

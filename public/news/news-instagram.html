@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>@addto_electric — 전기기능사 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root {
+    --ig-grad: linear-gradient(45deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    --ig-grad-soft: linear-gradient(45deg, #fbc468 0%, #ee2a7b 50%, #6228d7 100%);
+    --ig-border: #dbdbdb;
+    --ig-text: #262626;
+    --ig-muted: #8e8e8e;
+    --ig-bg: #fafafa;
+  }
+  html, body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    color: var(--ig-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone-frame {
+    background: #fff;
+    border: 1px solid var(--ig-border);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  .ig-gradient { background: var(--ig-grad); }
+  .ig-gradient-text {
+    background: var(--ig-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .story-ring {
+    background: var(--ig-grad);
+    padding: 2.5px;
+    border-radius: 9999px;
+  }
+  .story-ring-inner {
+    background: #fff;
+    padding: 2px;
+    border-radius: 9999px;
+  }
+  .ig-username {
+    font-family: 'Pretendard', sans-serif;
+    font-weight: 600;
+  }
+  .ig-logo-font {
+    font-family: 'Brush Script MT', 'Pacifico', cursive;
+    font-weight: 400;
+  }
+  /* Heart pop animation */
+  @keyframes heartPop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.4); }
+    60% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+  .heart-pop { animation: heartPop 0.45s ease; }
+  /* Double-tap heart overlay */
+  @keyframes heartOverlay {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    30% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
+  }
+  .heart-overlay-anim { animation: heartOverlay 0.9s ease forwards; }
+  /* Tile gradient backgrounds */
+  .tile-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .tile-2 { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+  .tile-3 { background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%); }
+  .tile-4 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+  .tile-5 { background: #ffffff; color: #262626; }
+  .tile-6 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+  .tile-7 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+  .tile-8 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+  .tile-9 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+  /* Tab underline */
+  .tab-active { border-top: 1px solid #262626; color: #262626; }
+  .tab-inactive { border-top: 1px solid transparent; color: #8e8e8e; }
+  /* Modal backdrop blur */
+  .ig-backdrop { backdrop-filter: blur(6px); background: rgba(0,0,0,0.65); }
+  /* Story progress bar */
+  @keyframes progress {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+  .story-progress-bar { animation: progress 5s linear forwards; }
+  /* Hide scrollbar for story bar */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  /* Tile hover */
+  .grid-tile { transition: transform 0.15s ease, filter 0.15s ease; cursor: pointer; }
+  .grid-tile:hover { filter: brightness(0.96); }
+  .grid-tile:active { transform: scale(0.98); }
+</style>
+</head>
+<body class="min-h-screen flex justify-center py-4 md:py-10 px-2">
+
+<main class="w-full max-w-md phone-frame relative">
+
+  <!-- ===== Top Bar (Instagram header) ===== -->
+  <header class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white sticky top-0 z-10">
+    <h1 class="ig-logo-font text-2xl tracking-tight">Addto Electric</h1>
+    <div class="flex items-center gap-4 text-[22px]">
+      <button aria-label="새 게시물" class="hover:opacity-60">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      </button>
+      <button aria-label="DM" class="hover:opacity-60">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== Profile Section ===== -->
+  <section class="px-4 pt-5 pb-3 bg-white">
+    <div class="flex items-center gap-5">
+      <!-- Profile picture with story ring -->
+      <div class="story-ring shrink-0">
+        <div class="story-ring-inner">
+          <div class="w-[84px] h-[84px] rounded-full ig-gradient flex items-center justify-center text-white text-3xl font-bold">
+            ⚡
+          </div>
+        </div>
+      </div>
+      <!-- Stats -->
+      <div class="flex-1 grid grid-cols-3 text-center text-sm">
+        <div>
+          <div class="font-semibold text-base">248</div>
+          <div class="text-gray-500 text-xs">게시물</div>
+        </div>
+        <div>
+          <div class="font-semibold text-base">14.2K</div>
+          <div class="text-gray-500 text-xs">팔로워</div>
+        </div>
+        <div>
+          <div class="font-semibold text-base">312</div>
+          <div class="text-gray-500 text-xs">팔로잉</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="mt-3 text-sm leading-relaxed">
+      <div class="ig-username">addto_electric</div>
+      <div class="text-gray-500 text-xs mt-0.5">전기기능사 합격 채널 · 교육</div>
+      <p class="mt-2 text-[13px] leading-snug">
+        ⚡ <b>전기기능사 합격</b>을 위한 모든 것<br/>
+        📘 CBT 모의고사 · 플립카드 · 해설강의<br/>
+        🎧 출퇴근길 오디오북 · 회로 시뮬레이터<br/>
+        👇 오늘의 한 문제 풀어보기
+      </p>
+      <a href="#" class="text-[13px] text-[#00376b] mt-1 inline-block">addto.co.kr/electric</a>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="mt-3 grid grid-cols-3 gap-2 text-sm">
+      <button id="followBtn" class="ig-gradient text-white font-semibold py-1.5 rounded-md hover:opacity-90">팔로우</button>
+      <button class="bg-gray-100 text-gray-900 font-semibold py-1.5 rounded-md hover:bg-gray-200">메시지</button>
+      <button class="bg-gray-100 text-gray-900 font-semibold py-1.5 rounded-md hover:bg-gray-200">▾</button>
+    </div>
+  </section>
+
+  <!-- ===== Story Highlights ===== -->
+  <section class="px-2 pt-3 pb-4 bg-white border-b border-gray-200">
+    <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1" id="storyBar">
+      <!-- Stories injected by JS -->
+    </div>
+  </section>
+
+  <!-- ===== Tabs ===== -->
+  <nav class="grid grid-cols-3 bg-white border-b border-gray-200 sticky top-[49px] z-[5]">
+    <button class="tab-active flex items-center justify-center py-2.5">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    </button>
+    <button class="tab-inactive flex items-center justify-center py-2.5">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    </button>
+    <button class="tab-inactive flex items-center justify-center py-2.5">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+  </nav>
+
+  <!-- ===== Feed Grid (3x3) ===== -->
+  <section class="grid grid-cols-3 gap-[2px] bg-white" id="feedGrid">
+    <!-- Tiles injected by JS -->
+  </section>
+
+  <!-- ===== Bottom nav (decorative) ===== -->
+  <nav class="flex justify-around py-3 border-t border-gray-200 bg-white text-gray-700">
+    <button aria-label="홈"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.1L2 12h3v8h6v-6h2v6h6v-8h3z"/></svg></button>
+    <button aria-label="검색"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+    <button aria-label="릴스"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg></button>
+    <button aria-label="알림"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+    <button aria-label="프로필">
+      <div class="story-ring w-7 h-7"><div class="story-ring-inner w-full h-full"><div class="w-full h-full rounded-full ig-gradient flex items-center justify-center text-white text-[10px] font-bold">⚡</div></div></div>
+    </button>
+  </nav>
+</main>
+
+<!-- ===== Story Modal ===== -->
+<div id="storyModal" class="fixed inset-0 z-50 hidden ig-backdrop items-center justify-center">
+  <div class="relative w-full max-w-md h-[85vh] md:h-[640px] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+    <!-- Progress bar -->
+    <div class="absolute top-2 left-2 right-2 h-[3px] bg-white/30 rounded-full overflow-hidden z-10">
+      <div id="storyProgress" class="h-full bg-white"></div>
+    </div>
+    <!-- Story header -->
+    <div class="absolute top-5 left-4 right-4 flex items-center justify-between text-white z-10">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full ig-gradient flex items-center justify-center text-white text-sm font-bold">⚡</div>
+        <span class="text-sm font-semibold">addto_electric</span>
+        <span class="text-xs text-white/70">방금 전</span>
+      </div>
+      <button id="closeStory" class="text-2xl leading-none hover:opacity-80">✕</button>
+    </div>
+    <!-- Story content -->
+    <div id="storyContent" class="flex-1 flex items-center justify-center text-center p-8"></div>
+    <!-- Reply bar -->
+    <div class="px-4 py-3 flex items-center gap-2 bg-black/40 backdrop-blur-sm">
+      <input type="text" placeholder="메시지 보내기..." class="flex-1 bg-transparent border border-white/40 rounded-full px-4 py-2 text-white text-sm placeholder-white/60 focus:outline-none focus:border-white/80"/>
+      <button class="text-white text-xl">♡</button>
+      <button class="text-white text-xl">📤</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Post Detail Modal ===== -->
+<div id="postModal" class="fixed inset-0 z-50 hidden ig-backdrop items-center justify-center px-2 py-4 overflow-y-auto">
+  <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl max-h-[95vh] flex flex-col">
+    <!-- Post header -->
+    <div class="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 shrink-0">
+      <div class="flex items-center gap-2">
+        <div class="story-ring"><div class="story-ring-inner"><div class="w-8 h-8 rounded-full ig-gradient flex items-center justify-center text-white text-sm">⚡</div></div></div>
+        <div>
+          <div class="text-sm font-semibold leading-tight">addto_electric</div>
+          <div class="text-[11px] text-gray-500 leading-tight">전기기능사 · 학습 콘텐츠</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="text-xl leading-none">⋯</button>
+        <button id="closePost" class="text-xl leading-none hover:opacity-60">✕</button>
+      </div>
+    </div>
+
+    <!-- Post image (gradient) - double tap to like -->
+    <div id="postImageWrap" class="relative w-full aspect-square shrink-0 select-none">
+      <div id="postImage" class="absolute inset-0 flex items-center justify-center text-center p-6"></div>
+      <!-- Carousel dots (decorative) -->
+      <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white/50"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white/50"></span>
+      </div>
+      <!-- Double-tap heart overlay -->
+      <div id="heartOverlay" class="hidden absolute top-1/2 left-1/2 text-white text-8xl pointer-events-none" style="text-shadow: 0 4px 20px rgba(0,0,0,0.3);">❤</div>
+    </div>
+
+    <!-- Action bar -->
+    <div class="px-3 pt-3 pb-1 flex items-center gap-4 shrink-0">
+      <button id="likeBtn" class="text-[26px] leading-none hover:opacity-70 transition">♡</button>
+      <button class="text-[26px] leading-none hover:opacity-70">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </button>
+      <button class="text-[26px] leading-none hover:opacity-70">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+      <button id="saveBtn" class="ml-auto text-[26px] leading-none hover:opacity-70">
+        <svg id="saveIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="19 21 12 16 5 21 5 5 19 5 19 21" fill="none"/></svg>
+      </button>
+    </div>
+
+    <!-- Likes & content -->
+    <div class="px-3 pb-2 text-sm overflow-y-auto">
+      <div class="font-semibold"><span id="likeCount">1,284</span>명이 좋아합니다</div>
+      <div class="mt-1.5 leading-snug">
+        <span class="font-semibold">addto_electric</span>
+        <span id="postCaption">옴의 법칙은 정말 단순해요. V = I × R, 이 한 줄이 전기기능사 필기 문제의 30%를 책임집니다.</span>
+        <span class="text-gray-500"> ...더보기</span>
+      </div>
+      <div class="mt-1.5 text-[12px] text-[#00376b] flex flex-wrap gap-2">
+        <span>#전기기능사</span><span>#옴의법칙</span><span>#합격공부</span><span>#CBT</span><span>#전기공식</span>
+      </div>
+
+      <!-- Comments -->
+      <div class="mt-3 space-y-2" id="commentList">
+        <!-- Comments injected by JS -->
+      </div>
+      <div class="mt-2 text-[11px] text-gray-500">3시간 전</div>
+    </div>
+
+    <!-- Comment input -->
+    <div class="border-t border-gray-200 px-3 py-2 flex items-center gap-2 shrink-0">
+      <span class="text-xl">😊</span>
+      <input id="commentInput" type="text" placeholder="댓글 달기..." class="flex-1 bg-transparent text-sm focus:outline-none"/>
+      <button id="postComment" class="text-sm font-semibold text-[#0095f6] hover:text-[#00376b]">게시</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   Data: Story highlights
+========================================================= */
+const STORIES = [
+  { key: 'ohm',   label: '옴의법칙', emoji: '⚡', grad: 'linear-gradient(135deg,#667eea,#764ba2)',
+    title: 'V = I × R',
+    body: '전압(V) = 전류(I) × 저항(R).<br/>저항이 2배가 되면 전류는 1/2이 돼요.<br/><br/>출제 비중 ⭐⭐⭐⭐⭐' },
+  { key: 'trans', label: '변압기',   emoji: '🔌', grad: 'linear-gradient(135deg,#f093fb,#f5576c)',
+    title: '권수비 = 전압비',
+    body: 'N1/N2 = V1/V2 = I2/I1<br/><br/>1차/2차 코일 권수 비율이 전압비와 같다는 것!' },
+  { key: 'safe',  label: '안전수칙', emoji: '⚠️', grad: 'linear-gradient(135deg,#fa709a,#fee140)',
+    title: '감전 3대 요인',
+    body: '① 통전 경로<br/>② 통전 시간<br/>③ 통전 전류<br/><br/>심실세동 전류: 약 100mA' },
+  { key: 'circuit', label: '회로',  emoji: '🔋', grad: 'linear-gradient(135deg,#5ee7df,#b490ca)',
+    title: '직렬 vs 병렬',
+    body: '직렬: R = R1 + R2<br/>병렬: 1/R = 1/R1 + 1/R2<br/><br/>병렬일수록 합성저항은 작아져요.' },
+  { key: 'formula', label: '공식정리', emoji: '🧮', grad: 'linear-gradient(135deg,#4facfe,#00f2fe)',
+    title: '핵심 공식 TOP 5',
+    body: 'P = VI<br/>Q = mcΔT<br/>P = I²R<br/>cosθ = R/Z<br/>W = Pt' },
+  { key: 'cbt',   label: 'CBT후기',  emoji: '✨', grad: 'linear-gradient(135deg,#30cfd0,#330867)',
+    title: '합격생 인터뷰',
+    body: '"하루 20분, 한 달 만에 합격!"<br/>— 김OO님 (47세, 직장인)<br/><br/>👉 프로필 링크에서 후기 더 보기' },
+  { key: 'wire',  label: '배선실습', emoji: '🧰', grad: 'linear-gradient(135deg,#fbc468,#ee2a7b)',
+    title: '실기 배선 순서',
+    body: '1. 도면 파악<br/>2. 전원선 결선<br/>3. 부하 연결<br/>4. 검전기 테스트' },
+];
+
+/* =========================================================
+   Data: Feed posts
+========================================================= */
+const POSTS = [
+  { tile: 'tile-1', label: 'V=I·R<br/><span class="text-base font-medium opacity-90">이게 전부야!</span>',
+    caption: '옴의 법칙은 정말 단순해요. V = I × R, 이 한 줄이 전기기능사 필기 문제의 30%를 책임집니다. 저항이 두 배가 되면 전류는 절반이 되죠.',
+    tags: ['#전기기능사','#옴의법칙','#합격공부','#CBT'] },
+  { tile: 'tile-2', label: '3상 결선<br/><span class="text-base font-medium opacity-90">Y vs Δ 완전정리</span>',
+    caption: 'Y결선은 선전압 = √3 × 상전압, Δ결선은 선전류 = √3 × 상전류. 외우지 말고 그림으로 이해하세요!',
+    tags: ['#3상결선','#변압기','#전기공식','#실기'] },
+  { tile: 'tile-3', label: '✨<br/><span class="text-2xl font-medium opacity-90">합격 후기</span>',
+    caption: '"퇴근 후 매일 20분, 플립카드 30장씩 본 게 다였어요. 한 달 만에 필기 합격했습니다!" — 김O호 (44세)',
+    tags: ['#합격후기','#필기합격','#직장인공부','#한달합격'] },
+  { tile: 'tile-4', label: 'P = V × I<br/><span class="text-sm font-medium opacity-90">전력 공식</span>',
+    caption: '전력 P [W] = 전압 V × 전류 I. 단상이면 그대로, 3상이면 √3을 곱합니다. P = √3 × V × I × cosθ',
+    tags: ['#전력','#역률','#3상전력','#필기'] },
+  { tile: 'tile-5', label: '🔌<br/><span class="text-sm font-medium opacity-90">변압기 권수비</span>',
+    caption: 'N1/N2 = V1/V2 = I2/I1. 권수비가 2:1이면 전압은 1/2, 전류는 2배. 변압기는 전력은 그대로 두고 비율을 바꿉니다.',
+    tags: ['#변압기','#권수비','#전기기능사'] },
+  { tile: 'tile-6', label: '⚠️<br/><span class="text-sm font-medium opacity-90">안전수칙 5계명</span>',
+    caption: '① 작업 전 검전 ② 단락 접지 ③ 잠금 표지 ④ 보호구 착용 ⑤ 2인 1조. 시험에도 자주 나옵니다.',
+    tags: ['#안전수칙','#감전예방','#실기','#작업안전'] },
+  { tile: 'tile-7', label: '오늘의<br/><span class="text-2xl font-medium opacity-90">기출 한 문제</span>',
+    caption: 'Q. 저항 4Ω, 5Ω, 6Ω을 직렬 연결했을 때 합성저항은? → 정답: 15Ω. 직렬은 그냥 더하기만 하면 됩니다.',
+    tags: ['#기출문제','#오늘의문제','#합성저항','#CBT'] },
+  { tile: 'tile-8', label: '🧠<br/><span class="text-sm font-medium opacity-90">암기 노하우</span>',
+    caption: '플립카드 100장을 3번 돌리면 머리에 각인됩니다. 외우려 하지 말고, 보기만 하세요. 반복이 답이에요.',
+    tags: ['#플립카드','#암기법','#효율적공부'] },
+  { tile: 'tile-9', label: '🎧<br/><span class="text-2xl font-medium opacity-90">오디오북 NEW</span>',
+    caption: '출퇴근길 25분, 이론을 통째로 들으세요. 운전 중에도, 산책 중에도. 새 시즌 업데이트 완료!',
+    tags: ['#오디오북','#출퇴근공부','#이론정리','#NEW'] },
+];
+
+const INITIAL_COMMENTS = [
+  { user: '__electric_jin', text: '와 이거 진짜 깔끔하게 정리됐네요 👍', time: '2시간' },
+  { user: 'engineer_kim77', text: '내일 시험인데 도움 많이 됐어요!! 🙏', time: '1시간' },
+  { user: 'cbt_master',      text: '플립카드 같이 보면 더 좋더라구요. 추천!', time: '54분' },
+  { user: 'lee_voltage',     text: '저장합니다 ✨', time: '23분' },
+];
+
+/* =========================================================
+   Render: Story Bar
+========================================================= */
+const storyBar = document.getElementById('storyBar');
+// First item: 내 스토리 (add)
+storyBar.insertAdjacentHTML('beforeend', `
+  <div class="flex flex-col items-center gap-1 w-[68px] shrink-0 cursor-pointer" data-story="me">
+    <div class="relative w-[64px] h-[64px] rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-3xl">
+      <span>＋</span>
+    </div>
+    <div class="text-[11px] text-gray-700 truncate w-[68px] text-center">내 스토리</div>
+  </div>
+`);
+STORIES.forEach((s, i) => {
+  storyBar.insertAdjacentHTML('beforeend', `
+    <div class="flex flex-col items-center gap-1 w-[68px] shrink-0 cursor-pointer story-item" data-idx="${i}">
+      <div class="story-ring">
+        <div class="story-ring-inner">
+          <div class="w-[58px] h-[58px] rounded-full flex items-center justify-center text-2xl text-white" style="background:${s.grad}">
+            ${s.emoji}
+          </div>
+        </div>
+      </div>
+      <div class="text-[11px] text-gray-700 truncate w-[68px] text-center">${s.label}</div>
+    </div>
+  `);
+});
+
+/* =========================================================
+   Render: Feed Grid
+========================================================= */
+const feedGrid = document.getElementById('feedGrid');
+POSTS.forEach((p, i) => {
+  const isLight = p.tile === 'tile-5';
+  feedGrid.insertAdjacentHTML('beforeend', `
+    <div class="grid-tile aspect-square ${p.tile} flex items-center justify-center text-center p-3 ${isLight ? 'text-gray-900 border border-gray-100' : 'text-white'}"
+         data-idx="${i}"
+         style="${isLight ? 'background:#ffffff;' : ''}">
+      <div class="text-xl md:text-2xl font-bold leading-tight" style="text-shadow: ${isLight ? 'none' : '0 1px 8px rgba(0,0,0,0.18)'}">
+        ${p.label}
+      </div>
+    </div>
+  `);
+});
+
+/* =========================================================
+   Story Modal
+========================================================= */
+const storyModal = document.getElementById('storyModal');
+const storyContent = document.getElementById('storyContent');
+const storyProgress = document.getElementById('storyProgress');
+const closeStory = document.getElementById('closeStory');
+let storyTimer = null;
+
+function openStory(idx) {
+  const s = STORIES[idx];
+  if (!s) return;
+  storyContent.innerHTML = `
+    <div class="absolute inset-0" style="background:${s.grad}"></div>
+    <div class="relative z-[2] text-white px-6">
+      <div class="text-6xl mb-4">${s.emoji}</div>
+      <div class="text-2xl font-bold mb-3">${s.title}</div>
+      <div class="text-base leading-relaxed opacity-95">${s.body}</div>
+    </div>
+  `;
+  // Restart progress
+  storyProgress.style.transition = 'none';
+  storyProgress.style.width = '0%';
+  // Force reflow
+  void storyProgress.offsetWidth;
+  storyProgress.style.transition = 'width 5s linear';
+  storyProgress.style.width = '100%';
+
+  storyModal.classList.remove('hidden');
+  storyModal.classList.add('flex');
+  clearTimeout(storyTimer);
+  storyTimer = setTimeout(() => {
+    if (idx + 1 < STORIES.length) openStory(idx + 1);
+    else closeStoryModal();
+  }, 5000);
+}
+function closeStoryModal() {
+  storyModal.classList.add('hidden');
+  storyModal.classList.remove('flex');
+  clearTimeout(storyTimer);
+}
+storyBar.addEventListener('click', (e) => {
+  const item = e.target.closest('.story-item');
+  if (item) openStory(Number(item.dataset.idx));
+  const me = e.target.closest('[data-story="me"]');
+  if (me) {
+    alert('스토리 업로드 기능은 준비 중입니다. 오늘의 학습 인증샷, 곧 만나요!');
+  }
+});
+closeStory.addEventListener('click', closeStoryModal);
+storyModal.addEventListener('click', (e) => {
+  if (e.target === storyModal) closeStoryModal();
+});
+
+/* =========================================================
+   Post Detail Modal
+========================================================= */
+const postModal = document.getElementById('postModal');
+const postImage  = document.getElementById('postImage');
+const postImageWrap = document.getElementById('postImageWrap');
+const postCaption = document.getElementById('postCaption');
+const likeBtn = document.getElementById('likeBtn');
+const likeCountEl = document.getElementById('likeCount');
+const saveBtn = document.getElementById('saveBtn');
+const saveIcon = document.getElementById('saveIcon');
+const closePost = document.getElementById('closePost');
+const commentList = document.getElementById('commentList');
+const commentInput = document.getElementById('commentInput');
+const postCommentBtn = document.getElementById('postComment');
+const heartOverlay = document.getElementById('heartOverlay');
+
+let liked = false;
+let saved = false;
+let likeCountNum = 1284;
+let lastTap = 0;
+
+function renderComments(comments) {
+  commentList.innerHTML = comments.map(c => `
+    <div class="flex items-start gap-2">
+      <div class="w-7 h-7 rounded-full ig-gradient shrink-0 flex items-center justify-center text-white text-[11px] font-bold">${c.user[0].toUpperCase()}</div>
+      <div class="flex-1 text-[13px] leading-snug">
+        <span class="font-semibold">${c.user}</span> ${c.text}
+        <div class="text-[11px] text-gray-500 mt-0.5">${c.time} 전 · 좋아요 · 답글 달기</div>
+      </div>
+      <button class="text-gray-400 text-base hover:text-red-500">♡</button>
+    </div>
+  `).join('');
+}
+
+function openPost(idx) {
+  const p = POSTS[idx];
+  if (!p) return;
+  const isLight = p.tile === 'tile-5';
+  postImage.className = `absolute inset-0 flex items-center justify-center text-center p-6 ${p.tile} ${isLight ? 'text-gray-900' : 'text-white'}`;
+  postImage.style.background = isLight ? '#ffffff' : '';
+  postImage.innerHTML = `<div class="text-4xl font-bold leading-tight">${p.label}</div>`;
+  postCaption.textContent = p.caption;
+  // Reset states
+  liked = false;
+  saved = false;
+  likeCountNum = 1200 + Math.floor(Math.random() * 400);
+  likeCountEl.textContent = likeCountNum.toLocaleString();
+  likeBtn.innerHTML = '♡';
+  likeBtn.classList.remove('text-red-500');
+  saveIcon.outerHTML = `<svg id="saveIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="19 21 12 16 5 21 5 5 19 5 19 21" fill="none"/></svg>`;
+  renderComments(INITIAL_COMMENTS);
+  postModal.classList.remove('hidden');
+  postModal.classList.add('flex');
+}
+function closePostModal() {
+  postModal.classList.add('hidden');
+  postModal.classList.remove('flex');
+}
+
+feedGrid.addEventListener('click', (e) => {
+  const t = e.target.closest('.grid-tile');
+  if (t) openPost(Number(t.dataset.idx));
+});
+closePost.addEventListener('click', closePostModal);
+postModal.addEventListener('click', (e) => {
+  if (e.target === postModal) closePostModal();
+});
+
+/* Like toggle */
+function toggleLike(forceOn = false) {
+  if (forceOn && liked) return;
+  liked = forceOn ? true : !liked;
+  if (liked) {
+    likeBtn.innerHTML = '❤';
+    likeBtn.classList.add('text-red-500', 'heart-pop');
+    likeCountNum += 1;
+  } else {
+    likeBtn.innerHTML = '♡';
+    likeBtn.classList.remove('text-red-500');
+    likeCountNum -= 1;
+  }
+  likeCountEl.textContent = likeCountNum.toLocaleString();
+  setTimeout(() => likeBtn.classList.remove('heart-pop'), 450);
+}
+likeBtn.addEventListener('click', () => toggleLike(false));
+
+/* Double-tap on image to like */
+postImageWrap.addEventListener('click', () => {
+  const now = Date.now();
+  if (now - lastTap < 350) {
+    toggleLike(true);
+    heartOverlay.classList.remove('hidden');
+    heartOverlay.classList.remove('heart-overlay-anim');
+    void heartOverlay.offsetWidth;
+    heartOverlay.classList.add('heart-overlay-anim');
+    setTimeout(() => heartOverlay.classList.add('hidden'), 900);
+  }
+  lastTap = now;
+});
+
+/* Save toggle */
+saveBtn.addEventListener('click', () => {
+  saved = !saved;
+  const icon = document.getElementById('saveIcon');
+  if (saved) {
+    icon.outerHTML = `<svg id="saveIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 21 12 16 5 21 5 5 19 5 19 21"/></svg>`;
+  } else {
+    icon.outerHTML = `<svg id="saveIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="19 21 12 16 5 21 5 5 19 5 19 21" fill="none"/></svg>`;
+  }
+});
+
+/* Post a new comment */
+function submitComment() {
+  const text = commentInput.value.trim();
+  if (!text) return;
+  const newC = { user: 'you', text, time: '방금' };
+  const current = Array.from(commentList.children).map(el => {
+    const u = el.querySelector('.font-semibold').textContent;
+    const fullText = el.querySelector('.flex-1').textContent.trim();
+    const t = el.querySelector('.text-gray-500').textContent.split('·')[0].replace('전','').trim();
+    return { user: u, text: fullText.replace(u, '').trim().split('\n')[0].trim(), time: t };
+  });
+  current.push(newC);
+  renderComments(current);
+  commentInput.value = '';
+}
+postCommentBtn.addEventListener('click', submitComment);
+commentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitComment(); });
+
+/* Follow button toggle */
+const followBtn = document.getElementById('followBtn');
+let following = false;
+followBtn.addEventListener('click', () => {
+  following = !following;
+  if (following) {
+    followBtn.textContent = '팔로잉';
+    followBtn.classList.remove('ig-gradient', 'text-white');
+    followBtn.classList.add('bg-gray-100', 'text-gray-900');
+  } else {
+    followBtn.textContent = '팔로우';
+    followBtn.classList.add('ig-gradient', 'text-white');
+    followBtn.classList.remove('bg-gray-100', 'text-gray-900');
+  }
+});
+
+/* Escape to close modals */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeStoryModal(); closePostModal(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>솔레노이드 자기장 시뮬레이터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        body {
+            background:
+                radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+                radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+                radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+                #060814;
+            color: #e5e7eb;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: 'Pretendard', system-ui, sans-serif;
+        }
+        .stars {
+            position: fixed; inset: 0; pointer-events: none;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+                radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+                radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+            background-size: 600px 600px;
+            animation: twinkle 6s ease-in-out infinite alternate;
+            opacity: 0.65;
+        }
+        @keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+        .canvas-wrap {
+            position: relative;
+            border-radius: 18px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+            box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45), 0 0 40px rgba(244, 114, 182, 0.15);
+        }
+        canvas#solCanvas {
+            display: block;
+            width: 100%;
+            height: 560px;
+            border-radius: 17px;
+            background: #050714;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+        .neon-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+        }
+        .pulse-dot {
+            position: relative; display: inline-block;
+            width: 8px; height: 8px; border-radius: 9999px;
+            background: #34d399; box-shadow: 0 0 12px #34d399;
+        }
+        .pulse-dot::after {
+            content: ''; position: absolute; inset: -6px;
+            border-radius: 9999px; border: 2px solid #34d399;
+            opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(0.6); opacity: 0.8 }
+            100% { transform: scale(1.8); opacity: 0 }
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fda4af, #c4b5fd, #67e8f9);
+            box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.95);
+        }
+        .chip-current {
+            background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06));
+            border: 1px solid rgba(244, 63, 94, 0.5);
+            color: #fda4af;
+        }
+        .chip-turns {
+            background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06));
+            border: 1px solid rgba(168, 139, 250, 0.5);
+            color: #ddd6fe;
+        }
+        .chip-length {
+            background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06));
+            border: 1px solid rgba(34, 211, 238, 0.5);
+            color: #a5f3fc;
+        }
+        .dir-btn {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+            transition: all 200ms;
+        }
+        .dir-btn.active {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border-color: rgba(244, 63, 94, 0.7);
+            color: white;
+            box-shadow: 0 0 24px rgba(244, 63, 94, 0.5);
+        }
+        .dir-btn:hover:not(.active) {
+            background: rgba(148, 163, 184, 0.2);
+            transform: translateY(-1px);
+        }
+        .math-card {
+            background:
+                linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
+                rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(168, 139, 250, 0.35);
+        }
+        .math-container { font-size: 1.08rem; color: #e0e7ff; }
+        .feature-row {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            transition: transform 220ms, background 220ms, border-color 220ms;
+        }
+        .feature-row:hover {
+            transform: translateX(2px);
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(168, 139, 250, 0.4);
+        }
+        .reset-btn {
+            background: rgba(99, 102, 241, 0.18);
+            border: 1px solid rgba(99, 102, 241, 0.45);
+            color: #c7d2fe;
+            transition: all 200ms;
+        }
+        .reset-btn:hover {
+            background: rgba(99, 102, 241, 0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+        }
+        .live-pill {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            transition: border-color 200ms, box-shadow 200ms;
+        }
+        .live-pill.flash {
+            border-color: rgba(244, 114, 182, 0.6);
+            box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+        }
+        .live-num {
+            font-variant-numeric: tabular-nums;
+            background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="stars"></div>
+
+    <div class="max-w-6xl mx-auto relative">
+        <header class="mb-6" id="hdr">
+            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+                <span class="pulse-dot"></span>
+                INTERACTIVE · SOLENOID MAGNETIC FIELD
+            </div>
+            <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+                🧲 솔레노이드 자기장 시뮬레이터
+            </h1>
+            <p class="mt-2 text-slate-400 text-sm">전류 · 권수 밀도 · 코일 길이를 조절하면 내부 균일 자기장과 외부 폐곡선 자기력선이 실시간으로 반응합니다. 마우스로 |B| 측정.</p>
+        </header>
+
+        <!-- 라이브 데이터 4칩 -->
+        <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="live-pill rounded-xl p-3" id="pill-B">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">내부 자기장 B</p>
+                <p class="mt-1 text-lg font-bold live-num" id="bVal">—</p>
+            </div>
+            <div class="live-pill rounded-xl p-3" id="pill-L">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">인덕턴스 L</p>
+                <p class="mt-1 text-lg font-bold live-num" id="lVal">—</p>
+            </div>
+            <div class="live-pill rounded-xl p-3" id="pill-W">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">자기 에너지 W</p>
+                <p class="mt-1 text-lg font-bold live-num" id="wVal">—</p>
+            </div>
+            <div class="live-pill rounded-xl p-3" id="pill-I">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">전류 I</p>
+                <p class="mt-1 text-lg font-bold live-num" id="iVal">—</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <!-- 캔버스 + 가이드 -->
+            <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+                <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-semibold text-slate-400 tracking-wide">SIDE VIEW · 솔레노이드 측면 · 내부 균일장 vs 외부 폐곡선</span>
+                        <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">초기화</button>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="solCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass rounded-2xl p-5" id="guideCard">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <span class="text-lg">📐</span>
+                        <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">물리학 가이드 및 공식</span>
+                    </h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <ul class="text-xs text-slate-300 space-y-2">
+                            <li class="feature-row rounded-lg p-3"><strong class="text-rose-300">내부 균일</strong> · 충분히 긴 솔레노이드 내부의 자기장은 어디에서나 같은 크기, 같은 방향</li>
+                            <li class="feature-row rounded-lg p-3"><strong class="text-indigo-300">외부 약함</strong> · 외부 자기장은 매우 약하고, N극 → S극으로 휘어 폐곡선</li>
+                            <li class="feature-row rounded-lg p-3"><strong class="text-pink-300">⊙ ⊗ 표시</strong> · 위쪽 코일 ⊙(전류 나옴) · 아래쪽 ⊗(전류 들어감) → 오른손 법칙 적용</li>
+                            <li class="feature-row rounded-lg p-3"><strong class="text-cyan-300">비례 관계</strong> · 전류 $I$ 또는 권수 밀도 $n$ ↑ → 내부 자기장 $B$ 그대로 ↑</li>
+                        </ul>
+                        <div class="math-card rounded-xl p-4">
+                            <p class="text-[10px] uppercase tracking-widest text-indigo-200">솔레노이드 내부 자기장</p>
+                            <div class="math-container my-3 text-center">
+                                $$B = \mu_0 \, n \, I$$
+                            </div>
+                            <div class="neon-divider my-2"></div>
+                            <div class="text-[11px] text-slate-400 space-y-0.5">
+                                <p>$B$: 내부 자기장 (T)</p>
+                                <p>$n = N/\ell$: 단위 길이당 권수 (회/m)</p>
+                                <p>$I$: 전류 (A)</p>
+                                <p>$\mu_0 = 4\pi \times 10^{-7}$ T·m/A</p>
+                            </div>
+                            <div class="neon-divider my-3"></div>
+                            <p class="text-[10px] uppercase tracking-widest text-indigo-200">인덕턴스 · 자기 에너지</p>
+                            <div class="math-container my-2 text-center text-sm">
+                                $$L = \mu_0 n^2 A \ell \;,\;\; W = \tfrac{1}{2} L I^2$$
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 컨트롤 패널 -->
+            <div class="glass rounded-2xl p-5 flex flex-col gap-5 h-fit" id="controlPanel">
+                <div class="space-y-3">
+                    <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                        <span class="inline-block w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span>
+                        <span class="text-rose-300">전류 I</span>
+                    </h2>
+                    <div class="chip-current rounded-lg p-3">
+                        <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
+                            세기 (A) <span id="iLabel" class="font-mono text-base text-rose-200">5</span>
+                        </label>
+                        <input type="range" id="currentRange" min="1" max="10" step="0.1" value="5" class="w-full cursor-pointer">
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="dirRight" class="dir-btn active flex-1 py-2 rounded-lg text-xs font-bold">→ 우측</button>
+                        <button id="dirLeft" class="dir-btn flex-1 py-2 rounded-lg text-xs font-bold">← 좌측</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                        <span class="inline-block w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_10px_#a78bfa]"></span>
+                        <span class="text-violet-300">권수 밀도 n</span>
+                    </h2>
+                    <div class="chip-turns rounded-lg p-3">
+                        <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
+                            (회/m) <span id="nLabel" class="font-mono text-base text-violet-200">500</span>
+                        </label>
+                        <input type="range" id="densityRange" min="100" max="1500" step="10" value="500" class="w-full cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                        <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></span>
+                        <span class="text-cyan-300">코일 길이 ℓ</span>
+                    </h2>
+                    <div class="chip-length rounded-lg p-3">
+                        <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
+                            (cm) <span id="lenLabel" class="font-mono text-base text-cyan-200">30</span>
+                        </label>
+                        <input type="range" id="lengthRange" min="15" max="50" step="1" value="30" class="w-full cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-slate-400 leading-relaxed pt-1">
+                    <p>전체 권수 <span class="text-violet-200 font-mono" id="totalN">—</span> 회</p>
+                    <p class="mt-1">단면적 <span class="text-cyan-200 font-mono">A ≈ 12.6 cm²</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('solCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const currentRange = document.getElementById('currentRange');
+        const densityRange = document.getElementById('densityRange');
+        const lengthRange = document.getElementById('lengthRange');
+        const iLabel = document.getElementById('iLabel');
+        const nLabel = document.getElementById('nLabel');
+        const lenLabel = document.getElementById('lenLabel');
+        const totalNEl = document.getElementById('totalN');
+        const bVal = document.getElementById('bVal');
+        const lVal = document.getElementById('lVal');
+        const wVal = document.getElementById('wVal');
+        const iVal = document.getElementById('iVal');
+        const dirRight = document.getElementById('dirRight');
+        const dirLeft = document.getElementById('dirLeft');
+        const resetBtn = document.getElementById('resetBtn');
+
+        const MU0 = 4 * Math.PI * 1e-7; // T·m/A
+        const RADIUS_M = 0.02;          // 솔레노이드 반지름 (m) — 약 2 cm
+        const AREA_M2 = Math.PI * RADIUS_M * RADIUS_M; // ≈ 1.26e-3 m²
+
+        let state = {
+            current: 5,        // I (A)
+            density: 500,      // n (turns/m)
+            length: 30,        // ℓ (cm)
+            direction: 1,      // +1: 오른쪽으로 흐름 → 자기장 우측, -1: 좌측
+            t: 0
+        };
+
+        let mouse = { x: -1000, y: -1000, inside: false };
+
+        // 자기장 컨투어 (배경)
+        let offCanvas, offCtx;
+        let fieldW = 0, fieldH = 0;
+        const FIELD_CELL = 8;
+
+        // 솔레노이드 본체 좌표 (resize 시 갱신)
+        let solX1 = 0, solX2 = 0, solCY = 0, solHalfH = 0;
+
+        // 입자
+        let particles = [];
+
+        function resize() {
+            const wrap = canvas.parentElement;
+            canvas.width = wrap.clientWidth - 2;
+            canvas.height = 560;
+            fieldW = Math.ceil(canvas.width / FIELD_CELL);
+            fieldH = Math.ceil(canvas.height / FIELD_CELL);
+            if (!offCanvas) {
+                offCanvas = document.createElement('canvas');
+                offCtx = offCanvas.getContext('2d');
+            }
+            offCanvas.width = fieldW;
+            offCanvas.height = fieldH;
+            seedParticles();
+        }
+        window.addEventListener('resize', resize);
+
+        function updateGeometry() {
+            // 코일 길이(cm) → 캔버스 너비 비율 (15~50cm → 캔버스의 약 32%~78%)
+            const lenRatio = 0.32 + ((state.length - 15) / 35) * 0.46;
+            const solWidth = canvas.width * lenRatio;
+            const cx = canvas.width / 2;
+            solX1 = cx - solWidth / 2;
+            solX2 = cx + solWidth / 2;
+            solCY = canvas.height / 2 + 6;
+            solHalfH = 70; // 코일 반경(시각)
+        }
+
+        // ===== 자기장 계산 =====
+        // 솔레노이드 내부: 균일장 (X 방향)
+        // 외부: 자기 쌍극자 근사 (간단한 monopole pair로 표현)
+        // 정상 단위: 실제 B (T) 단위로 계산
+        function getBAt(x, y) {
+            const I = state.current;
+            const n = state.density;
+            const Bin = MU0 * n * I; // 내부 자기장 (T)
+            const dir = state.direction;
+
+            // 내부 영역 판정 (직사각형 안)
+            const margin = 6;
+            const inside = (x > solX1 + margin && x < solX2 - margin &&
+                            y > solCY - solHalfH + margin && y < solCY + solHalfH - margin);
+
+            if (inside) {
+                return { bx: dir * Bin, by: 0, inside: true };
+            }
+            // 외부: 자기 쌍극자 (양 끝을 N/S 점극으로 모델링)
+            // 길이 비례 + 전류 비례한 "유효 자극 강도" q*
+            // B = q * ( (r - r_N) / |r-r_N|^3  -  (r - r_S) / |r-r_S|^3 ) * scaleFactor
+            // 정성적 시각화이므로 적절한 스케일 사용
+            const qStar = Bin * 0.022; // 외부 시각화 스케일
+            // dir=+1: 우측이 N극, 좌측이 S극
+            const nx = dir === 1 ? solX2 : solX1;
+            const sx = dir === 1 ? solX1 : solX2;
+            const ny = solCY, sy = solCY;
+            const dxN = x - nx, dyN = y - ny;
+            const dxS = x - sx, dyS = y - sy;
+            const rN3 = Math.pow(dxN * dxN + dyN * dyN + 25, 1.5); // +25: 발산 방지
+            const rS3 = Math.pow(dxS * dxS + dyS * dyS + 25, 1.5);
+            const bx = qStar * (dxN / rN3 - dxS / rS3);
+            const by = qStar * (dyN / rN3 - dyS / rS3);
+            return { bx, by, inside: false };
+        }
+        function getBmag(x, y) {
+            const f = getBAt(x, y);
+            return { mag: Math.hypot(f.bx, f.by), inside: f.inside };
+        }
+
+        // ===== 자기장 컨투어 (배경) =====
+        function drawFieldBg() {
+            const buf = offCtx.createImageData(fieldW, fieldH);
+            const data = buf.data;
+            const Bin = MU0 * state.density * state.current; // 정규화 기준 (내부 값)
+            const norm = Math.max(Bin * 1.05, 1e-7);
+            let idx = 0;
+            for (let py = 0; py < fieldH; py++) {
+                for (let px = 0; px < fieldW; px++) {
+                    const cx = px * FIELD_CELL + FIELD_CELL * 0.5;
+                    const cy = py * FIELD_CELL + FIELD_CELL * 0.5;
+                    const { mag, inside } = getBmag(cx, cy);
+                    let r, g, b;
+                    if (inside) {
+                        // 내부: 밝은 핫핑크 → 마젠타 그라데이션
+                        const n = Math.min(1, mag / norm);
+                        const a = Math.pow(n, 0.35);
+                        r = Math.round(60 + 200 * a);
+                        g = Math.round(20 + 60 * a);
+                        b = Math.round(110 + 130 * a);
+                    } else {
+                        // 외부: 어두운 보라/인디고 → 약하게 빛남
+                        const n = Math.min(1, mag / (norm * 0.18));
+                        const a = Math.pow(n, 0.5);
+                        r = Math.round(10 + 60 * a);
+                        g = Math.round(12 + 30 * a);
+                        b = Math.round(35 + 150 * a);
+                    }
+                    data[idx++] = r;
+                    data[idx++] = g;
+                    data[idx++] = b;
+                    data[idx++] = 220;
+                }
+            }
+            offCtx.putImageData(buf, 0, 0);
+            ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            ctx.globalAlpha = 0.88;
+            ctx.drawImage(offCanvas, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+        }
+
+        // ===== 격자 =====
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // ===== 외부 자기력선 (N→S 폐곡선 trace) =====
+        function traceFieldLine(sx, sy, dirSign) {
+            const pts = [[sx, sy]];
+            let x = sx, y = sy;
+            const step = 6;
+            for (let i = 0; i < 280; i++) {
+                const f = getBAt(x, y);
+                if (f.inside) break;
+                const m = Math.hypot(f.bx, f.by);
+                if (m < 1e-12) break;
+                x += (f.bx / m) * step * dirSign;
+                y += (f.by / m) * step * dirSign;
+                if (x < -20 || x > canvas.width + 20 || y < -20 || y > canvas.height + 20) break;
+                // 내부 진입 방지 — 직사각형 내부면 멈춤
+                if (x > solX1 - 2 && x < solX2 + 2 && y > solCY - solHalfH - 2 && y < solCY + solHalfH + 2) {
+                    // 내부 근접하면 끝
+                    if (x > solX1 + 6 && x < solX2 - 6) break;
+                }
+                pts.push([x, y]);
+            }
+            return pts;
+        }
+        function drawExternalFieldLines() {
+            // 양 끝 N/S 극 근처에서 시작점 잡기
+            const dir = state.direction;
+            const nx = dir === 1 ? solX2 : solX1;
+            const sx = dir === 1 ? solX1 : solX2;
+            const offsets = [-50, -30, -12, 12, 30, 50];
+
+            ctx.save();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#a78bfa';
+            for (const dy of offsets) {
+                // N극에서 바깥쪽으로 trace (자기장 방향대로)
+                const startNx = nx + (dir === 1 ? 8 : -8);
+                const startNy = solCY + dy;
+                const fwd = traceFieldLine(startNx, startNy, +1);
+                if (fwd.length < 3) continue;
+
+                ctx.strokeStyle = 'rgba(196, 181, 253, 0.7)';
+                ctx.lineWidth = 1.3;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(fwd[0][0], fwd[0][1]);
+                for (let i = 1; i < fwd.length; i++) ctx.lineTo(fwd[i][0], fwd[i][1]);
+                ctx.stroke();
+
+                // 화살촉 — 곡선 중간 지점에 하나
+                const idx = Math.min(fwd.length - 2, Math.floor(fwd.length * 0.45));
+                if (idx > 0) {
+                    const [px, py] = fwd[idx];
+                    const [nxp, nyp] = fwd[idx + 1];
+                    const ang = Math.atan2(nyp - py, nxp - px);
+                    drawArrowhead(px, py, ang, 'rgba(196, 181, 253, 0.9)', '#a78bfa', 6);
+                }
+            }
+            ctx.restore();
+        }
+
+        // ===== 내부 균일 자기장 화살표 =====
+        function drawInternalArrows() {
+            const Bin = MU0 * state.density * state.current; // 실제 B (T)
+            // 정규화: 1~10A × 100~1500n*4πE-7 → 약 1.3e-4 ~ 1.9e-2 T 범위
+            const maxB = MU0 * 1500 * 10;
+            const intensity = Math.min(1, Bin / maxB);
+            const dir = state.direction;
+
+            const cols = 6, rows = 4;
+            const innerW = solX2 - solX1 - 30;
+            const innerH = solHalfH * 2 - 30;
+            const startX = solX1 + 15;
+            const startY = solCY - solHalfH + 15;
+            const stepX = innerW / (cols - 1);
+            const stepY = innerH / (rows - 1);
+
+            // 화살표 길이/색 — 강도에 따라
+            const arrowLen = 22 + intensity * 28;
+
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#f9a8d4';
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cx = startX + c * stepX;
+                    const cy = startY + r * stepY;
+                    const x0 = cx - dir * arrowLen / 2;
+                    const x1 = cx + dir * arrowLen / 2;
+
+                    const grad = ctx.createLinearGradient(x0, cy, x1, cy);
+                    grad.addColorStop(0, 'rgba(252, 165, 165, 0.35)');
+                    grad.addColorStop(1, `rgba(253, 224, 71, ${0.55 + intensity * 0.4})`);
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 2.4 + intensity * 1.2;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(x0, cy);
+                    ctx.lineTo(x1, cy);
+                    ctx.stroke();
+
+                    drawArrowhead(x1, cy, dir === 1 ? 0 : Math.PI, 'rgba(253, 224, 71, 0.95)', '#fde047', 7);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawArrowhead(x, y, angle, color, glow, size) {
+            ctx.save();
+            ctx.translate(x, y); ctx.rotate(angle);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = glow;
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(-size, -size * 0.65); ctx.lineTo(-size, size * 0.65); ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ===== 솔레노이드 (코일 N개 — 측면 뷰, 회전 ellipse) =====
+        function drawSolenoid() {
+            // 권수 시각화: 너무 많으면 무거우니 16개로 제한 (실제 권수는 라벨에 표시)
+            const visualTurns = 16;
+            const coilSpacing = (solX2 - solX1) / (visualTurns - 1);
+            const coilR = solHalfH;
+            const ellipseRx = coilSpacing * 0.42; // 가로 (납작)
+            const ellipseRy = coilR;              // 세로 (큰)
+
+            // 1) 코일 뒷면 (앞면보다 어둡게)
+            ctx.save();
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < visualTurns; i++) {
+                const cx = solX1 + i * coilSpacing;
+                // 뒷쪽 반원 (위쪽: ⊗ 즉 전류 들어감)
+                // 실제로는 코일이 반시계 감김 또는 시계 감김에 따라 다르지만,
+                // 시각 단순화 — 위 반원 = 뒷면, 아래 반원 = 앞면
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.25)';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(168, 139, 250, 0.4)';
+                ctx.beginPath();
+                ctx.ellipse(cx, solCY, ellipseRx, ellipseRy, 0, Math.PI, 0, false); // 위쪽 반원
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 2) 코일 앞면 (밝게)
+            ctx.save();
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < visualTurns; i++) {
+                const cx = solX1 + i * coilSpacing;
+                const grad = ctx.createLinearGradient(cx - ellipseRx, solCY, cx + ellipseRx, solCY);
+                grad.addColorStop(0, '#c2a047');
+                grad.addColorStop(0.5, '#fde68a');
+                grad.addColorStop(1, '#b8860b');
+                ctx.strokeStyle = grad;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#fbbf24';
+                ctx.beginPath();
+                ctx.ellipse(cx, solCY, ellipseRx, ellipseRy, 0, 0, Math.PI, false); // 아래쪽 반원
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 3) 각 코일 위/아래에 ⊙ / ⊗ (전류 방향 표시)
+            // 위쪽 = ⊗ (전류가 종이 안으로) — direction +1 (자기장 우향)일 때
+            // 아래쪽 = ⊙ (전류가 종이 밖으로)
+            // direction -1 이면 반대
+            const dir = state.direction;
+            const topSym = dir === 1 ? '⊗' : '⊙';
+            const botSym = dir === 1 ? '⊙' : '⊗';
+
+            ctx.save();
+            ctx.font = 'bold 16px ui-monospace, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#fbbf24';
+            for (let i = 0; i < visualTurns; i++) {
+                const cx = solX1 + i * coilSpacing;
+                // 위쪽 기호
+                ctx.fillStyle = '#fef3c7';
+                ctx.fillText(topSym, cx, solCY - ellipseRy - 12);
+                // 아래쪽 기호
+                ctx.fillText(botSym, cx, solCY + ellipseRy + 12);
+            }
+            ctx.restore();
+
+            // 4) 양 끝 N/S 극 라벨
+            const nIsRight = dir === 1;
+            drawPoleLabel(nIsRight ? solX2 + 16 : solX1 - 16, solCY - solHalfH - 28, 'N', '#fda4af', '#f43f5e');
+            drawPoleLabel(nIsRight ? solX1 - 16 : solX2 + 16, solCY - solHalfH - 28, 'S', '#93c5fd', '#60a5fa');
+        }
+        function drawPoleLabel(x, y, txt, color, glow) {
+            ctx.save();
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const w = 28, h = 22;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = glow;
+            roundRect(ctx, x - w/2, y - h/2, w, h, 8);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 0;
+            ctx.fillText(txt, x, y + 1);
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        // ===== 입자: 자기장 따라 흐름 =====
+        function seedParticles() {
+            particles = [];
+            for (let i = 0; i < 40; i++) particles.push(randomParticle());
+        }
+        function randomParticle() {
+            // 절반은 외부(폐곡선), 절반은 내부(균일 흐름)
+            const isInside = Math.random() < 0.55;
+            if (isInside) {
+                return {
+                    x: solX1 + 15 + Math.random() * (solX2 - solX1 - 30),
+                    y: solCY - solHalfH + 15 + Math.random() * (solHalfH * 2 - 30),
+                    life: Math.random() * 100,
+                    maxLife: 120 + Math.random() * 80,
+                    size: 1.0 + Math.random() * 1.2,
+                    kind: 'in'
+                };
+            }
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                life: Math.random() * 100,
+                maxLife: 180 + Math.random() * 120,
+                size: 0.8 + Math.random() * 1.2,
+                kind: 'out'
+            };
+        }
+        function updateParticles() {
+            for (const p of particles) {
+                const f = getBAt(p.x, p.y);
+                if (p.kind === 'in') {
+                    if (!f.inside) {
+                        Object.assign(p, randomParticle(), { life: 0 });
+                        continue;
+                    }
+                    const speed = 0.6 + (state.current / 10) * 1.5;
+                    p.x += state.direction * speed;
+                    if (state.direction === 1 && p.x > solX2 - 12) {
+                        Object.assign(p, randomParticle(), { life: 0 });
+                        continue;
+                    }
+                    if (state.direction === -1 && p.x < solX1 + 12) {
+                        Object.assign(p, randomParticle(), { life: 0 });
+                        continue;
+                    }
+                } else {
+                    const m = Math.hypot(f.bx, f.by);
+                    if (m < 1e-12 || f.inside) {
+                        Object.assign(p, randomParticle(), { life: 0 });
+                        continue;
+                    }
+                    const speed = 1.2;
+                    p.x += (f.bx / m) * speed;
+                    p.y += (f.by / m) * speed;
+                    if (p.x < -10 || p.x > canvas.width + 10 || p.y < -10 || p.y > canvas.height + 10) {
+                        Object.assign(p, randomParticle(), { life: 0 });
+                        continue;
+                    }
+                }
+                p.life++;
+                if (p.life > p.maxLife) Object.assign(p, randomParticle(), { life: 0 });
+            }
+        }
+        function drawParticles() {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (const p of particles) {
+                const ratio = p.life / p.maxLife;
+                const alpha = Math.sin(ratio * Math.PI) * 0.9;
+                if (p.kind === 'in') {
+                    ctx.fillStyle = `rgba(254, 240, 138, ${alpha})`;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#fde047';
+                } else {
+                    ctx.fillStyle = `rgba(196, 181, 253, ${alpha * 0.85})`;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = '#a78bfa';
+                }
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ===== 마우스 프로브 =====
+        function drawProbe() {
+            if (!mouse.inside) return;
+            const f = getBAt(mouse.x, mouse.y);
+            const m = Math.hypot(f.bx, f.by);
+            if (m < 1e-12) return;
+
+            // 작은 링
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.lineWidth = 1.4;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#fef9c3';
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // B 벡터 화살표
+            const arrowLen = Math.min(70, 22 + Math.log10(m * 1e6 + 1) * 14);
+            const ux = f.bx / m, uy = f.by / m;
+            const tx = mouse.x + ux * arrowLen, ty = mouse.y + uy * arrowLen;
+            ctx.save();
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = '#fde047';
+            ctx.strokeStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(mouse.x, mouse.y);
+            ctx.lineTo(tx, ty);
+            ctx.stroke();
+            const ang = Math.atan2(uy, ux);
+            ctx.translate(tx, ty); ctx.rotate(ang);
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(-9, -5); ctx.lineTo(-9, 5); ctx.closePath();
+            ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.fill();
+            ctx.restore();
+
+            // 라벨
+            const mT = (m * 1000).toFixed(3); // mT
+            const text = `|B| ≈ ${mT} mT`;
+            ctx.save();
+            ctx.font = 'bold 11px ui-monospace, monospace';
+            const tw = ctx.measureText(text).width;
+            const lx = mouse.x + 14, ly = mouse.y - 14;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            roundRect(ctx, lx - 6, ly - 12, tw + 12, 18, 9);
+            ctx.fill();
+            ctx.fillStyle = '#fde047';
+            ctx.fillText(text, lx, ly + 2);
+            ctx.restore();
+        }
+
+        // ===== 라이브 패널 갱신 =====
+        function updateLivePanel() {
+            const I = state.current;
+            const n = state.density;
+            const lenM = state.length / 100; // cm → m
+            const B = MU0 * n * I;            // T
+            const L = MU0 * n * n * AREA_M2 * lenM; // H
+            const W = 0.5 * L * I * I;        // J
+            const totalN = Math.round(n * lenM);
+
+            bVal.innerText = (B * 1000).toFixed(3) + ' mT';
+            // L (단위: μH 또는 mH 자동)
+            if (L < 1e-3) lVal.innerText = (L * 1e6).toFixed(2) + ' μH';
+            else lVal.innerText = (L * 1000).toFixed(2) + ' mH';
+            // W (μJ ~ mJ)
+            if (W < 1e-3) wVal.innerText = (W * 1e6).toFixed(2) + ' μJ';
+            else wVal.innerText = (W * 1000).toFixed(2) + ' mJ';
+            iVal.innerText = I.toFixed(1) + ' A';
+            totalNEl.innerText = totalN;
+        }
+
+        // ===== 캔버스 이벤트 =====
+        canvas.addEventListener('mousemove', e => {
+            const r = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - r.left;
+            mouse.y = e.clientY - r.top;
+            mouse.inside = true;
+        });
+        canvas.addEventListener('mouseleave', () => mouse.inside = false);
+        canvas.addEventListener('touchmove', e => {
+            const t0 = e.touches[0];
+            const r = canvas.getBoundingClientRect();
+            mouse.x = t0.clientX - r.left;
+            mouse.y = t0.clientY - r.top;
+            mouse.inside = true;
+        }, { passive: true });
+
+        // ===== 컨트롤 =====
+        function flashCard() {
+            if (window.gsap) gsap.fromTo('#canvasCard',
+                { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+                { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+        }
+        currentRange.oninput = (e) => {
+            state.current = parseFloat(e.target.value);
+            iLabel.innerText = state.current.toFixed(1);
+            flashCard();
+        };
+        densityRange.oninput = (e) => {
+            state.density = parseFloat(e.target.value);
+            nLabel.innerText = state.density;
+            flashCard();
+        };
+        lengthRange.oninput = (e) => {
+            state.length = parseFloat(e.target.value);
+            lenLabel.innerText = state.length;
+            updateGeometry();
+            seedParticles();
+            flashCard();
+        };
+        function setDirection(dir) {
+            state.direction = dir;
+            dirRight.className = `dir-btn flex-1 py-2 rounded-lg text-xs font-bold${dir === 1 ? ' active' : ''}`;
+            dirLeft.className = `dir-btn flex-1 py-2 rounded-lg text-xs font-bold${dir === -1 ? ' active' : ''}`;
+            flashCard();
+        }
+        dirRight.onclick = () => setDirection(1);
+        dirLeft.onclick = () => setDirection(-1);
+        resetBtn.onclick = () => {
+            if (window.gsap) {
+                gsap.to(state, { current: 5, density: 500, length: 30, direction: 1, duration: 0.8, ease: 'power3.out', onUpdate: () => {
+                    currentRange.value = state.current;
+                    densityRange.value = state.density;
+                    lengthRange.value = state.length;
+                    iLabel.innerText = state.current.toFixed(1);
+                    nLabel.innerText = Math.round(state.density);
+                    lenLabel.innerText = Math.round(state.length);
+                    updateGeometry();
+                }, onComplete: () => { setDirection(1); seedParticles(); } });
+            } else {
+                state.current = 5; state.density = 500; state.length = 30;
+                currentRange.value = 5; densityRange.value = 500; lengthRange.value = 30;
+                iLabel.innerText = '5.0'; nLabel.innerText = '500'; lenLabel.innerText = '30';
+                setDirection(1);
+                updateGeometry();
+                seedParticles();
+            }
+        };
+
+        // ===== 메인 루프 =====
+        function animate() {
+            state.t += 0.016;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1) 자기장 컨투어 배경
+            drawFieldBg();
+
+            // 2) 격자
+            drawGrid();
+
+            // 3) 외부 자기력선 (코일보다 뒤)
+            drawExternalFieldLines();
+
+            // 4) 내부 균일 자기장 화살표
+            drawInternalArrows();
+
+            // 5) 입자
+            updateParticles();
+            drawParticles();
+
+            // 6) 솔레노이드 본체 (코일)
+            drawSolenoid();
+
+            // 7) 마우스 프로브
+            drawProbe();
+
+            // 8) 라이브 패널
+            updateLivePanel();
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('load', () => {
+            resize();
+            updateGeometry();
+            setDirection(1);
+            animate();
+
+            if (window.gsap) {
+                gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+                gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+                gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+                gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+                gsap.from('#guideCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+            }
+        });
+    </script>
+</body>
+</html>

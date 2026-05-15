@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>평행도선 전자력 시뮬레이터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        body {
+            background:
+                radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+                radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+                radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+                #060814;
+            color: #e5e7eb;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: 'Pretendard', system-ui, sans-serif;
+        }
+        .stars {
+            position: fixed; inset: 0; pointer-events: none;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+                radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+                radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+            background-size: 600px 600px;
+            animation: twinkle 6s ease-in-out infinite alternate;
+            opacity: 0.65;
+        }
+        @keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+        .canvas-wrap {
+            position: relative;
+            border-radius: 18px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+            box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45), 0 0 40px rgba(244, 114, 182, 0.15);
+        }
+        canvas#simCanvas {
+            display: block;
+            width: 100%;
+            height: 760px;
+            border-radius: 17px;
+            background: #050714;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+        .neon-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+        }
+        .pulse-dot {
+            position: relative; display: inline-block;
+            width: 8px; height: 8px; border-radius: 9999px;
+            background: #34d399; box-shadow: 0 0 12px #34d399;
+        }
+        .pulse-dot::after {
+            content: ''; position: absolute; inset: -6px;
+            border-radius: 9999px; border: 2px solid #34d399;
+            opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(0.6); opacity: 0.8 }
+            100% { transform: scale(1.8); opacity: 0 }
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(59,130,246,0.4));
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+            box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.95);
+        }
+        .chip-positive {
+            background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06));
+            border: 1px solid rgba(244, 63, 94, 0.5);
+            color: #fda4af;
+        }
+        .chip-negative {
+            background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.06));
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: #93c5fd;
+        }
+        .chip-distance {
+            background: linear-gradient(135deg, rgba(168,139,250,0.18), rgba(99,102,241,0.06));
+            border: 1px solid rgba(168, 139, 250, 0.45);
+            color: #ddd6fe;
+        }
+        .math-card {
+            background:
+                linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
+                rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(168, 139, 250, 0.35);
+        }
+        .math-container { font-size: 1.05rem; color: #e0e7ff; }
+        .feature-row {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            transition: transform 220ms, background 220ms, border-color 220ms;
+        }
+        .feature-row:hover {
+            transform: translateX(2px);
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(168, 139, 250, 0.4);
+        }
+        .dir-btn {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+            transition: all 200ms;
+        }
+        .dir-btn.active-red {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            border-color: rgba(244, 63, 94, 0.7);
+            color: white;
+            box-shadow: 0 0 24px rgba(244, 63, 94, 0.5);
+        }
+        .dir-btn.active-blue {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: rgba(59, 130, 246, 0.7);
+            color: white;
+            box-shadow: 0 0 24px rgba(59, 130, 246, 0.5);
+        }
+        .dir-btn:hover:not(.active-red):not(.active-blue) {
+            background: rgba(148, 163, 184, 0.2);
+            transform: translateY(-1px);
+        }
+        .live-pill {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            transition: border-color 200ms, box-shadow 200ms;
+        }
+        .live-pill.flash {
+            border-color: rgba(244, 114, 182, 0.6);
+            box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+        }
+        .live-num {
+            font-variant-numeric: tabular-nums;
+            background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="stars"></div>
+
+    <div class="max-w-6xl mx-auto relative">
+        <header class="mb-6" id="hdr">
+            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+                <span class="pulse-dot"></span>
+                INTERACTIVE · PARALLEL WIRES · DUAL VIEW
+            </div>
+            <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+                🧲 평행도선 전자력 시뮬레이터
+            </h1>
+            <p class="mt-2 text-slate-400 text-sm">위 — 측면 뷰(입체 원통·전류 흐름) · 아래 — 단면 뷰(합성 자기력선·자기장 벡터). 마우스로 단면 뷰의 |B| 측정.</p>
+        </header>
+
+        <!-- 라이브 데이터 패널 -->
+        <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="live-pill rounded-xl p-3">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">도선 간 거리</p>
+                <p class="mt-1 text-lg font-bold live-num" id="distVal">— px</p>
+            </div>
+            <div class="live-pill rounded-xl p-3">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">단위 길이당 힘 |F|</p>
+                <p class="mt-1 text-lg font-bold live-num" id="forceVal">—</p>
+            </div>
+            <div class="live-pill rounded-xl p-3">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">프로브 |B|</p>
+                <p class="mt-1 text-lg font-bold live-num" id="probeVal">—</p>
+            </div>
+            <div class="live-pill rounded-xl p-3">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold">상호 작용</p>
+                <p class="mt-1 text-lg font-bold live-num" id="modeVal">—</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <!-- 캔버스 + 가이드 -->
+            <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+                <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-semibold text-slate-400 tracking-wide">위: 측면 뷰 · 아래: 단면 뷰 (합성 자계)</span>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="simCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass rounded-2xl p-5" id="guideCard">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <span class="text-lg">📐</span>
+                        <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">물리학 가이드 및 공식</span>
+                    </h3>
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <ul class="text-xs text-slate-300 space-y-2">
+                            <li class="feature-row rounded-lg p-3"><strong class="text-rose-300">흡인</strong> · 전류 방향 같음 → 두 도선 사이 자기장 상쇄 → 외부 강화 → 서로 끌림</li>
+                            <li class="feature-row rounded-lg p-3"><strong class="text-blue-300">반발</strong> · 전류 방향 반대 → 두 도선 사이 자기장 강화 → 서로 밀어냄</li>
+                            <li class="feature-row rounded-lg p-3"><strong class="text-indigo-300">⊙ ⊗</strong> · 단면 뷰에서 ⊙는 평면 밖(↑), ⊗는 평면 안(↓)</li>
+                            <li class="feature-row rounded-lg p-3"><strong class="text-indigo-300">합성 자기력선</strong> · 두 도선 자기장이 벡터로 합성되어 폐곡선을 그림</li>
+                        </ul>
+                        <div class="math-card rounded-xl p-4">
+                            <p class="text-[10px] uppercase tracking-widest text-indigo-200">단위 길이당 힘 공식</p>
+                            <div class="math-container my-3 text-center">
+                                $$F = \frac{\mu_0 I_1 I_2}{2\pi d}$$
+                            </div>
+                            <div class="neon-divider my-2"></div>
+                            <div class="text-[11px] text-slate-400 space-y-0.5">
+                                <p>$F$: 단위 길이당 힘 (N/m)</p>
+                                <p>$I_1, I_2$: 각 도선 전류 (A)</p>
+                                <p>$d$: 도선 사이 거리 (m)</p>
+                                <p>$\mu_0 = 4\pi \times 10^{-7}$ T·m/A</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 컨트롤 패널 -->
+            <div class="glass rounded-2xl p-5 flex flex-col gap-6 h-fit" id="controlPanel">
+                <div class="space-y-3">
+                    <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                        <span class="inline-block w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span>
+                        <span class="text-rose-300">도선 1 (왼쪽)</span>
+                    </h2>
+                    <div class="chip-positive rounded-lg p-3">
+                        <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
+                            전류 \(I_1\) <span id="val1" class="font-mono text-base text-rose-200">50</span>
+                        </label>
+                        <input type="range" id="current1" min="0" max="100" value="50" class="w-full cursor-pointer">
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="dir1Up" class="dir-btn flex-1 py-2 rounded-lg text-xs font-bold">↑ / ⊙</button>
+                        <button id="dir1Down" class="dir-btn flex-1 py-2 rounded-lg text-xs font-bold">↓ / ⊗</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                        <span class="inline-block w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_10px_#60a5fa]"></span>
+                        <span class="text-blue-300">도선 2 (오른쪽)</span>
+                    </h2>
+                    <div class="chip-negative rounded-lg p-3">
+                        <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
+                            전류 \(I_2\) <span id="val2" class="font-mono text-base text-blue-200">50</span>
+                        </label>
+                        <input type="range" id="current2" min="0" max="100" value="50" class="w-full cursor-pointer">
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="dir2Up" class="dir-btn flex-1 py-2 rounded-lg text-xs font-bold">↑ / ⊙</button>
+                        <button id="dir2Down" class="dir-btn flex-1 py-2 rounded-lg text-xs font-bold">↓ / ⊗</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h2 class="font-bold text-sm tracking-wider text-indigo-200">거리 조절</h2>
+                    <div class="chip-distance rounded-lg p-3">
+                        <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
+                            도선 간 거리 \(d\) <span id="valD" class="font-mono text-base text-indigo-100">180</span>
+                        </label>
+                        <input type="range" id="distance" min="80" max="400" value="180" class="w-full cursor-pointer">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const inputs = {
+            c1: document.getElementById('current1'),
+            c2: document.getElementById('current2'),
+            dist: document.getElementById('distance'),
+            v1: document.getElementById('val1'),
+            v2: document.getElementById('val2'),
+            vD: document.getElementById('valD')
+        };
+        const distEl = document.getElementById('distVal');
+        const forceEl = document.getElementById('forceVal');
+        const probeEl = document.getElementById('probeVal');
+        const modeEl = document.getElementById('modeVal');
+
+        // 영역 분할 (위: 측면 뷰 / 아래: 단면 뷰)
+        const SIDE_H = 240;
+        const CROSS_H = 520;
+        const TOTAL_H = SIDE_H + CROSS_H;
+
+        let state = {
+            wire1: { current: 50, direction: 1 },
+            wire2: { current: 50, direction: 1 },
+            distance: 180,
+            time: 0
+        };
+
+        // 측면 뷰 도선 위치
+        let sideWire1X = 0, sideWire2X = 0;
+        // 단면 뷰 도선 위치
+        let crossWire1X = 0, crossWire1Y = 0;
+        let crossWire2X = 0, crossWire2Y = 0;
+
+        let mouse = { x: -1000, y: -1000, inside: false };
+
+        // 단면 뷰 자기장 컨투어
+        let fieldBuf = null;
+        let fieldW = 0, fieldH = 0;
+        const FIELD_CELL = 8;
+        let offCanvas, offCtx;
+
+        // 파티클 (단면 뷰 — 도선 주위 회전)
+        let particles = [];
+
+        function resize() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 2;
+            canvas.height = TOTAL_H;
+            fieldW = Math.ceil(canvas.width / FIELD_CELL);
+            fieldH = Math.ceil(CROSS_H / FIELD_CELL);
+            if (!offCanvas) {
+                offCanvas = document.createElement('canvas');
+                offCtx = offCanvas.getContext('2d');
+            }
+            offCanvas.width = fieldW;
+            offCanvas.height = fieldH;
+            seedParticles();
+        }
+        window.addEventListener('resize', resize);
+
+        function updatePositions() {
+            const midX = canvas.width / 2;
+            sideWire1X = midX - state.distance / 2;
+            sideWire2X = midX + state.distance / 2;
+            crossWire1X = sideWire1X;
+            crossWire1Y = SIDE_H + CROSS_H / 2;
+            crossWire2X = sideWire2X;
+            crossWire2Y = SIDE_H + CROSS_H / 2;
+        }
+
+        function setDirection(wireNum, dir) {
+            const wire = wireNum === 1 ? state.wire1 : state.wire2;
+            wire.direction = dir;
+            const colorClass = wireNum === 1 ? 'active-red' : 'active-blue';
+            const upEl = document.getElementById(`dir${wireNum}Up`);
+            const downEl = document.getElementById(`dir${wireNum}Down`);
+            upEl.className = `dir-btn flex-1 py-2 rounded-lg text-xs font-bold${dir === 1 ? ' ' + colorClass : ''}`;
+            downEl.className = `dir-btn flex-1 py-2 rounded-lg text-xs font-bold${dir === -1 ? ' ' + colorClass : ''}`;
+        }
+
+        function flashCard() {
+            if (window.gsap) gsap.fromTo('#canvasCard',
+                { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+                { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+        }
+
+        function updateUI() {
+            state.wire1.current = parseFloat(inputs.c1.value);
+            state.wire2.current = parseFloat(inputs.c2.value);
+            state.distance = parseFloat(inputs.dist.value);
+            inputs.v1.innerText = state.wire1.current;
+            inputs.v2.innerText = state.wire2.current;
+            inputs.vD.innerText = state.distance;
+        }
+
+        // ====================================================
+        // 단면 뷰: 평면 내 B 벡터 (오른손 법칙)
+        // ====================================================
+        function getBAtCross(x, y) {
+            let bx = 0, by = 0;
+            const wires = [
+                { x: crossWire1X, y: crossWire1Y, I: state.wire1.current * state.wire1.direction },
+                { x: crossWire2X, y: crossWire2Y, I: state.wire2.current * state.wire2.direction },
+            ];
+            for (const w of wires) {
+                const dx = x - w.x;
+                const dy = y - w.y;
+                const r = Math.sqrt(dx * dx + dy * dy);
+                if (r < 10) continue;
+                // I > 0 (⊙ 평면 밖) → 반시계 (-dy, dx) / r²
+                // I < 0 (⊗ 평면 안) → 시계 (dy, -dx) / r²
+                const mag = w.I / (r * r);
+                bx += mag * (-dy);
+                by += mag * (dx);
+            }
+            return { bx, by };
+        }
+        function getBmagCross(x, y) {
+            const f = getBAtCross(x, y);
+            return Math.hypot(f.bx, f.by);
+        }
+
+        // 단면 뷰 자기장 |B| 컨투어 (단면 영역만)
+        function drawCrossFieldBg() {
+            const buf = offCtx.createImageData(fieldW, fieldH);
+            const data = buf.data;
+            let idx = 0;
+            const norm = 0.012; // 정규화 스케일
+            for (let py = 0; py < fieldH; py++) {
+                for (let px = 0; px < fieldW; px++) {
+                    const cx = px * FIELD_CELL + FIELD_CELL * 0.5;
+                    const cy = SIDE_H + py * FIELD_CELL + FIELD_CELL * 0.5;
+                    const bmag = getBmagCross(cx, cy);
+                    const n = Math.min(1, bmag / norm);
+                    const a = Math.pow(n, 0.55);
+                    // 보라/인디고 → 핫핑크 그라데이션
+                    const r = Math.round(20 + 200 * a);
+                    const g = Math.round(15 + 60 * a);
+                    const b = Math.round(60 + 180 * a);
+                    data[idx++] = r;
+                    data[idx++] = g;
+                    data[idx++] = b;
+                    data[idx++] = 215;
+                }
+            }
+            offCtx.putImageData(buf, 0, 0);
+            ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            ctx.globalAlpha = 0.85;
+            ctx.drawImage(offCanvas, 0, SIDE_H, canvas.width, CROSS_H);
+            ctx.restore();
+        }
+
+        // 단면 뷰 합성 자기력선 (numerical trace, 가벼움)
+        function traceFieldLine(startX, startY, sign) {
+            const pts = [[startX, startY]];
+            let x = startX, y = startY;
+            const stepSize = 7;
+            for (let i = 0; i < 280; i++) {
+                const f = getBAtCross(x, y);
+                const m = Math.hypot(f.bx, f.by);
+                if (m < 1e-6) break;
+                x += (f.bx / m) * stepSize * sign;
+                y += (f.by / m) * stepSize * sign;
+                if (y < SIDE_H + 4 || y > canvas.height - 4) break;
+                if (x < 4 || x > canvas.width - 4) break;
+                if (Math.hypot(x - crossWire1X, y - crossWire1Y) < 16) break;
+                if (Math.hypot(x - crossWire2X, y - crossWire2Y) < 16) break;
+                pts.push([x, y]);
+            }
+            return pts;
+        }
+        function drawCrossFieldLines() {
+            const startAngles = [];
+            const numLines = 6;
+            for (let k = 0; k < numLines; k++) startAngles.push((k / numLines) * Math.PI * 2);
+
+            ctx.save();
+            ctx.shadowBlur = 8;
+            for (const wire of [{ x: crossWire1X, y: crossWire1Y, I: state.wire1.current, color: 'rgba(248,180,217,', glow: '#f472b6' },
+                                 { x: crossWire2X, y: crossWire2Y, I: state.wire2.current, color: 'rgba(186,230,253,', glow: '#60a5fa' }]) {
+                if (wire.I < 1) continue;
+                for (const a of startAngles) {
+                    const sx = wire.x + Math.cos(a) * 22;
+                    const sy = wire.y + Math.sin(a) * 22;
+                    // 양방향 trace
+                    const fwd = traceFieldLine(sx, sy, +1);
+                    const bwd = traceFieldLine(sx, sy, -1);
+                    if (fwd.length < 3 && bwd.length < 3) continue;
+
+                    ctx.shadowColor = wire.glow;
+                    const grad = ctx.createLinearGradient(sx, sy, fwd[fwd.length - 1][0] || sx, fwd[fwd.length - 1][1] || sy);
+                    grad.addColorStop(0, wire.color + '0.85)');
+                    grad.addColorStop(1, wire.color + '0.25)');
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 1.3;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    // bwd는 reverse해서 합치기
+                    for (let i = bwd.length - 1; i >= 0; i--) {
+                        const [px, py] = bwd[i];
+                        if (i === bwd.length - 1) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                    for (let i = 0; i < fwd.length; i++) {
+                        const [px, py] = fwd[i];
+                        ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // 단면 뷰 파티클 (도선 주위 회전, 자기장 방향 따라)
+        function seedParticles() {
+            particles = [];
+            const total = 50;
+            for (let i = 0; i < total; i++) {
+                particles.push(makeParticle(Math.random() < 0.5 ? 0 : 1));
+            }
+        }
+        function makeParticle(wireIdx) {
+            return {
+                wire: wireIdx,
+                r: 26 + Math.random() * 180,
+                angle: Math.random() * Math.PI * 2,
+                life: Math.random() * 200,
+                maxLife: 200 + Math.random() * 200,
+                size: 0.9 + Math.random() * 1.3
+            };
+        }
+        function updateParticles() {
+            for (const p of particles) {
+                const w = p.wire === 0 ? state.wire1 : state.wire2;
+                // I < 0 면 반대 회전, ⊙(+1)면 반시계 = angle 감소(화면 좌표 기준)
+                const speed = (w.current / 80) * 0.035 * w.direction;
+                p.angle += speed;
+                p.life++;
+                if (p.life > p.maxLife) Object.assign(p, makeParticle(p.wire), { life: 0 });
+            }
+        }
+        function drawParticlesCross() {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (const p of particles) {
+                const cx = p.wire === 0 ? crossWire1X : crossWire2X;
+                const cy = p.wire === 0 ? crossWire1Y : crossWire2Y;
+                const x = cx + Math.cos(p.angle) * p.r;
+                const y = cy + Math.sin(p.angle) * p.r;
+                if (x < 0 || x > canvas.width || y < SIDE_H || y > canvas.height) continue;
+                const ratio = p.life / p.maxLife;
+                const alpha = Math.sin(ratio * Math.PI) * 0.95;
+                ctx.fillStyle = p.wire === 0
+                    ? `rgba(252, 165, 165, ${alpha})`
+                    : `rgba(147, 197, 253, ${alpha})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.wire === 0 ? '#f87171' : '#60a5fa';
+                ctx.beginPath();
+                ctx.arc(x, y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // 단면 뷰 도선 단면 (구체 그라데이션)
+        function drawCrossWire(cx, cy, baseColor, glowColor, direction, label) {
+            const radius = 22;
+            // 외곽 펄스
+            const pulseR = radius + 8 + Math.sin(state.time * 0.05) * 4;
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            ctx.strokeStyle = baseColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // 외광 글로우
+            ctx.save();
+            ctx.shadowBlur = 32;
+            ctx.shadowColor = glowColor;
+            ctx.fillStyle = baseColor;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // 본체 (구체 그라데이션)
+            const grad = ctx.createRadialGradient(cx - 7, cy - 8, 3, cx, cy, radius);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.35, baseColor);
+            grad.addColorStop(1, '#1f2937');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 흰 테두리
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // ⊙ / ⊗ 기호
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            if (direction === 1) {
+                // ⊙: 점
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // ⊗: x
+                ctx.beginPath();
+                ctx.moveTo(cx - 8, cy - 8); ctx.lineTo(cx + 8, cy + 8);
+                ctx.moveTo(cx + 8, cy - 8); ctx.lineTo(cx - 8, cy + 8);
+                ctx.stroke();
+            }
+
+            // 라벨
+            ctx.font = 'bold 11px ui-monospace, monospace';
+            const tw = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            roundRect(ctx, cx - tw/2 - 6, cy + radius + 6, tw + 12, 18, 9);
+            ctx.fill();
+            ctx.fillStyle = baseColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, cx, cy + radius + 15);
+        }
+
+        // 단면 뷰 마우스 프로브 (B 벡터 화살표)
+        function drawCrossProbe() {
+            if (!mouse.inside || mouse.y < SIDE_H) { probeEl.innerText = '—'; return; }
+            const x = mouse.x, y = mouse.y;
+            // 도선 위는 무시
+            if (Math.hypot(x - crossWire1X, y - crossWire1Y) < 26) return;
+            if (Math.hypot(x - crossWire2X, y - crossWire2Y) < 26) return;
+            const f = getBAtCross(x, y);
+            const m = Math.hypot(f.bx, f.by);
+            if (m < 1e-6) return;
+
+            // 작은 링
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+            ctx.lineWidth = 1.4;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#fef9c3';
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // B 벡터 화살표
+            const arrowLen = Math.min(80, 20 + Math.log10(m * 1e5 + 1) * 22);
+            const ux = f.bx / m, uy = f.by / m;
+            const tx = x + ux * arrowLen, ty = y + uy * arrowLen;
+            ctx.save();
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = '#fde047';
+            ctx.strokeStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(tx, ty);
+            ctx.stroke();
+            const ang = Math.atan2(uy, ux);
+            ctx.translate(tx, ty); ctx.rotate(ang);
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(-10, -5); ctx.lineTo(-10, 5); ctx.closePath();
+            ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.fill();
+            ctx.restore();
+
+            // 값 라벨
+            const mag = (m * 1e4).toFixed(2);
+            const text = `|B| ≈ ${mag}`;
+            ctx.save();
+            ctx.font = 'bold 11px ui-monospace, monospace';
+            const tw = ctx.measureText(text).width;
+            const lx = x + 14, ly = y - 14;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            roundRect(ctx, lx - 6, ly - 12, tw + 12, 18, 9);
+            ctx.fill();
+            ctx.fillStyle = '#fde047';
+            ctx.fillText(text, lx, ly + 2);
+            ctx.restore();
+            probeEl.innerText = mag;
+        }
+
+        // ====================================================
+        // 측면 뷰: 입체 원통 도선 + 전류 흐름
+        // ====================================================
+        function drawSideViewBg() {
+            // 측면 뷰 영역 배경 (살짝 어두운 grid + 분할선)
+            ctx.save();
+            // 영역 자체
+            const sideGrad = ctx.createLinearGradient(0, 0, 0, SIDE_H);
+            sideGrad.addColorStop(0, '#0a0e1e');
+            sideGrad.addColorStop(1, '#070a18');
+            ctx.fillStyle = sideGrad;
+            ctx.fillRect(0, 0, canvas.width, SIDE_H);
+            // grid
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, SIDE_H); ctx.stroke();
+            }
+            for (let i = 0; i < SIDE_H; i += 40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+            // 라벨 (왼쪽 위)
+            ctx.font = 'bold 10px ui-monospace, monospace';
+            ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('▮ SIDE VIEW', 12, 10);
+            ctx.restore();
+        }
+        function drawDivider() {
+            ctx.save();
+            const grad = ctx.createLinearGradient(0, SIDE_H - 1, canvas.width, SIDE_H - 1);
+            grad.addColorStop(0, 'transparent');
+            grad.addColorStop(0.5, 'rgba(168, 139, 250, 0.6)');
+            grad.addColorStop(1, 'transparent');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, SIDE_H); ctx.lineTo(canvas.width, SIDE_H);
+            ctx.stroke();
+            ctx.restore();
+        }
+        function drawCrossViewBg() {
+            ctx.save();
+            ctx.font = 'bold 10px ui-monospace, monospace';
+            ctx.fillStyle = 'rgba(244, 114, 182, 0.5)';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('◯ CROSS-SECTION VIEW · 합성 자기력선', 12, SIDE_H + 10);
+            ctx.restore();
+        }
+
+        // 입체 원통 도선 (측면 뷰)
+        function drawWireCylinder(x, baseColor, glowColor, current, direction, label) {
+            const yTop = 56, yBot = SIDE_H - 26;
+            const halfW = 11; // 원통 반경
+
+            // 그림자
+            ctx.save();
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = glowColor;
+            // 본체: 좌→우 그라데이션 (어둠-밝음-어둠) 으로 원통 입체감
+            const cylGrad = ctx.createLinearGradient(x - halfW, 0, x + halfW, 0);
+            cylGrad.addColorStop(0, '#1f2937');
+            cylGrad.addColorStop(0.18, baseColor);
+            cylGrad.addColorStop(0.5, '#fef3c7');
+            cylGrad.addColorStop(0.82, baseColor);
+            cylGrad.addColorStop(1, '#1f2937');
+            ctx.fillStyle = cylGrad;
+            roundRect(ctx, x - halfW, yTop, halfW * 2, yBot - yTop, halfW);
+            ctx.fill();
+            // 외곽 라인
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+            ctx.stroke();
+            ctx.restore();
+
+            // 양 끝 캡 (타원으로 입체감)
+            // 위쪽 캡 (살짝 위에서 본 듯)
+            ctx.save();
+            const capGradTop = ctx.createRadialGradient(x, yTop, 1, x, yTop, halfW + 4);
+            capGradTop.addColorStop(0, '#fef9c3');
+            capGradTop.addColorStop(0.5, baseColor);
+            capGradTop.addColorStop(1, '#0f172a');
+            ctx.fillStyle = capGradTop;
+            ctx.beginPath();
+            ctx.ellipse(x, yTop, halfW, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.stroke();
+            ctx.restore();
+
+            // 아래 캡 (살짝 어둡게)
+            ctx.save();
+            ctx.fillStyle = '#0a0e1e';
+            ctx.beginPath();
+            ctx.ellipse(x, yBot, halfW, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+            ctx.stroke();
+            ctx.restore();
+
+            // 라벨 (위쪽)
+            ctx.save();
+            ctx.font = 'bold 11px sans-serif';
+            const tw = ctx.measureText(label).width;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            roundRect(ctx, x - tw/2 - 6, yTop - 28, tw + 12, 18, 9);
+            ctx.fill();
+            ctx.fillStyle = baseColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, yTop - 19);
+            ctx.restore();
+
+            // 전류 화살촉 흐름 (원통 위에 떠있는 빛 입자)
+            if (current > 0) {
+                const speed = (current / 50) * 2.2;
+                const offset = (state.time * speed * -direction) % 36;
+                ctx.save();
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = glowColor;
+                for (let py = yTop + 12 + offset; py < yBot - 14; py += 36) {
+                    if (py > yTop + 8 && py < yBot - 14) {
+                        // 화살촉 모양 (direction 1: 위로 → 화살촉이 위를 가리킴)
+                        ctx.fillStyle = baseColor;
+                        ctx.beginPath();
+                        if (direction === 1) {
+                            ctx.moveTo(x, py - 6);
+                            ctx.lineTo(x - 5, py + 4);
+                            ctx.lineTo(x + 5, py + 4);
+                        } else {
+                            ctx.moveTo(x, py + 6);
+                            ctx.lineTo(x - 5, py - 4);
+                            ctx.lineTo(x + 5, py - 4);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        // 측면 뷰 힘 벡터
+        function drawSideForceArrow(x, dir, magnitude, color, glowColor) {
+            if (magnitude < 2) return;
+            const arrowLen = Math.min(magnitude * 1.3, state.distance / 2 - 14);
+            const y = SIDE_H / 2 + 10;
+            ctx.save();
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = glowColor;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + dir * arrowLen, y);
+            ctx.stroke();
+            ctx.restore();
+            // 화살촉
+            ctx.save();
+            ctx.translate(x + dir * arrowLen, y);
+            ctx.rotate(dir === 1 ? 0 : Math.PI);
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = glowColor;
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(-11, -6); ctx.lineTo(-11, 6); ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+
+            // F 라벨
+            ctx.save();
+            ctx.font = 'italic bold 14px serif';
+            const labelX = x + dir * (arrowLen / 2);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            const lw = ctx.measureText('F').width;
+            roundRect(ctx, labelX - lw/2 - 5, y - 24, lw + 10, 18, 9);
+            ctx.fill();
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('F', labelX, y - 15);
+            ctx.restore();
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.inside = true;
+        });
+        canvas.addEventListener('mouseleave', () => mouse.inside = false);
+
+        function updateLivePanel() {
+            distEl.innerText = `${state.distance} px`;
+            const F = (state.wire1.current * state.wire2.current) / state.distance;
+            forceEl.innerText = F.toFixed(2);
+            const isAttract = state.wire1.direction === state.wire2.direction;
+            const noCurrent = state.wire1.current < 1 || state.wire2.current < 1;
+            modeEl.innerText = noCurrent ? '—' : (isAttract ? '흡인 (인력)' : '반발 (척력)');
+        }
+
+        // ====================================================
+        // 메인 루프
+        // ====================================================
+        function animate() {
+            state.time++;
+            updateUI();
+            updatePositions();
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // ---------- 측면 뷰 ----------
+            drawSideViewBg();
+            drawWireCylinder(sideWire1X, '#ef4444', '#f43f5e', state.wire1.current, state.wire1.direction, '도선 1');
+            drawWireCylinder(sideWire2X, '#3b82f6', '#60a5fa', state.wire2.current, state.wire2.direction, '도선 2');
+            // 측면 힘 벡터
+            const forceMag = (state.wire1.current * state.wire2.current) / (state.distance / 12);
+            const isAttract = state.wire1.direction === state.wire2.direction;
+            if (forceMag > 0.5) {
+                if (isAttract) {
+                    drawSideForceArrow(sideWire1X, 1, forceMag, '#fda4af', '#f87171');
+                    drawSideForceArrow(sideWire2X, -1, forceMag, '#93c5fd', '#60a5fa');
+                } else {
+                    drawSideForceArrow(sideWire1X, -1, forceMag, '#fda4af', '#f87171');
+                    drawSideForceArrow(sideWire2X, 1, forceMag, '#93c5fd', '#60a5fa');
+                }
+            }
+
+            // ---------- 분할선 ----------
+            drawDivider();
+
+            // ---------- 단면 뷰 ----------
+            drawCrossFieldBg();
+            drawCrossViewBg();
+            drawCrossFieldLines();
+            updateParticles();
+            drawParticlesCross();
+            drawCrossProbe();
+            drawCrossWire(crossWire1X, crossWire1Y, '#ef4444', '#f43f5e', state.wire1.direction, '도선 1');
+            drawCrossWire(crossWire2X, crossWire2Y, '#3b82f6', '#60a5fa', state.wire2.direction, '도선 2');
+
+            updateLivePanel();
+            requestAnimationFrame(animate);
+        }
+
+        inputs.c1.oninput = () => flashCard();
+        inputs.c2.oninput = () => flashCard();
+        inputs.dist.oninput = () => flashCard();
+
+        function init() {
+            resize();
+            document.getElementById('dir1Up').onclick = () => setDirection(1, 1);
+            document.getElementById('dir1Down').onclick = () => setDirection(1, -1);
+            document.getElementById('dir2Up').onclick = () => setDirection(2, 1);
+            document.getElementById('dir2Down').onclick = () => setDirection(2, -1);
+            setDirection(1, 1);
+            setDirection(2, 1);
+            requestAnimationFrame(animate);
+
+            if (window.gsap) {
+                gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+                gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+                gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+                gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+                gsap.from('#guideCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

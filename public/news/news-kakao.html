@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기기능사 합격 스터디 — KakaoTalk 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root {
+    --kakao-bg: #b2c7d9;
+    --kakao-bg-grad-start: #9bb5cc;
+    --kakao-bg-grad-end: #c7d8e6;
+    --kakao-yellow: #fee500;
+    --kakao-yellow-deep: #f7d100;
+    --bubble-white: #ffffff;
+    --kakao-text: #1a1a1a;
+    --kakao-muted: #8a96a3;
+    --kakao-notice: #f9e79f;
+    --kakao-system: rgba(0,0,0,0.18);
+  }
+  html, body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: radial-gradient(circle at 20% 20%, #2a3a4a 0%, #0f1620 70%);
+    color: var(--kakao-text);
+    min-height: 100vh;
+  }
+  /* ---- 데스크탑 외곽 (페이지 배경) ---- */
+  .desk-stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .desk-stage::before {
+    content: "";
+    position: absolute; inset: -20%;
+    background:
+      radial-gradient(circle at 80% 10%, rgba(254,229,0,0.10), transparent 40%),
+      radial-gradient(circle at 10% 90%, rgba(178,199,217,0.18), transparent 45%);
+    pointer-events: none;
+  }
+  /* ---- 폰 프레임 ---- */
+  .phone-frame {
+    width: 100%;
+    max-width: 420px;
+    height: 860px;
+    background: #000;
+    border-radius: 44px;
+    padding: 10px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.55),
+      0 0 0 2px rgba(255,255,255,0.04),
+      inset 0 0 0 1px rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 1;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 34px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, var(--kakao-bg-grad-start), var(--kakao-bg-grad-end));
+    position: relative;
+  }
+  /* 노치 */
+  .notch {
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 28px;
+    background: #000;
+    border-radius: 999px;
+    z-index: 50;
+  }
+  /* 상태바 */
+  .status-bar {
+    position: relative;
+    z-index: 5;
+    height: 38px;
+    padding: 6px 24px 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111;
+  }
+  .status-bar .right { display: flex; align-items: center; gap: 6px; }
+
+  /* ---- 채팅 헤더 ---- */
+  .chat-header {
+    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0));
+    padding: 6px 12px 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    backdrop-filter: blur(8px);
+  }
+  .icon-btn {
+    width: 32px; height: 32px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    border-radius: 50%;
+    color: #2c3e50;
+    transition: background .15s;
+  }
+  .icon-btn:hover { background: rgba(0,0,0,0.06); }
+  .room-title { font-weight: 800; font-size: 15.5px; color: #1a2733; letter-spacing: -0.01em; }
+  .room-count { color: #5a6a7a; font-weight: 600; font-size: 14px; margin-left: 4px; }
+
+  /* ---- 공지 (핀) ---- */
+  .notice-pin {
+    margin: 10px 12px 4px 12px;
+    background: linear-gradient(135deg, #fff7c2 0%, #fee500 100%);
+    border: 1px solid rgba(247,209,0,0.6);
+    border-radius: 14px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    box-shadow: 0 4px 14px rgba(247,209,0,0.25);
+    position: relative;
+  }
+  .notice-pin .pin-emoji {
+    font-size: 18px;
+    flex-shrink: 0;
+    transform: rotate(-15deg);
+  }
+  .notice-pin .pin-label { font-size: 11px; font-weight: 800; color: #8a6d00; letter-spacing: 0.05em; }
+  .notice-pin .pin-text { font-size: 13px; font-weight: 700; color: #2a2200; line-height: 1.35; }
+  .notice-pin .pin-sub { font-size: 11px; color: #6a5500; margin-top: 2px; }
+
+  /* ---- 채팅 컨테이너 ---- */
+  .chat-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+  }
+  .chat-container::-webkit-scrollbar { width: 4px; }
+  .chat-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 8px; }
+
+  /* ---- 시스템 메시지 / 날짜 구분선 ---- */
+  .sys-row { display: flex; justify-content: center; margin: 6px 0; }
+  .sys-pill {
+    background: rgba(0,0,0,0.18);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(2px);
+  }
+  .date-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 4px;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .date-divider::before, .date-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.4);
+  }
+
+  /* ---- 메시지 ---- */
+  .msg {
+    display: flex;
+    max-width: 88%;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: pop 0.45s cubic-bezier(.2,.7,.3,1.2) forwards;
+  }
+  @keyframes pop {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg.left { align-self: flex-start; }
+  .msg.right { align-self: flex-end; flex-direction: row-reverse; }
+
+  /* 아바타 */
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 17px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    background-size: cover;
+  }
+  .avatar.hidden-avatar { visibility: hidden; }
+
+  .msg-body { display: flex; flex-direction: column; }
+  .msg-body.right-body { align-items: flex-end; }
+  .sender { font-size: 11.5px; color: #2c3e50; margin: 2px 4px 3px 4px; font-weight: 600; }
+
+  .bubble-row { display: flex; gap: 4px; align-items: flex-end; }
+  .bubble-row.reverse { flex-direction: row-reverse; }
+
+  .bubble {
+    padding: 8px 11px;
+    font-size: 14px;
+    line-height: 1.45;
+    border-radius: 14px;
+    max-width: 240px;
+    word-break: break-word;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+    position: relative;
+    cursor: pointer;
+  }
+  .left .bubble {
+    background: var(--bubble-white);
+    color: #111;
+    border-top-left-radius: 4px;
+  }
+  .right .bubble {
+    background: var(--kakao-yellow);
+    color: #1a1a1a;
+    border-top-right-radius: 4px;
+  }
+  .meta {
+    font-size: 10px;
+    color: #4b5b6b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding-bottom: 2px;
+  }
+  .meta .read { color: #f7d100; font-weight: 800; font-size: 10px; }
+
+  /* 답장(인용) */
+  .reply-quote {
+    border-left: 3px solid #c9b300;
+    background: rgba(255,255,255,0.55);
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #555;
+    border-radius: 6px;
+  }
+  .right .reply-quote { background: rgba(0,0,0,0.06); border-left-color: #555; }
+  .reply-quote .q-sender { font-size: 11px; font-weight: 700; color: #333; margin-bottom: 1px; }
+
+  /* 이모지 단독 메시지 (큰) */
+  .mega-emoji {
+    font-size: 56px;
+    line-height: 1.1;
+    padding: 4px 6px;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+  }
+
+  /* 사진 메시지 */
+  .photo-msg {
+    width: 220px;
+    height: 150px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    cursor: pointer;
+  }
+  .photo-msg.left-photo { border-top-left-radius: 4px; }
+  .photo-msg.right-photo { border-top-right-radius: 4px; }
+  .photo-1 {
+    background:
+      radial-gradient(circle at 30% 70%, #ffd54a 0 8px, transparent 9px),
+      radial-gradient(circle at 70% 40%, #ff7043 0 6px, transparent 7px),
+      linear-gradient(135deg, #1a237e 0%, #283593 40%, #5e35b1 100%);
+  }
+  .photo-1::after {
+    content: "📘 옴의 법칙 정리노트";
+    position: absolute; bottom: 8px; left: 10px;
+    color: #fff; font-size: 12px; font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .photo-2 {
+    background:
+      linear-gradient(45deg, transparent 48%, #fff 48%, #fff 52%, transparent 52%),
+      linear-gradient(-45deg, transparent 48%, #fff 48%, #fff 52%, transparent 52%),
+      linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%);
+    background-size: 30px 30px, 30px 30px, 100% 100%;
+  }
+  .photo-2::after {
+    content: "✅ 합격증 인증샷";
+    position: absolute; bottom: 8px; left: 10px;
+    color: #fff; font-size: 12px; font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .photo-3 {
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 22px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 22px),
+      linear-gradient(135deg, #263238 0%, #455a64 100%);
+  }
+  .photo-3::after {
+    content: "⚡ 회로 시뮬레이터 화면";
+    position: absolute; bottom: 8px; left: 10px;
+    color: #ffd54a; font-size: 12px; font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+
+  /* 공식/카드 메시지 (왼쪽 말풍선 안에 끼움) */
+  .formula-card {
+    background: linear-gradient(135deg, #fff 0%, #fff8d8 100%);
+    border-radius: 12px;
+    padding: 10px 12px;
+    border-left: 4px solid #f7d100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-width: 220px;
+  }
+  .formula-title { font-size: 11px; font-weight: 800; color: #8a6d00; margin-bottom: 4px; letter-spacing: 0.04em; }
+  .formula-body {
+    font-family: 'Cambria Math', 'Times New Roman', serif;
+    font-size: 22px;
+    color: #1a2733;
+    text-align: center;
+    font-weight: 700;
+    padding: 6px 0;
+  }
+  .formula-body sub, .formula-body sup { font-size: 0.7em; }
+  .formula-desc { font-size: 11px; color: #4b5b6b; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 4px; margin-top: 2px; }
+
+  /* 투표 카드 */
+  .poll-card {
+    width: 260px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-top-left-radius: 4px;
+  }
+  .poll-title { font-weight: 800; font-size: 13.5px; color: #222; margin-bottom: 2px; }
+  .poll-sub { font-size: 10.5px; color: #8a96a3; margin-bottom: 10px; }
+  .poll-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: #f4f6f8;
+    margin-bottom: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform .15s;
+  }
+  .poll-option:hover { transform: translateY(-1px); }
+  .poll-option .bar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #fee500 0%, #ffd54a 100%);
+    border-radius: 10px;
+    z-index: 0;
+    transition: width 1.2s cubic-bezier(.2,.7,.3,1);
+  }
+  .poll-option .label, .poll-option .pct {
+    position: relative; z-index: 1;
+  }
+  .poll-option .label { flex: 1; font-weight: 600; color: #222; }
+  .poll-option .pct { font-weight: 700; color: #5a6a7a; font-size: 12px; }
+  .poll-footer { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10.5px; color: #8a96a3; }
+
+  /* 호버 반응 */
+  .bubble .reactions {
+    position: absolute;
+    top: -16px;
+    background: #fff;
+    border-radius: 999px;
+    padding: 2px 6px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+    display: none;
+    gap: 4px;
+    font-size: 13px;
+    z-index: 10;
+  }
+  .left .bubble .reactions { left: 4px; }
+  .right .bubble .reactions { right: 4px; }
+  .bubble:hover .reactions { display: inline-flex; }
+  .bubble .reactions span { cursor: pointer; transition: transform .12s; }
+  .bubble .reactions span:hover { transform: scale(1.35); }
+
+  /* 반응 뱃지 (남겨진 좋아요) */
+  .reaction-badge {
+    position: absolute;
+    bottom: -10px;
+    background: #fff;
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 11px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    z-index: 2;
+  }
+  .left .bubble .reaction-badge { right: -8px; }
+  .right .bubble .reaction-badge { left: -8px; }
+  .reaction-badge .count { color: #555; font-weight: 700; font-size: 10px; }
+
+  /* ---- 입력창 ---- */
+  .input-area {
+    background: #fff;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .input-box {
+    flex: 1;
+    background: #f3f5f7;
+    border-radius: 18px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    color: #111;
+    border: none;
+    outline: none;
+    transition: background .15s;
+  }
+  .input-box:focus { background: #eaeef2; }
+  .input-box::placeholder { color: #97a2ad; }
+  .icon-input {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #6b7785;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .icon-input:hover { background: #f0f3f6; color: #2c3e50; }
+  .send-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fee500 0%, #f7d100 100%);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #1a1a1a;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(247,209,0,0.5);
+    transition: transform .12s;
+  }
+  .send-btn:hover { transform: scale(1.06); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn.disabled {
+    background: #e0e4e8;
+    color: #a0aab4;
+    box-shadow: none;
+    cursor: default;
+  }
+
+  /* 아바타 그라데이션들 */
+  .av-1 { background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%); }
+  .av-2 { background: linear-gradient(135deg, #54a0ff 0%, #2e86de 100%); }
+  .av-3 { background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%); }
+  .av-4 { background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%); }
+  .av-5 { background: linear-gradient(135deg, #9b59b6 0%, #6c5ce7 100%); }
+  .av-6 { background: linear-gradient(135deg, #ff7eb3 0%, #ff758c 100%); }
+  .av-7 { background: linear-gradient(135deg, #00d2d3 0%, #01a3a4 100%); }
+  .av-me { background: linear-gradient(135deg, #fee500 0%, #f7d100 100%); color: #2a2200 !important; }
+
+  /* 타이핑 인디케이터 */
+  .typing {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fff;
+    border-radius: 14px; border-top-left-radius: 4px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  }
+  .typing .dot {
+    width: 6px; height: 6px;
+    background: #b2bbc4;
+    border-radius: 50%;
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing .dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* 헤더 멤버 미니 프로필 줄 */
+  .members-strip {
+    padding: 6px 12px 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: -6px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.18));
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .members-strip .mini {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.7);
+    margin-left: -6px;
+    font-size: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .members-strip .mini:first-child { margin-left: 0; }
+  .members-strip .more {
+    margin-left: 8px;
+    font-size: 11.5px;
+    color: #2c3e50;
+    font-weight: 700;
+  }
+
+  /* 새 메시지 알림 */
+  .new-msg-toast {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .25s;
+    z-index: 60;
+  }
+  .new-msg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; cursor: pointer; }
+
+  /* 작은 페이지 캡션 (폰 외부) */
+  .page-caption {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-align: center;
+    pointer-events: none;
+  }
+  .page-caption strong { color: rgba(255,255,255,0.7); }
+</style>
+</head>
+<body>
+<div class="desk-stage">
+  <div class="phone-frame">
+    <div class="notch"></div>
+    <div class="phone-screen">
+
+      <!-- 상태바 -->
+      <div class="status-bar">
+        <span>9:41</span>
+        <span class="right">
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="currentColor"><path d="M1 7h2v3H1zM5 5h2v5H5zM9 3h2v7H9zM13 0v10h-2V0z"/></svg>
+          <svg width="14" height="10" viewBox="0 0 16 12" fill="currentColor"><path d="M8 3c2.21 0 4.21.9 5.66 2.34l1.41-1.41A9.96 9.96 0 0 0 8 1a9.96 9.96 0 0 0-7.07 2.93l1.41 1.41A7.97 7.97 0 0 1 8 3zm0 4c1.1 0 2.1.45 2.83 1.17l1.41-1.41A6.97 6.97 0 0 0 8 5a6.97 6.97 0 0 0-4.24 1.76l1.41 1.41A4.97 4.97 0 0 1 8 7z"/></svg>
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="0.5" y="0.5" width="18" height="9" rx="2"/><rect x="2" y="2" width="13" height="6" rx="1" fill="currentColor"/><rect x="19.5" y="3" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <!-- 헤더 -->
+      <div class="chat-header">
+        <button class="icon-btn" title="뒤로">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="flex-1 min-w-0">
+          <div class="room-title truncate">🔥 전기기능사 합격 스터디 🔥 <span class="room-count">7</span></div>
+        </div>
+        <button class="icon-btn" title="검색">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" title="메뉴">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- 멤버 -->
+      <div class="members-strip">
+        <span class="mini av-1">옴</span>
+        <span class="mini av-2">번</span>
+        <span class="mini av-3">합</span>
+        <span class="mini av-4">초</span>
+        <span class="mini av-5">재</span>
+        <span class="mini av-7">코</span>
+        <span class="mini av-me">나</span>
+        <span class="more">7명 참여중 · 24시간 활성</span>
+      </div>
+
+      <!-- 공지 핀 -->
+      <div class="notice-pin">
+        <span class="pin-emoji">📌</span>
+        <div class="flex-1">
+          <div class="pin-label">오늘의 학습 미션 · D-23</div>
+          <div class="pin-text">옴의 법칙 다시 한 번! V = IR 완전정복</div>
+          <div class="pin-sub">→ CBT 모의고사 1회분 풀고 인증 ✅ · 오답노트 공유 권장</div>
+        </div>
+        <button class="icon-btn" title="공지 닫기">
+          <svg width="14" height="14" fill="none" stroke="#8a6d00" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- 채팅 컨테이너 -->
+      <div class="chat-container" id="chatBox"></div>
+
+      <!-- 새 메시지 알림 -->
+      <div class="new-msg-toast" id="newMsgToast">▼ 새 메시지</div>
+
+      <!-- 입력창 -->
+      <div class="input-area">
+        <span class="icon-input" title="더보기">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        </span>
+        <span class="icon-input" title="사진">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 17l-5-5-9 9"/></svg>
+        </span>
+        <input id="msgInput" class="input-box" placeholder="메시지 보내기" autocomplete="off"/>
+        <span class="icon-input" title="이모지">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="0.5" fill="currentColor"/><circle cx="15" cy="10" r="0.5" fill="currentColor"/><path d="M8 14c1 1.5 2.5 2.5 4 2.5S15 15.5 16 14"/></svg>
+        </span>
+        <span class="send-btn disabled" id="sendBtn" title="전송">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M5 12l14-7-5 14-2-6-7-1z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-caption">
+    <strong>전기기능사 합격 스터디</strong> · KakaoTalk 채팅 콘셉트 소식지 · 2026.05
+  </div>
+</div>
+
+<script>
+  // ===================== 메시지 데이터 =====================
+  const ME = { name: "나", avatar: "av-me", side: "right", initial: "나" };
+
+  const cast = {
+    옴쌤:   { avatar: "av-1", init: "옴", color: "#ee5253", role: "스터디장 · 전기기사" },
+    번개왕: { avatar: "av-2", init: "번", color: "#2e86de", role: "23년 합격생" },
+    합격기원:{ avatar: "av-3", init: "합", color: "#10ac84", role: "재도전 4회차" },
+    전기초보:{ avatar: "av-4", init: "초", color: "#ff9f43", role: "이번이 처음" },
+    재수생: { avatar: "av-5", init: "재", color: "#6c5ce7", role: "D-23 카운트다운" },
+    플럭스: { avatar: "av-6", init: "플", color: "#ff758c", role: "야간조" },
+    코일러: { avatar: "av-7", init: "코", color: "#01a3a4", role: "공식 덕후" },
+  };
+
+  // 시간 헬퍼
+  function t(h, m) { const am = h < 12 ? "오전" : "오후"; const hh = ((h + 11) % 12) + 1; return `${am} ${hh}:${String(m).padStart(2,'0')}`; }
+
+  // 대화 스크립트 (시간 순)
+  const messages = [
+    { type: "date", text: "2026년 5월 14일 화요일" },
+    { type: "system", text: "전기초보 님이 들어왔습니다." },
+    {
+      type: "chat", who: "옴쌤", time: t(9, 12),
+      text: "여러분 좋은 아침입니다 ☀️ 오늘부터 D-23, 마지막 직선구간 들어갑니다. 옴의 법칙 다시 한 번 짚고 갈게요!"
+    },
+    {
+      type: "chat", who: "전기초보", time: t(9, 14),
+      text: "쌤... 저 어제부터 시작했는데 V=IR 이게 왜 자꾸 헷갈리죠 ㅠㅠ"
+    },
+    {
+      type: "chat", who: "옴쌤", time: t(9, 15), reactions: { "👍": 5, "❤️": 3 },
+      reply: { who: "전기초보", text: "쌤... 저 어제부터 시작했는데 V=IR 이게 왜 자꾸 헷갈리죠 ㅠㅠ" },
+      text: "물탱크로 외우세요! 수압=V, 물흐름=I, 파이프 좁기=R. 수압이 높을수록 / 파이프가 넓을수록 물이 많이 흐르죠 💧"
+    },
+    {
+      type: "formula", who: "옴쌤", time: t(9, 16),
+      title: "옴의 법칙 · 외워둘 3형제",
+      body: "V = I · R&nbsp;&nbsp;|&nbsp;&nbsp;I = V / R&nbsp;&nbsp;|&nbsp;&nbsp;R = V / I",
+      desc: "V[V] · I[A] · R[Ω] · 한 식만 알면 나머지 둘은 이항으로 나옴"
+    },
+    {
+      type: "chat", who: "전기초보", time: t(9, 17),
+      text: "오 물탱크 진짜 이해됐어요 🥹🥹"
+    },
+    {
+      type: "chat", who: "번개왕", time: t(9, 22),
+      text: "전류쌤 + 합격생 1인 추가요 🙋‍♂️ 작년 합격하고 이번엔 응원하러 들어왔습니다!"
+    },
+    { type: "system", text: "번개왕 님이 들어왔습니다." },
+    {
+      type: "chat", who: "번개왕", time: t(9, 23),
+      text: "초보님 너무 걱정 마세요. 저도 V=IR 들으면 처음엔 '뭐어?' 였어요. 근데 문제 30개만 풀면 손이 먼저 움직임 ㅋㅋ"
+    },
+    {
+      type: "chat", who: "재수생", time: t(10, 5), reactions: { "🔥": 7 },
+      text: "저도 한마디만요. 작년에 53점으로 떨어졌습니다. 올해는 무조건 갑니다. 같이 가요 우리 🔥🔥🔥"
+    },
+    {
+      type: "emoji", who: "코일러", time: t(10, 7),
+      emoji: "🔥🔥🔥"
+    },
+    {
+      type: "chat", who: "옴쌤", time: t(10, 9),
+      text: "좋습니다! 그럼 오늘의 미션 받아가세요 👇"
+    },
+    {
+      type: "photo", who: "옴쌤", time: t(10, 10),
+      photoClass: "photo-1",
+      caption: "PDF 정리노트도 카페에 올려뒀어요!"
+    },
+    {
+      type: "chat", side: "right", who: "ME", time: t(10, 15),
+      text: "쌤 감사합니다! 저 어제 시뮬레이터로 회로 돌려봤는데 R 늘렸더니 진짜로 I 줄어드네요 신기 ⚡"
+    },
+    {
+      type: "photo", side: "right", who: "ME", time: t(10, 16),
+      photoClass: "photo-3", rightPhoto: true,
+      caption: ""
+    },
+    {
+      type: "chat", who: "합격기원", time: t(10, 18), reactions: { "👏": 4, "🎉": 6 },
+      text: "와… 4수 끝에 어제 필기 84점 떴습니다 형제자매들아 🥲 진짜 V=IR이 효자였다…"
+    },
+    {
+      type: "photo", who: "합격기원", time: t(10, 19),
+      photoClass: "photo-2",
+      caption: "84점 합격증 짤"
+    },
+    {
+      type: "chat", who: "옴쌤", time: t(10, 20),
+      reply: { who: "합격기원", text: "[사진] 84점 합격증 짤" },
+      text: "축하합니다 👏👏👏 합격기원님 → 이제 합격성공님으로 닉변 가즈아!"
+    },
+    {
+      type: "chat", who: "플럭스", time: t(11, 2),
+      text: "야간조 출근 인사 드립니다 🌙 어젯밤에 풀던 문제 하나 못 풀겠어서 던지고 잤어요…"
+    },
+    {
+      type: "chat", who: "플럭스", time: t(11, 3),
+      text: "220V 회로에 22Ω 저항 달면 전류 몇 A 흐르나요? 답이 자꾸 0.1A 나와서 멘붕…"
+    },
+    {
+      type: "chat", who: "코일러", time: t(11, 5),
+      reply: { who: "플럭스", text: "220V에 22Ω 저항 달면 전류 몇 A?" },
+      text: "I = V/R = 220/22 = 10A 입니다! 0.1은 V를 22V로 잘못 본 듯 🧐"
+    },
+    {
+      type: "chat", who: "플럭스", time: t(11, 6),
+      text: "헐… 영점 하나 잘못 보고 한 시간을 ㅠㅠ 감사합니다 진짜"
+    },
+    {
+      type: "emoji", side: "right", who: "ME", time: t(11, 8),
+      emoji: "🤣"
+    },
+    { type: "date", text: "2026년 5월 15일 수요일" },
+    {
+      type: "poll", who: "옴쌤", time: t(20, 30),
+      pollTitle: "🗳️ 내일 저녁 스터디 시간은?",
+      pollSub: "복수 응답 불가 · 마감 5/15 23:00",
+      options: [
+        { label: "오후 7시 ⚡", pct: 18, voters: 2 },
+        { label: "오후 8시 🔥", pct: 55, voters: 6 },
+        { label: "오후 9시 🌙", pct: 27, voters: 3 },
+      ],
+      total: 11
+    },
+    {
+      type: "chat", who: "재수생", time: t(20, 32),
+      text: "저는 무조건 8시! 6시까지 알바 + 저녁 먹고 딱이에요 🍙"
+    },
+    {
+      type: "chat", side: "right", who: "ME", time: t(20, 34),
+      text: "저도 8시 콜이요 👌"
+    },
+    {
+      type: "chat", who: "전기초보", time: t(20, 40),
+      text: "근데 P = VI 랑 P = I²R 이거 어떨 때 뭘 써야 돼요…?"
+    },
+    {
+      type: "formula", who: "코일러", time: t(20, 42),
+      title: "전력 공식 — 상황별 선택지",
+      body: "P = V · I = I² · R = V² / R",
+      desc: "주어진 값 보고 식 고르기 · V·I 알면 위, R 있고 I 알면 가운데, V·R이면 오른쪽"
+    },
+    {
+      type: "chat", who: "코일러", time: t(20, 43),
+      text: "공식은 외우는 게 아니라 '주어진 값'에 맞춰서 고르는 거예요. 문제 30개만 풀면 손이 자동 ⌨️"
+    },
+    {
+      type: "chat", who: "번개왕", time: t(20, 50), reactions: { "💯": 8 },
+      text: "이 단톡방 합격률 90% 가즈아 🚀 D-23 같이 달립시다!"
+    },
+    {
+      type: "system", text: "옴쌤 님이 공지를 등록했습니다 — '내일 20:00 화상 스터디'"
+    },
+  ];
+
+  // ===================== 렌더링 =====================
+  const chatBox = document.getElementById('chatBox');
+
+  function escapeHtml(s) {
+    return (s || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderReactions(rx) {
+    if (!rx) return "";
+    const items = Object.entries(rx).map(([e,c]) => `${e}<span class="count">${c}</span>`).join("");
+    return `<span class="reaction-badge">${items}</span>`;
+  }
+
+  function renderHoverReactions() {
+    return `<span class="reactions"><span data-r="❤️">❤️</span><span data-r="👍">👍</span><span data-r="😂">😂</span><span data-r="🔥">🔥</span><span data-r="👏">👏</span></span>`;
+  }
+
+  function renderReplyQuote(reply) {
+    if (!reply) return "";
+    const name = reply.who === "ME" ? ME.name : reply.who;
+    return `<div class="reply-quote"><div class="q-sender">↪ ${escapeHtml(name)}</div>${escapeHtml(reply.text)}</div>`;
+  }
+
+  function timeMeta(time, isRight, read=true) {
+    if (!time) return "";
+    const readBadge = isRight ? `<span class="read">1</span>` : "";
+    return `<div class="meta">${readBadge}<span>${escapeHtml(time)}</span></div>`;
+  }
+
+  let lastWho = null; // 같은 사람 연속 메시지일 때 아바타/이름 생략
+
+  function renderMessage(msg, idx) {
+    const delay = Math.min(idx * 0.08, 1.4);
+
+    if (msg.type === "date") {
+      lastWho = null;
+      return `<div class="date-divider" style="animation: pop 0.3s ${delay}s both">${escapeHtml(msg.text)}</div>`;
+    }
+    if (msg.type === "system") {
+      lastWho = null;
+      return `<div class="sys-row"><span class="sys-pill" style="animation: pop 0.3s ${delay}s both">${escapeHtml(msg.text)}</span></div>`;
+    }
+
+    const isMe = msg.who === "ME" || msg.side === "right";
+    const persona = isMe ? ME : cast[msg.who];
+    if (!persona) return "";
+    const sideCls = isMe ? "right" : "left";
+    const showAvatar = lastWho !== msg.who;
+    const senderName = isMe ? "" : (showAvatar ? `<div class="sender">${escapeHtml(msg.who)}</div>` : "");
+    const avatarHtml = showAvatar
+      ? `<div class="avatar ${persona.avatar || persona.color}">${persona.init || persona.initial}</div>`
+      : `<div class="avatar hidden-avatar"></div>`;
+
+    lastWho = msg.who;
+
+    let bubbleInner = "";
+    let bubbleClass = "bubble";
+
+    if (msg.type === "chat") {
+      bubbleInner = `${renderReplyQuote(msg.reply)}${escapeHtml(msg.text)}${renderHoverReactions()}${renderReactions(msg.reactions)}`;
+    } else if (msg.type === "emoji") {
+      bubbleClass = "bubble mega-emoji";
+      bubbleInner = `${msg.emoji}${renderHoverReactions()}${renderReactions(msg.reactions)}`;
+    } else if (msg.type === "photo") {
+      const photoSide = msg.rightPhoto ? "right-photo" : "left-photo";
+      const cap = msg.caption ? `<div style="position:absolute;bottom:8px;right:10px;color:#fff;font-size:11px;text-shadow:0 1px 3px rgba(0,0,0,0.6);">${escapeHtml(msg.caption)}</div>` : "";
+      return `
+        <div class="msg ${sideCls}" style="animation-delay:${delay}s">
+          ${avatarHtml}
+          <div class="msg-body ${isMe ? 'right-body' : ''}">
+            ${senderName}
+            <div class="bubble-row ${isMe ? 'reverse' : ''}">
+              <div class="photo-msg ${msg.photoClass} ${photoSide}">${cap}</div>
+              ${timeMeta(msg.time, isMe)}
+            </div>
+          </div>
+        </div>`;
+    } else if (msg.type === "formula") {
+      return `
+        <div class="msg ${sideCls}" style="animation-delay:${delay}s">
+          ${avatarHtml}
+          <div class="msg-body">
+            ${senderName}
+            <div class="bubble-row">
+              <div class="formula-card">
+                <div class="formula-title">${escapeHtml(msg.title)}</div>
+                <div class="formula-body">${msg.body}</div>
+                <div class="formula-desc">${escapeHtml(msg.desc)}</div>
+              </div>
+              ${timeMeta(msg.time, false)}
+            </div>
+          </div>
+        </div>`;
+    } else if (msg.type === "poll") {
+      const opts = msg.options.map((o, i) => `
+        <div class="poll-option" data-poll-opt="${i}">
+          <span class="bar" style="width:0%" data-target="${o.pct}"></span>
+          <span class="label">${escapeHtml(o.label)}</span>
+          <span class="pct">${o.pct}%</span>
+        </div>`).join("");
+      return `
+        <div class="msg ${sideCls}" style="animation-delay:${delay}s">
+          ${avatarHtml}
+          <div class="msg-body">
+            ${senderName}
+            <div class="bubble-row">
+              <div class="poll-card">
+                <div class="poll-title">${escapeHtml(msg.pollTitle)}</div>
+                <div class="poll-sub">${escapeHtml(msg.pollSub)}</div>
+                ${opts}
+                <div class="poll-footer">
+                  <span>총 ${msg.total}표</span>
+                  <span>📊 결과 보기</span>
+                </div>
+              </div>
+              ${timeMeta(msg.time, false)}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="msg ${sideCls}" style="animation-delay:${delay}s">
+        ${avatarHtml}
+        <div class="msg-body ${isMe ? 'right-body' : ''}">
+          ${senderName}
+          <div class="bubble-row ${isMe ? 'reverse' : ''}">
+            <div class="${bubbleClass}">${bubbleInner}</div>
+            ${timeMeta(msg.time, isMe)}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderAll() {
+    chatBox.innerHTML = messages.map(renderMessage).join("");
+    // 투표 바 애니메이션
+    requestAnimationFrame(() => {
+      chatBox.querySelectorAll('.poll-option .bar').forEach(bar => {
+        const tg = bar.getAttribute('data-target');
+        bar.style.width = tg + "%";
+      });
+      chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+    });
+  }
+
+  renderAll();
+
+  // ===================== 입력/전송 =====================
+  const input = document.getElementById('msgInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const toast = document.getElementById('newMsgToast');
+
+  input.addEventListener('input', () => {
+    if (input.value.trim()) sendBtn.classList.remove('disabled');
+    else sendBtn.classList.add('disabled');
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); doSend(); }
+  });
+  sendBtn.addEventListener('click', doSend);
+
+  function doSend() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    const now = new Date();
+    const time = t(now.getHours(), now.getMinutes());
+    const newMsg = { type: "chat", side: "right", who: "ME", time, text };
+    messages.push(newMsg);
+
+    // 새 메시지만 append (전체 재렌더 피함)
+    const html = renderMessage(newMsg, messages.length - 1);
+    // lastWho 가 ME 로 갱신되어 있을 수 있어, 마지막 메시지 강제 표시는 위 함수에 위임됨.
+    chatBox.insertAdjacentHTML('beforeend', html);
+    input.value = "";
+    sendBtn.classList.add('disabled');
+
+    // 자동 스크롤
+    setTimeout(() => {
+      chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+    }, 50);
+
+    // 일정 확률로 자동 답장 (분위기용)
+    if (Math.random() < 0.65) maybeAutoReply(text);
+  }
+
+  function maybeAutoReply(userText) {
+    // 타이핑 표시
+    const typingId = "typing-" + Date.now();
+    const personas = ["옴쌤", "번개왕", "코일러", "재수생", "전기초보"];
+    const picked = personas[Math.floor(Math.random() * personas.length)];
+    const p = cast[picked];
+
+    const typingHtml = `
+      <div class="msg left" id="${typingId}">
+        <div class="avatar ${p.avatar}">${p.init}</div>
+        <div class="msg-body">
+          <div class="sender">${picked}</div>
+          <div class="bubble-row">
+            <div class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          </div>
+        </div>
+      </div>`;
+    chatBox.insertAdjacentHTML('beforeend', typingHtml);
+    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+
+    setTimeout(() => {
+      const el = document.getElementById(typingId);
+      if (el) el.remove();
+      const replies = pickReplies(userText, picked);
+      const now = new Date();
+      const time = t(now.getHours(), now.getMinutes());
+      const replyMsg = { type: "chat", who: picked, time, text: replies };
+      messages.push(replyMsg);
+      // 직전이 ME 였으므로 lastWho 리셋 후 렌더 (this 메시지의 senderName 보장)
+      lastWho = "ME";
+      chatBox.insertAdjacentHTML('beforeend', renderMessage(replyMsg, messages.length - 1));
+      setTimeout(() => chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }), 50);
+    }, 900 + Math.random() * 1200);
+  }
+
+  function pickReplies(txt, who) {
+    const t = txt.toLowerCase();
+    if (/옴|ohm|v=ir|저항|전류|전압/.test(t)) return "오 그거 핵심이에요! V=IR 한 줄로 정리되니까 이항만 잘 외워두기 👌";
+    if (/안녕|hi|hello|반가|환영/.test(t)) return "어서오세요 ☀️ 합격 가즈아아 🔥";
+    if (/모르|어려|헷갈|이해/.test(t)) return "괜찮아요 다 그래요 ㅋㅋ 문제 30개만 풀면 손이 자동입니다 🙌";
+    if (/감사|고마|ㄱㅅ/.test(t)) return "별말씀을요 🥹 함께 합격해요!";
+    if (/언제|시간|몇시/.test(t)) return "내일 20:00 화상 스터디 잡혀있어요! 공지 확인해주세요 📌";
+    const pool = [
+      "ㅋㅋㅋㅋ 공감 💯",
+      "오 그거 좋은 포인트네요 🔥",
+      "저도 그 생각 했어요 ㅎㅎ",
+      "와 좋은 질문 — 다른 분들 의견도 궁금해요 👀",
+      "이거 시험에 잘 나옴 ⚡ 정리 ㄱㄱ",
+    ];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // ===================== 호버 반응 클릭 → 배지 ON =====================
+  chatBox.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t.dataset && t.dataset.r) {
+      const bubble = t.closest('.bubble');
+      if (!bubble) return;
+      const emoji = t.dataset.r;
+      let badge = bubble.querySelector('.reaction-badge[data-mine]');
+      if (badge) {
+        const cur = parseInt(badge.querySelector('.count').textContent) || 1;
+        badge.querySelector('.count').textContent = String(cur + 1);
+      } else {
+        const el = document.createElement('span');
+        el.className = "reaction-badge";
+        el.setAttribute('data-mine', '1');
+        el.innerHTML = `${emoji}<span class="count">1</span>`;
+        bubble.appendChild(el);
+        if (window.gsap) gsap.from(el, { scale: 0, duration: 0.4, ease: "back.out(2.4)" });
+      }
+    }
+    // poll option click — 표 늘리기 데모
+    const opt = e.target.closest('[data-poll-opt]');
+    if (opt) {
+      const bar = opt.querySelector('.bar');
+      const pctEl = opt.querySelector('.pct');
+      let pct = parseInt(pctEl.textContent) + 5;
+      if (pct > 100) pct = 100;
+      bar.style.width = pct + "%";
+      pctEl.textContent = pct + "%";
+    }
+  });
+
+  // ===================== 새 메시지 토스트 (스크롤 위로 갔을 때) =====================
+  let userScrolledUp = false;
+  chatBox.addEventListener('scroll', () => {
+    const nearBottom = chatBox.scrollTop + chatBox.clientHeight >= chatBox.scrollHeight - 30;
+    userScrolledUp = !nearBottom;
+    if (nearBottom) toast.classList.remove('show');
+  });
+
+  // 가짜 백그라운드 메시지 (가끔)
+  setInterval(() => {
+    if (Math.random() < 0.25 && userScrolledUp) {
+      toast.classList.add('show');
+    }
+  }, 6000);
+
+  toast.addEventListener('click', () => {
+    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+    toast.classList.remove('show');
+  });
+
+  // ===================== 가벼운 GSAP 인트로 =====================
+  if (window.gsap) {
+    gsap.from(".phone-frame", { y: 30, opacity: 0, duration: 0.7, ease: "power3.out" });
+    gsap.from(".notice-pin", { y: -10, opacity: 0, duration: 0.5, delay: 0.3, ease: "back.out(1.6)" });
+  }
+</script>
+</body>
+</html>

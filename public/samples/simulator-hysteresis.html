@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 히스테리시스 곡선 (B-H Curve) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 580px;
+    border-radius: 17px;
+    background: #050714;
+}
+
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px;
+    border-radius: 9999px; border: 2px solid #34d399;
+    opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-h { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-s { background: linear-gradient(135deg, rgba(168,85,247,0.20), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-f { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.active {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.35);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+
+.mode-btn {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.mode-btn:hover, .mode-btn.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.3), rgba(168,139,250,0.25));
+    transform: translateY(-1px);
+    border-color: rgba(244,114,182,0.6);
+    box-shadow: 0 0 22px rgba(244,114,182,0.4);
+    color: #fce7f3;
+}
+
+.mat-btn {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.mat-btn:hover { transform: translateY(-1px); }
+.mat-btn.active {
+    transform: translateY(-1px);
+}
+.mat-btn.soft.active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.30), rgba(34,211,238,0.08));
+    border-color: rgba(34,211,238,0.7);
+    color: #cffafe;
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.45);
+}
+.mat-btn.hard.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.30), rgba(244,114,182,0.08));
+    border-color: rgba(244,114,182,0.7);
+    color: #fce7f3;
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.45);
+}
+.mat-btn.ferrite.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.30), rgba(168,139,250,0.08));
+    border-color: rgba(168,139,250,0.7);
+    color: #ede9fe;
+    box-shadow: 0 0 22px rgba(168, 139, 250, 0.45);
+}
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+
+.loss-bar-bg {
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.8);
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.loss-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #22d3ee, #c4b5fd, #f472b6);
+    transition: width 250ms ease-out;
+    box-shadow: 0 0 12px rgba(244, 114, 182, 0.6);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · HYSTERESIS LOOP · B-H CURVE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            🌀 히스테리시스 곡선 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">자계 H를 가하면 자속밀도 B가 따라오지만, H를 줄여도 B는 곧장 0이 되지 않습니다. 자성체 종류에 따라 곡선의 폭(=손실)이 크게 달라집니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-h">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">현재 자계 H</p>
+            <p class="mt-1 text-lg font-bold"><span id="hVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">A/m</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-b">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">현재 자속밀도 B</p>
+            <p class="mt-1 text-lg font-bold"><span id="bVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">T</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-br">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">잔류 자속 Bᵣ</p>
+            <p class="mt-1 text-lg font-bold"><span id="brVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">T</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-hc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">보자력 H꜀</p>
+            <p class="mt-1 text-lg font-bold"><span id="hcVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">A/m</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 영역 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">B-H 좌표 · 폐곡선 면적 = 사이클당 손실</span>
+                <div class="flex gap-2">
+                    <button id="modeAuto" class="mode-btn active rounded-md px-3 py-1.5 text-xs font-bold">자동 사이클</button>
+                    <button id="modeManual" class="mode-btn rounded-md px-3 py-1.5 text-xs font-bold">수동 H 조절</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <!-- 자성체 선택 -->
+            <div class="mt-4">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold mb-2">자성체 종류 · 곡선 모양/면적이 달라짐</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button data-mat="soft" class="mat-btn soft active rounded-lg px-3 py-2 text-xs font-bold">
+                        <span class="block">연자성체</span>
+                        <span class="block text-[10px] opacity-70 font-normal mt-0.5">규소강 · 변압기</span>
+                    </button>
+                    <button data-mat="ferrite" class="mat-btn ferrite rounded-lg px-3 py-2 text-xs font-bold">
+                        <span class="block">페라이트</span>
+                        <span class="block text-[10px] opacity-70 font-normal mt-0.5">중간 · 고주파</span>
+                    </button>
+                    <button data-mat="hard" class="mat-btn hard rounded-lg px-3 py-2 text-xs font-bold">
+                        <span class="block">경자성체</span>
+                        <span class="block text-[10px] opacity-70 font-normal mt-0.5">알니코 · 영구자석</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 슬라이더 -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="chip-h chip rounded-lg p-3" id="hSliderBox" style="display:none;">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>수동 자계 H</span><span id="hDisp" class="font-mono text-base">0</span></label>
+                    <input type="range" id="hSlider" min="-1500" max="1500" step="10" value="0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">A/m · 좌우로 천천히 변경</p>
+                </div>
+                <div class="chip-s chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>H 최대값 H<sub>max</sub></span><span id="hmaxDisp" class="font-mono text-base">1000</span></label>
+                    <input type="range" id="hmaxSlider" min="200" max="1500" step="20" value="1000" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">A/m · 자동 사이클 진폭</p>
+                </div>
+                <div class="chip-f chip rounded-lg p-3" id="speedBox">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>사이클 속도</span><span id="speedDisp" class="font-mono text-base">1.0×</span></label>
+                    <input type="range" id="speedSlider" min="0.2" max="3.0" step="0.1" value="1.0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">자동 모드 한정</p>
+                </div>
+            </div>
+
+            <!-- 손실 게이지 -->
+            <div class="mt-4 glass rounded-lg p-3" style="background: rgba(15,23,42,0.7);">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] tracking-widest text-slate-400 font-bold">사이클당 히스테리시스 손실 (폐곡선 면적)</span>
+                    <span id="lossLabel" class="text-xs font-mono text-pink-200">— J/m³</span>
+                </div>
+                <div class="loss-bar-bg"><div id="lossBar" class="loss-bar" style="width: 0%;"></div></div>
+                <p class="mt-2 text-[10px] text-slate-500">연자성체는 좁고 작음 → 변압기 철심에 사용. 경자성체는 넓고 큼 → 영구자석에 사용.</p>
+            </div>
+        </div>
+
+        <!-- 사이드 -->
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="text-lg">💡</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">B-H 곡선 핵심 5</span>
+                </h2>
+                <ul class="mt-4 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">1. 자화 곡선</span> · H 증가 → B 증가, 어느 지점부터 포화</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">2. 잔류 자속 Bᵣ</span> · H=0이어도 B는 0이 아님 (Y절편)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">3. 보자력 H꜀</span> · B를 0으로 만드는 데 필요한 역방향 H (X절편)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">4. 폐곡선 면적</span> · 한 사이클당 <span class="text-pink-300 font-bold">손실 에너지</span> (열로 소실)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">5. 변압기 = 연자성체</span> · 좁은 곡선 → 손실 최소화</li>
+                </ul>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">📐 히스테리시스 손실</h3>
+                <div class="math-container">
+                    $$P_h = \eta\,f\,B_m^{1.6} \;\;[\text{W/m}^3]$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">η: 히스테리시스 상수 (재질 의존), f: 주파수, Bₘ: 최대 자속밀도. <span class="text-pink-300">Steinmetz 경험식</span></p>
+            </div>
+
+            <div class="formula-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">⚡ 현재 자성체 특성</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">선택된 재질</span><span id="matLabel" class="font-mono text-pink-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">포화 자속밀도 Bₛ</span><span id="bsLabel" class="font-mono text-pink-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">곡선 폭</span><span id="widthLabel" class="font-mono text-cyan-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">사이클 진행</span><span id="cycleLabel" class="font-mono text-indigo-200">—</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+// ============================================
+// 자성체 프리셋 (Br, Hc, Bs 등의 시각화 파라미터)
+// soft = 좁고 가파른 루프 (변압기용)
+// hard = 매우 넓고 큰 루프 (영구자석)
+// ferrite = 중간 + 더 가는 saturation
+// ============================================
+const MATERIALS = {
+    soft: {
+        name: '연자성체 (규소강)',
+        Bs: 1.6,        // 포화 자속밀도 (T)
+        Br: 1.05,       // 잔류 자속 (T)
+        Hc: 80,         // 보자력 (A/m) — 매우 작음
+        squareness: 0.7,// 각형비 (0=둥근, 1=직사각형)
+        sharpness: 1.8, // 곡선 가파름 (높을수록 빠르게 포화)
+        color: '#22d3ee',
+        colorRgb: '34, 211, 238',
+        accent: '#67e8f9',
+    },
+    ferrite: {
+        name: '페라이트',
+        Bs: 0.45,
+        Br: 0.25,
+        Hc: 250,
+        squareness: 0.55,
+        sharpness: 1.3,
+        color: '#a78bfa',
+        colorRgb: '167, 139, 250',
+        accent: '#c4b5fd',
+    },
+    hard: {
+        name: '경자성체 (알니코)',
+        Bs: 1.3,
+        Br: 1.1,
+        Hc: 900,
+        squareness: 0.85,
+        sharpness: 1.5,
+        color: '#f472b6',
+        colorRgb: '244, 114, 182',
+        accent: '#f9a8d4',
+    }
+};
+
+// ============================================
+// 상태
+// ============================================
+let state = {
+    mat: 'soft',
+    mode: 'auto',        // 'auto' | 'manual'
+    H: 0,                // 현재 자계 (A/m)
+    B: 0,                // 현재 자속밀도 (T)
+    Hmax: 1000,          // 사이클 진폭
+    speed: 1.0,          // 사이클 속도 (자동 모드)
+    phase: -Math.PI/2,   // 자동 모드 위상 (cos에서 -1 = H가 -Hmax)
+    cycleCount: 0,
+    prevH: 0,
+    // 곡선 추적 — 최근 N개 점 (제한: 200)
+    trail: [],
+    // 완성된 폐곡선 (loop 완성 시 sample → 면적 + 그라데이션 채우기)
+    loop: [],
+    loopHistory: [],     // 완성된 사이클들
+    // 현재 H의 방향 (1 = 증가, -1 = 감소) — 곡선 가지를 결정
+    direction: 1,
+    Hpeak: 0,            // 마지막 극값 (전환점)
+    Bpeak: 0,
+    // 손실
+    lossArea: 0,
+    t: 0,
+};
+
+const TRAIL_MAX = 200; // 성능 주의: 200개 이하
+
+// ============================================
+// 히스테리시스 곡선 모델
+// 단순화된 Langevin-like saturation + branch offset
+// B = Bs * tanh((H ± Hc) / sharpness) — 위/아래 가지가 ±Hc만큼 offset
+// ============================================
+function branchB(H, direction) {
+    const M = MATERIALS[state.mat];
+    // 가지가 ±Hc로 offset되도록 함 (direction=1: H 증가 중 = 아래 가지, direction=-1: 위 가지)
+    const shift = -direction * M.Hc;
+    // saturation curve: tanh
+    const scale = M.Hc * M.sharpness * 4;  // 가파름 조절
+    const baseB = M.Bs * Math.tanh((H + shift) / scale);
+    // squareness 적용 — 더 squared할수록 직사각형에 가까워짐
+    const squaredB = M.Bs * Math.sign((H + shift)) * Math.pow(1 - Math.exp(-Math.abs((H + shift) / scale) * 1.5), 1/Math.max(0.4, 2 - M.squareness * 1.5));
+    return baseB * (1 - M.squareness * 0.3) + squaredB * M.squareness * 0.3;
+}
+
+// 메인 가지 함수 — direction과 함께 부드러운 전환
+function computeB(H, prevH, prevB) {
+    const direction = (H >= prevH) ? 1 : -1;
+    state.direction = direction;
+    // 단순히 현재 가지의 B를 직접 사용 (가지 간 부드러운 보간은 phase로 처리됨)
+    return branchB(H, direction);
+}
+
+// ============================================
+// 좌표 변환
+// ============================================
+function plotArea() {
+    const W = canvas.width, H = canvas.height;
+    const padL = 70, padR = 30, padT = 50, padB = 60;
+    return {
+        x: padL, y: padT,
+        w: W - padL - padR,
+        h: H - padT - padB,
+        cx: padL + (W - padL - padR) / 2,
+        cy: padT + (H - padT - padB) / 2,
+    };
+}
+
+function hxToPx(h) {
+    const a = plotArea();
+    const Hmax = state.Hmax * 1.3;
+    return a.cx + (h / Hmax) * (a.w / 2);
+}
+function byToPx(b) {
+    const a = plotArea();
+    const Bmax = MATERIALS[state.mat].Bs * 1.3;
+    return a.cy - (b / Bmax) * (a.h / 2);
+}
+
+// ============================================
+// 리사이즈
+// ============================================
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 580;
+}
+window.addEventListener('resize', resize);
+
+// ============================================
+// 컨트롤
+// ============================================
+$('hmaxSlider').addEventListener('input', e => {
+    state.Hmax = +e.target.value;
+    $('hmaxDisp').textContent = state.Hmax;
+    flashCard();
+});
+$('speedSlider').addEventListener('input', e => {
+    state.speed = +e.target.value;
+    $('speedDisp').textContent = state.speed.toFixed(1) + '×';
+});
+$('hSlider').addEventListener('input', e => {
+    state.H = +e.target.value;
+    $('hDisp').textContent = state.H;
+});
+
+$('modeAuto').addEventListener('click', () => {
+    state.mode = 'auto';
+    $('modeAuto').classList.add('active');
+    $('modeManual').classList.remove('active');
+    $('hSliderBox').style.display = 'none';
+    $('speedBox').style.opacity = '1';
+});
+$('modeManual').addEventListener('click', () => {
+    state.mode = 'manual';
+    $('modeManual').classList.add('active');
+    $('modeAuto').classList.remove('active');
+    $('hSliderBox').style.display = 'block';
+    $('speedBox').style.opacity = '0.45';
+    // 슬라이더 범위를 Hmax에 맞춤
+    $('hSlider').min = -Math.round(state.Hmax * 1.2);
+    $('hSlider').max = Math.round(state.Hmax * 1.2);
+});
+
+document.querySelectorAll('.mat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.mat = btn.dataset.mat;
+        // 곡선 초기화 (재질이 바뀌면 다시 그림)
+        state.trail = [];
+        state.loop = [];
+        state.cycleCount = 0;
+        flashCard();
+    });
+});
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+}
+
+// ============================================
+// 그리기 헬퍼
+// ============================================
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+// ============================================
+// 배경 + 좌표축
+// ============================================
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const a = plotArea();
+    // 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    ctx.lineWidth = 1;
+    const gridStep = 40;
+    for (let i = a.x; i < a.x + a.w; i += gridStep) {
+        ctx.beginPath(); ctx.moveTo(i, a.y); ctx.lineTo(i, a.y + a.h); ctx.stroke();
+    }
+    for (let i = a.y; i < a.y + a.h; i += gridStep) {
+        ctx.beginPath(); ctx.moveTo(a.x, i); ctx.lineTo(a.x + a.w, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.6)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ B-H HYSTERESIS · ' + MATERIALS[state.mat].name.toUpperCase(), 12, 10);
+    ctx.restore();
+}
+
+function drawAxes() {
+    const a = plotArea();
+    const M = MATERIALS[state.mat];
+    ctx.save();
+
+    // 축 (네온 글로우)
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(168, 139, 250, 0.6)';
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.5)';
+    ctx.lineWidth = 1.5;
+    // X축 (H)
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.cy); ctx.lineTo(a.x + a.w, a.cy);
+    ctx.stroke();
+    // Y축 (B)
+    ctx.beginPath();
+    ctx.moveTo(a.cx, a.y); ctx.lineTo(a.cx, a.y + a.h);
+    ctx.stroke();
+
+    // 화살표
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.8)';
+    // X 화살표
+    ctx.beginPath();
+    ctx.moveTo(a.x + a.w, a.cy);
+    ctx.lineTo(a.x + a.w - 10, a.cy - 5);
+    ctx.lineTo(a.x + a.w - 10, a.cy + 5);
+    ctx.closePath(); ctx.fill();
+    // Y 화살표
+    ctx.beginPath();
+    ctx.moveTo(a.cx, a.y);
+    ctx.lineTo(a.cx - 5, a.y + 10);
+    ctx.lineTo(a.cx + 5, a.y + 10);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // 축 라벨
+    ctx.save();
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillStyle = '#c7d2fe';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('H', a.x + a.w + 8, a.cy);
+    ctx.fillStyle = '#fce7f3';
+    ctx.fillText('(A/m)', a.x + a.w + 22, a.cy + 12);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#c7d2fe';
+    ctx.fillText('B', a.cx, a.y - 6);
+    ctx.fillStyle = '#fce7f3';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillText('(T)', a.cx + 18, a.y - 4);
+    ctx.restore();
+
+    // 축 눈금
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1;
+    // X 눈금 (H)
+    const Hmax = state.Hmax * 1.3;
+    const xTicks = 4;
+    for (let i = -xTicks; i <= xTicks; i++) {
+        if (i === 0) continue;
+        const h = (i / xTicks) * Hmax;
+        const px = hxToPx(h);
+        ctx.beginPath();
+        ctx.moveTo(px, a.cy - 4); ctx.lineTo(px, a.cy + 4);
+        ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(Math.round(h), px, a.cy + 7);
+    }
+    // Y 눈금 (B)
+    const Bmax = M.Bs * 1.3;
+    const yTicks = 4;
+    for (let i = -yTicks; i <= yTicks; i++) {
+        if (i === 0) continue;
+        const b = (i / yTicks) * Bmax;
+        const py = byToPx(b);
+        ctx.beginPath();
+        ctx.moveTo(a.cx - 4, py); ctx.lineTo(a.cx + 4, py);
+        ctx.stroke();
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(b.toFixed(1), a.cx - 7, py);
+    }
+    ctx.restore();
+}
+
+// ============================================
+// 곡선 채우기 (면적 = 손실)
+// ============================================
+function drawLoopFill() {
+    if (state.loop.length < 10) return;
+    const M = MATERIALS[state.mat];
+    ctx.save();
+    // 그라데이션 채우기
+    const a = plotArea();
+    const grad = ctx.createRadialGradient(a.cx, a.cy, 5, a.cx, a.cy, a.w * 0.5);
+    grad.addColorStop(0, `rgba(${M.colorRgb}, 0.35)`);
+    grad.addColorStop(0.7, `rgba(${M.colorRgb}, 0.15)`);
+    grad.addColorStop(1, `rgba(${M.colorRgb}, 0.05)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    state.loop.forEach((p, i) => {
+        const x = hxToPx(p.H);
+        const y = byToPx(p.B);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+// ============================================
+// 곡선 그리기 (trail = 최근 사이클의 점 자취)
+// ============================================
+function drawTrail() {
+    if (state.trail.length < 2) return;
+    const M = MATERIALS[state.mat];
+    ctx.save();
+    // 글로우 효과
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = M.color;
+    // 그라데이션 라인
+    const grad = ctx.createLinearGradient(
+        hxToPx(-state.Hmax), 0,
+        hxToPx(state.Hmax), 0
+    );
+    grad.addColorStop(0, `rgba(${M.colorRgb}, 0.9)`);
+    grad.addColorStop(0.5, '#fce7f3');
+    grad.addColorStop(1, `rgba(${M.colorRgb}, 0.9)`);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    state.trail.forEach((p, i) => {
+        const x = hxToPx(p.H);
+        const y = byToPx(p.B);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // 이전 사이클 (희미하게)
+    if (state.loop.length > 10) {
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = `rgba(${M.colorRgb}, 0.6)`;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        state.loop.forEach((p, i) => {
+            const x = hxToPx(p.H);
+            const y = byToPx(p.B);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
+}
+
+// ============================================
+// 현재 점 (펄스 마커)
+// ============================================
+function drawCurrentPoint() {
+    const M = MATERIALS[state.mat];
+    const x = hxToPx(state.H);
+    const y = byToPx(state.B);
+    const pulse = 8 + Math.sin(state.t * 0.15) * 3;
+    ctx.save();
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = M.color;
+    // 외부 글로우
+    const glowGrad = ctx.createRadialGradient(x, y, 2, x, y, pulse * 2);
+    glowGrad.addColorStop(0, `rgba(${M.colorRgb}, 0.9)`);
+    glowGrad.addColorStop(0.5, `rgba(${M.colorRgb}, 0.4)`);
+    glowGrad.addColorStop(1, `rgba(${M.colorRgb}, 0)`);
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, pulse * 2, 0, Math.PI * 2);
+    ctx.fill();
+    // 코어
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = M.accent;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 보조선 (X, Y로 dashed)
+    const a = plotArea();
+    ctx.save();
+    ctx.strokeStyle = `rgba(${M.colorRgb}, 0.35)`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(a.cx, y);
+    ctx.moveTo(x, y); ctx.lineTo(x, a.cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // H, B 라벨 (작은 칩)
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    const hLabel = `H=${state.H.toFixed(0)}`;
+    const bLabel = `B=${state.B.toFixed(2)}`;
+    const hw = ctx.measureText(hLabel).width;
+    const bw = ctx.measureText(bLabel).width;
+    // H 라벨 (X축 위)
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, x - hw/2 - 5, a.cy + 18, hw + 10, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = M.accent;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(hLabel, x, a.cy + 26);
+    // B 라벨 (Y축 옆)
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, a.cx + 8, y - 8, bw + 10, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = M.accent;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(bLabel, a.cx + 8 + (bw + 10)/2, y);
+    ctx.restore();
+}
+
+// ============================================
+// Br, Hc 마커
+// ============================================
+function drawKeyPoints() {
+    if (state.loop.length < 20) return; // 사이클이 한 번 완성된 뒤 표시
+    const M = MATERIALS[state.mat];
+    const a = plotArea();
+
+    // Br: Y축 위/아래 절편 (H=0일 때 B 값) — 양쪽 다 마커
+    // Hc: X축 좌/우 절편 (B=0일 때 H 값) — 양쪽 다 마커
+    const markers = [
+        { type: 'Br', H: 0, B: M.Br, color: '#fbbf24', accent: '#fcd34d', label: '+Bᵣ' },
+        { type: 'Br', H: 0, B: -M.Br, color: '#fbbf24', accent: '#fcd34d', label: '−Bᵣ' },
+        { type: 'Hc', H: -M.Hc, B: 0, color: '#34d399', accent: '#6ee7b7', label: '−H꜀' },
+        { type: 'Hc', H: M.Hc, B: 0, color: '#34d399', accent: '#6ee7b7', label: '+H꜀' },
+    ];
+
+    markers.forEach(m => {
+        const x = hxToPx(m.H);
+        const y = byToPx(m.B);
+        ctx.save();
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = m.color;
+        // 외곽
+        ctx.strokeStyle = m.color;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        // 안쪽 점
+        ctx.fillStyle = m.accent;
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 라벨
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        const w = ctx.measureText(m.label).width;
+        let lx, ly, ax, ay;
+        if (m.type === 'Br') {
+            // Y축 절편: 라벨을 오른쪽에 (양수) 또는 왼쪽에 (음수)
+            const right = m.B > 0;
+            lx = right ? x + 14 : x - w - 22;
+            ly = y - 9;
+            ax = right ? x + 8 : x - 8;
+            ay = y;
+        } else {
+            // X축 절편: 라벨을 위/아래
+            const above = m.H < 0;
+            lx = x - w/2 - 5;
+            ly = above ? y - 24 : y + 8;
+            ax = x;
+            ay = above ? y - 8 : y + 8;
+        }
+        // 연결선
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(m.type === 'Br' ? (m.B > 0 ? lx : lx + w + 10) : lx + w/2 + 5, m.type === 'Br' ? ly + 8 : ly + 8);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // 라벨 박스
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        roundRect(ctx, lx, ly, w + 10, 16, 8);
+        ctx.fill();
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // 텍스트
+        ctx.fillStyle = m.accent;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(m.label, lx + (w + 10)/2, ly + 8);
+        ctx.restore();
+    });
+}
+
+// ============================================
+// 범례
+// ============================================
+function drawLegend() {
+    const M = MATERIALS[state.mat];
+    const a = plotArea();
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    const items = [
+        { label: '현재 사이클', color: M.color },
+        { label: '이전 자취', color: 'rgba(148, 163, 184, 0.6)', dashed: true },
+        { label: '손실 영역 (폐곡선 면적)', color: `rgba(${M.colorRgb}, 0.35)`, fill: true },
+    ];
+    let lx = a.x + a.w - 12;
+    let ly = a.y + 8;
+    items.forEach(it => {
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        const w = ctx.measureText(it.label).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+        roundRect(ctx, lx - w - 26, ly - 3, w + 30, 18, 9);
+        ctx.fill();
+        // swatch
+        if (it.fill) {
+            ctx.fillStyle = it.color;
+            ctx.fillRect(lx - w - 22, ly + 3, 14, 8);
+        } else if (it.dashed) {
+            ctx.strokeStyle = it.color;
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(lx - w - 22, ly + 7);
+            ctx.lineTo(lx - w - 8, ly + 7);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        } else {
+            ctx.strokeStyle = it.color;
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            ctx.moveTo(lx - w - 22, ly + 7);
+            ctx.lineTo(lx - w - 8, ly + 7);
+            ctx.stroke();
+        }
+        ctx.fillStyle = '#e5e7eb';
+        ctx.fillText(it.label, lx - 4, ly + 1);
+        ly += 22;
+    });
+    ctx.restore();
+}
+
+// ============================================
+// 사이클 면적 계산 (shoelace formula)
+// ============================================
+function loopArea(pts) {
+    if (pts.length < 3) return 0;
+    let area = 0;
+    for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        area += a.H * b.B - b.H * a.B;
+    }
+    return Math.abs(area / 2);
+}
+
+// ============================================
+// 물리 업데이트
+// ============================================
+function updatePhysics() {
+    state.prevH = state.H;
+    if (state.mode === 'auto') {
+        // 사이클을 sin파로 진행 (시간당 1 사이클 = phase 2π)
+        const dt = 0.016 * state.speed;
+        state.phase += dt * Math.PI * 0.6; // 약 1.7초 / 사이클 (1× 기준)
+        state.H = Math.cos(state.phase) * state.Hmax;
+    } else {
+        // 수동: 슬라이더 값 (이미 input 이벤트로 설정됨)
+        state.H = +$('hSlider').value;
+    }
+
+    // 방향 결정
+    const direction = state.H >= state.prevH ? 1 : -1;
+    const directionChanged = direction !== state.direction && Math.abs(state.H - state.prevH) > 0.5;
+
+    // B 계산
+    state.B = branchB(state.H, direction);
+    state.direction = direction;
+
+    // Trail 추가 (변화가 있을 때만)
+    const dH = Math.abs(state.H - state.prevH);
+    if (state.trail.length === 0 || dH > 2) {
+        state.trail.push({ H: state.H, B: state.B });
+        // 200개 제한
+        if (state.trail.length > TRAIL_MAX) state.trail.shift();
+    }
+
+    // 사이클 완성 감지: phase가 2π 진행되었을 때 (자동 모드)
+    if (state.mode === 'auto') {
+        const newCycle = Math.floor((state.phase + Math.PI/2) / (Math.PI * 2));
+        if (newCycle > state.cycleCount) {
+            state.cycleCount = newCycle;
+            // 마지막 trail을 loop로 저장
+            state.loop = state.trail.slice();
+            state.lossArea = loopArea(state.loop);
+        }
+    }
+}
+
+// ============================================
+// 라이브 패널 갱신
+// ============================================
+function updateLivePanel() {
+    const M = MATERIALS[state.mat];
+    $('hVal').textContent = state.H.toFixed(0);
+    $('bVal').textContent = state.B.toFixed(3);
+    $('brVal').textContent = M.Br.toFixed(2);
+    $('hcVal').textContent = M.Hc.toFixed(0);
+
+    // 활성 상태 (현재 H에 가까운 칩 강조)
+    const nearBr = Math.abs(state.H) < M.Hc * 0.15;
+    const nearHc = Math.abs(state.B) < M.Bs * 0.08;
+    $('pill-br').classList.toggle('active', nearBr);
+    $('pill-hc').classList.toggle('active', nearHc);
+    $('pill-h').classList.toggle('active', !nearBr && !nearHc);
+
+    // 사이드
+    $('matLabel').textContent = M.name;
+    $('bsLabel').textContent = M.Bs.toFixed(2) + ' T';
+    const widthCls = M.Hc < 200 ? '좁음 (저손실)' : M.Hc < 500 ? '중간' : '넓음 (영구자석)';
+    $('widthLabel').textContent = widthCls;
+    $('cycleLabel').textContent = state.cycleCount + ' 회 완성';
+
+    // 손실 게이지
+    // 손실 = loopArea (정규화 후 0~100%로 매핑)
+    // soft = 매우 작음, hard = 매우 큼
+    const lossNorm = Math.min(1, state.lossArea / 4000);
+    $('lossBar').style.width = (lossNorm * 100).toFixed(0) + '%';
+    $('lossLabel').textContent = state.lossArea > 0 ? `≈ ${state.lossArea.toFixed(0)} J/m³` : '— J/m³';
+}
+
+// ============================================
+// 메인 루프
+// ============================================
+function animate() {
+    state.t++;
+    updatePhysics();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawLoopFill();
+    drawAxes();
+    drawTrail();
+    drawKeyPoints();
+    drawCurrentPoint();
+    drawLegend();
+
+    updateLivePanel();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    // 초기 trail 채우기 (포화 곡선 한 사이클 미리 돌려서 보여주기)
+    let p = -Math.PI/2;
+    for (let i = 0; i < 100; i++) {
+        p += 0.063;
+        const H = Math.cos(p) * state.Hmax;
+        const dir = H >= state.prevH ? 1 : -1;
+        const B = branchB(H, dir);
+        state.trail.push({ H, B });
+        state.prevH = H;
+        state.direction = dir;
+    }
+    state.loop = state.trail.slice();
+    state.lossArea = loopArea(state.loop);
+    state.cycleCount = 1;
+    state.phase = -Math.PI/2;
+
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

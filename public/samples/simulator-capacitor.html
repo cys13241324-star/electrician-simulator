@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 콘덴서 충방전 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,63,94,0.45), rgba(168,139,250,0.45), rgba(59,130,246,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(168, 139, 250, 0.45),
+        0 0 40px rgba(244, 114, 182, 0.15);
+}
+canvas#capCanvas {
+    display: block;
+    width: 100%;
+    height: 520px;
+    border-radius: 17px;
+    background: #050714;
+    touch-action: none;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(59,130,246,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip-c { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border: 1px solid rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-q { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border: 1px solid rgba(244,63,94,0.5); color: #fda4af; }
+.chip-w { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border: 1px solid rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-v { background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.06)); border: 1px solid rgba(59,130,246,0.5); color: #93c5fd; }
+.chip-a { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border: 1px solid rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-d { background: linear-gradient(135deg, rgba(16,185,129,0.20), rgba(16,185,129,0.06)); border: 1px solid rgba(16,185,129,0.5); color: #6ee7b7; }
+.chip-e { background: linear-gradient(135deg, rgba(217,70,239,0.22), rgba(217,70,239,0.06)); border: 1px solid rgba(217,70,239,0.5); color: #f0abfc; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #e0e7ff; }
+.mode-btn {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.mode-btn:hover { background: rgba(148, 163, 184, 0.18); }
+.mode-btn.active.charge {
+    background: linear-gradient(135deg, rgba(244,63,94,0.35), rgba(168,139,250,0.25));
+    border-color: rgba(244, 63, 94, 0.6);
+    color: white;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+}
+.mode-btn.active.discharge {
+    background: linear-gradient(135deg, rgba(34,211,238,0.35), rgba(99,102,241,0.25));
+    border-color: rgba(34, 211, 238, 0.6);
+    color: white;
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
+}
+.dielectric-pill {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    transition: all 180ms;
+    cursor: pointer;
+    font-size: 11px;
+}
+.dielectric-pill.active {
+    background: linear-gradient(135deg, rgba(217,70,239,0.32), rgba(168,85,247,0.2));
+    border-color: rgba(217, 70, 239, 0.65);
+    color: white;
+    box-shadow: 0 0 16px rgba(217, 70, 239, 0.35);
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.reset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.reset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.charge-bar {
+    height: 6px;
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 9999px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+.charge-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f472b6, #c084fc, #60a5fa);
+    box-shadow: 0 0 14px rgba(196, 181, 253, 0.6);
+    transition: width 120ms linear;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · CAPACITOR · CHARGE / DISCHARGE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            ⚡ 콘덴서 충방전 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">평행판 면적 A, 간격 d, 유전체 ε을 조절하면 정전용량 C가 즉시 반응합니다. 충전/방전 모드로 전하 이동을 관찰하세요.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="chip-c live-pill rounded-xl p-3" id="pill-c">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">정전용량 C</p>
+            <p class="mt-1 text-2xl font-bold"><span id="cVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal" id="cUnit">pF</span></p>
+        </div>
+        <div class="chip-q live-pill rounded-xl p-3" id="pill-q">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">축적 전하 Q</p>
+            <p class="mt-1 text-2xl font-bold"><span id="qVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal" id="qUnit">nC</span></p>
+            <div class="charge-bar mt-2"><div class="charge-bar-fill" id="qBar" style="width:0%"></div></div>
+        </div>
+        <div class="chip-w live-pill rounded-xl p-3" id="pill-w">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">에너지 W</p>
+            <p class="mt-1 text-2xl font-bold"><span id="wVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal" id="wUnit">nJ</span></p>
+        </div>
+        <div class="chip-v live-pill rounded-xl p-3" id="pill-v">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">전압 V<sub>C</sub></p>
+            <p class="mt-1 text-2xl font-bold"><span id="vcVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal">V</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 영역 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">PARALLEL PLATE · 외부 회로 · 전기력선</span>
+                <div class="flex gap-2">
+                    <button id="modeCharge" class="mode-btn charge rounded-lg px-3 py-1.5 text-xs font-bold active">⚡ 충전</button>
+                    <button id="modeDischarge" class="mode-btn discharge rounded-lg px-3 py-1.5 text-xs font-bold">🔻 방전</button>
+                    <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">초기화</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="capCanvas"></canvas>
+            </div>
+
+            <!-- 슬라이더 4종 -->
+            <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="chip-a rounded-xl p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>판 면적 A</span><span class="font-mono text-base"><span id="aVal">100</span> cm²</span>
+                    </label>
+                    <input type="range" id="aRange" min="20" max="300" value="100" class="w-full cursor-pointer mt-2">
+                </div>
+                <div class="chip-d rounded-xl p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>판 간격 d</span><span class="font-mono text-base"><span id="dVal">2.0</span> mm</span>
+                    </label>
+                    <input type="range" id="dRange" min="5" max="60" value="20" step="1" class="w-full cursor-pointer mt-2">
+                </div>
+                <div class="chip-v rounded-xl p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>인가 전압 V</span><span class="font-mono text-base"><span id="vSrcVal">12</span> V</span>
+                    </label>
+                    <input type="range" id="vRange" min="1" max="50" value="12" class="w-full cursor-pointer mt-2">
+                </div>
+                <div class="chip-e rounded-xl p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>유전체 ε<sub>r</sub></span><span class="font-mono text-base"><span id="erVal">1.0</span></span>
+                    </label>
+                    <div class="mt-2 grid grid-cols-4 gap-1.5">
+                        <button class="dielectric-pill rounded-md py-1.5 active" data-er="1.0" data-name="공기">공기<br><span class="opacity-60">1.0</span></button>
+                        <button class="dielectric-pill rounded-md py-1.5" data-er="2.2" data-name="종이">종이<br><span class="opacity-60">2.2</span></button>
+                        <button class="dielectric-pill rounded-md py-1.5" data-er="4.5" data-name="유리">유리<br><span class="opacity-60">4.5</span></button>
+                        <button class="dielectric-pill rounded-md py-1.5" data-er="80" data-name="물">물<br><span class="opacity-60">80</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사이드 컬럼 -->
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="text-lg">💡</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">콘덴서 핵심 5</span>
+                </h2>
+                <ul class="mt-4 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">1. Q = CV</span> · 전압이 클수록 더 많은 전하 축적</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">2. d ↓ → C ↑</span> · 간격을 좁히면 정전용량 증가</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">3. A ↑ → C ↑</span> · 면적이 클수록 정전용량 증가</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-fuchsia-300">4. ε<sub>r</sub> ↑ → C ↑</span> · 유전체 유전율이 높을수록 비례 증가</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">5. W = ½CV²</span> · 에너지는 V의 제곱에 비례</li>
+                </ul>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">📐 평행판 정전용량</h3>
+                <div class="math-container">
+                    $$C = \varepsilon_0 \varepsilon_r \frac{A}{d}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <div class="math-container">
+                    $$Q = CV, \quad W = \tfrac{1}{2} C V^2$$
+                </div>
+                <p class="text-[11px] text-slate-400 mt-3">진공 유전율 \(\varepsilon_0 = 8.854 \times 10^{-12}\) F/m</p>
+            </div>
+
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[10px] uppercase tracking-widest text-cyan-300 mb-2 font-bold">⚡ 판 사이 전기장 E</p>
+                <p class="text-lg font-bold"><span id="efieldVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal">V/m</span></p>
+                <p class="text-[11px] text-slate-400 mt-1 font-mono">E = V<sub>C</sub> / d</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('capCanvas');
+const ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+
+// 상수
+const EPS0 = 8.854e-12;     // F/m
+// 슬라이더 입력
+let A_cm2 = 100;             // cm²
+let d_mm = 2.0;              // mm
+let V_src = 12;              // V
+let er = 1.0;                // 비유전율
+let dielectricName = '공기';
+
+// 모드
+let mode = 'charge';         // 'charge' | 'discharge'
+let Vc = 0;                  // 콘덴서 양단 전압 (충전 진행 변수, 0~V_src 또는 V_src~0)
+
+// 시각화 상태
+let t = 0;
+let particles = [];          // 외부 회로 전자
+let fieldFlow = [];          // 판 사이 전기력선 따라 흐르는 입자
+let chargeDots = [];         // 판 위의 +/- 전하 점
+
+// 캔버스 좌표 (resize에서 계산됨)
+let geom = {};
+
+// =============== 슬라이더 / 모드 ===============
+function refreshGeom() {
+    const W = canvas.width, H = canvas.height;
+    // 평행판 위치 (캔버스 중앙 좌측)
+    const cx = W * 0.42;
+    const cy = H * 0.5;
+    // 면적 비율 0~1 → 판 높이 (px)
+    const aRatio = (A_cm2 - 20) / (300 - 20);
+    const plateH = 100 + aRatio * 240;        // 100~340 px
+    // 간격 비율 0~1 → 판 사이 거리
+    const dRatio = (d_mm - 0.5) / (6.0 - 0.5);
+    const plateGap = 30 + (d_mm) * 8;         // d_mm 작을수록 좁아짐 (5~60 → 70~510... 너무 큼)
+    // 다시 정규화: d_mm는 0.5~6.0 mm. plateGap는 30~200 px 목표
+    const plateGapPx = 30 + ((d_mm - 0.5) / (6.0 - 0.5)) * 170;
+
+    const plateW = 18;
+    // 좌측(+) 판
+    const lpX = cx - plateGapPx / 2 - plateW / 2;
+    // 우측(-) 판
+    const rpX = cx + plateGapPx / 2 - plateW / 2;
+    const pY = cy - plateH / 2;
+
+    geom = {
+        W, H,
+        cx, cy,
+        plateW, plateH,
+        plateGapPx,
+        leftX: lpX, rightX: rpX, plateY: pY,
+        leftCenterX: lpX + plateW,         // 판 내측면(전하/전기장 시작)
+        rightCenterX: rpX,                  // 판 내측면
+        // 외부 회로 좌표
+        circuit: buildCircuit(W, H, lpX, rpX, pY, plateH, plateW),
+    };
+    seedFieldFlow();
+    seedChargeDots();
+    seedCircuitParticles();
+}
+
+function buildCircuit(W, H, lpX, rpX, pY, plateH, plateW) {
+    // 외부 회로: 좌상단 - 좌측 판 위쪽 -> 위쪽 가로 -> 우측 판 위쪽 -> 우측 판 위까지
+    // 대신: 콘덴서 외측에서 -> 위로 -> 가운데로 -> 배터리 -> 다시 반대편 판으로
+    // 좀 더 깔끔하게 ⎓ 모양: 판 외측에서 위쪽으로 빠져나와 -> 위쪽 가로 -> 배터리(중앙 상단) -> 반대편으로
+    const top = pY - 50;                 // 회로 상단 가로선 y
+    const leftOut = lpX;                 // 좌측 판 외측
+    const rightOut = rpX + plateW;       // 우측 판 외측
+    const batX = (leftOut + rightOut) / 2;
+    const batY = top;
+
+    // 경로 (좌측 판 외측 위 -> 위 -> 배터리 좌측 -> 배터리 우측 -> 우측 판 외측 위)
+    const path = [
+        { x: leftOut, y: pY + plateH / 2 },
+        { x: leftOut, y: top },
+        { x: batX - 22, y: top },
+        // 배터리 (배터리 통과 점, 흐름이 끊기지 않게 점 추가)
+        { x: batX + 22, y: top },
+        { x: rightOut, y: top },
+        { x: rightOut, y: pY + plateH / 2 },
+    ];
+    // 길이 계산
+    let segs = [];
+    let totalLen = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+        const a = path[i], b = path[i + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, len, start: totalLen });
+        totalLen += len;
+    }
+    return { path, segs, totalLen, batX, batY, leftOut, rightOut, top };
+}
+
+function pointAt(circuit, progress) {
+    const total = circuit.totalLen;
+    let p = ((progress % total) + total) % total;
+    for (const s of circuit.segs) {
+        if (p <= s.start + s.len) {
+            const localP = (p - s.start) / s.len;
+            return {
+                x: s.a.x + (s.b.x - s.a.x) * localP,
+                y: s.a.y + (s.b.y - s.a.y) * localP,
+            };
+        }
+    }
+    return circuit.path[0];
+}
+
+function seedCircuitParticles() {
+    particles = [];
+    const c = geom.circuit;
+    const count = 28;
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            progress: (i / count) * c.totalLen,
+            size: 1.6 + Math.random() * 0.9,
+            jitter: Math.random() * 0.5 - 0.25,
+        });
+    }
+}
+
+function seedFieldFlow() {
+    // 판 사이 전기력선 따라 흐르는 입자 (양극 -> 음극)
+    fieldFlow = [];
+    const count = 36;
+    for (let i = 0; i < count; i++) {
+        fieldFlow.push({
+            laneY: 0,            // resize-relative; 매 프레임 재계산
+            laneIndex: Math.floor(Math.random() * 14),
+            progress: Math.random(),
+            speed: 0.004 + Math.random() * 0.004,
+            size: 1.2 + Math.random() * 1.0,
+        });
+    }
+}
+
+function seedChargeDots() {
+    // 판 안쪽 면에 +/- 점 표시
+    chargeDots = [];
+    // 면적 비례 점 수 (10~60)
+    const ratio = (A_cm2 - 20) / (300 - 20);
+    const count = Math.min(64, Math.max(10, Math.round(12 + ratio * 50)));
+    for (let i = 0; i < count; i++) {
+        const t = (i + 0.5) / count;
+        chargeDots.push({ t, phase: Math.random() * Math.PI * 2 });
+    }
+}
+
+// =============== 계산 ===============
+function computeCapacitance() {
+    // A in cm² -> m² ; d in mm -> m
+    const A_m2 = A_cm2 * 1e-4;
+    const d_m = d_mm * 1e-3;
+    return EPS0 * er * A_m2 / d_m;   // F
+}
+function fmtC(C_F) {
+    // F 단위 — 자동 단위 변환
+    if (C_F >= 1e-6) return { v: (C_F * 1e6).toFixed(3), u: 'μF' };
+    if (C_F >= 1e-9) return { v: (C_F * 1e9).toFixed(2), u: 'nF' };
+    return { v: (C_F * 1e12).toFixed(1), u: 'pF' };
+}
+function fmtQ(Q_C) {
+    if (Q_C >= 1e-6) return { v: (Q_C * 1e6).toFixed(3), u: 'μC' };
+    if (Q_C >= 1e-9) return { v: (Q_C * 1e9).toFixed(2), u: 'nC' };
+    return { v: (Q_C * 1e12).toFixed(1), u: 'pC' };
+}
+function fmtW(W_J) {
+    if (W_J >= 1e-3) return { v: (W_J * 1e3).toFixed(3), u: 'mJ' };
+    if (W_J >= 1e-6) return { v: (W_J * 1e6).toFixed(2), u: 'μJ' };
+    if (W_J >= 1e-9) return { v: (W_J * 1e9).toFixed(2), u: 'nJ' };
+    return { v: (W_J * 1e12).toFixed(1), u: 'pJ' };
+}
+
+// 충방전 시정수 가시화용 — V_C가 V_src를 향해 RC-like 곡선으로 수렴
+const TAU_FRAMES = 90;     // 약 1.5초 @60fps
+function stepVc() {
+    const target = (mode === 'charge') ? V_src : 0;
+    // 1차 지연: dVc = (target - Vc) / tau
+    const k = 1 - Math.exp(-1 / TAU_FRAMES);
+    Vc += (target - Vc) * k * 2.6;       // 2.6배 가속 (체감)
+    if (Math.abs(Vc - target) < 1e-4) Vc = target;
+}
+
+// =============== 렌더링 ===============
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 520;
+    refreshGeom();
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function drawGrid() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawDielectric() {
+    // 판 사이 영역에 유전체 배경
+    if (er <= 1.01) return;
+    const { leftCenterX, rightCenterX, plateY, plateH } = geom;
+    const x = leftCenterX, y = plateY;
+    const w = rightCenterX - leftCenterX, h = plateH;
+    // 유전체에 따라 색상
+    let color = 'rgba(192, 132, 252, 0.16)';
+    if (er > 3 && er < 10) color = 'rgba(125, 211, 252, 0.16)';
+    else if (er >= 10) color = 'rgba(59, 130, 246, 0.22)';
+    ctx.save();
+    const grad = ctx.createLinearGradient(x, y, x + w, y);
+    grad.addColorStop(0, color);
+    grad.addColorStop(0.5, 'rgba(217, 70, 239, 0.10)');
+    grad.addColorStop(1, color);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, h);
+    // 빗금 패턴
+    ctx.strokeStyle = 'rgba(217, 70, 239, 0.18)';
+    ctx.lineWidth = 1;
+    for (let dx = -h; dx < w; dx += 14) {
+        ctx.beginPath();
+        ctx.moveTo(x + dx, y + h);
+        ctx.lineTo(x + dx + h, y);
+        ctx.stroke();
+    }
+    // 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(240, 171, 252, 0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${dielectricName} εr=${er.toFixed(1)}`, x + w / 2, y - 8);
+    ctx.restore();
+}
+
+function drawFieldLines() {
+    // 양극(좌) → 음극(우) 균등 수평선
+    const { leftCenterX, rightCenterX, plateY, plateH } = geom;
+    const ratioCharge = Vc / V_src;          // 0~1
+    if (ratioCharge < 0.02) return;
+    const lines = 12;
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#f9a8d4';
+    for (let i = 0; i < lines; i++) {
+        const ly = plateY + ((i + 0.5) / lines) * plateH;
+        const grad = ctx.createLinearGradient(leftCenterX, ly, rightCenterX, ly);
+        grad.addColorStop(0, `rgba(252, 165, 165, ${0.55 * ratioCharge})`);
+        grad.addColorStop(0.5, `rgba(196, 181, 253, ${0.45 * ratioCharge})`);
+        grad.addColorStop(1, `rgba(125, 211, 252, ${0.55 * ratioCharge})`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(leftCenterX, ly);
+        ctx.lineTo(rightCenterX, ly);
+        ctx.stroke();
+        // 화살표 (중앙)
+        const ax = (leftCenterX + rightCenterX) / 2;
+        ctx.fillStyle = `rgba(254, 205, 211, ${0.85 * ratioCharge})`;
+        ctx.beginPath();
+        ctx.moveTo(ax + 5, ly);
+        ctx.lineTo(ax - 4, ly - 3);
+        ctx.lineTo(ax - 4, ly + 3);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawFieldFlowParticles() {
+    const { leftCenterX, rightCenterX, plateY, plateH } = geom;
+    const ratioCharge = Vc / V_src;
+    if (ratioCharge < 0.02) return;
+    const lanes = 14;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of fieldFlow) {
+        p.progress += p.speed * (0.4 + ratioCharge * 1.2);
+        if (p.progress > 1) p.progress -= 1;
+        const ly = plateY + ((p.laneIndex + 0.5) / lanes) * plateH;
+        const lx = leftCenterX + p.progress * (rightCenterX - leftCenterX);
+        const alpha = Math.sin(p.progress * Math.PI) * 0.9 * ratioCharge;
+        ctx.fillStyle = `rgba(196, 181, 253, ${alpha})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#c4b5fd';
+        ctx.beginPath();
+        ctx.arc(lx, ly, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawPlates() {
+    const { leftX, rightX, plateY, plateW, plateH } = geom;
+    const ratioCharge = Math.max(0, Math.min(1, Vc / V_src));
+    // 좌측 판 (양극) - 빨강
+    drawPlate(leftX, plateY, plateW, plateH, '+', ratioCharge);
+    // 우측 판 (음극) - 파랑
+    drawPlate(rightX, plateY, plateW, plateH, '-', ratioCharge);
+    // 판 위 전하 점
+    drawChargeDots();
+}
+
+function drawPlate(x, y, w, h, sign, ratioCharge) {
+    const isPos = sign === '+';
+    const base = isPos ? '#ef4444' : '#3b82f6';
+    const accent = isPos ? '#fda4af' : '#93c5fd';
+    ctx.save();
+    // 글로우는 전하 비례
+    ctx.shadowBlur = 18 + ratioCharge * 30;
+    ctx.shadowColor = base;
+    const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+    grad.addColorStop(0, accent);
+    grad.addColorStop(0.5, base);
+    grad.addColorStop(1, isPos ? '#7f1d1d' : '#1e3a8a');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y, w, h, 4);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.stroke();
+    ctx.restore();
+
+    // 부호 표시 (판 외측 중앙)
+    ctx.save();
+    ctx.font = 'bold 18px Arial';
+    ctx.fillStyle = isPos ? '#fda4af' : '#93c5fd';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const sx = isPos ? x - 14 : x + w + 14;
+    ctx.fillText(sign === '+' ? '+' : '−', sx, y + h / 2);
+    ctx.restore();
+}
+
+function drawChargeDots() {
+    const { leftX, rightX, plateY, plateH, plateW } = geom;
+    const ratioCharge = Math.max(0, Math.min(1, Vc / V_src));
+    if (ratioCharge < 0.02) return;
+    const visible = Math.round(chargeDots.length * ratioCharge);
+    ctx.save();
+    for (let i = 0; i < visible; i++) {
+        const c = chargeDots[i];
+        const y = plateY + c.t * plateH;
+        const wobble = Math.sin(t * 0.06 + c.phase) * 1.4;
+        // 좌측 + 전하 (판 내측)
+        ctx.fillStyle = 'rgba(252, 165, 165, 0.95)';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(leftX + plateW + 4 + wobble * 0.6, y, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 9px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', leftX + plateW + 4 + wobble * 0.6, y);
+        // 우측 - 전하 (판 내측)
+        ctx.fillStyle = 'rgba(147, 197, 253, 0.95)';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#3b82f6';
+        ctx.beginPath();
+        ctx.arc(rightX - 4 - wobble * 0.6, y, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.fillText('−', rightX - 4 - wobble * 0.6, y);
+    }
+    ctx.restore();
+}
+
+function drawCircuit() {
+    const c = geom.circuit;
+    ctx.save();
+    // 회로 라인
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#67e8f9';
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.8)';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    // 좌측 세로
+    ctx.beginPath();
+    ctx.moveTo(c.path[0].x, c.path[0].y);
+    ctx.lineTo(c.path[1].x, c.path[1].y);
+    ctx.stroke();
+    // 좌측 가로 (배터리 좌측까지)
+    ctx.beginPath();
+    ctx.moveTo(c.path[1].x, c.path[1].y);
+    ctx.lineTo(c.path[2].x, c.path[2].y);
+    ctx.stroke();
+    // 배터리 우측 ~ 우측 가로
+    ctx.beginPath();
+    ctx.moveTo(c.path[3].x, c.path[3].y);
+    ctx.lineTo(c.path[4].x, c.path[4].y);
+    ctx.stroke();
+    // 우측 세로
+    ctx.beginPath();
+    ctx.moveTo(c.path[4].x, c.path[4].y);
+    ctx.lineTo(c.path[5].x, c.path[5].y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 배터리 심볼 (중앙 상단)
+    drawBattery(c.batX, c.batY);
+}
+
+function drawBattery(bx, by) {
+    // + 단자(긴 선) 왼쪽 / - 단자(짧은 선) 오른쪽 — 전류는 + → 외부회로 → -
+    // 충전 모드일 때만 강조
+    const pulseAlpha = 0.4 + Math.sin(t * 0.06) * 0.2;
+    ctx.save();
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = `rgba(96, 165, 250, ${pulseAlpha})`;
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.95)';
+    ctx.lineCap = 'round';
+    // + (긴 선)
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(bx - 14, by - 12);
+    ctx.lineTo(bx - 14, by + 12);
+    ctx.stroke();
+    // - (짧은 선)
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(bx + 14, by - 7);
+    ctx.lineTo(bx + 14, by + 7);
+    ctx.stroke();
+    ctx.restore();
+
+    // + - 라벨
+    ctx.save();
+    ctx.font = 'bold 13px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fda4af';
+    ctx.fillText('+', bx - 14, by - 22);
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillText('−', bx + 14, by - 22);
+    // V 라벨
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    const vLabel = `${V_src.toFixed(0)} V`;
+    const tw = ctx.measureText(vLabel).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, bx - tw / 2 - 6, by + 14, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillText(vLabel, bx, by + 23);
+    ctx.restore();
+
+    // 스위치 표시 (배터리 옆 SW 라벨)
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = mode === 'charge' ? '#fda4af' : '#67e8f9';
+    ctx.textAlign = 'left';
+    const sw = mode === 'charge' ? '⚡ SW: CHARGE' : '🔻 SW: DISCHARGE';
+    ctx.fillText(sw, bx + 40, by - 2);
+    ctx.restore();
+}
+
+function drawCircuitParticles() {
+    // 전자 흐름 (배터리 - → 우측 판 → ... 충전 시) 또는 반대 방향 (방전 시 콘덴서가 소스)
+    // 시각화는 ratio*(target방향)로 흐르되, 진행중일 때만
+    const target = mode === 'charge' ? V_src : 0;
+    const distanceToTarget = Math.abs(target - Vc);
+    if (distanceToTarget < 0.01) return;     // 정상상태에 가까우면 흐름 없음
+    const flowRate = distanceToTarget / V_src;
+    const speed = (mode === 'charge' ? 1 : -1) * (1.4 + flowRate * 3.2);
+    const c = geom.circuit;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of particles) {
+        p.progress = (p.progress + speed + c.totalLen) % c.totalLen;
+        const pt = pointAt(c, p.progress);
+        ctx.fillStyle = mode === 'charge' ? 'rgba(252, 165, 165, 0.95)' : 'rgba(125, 211, 252, 0.95)';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = mode === 'charge' ? '#f472b6' : '#67e8f9';
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jitter, pt.y + p.jitter, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawLabels() {
+    // d (판 사이 거리) 표기
+    const { leftCenterX, rightCenterX, plateY, plateH } = geom;
+    const lyTop = plateY - 24;
+    ctx.save();
+    // 화살표
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.85)';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.95)';
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(leftCenterX, lyTop);
+    ctx.lineTo(rightCenterX, lyTop);
+    ctx.stroke();
+    // 양쪽 화살촉
+    ctx.beginPath();
+    ctx.moveTo(leftCenterX, lyTop); ctx.lineTo(leftCenterX + 6, lyTop - 3); ctx.lineTo(leftCenterX + 6, lyTop + 3); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(rightCenterX, lyTop); ctx.lineTo(rightCenterX - 6, lyTop - 3); ctx.lineTo(rightCenterX - 6, lyTop + 3); ctx.closePath(); ctx.fill();
+    // d 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    const dLabel = `d = ${d_mm.toFixed(2)} mm`;
+    const tw = ctx.measureText(dLabel).width;
+    const lx = (leftCenterX + rightCenterX) / 2;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, lx - tw / 2 - 6, lyTop - 24, tw + 12, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fillText(dLabel, lx, lyTop - 14);
+
+    // A 라벨 (좌측 판 옆)
+    const { leftX, plateY: pY, plateH: pH } = geom;
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const aLabel = `A = ${A_cm2} cm²`;
+    const tw2 = ctx.measureText(aLabel).width;
+    const ay = pY + pH + 18;
+    const ax = leftX - 24;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, ax - tw2 / 2 - 6, ay - 9, tw2 + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#67e8f9';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(aLabel, ax, ay);
+    ctx.restore();
+}
+
+// =============== UI 갱신 ===============
+function flashPills() {
+    document.querySelectorAll('.live-pill').forEach(el => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 350);
+    });
+}
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(168, 139, 250, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(168, 139, 250, 0)', duration: 0.6 });
+}
+
+function updateLivePanel() {
+    const C_F = computeCapacitance();
+    const Q_C = C_F * Vc;
+    const W_J = 0.5 * C_F * Vc * Vc;
+
+    // C
+    const fc = fmtC(C_F);
+    $('cVal').textContent = fc.v; $('cUnit').textContent = fc.u;
+    // Q
+    const fq = fmtQ(Q_C);
+    $('qVal').textContent = fq.v; $('qUnit').textContent = fq.u;
+    // W
+    const fw = fmtW(W_J);
+    $('wVal').textContent = fw.v; $('wUnit').textContent = fw.u;
+    // Vc
+    $('vcVal').textContent = Vc.toFixed(2);
+    // 전기장 E = Vc / d   (V/m)
+    const E = Vc / (d_mm * 1e-3);
+    $('efieldVal').textContent = E.toExponential(2);
+    // Q 막대 (V_src 기준 충전율)
+    const ratio = Math.max(0, Math.min(1, Vc / V_src));
+    $('qBar').style.width = (ratio * 100).toFixed(1) + '%';
+}
+
+// =============== 이벤트 ===============
+function bind() {
+    $('aRange').addEventListener('input', e => {
+        A_cm2 = parseInt(e.target.value, 10);
+        $('aVal').textContent = A_cm2;
+        refreshGeom();
+        flashPills(); flashCard();
+    });
+    $('dRange').addEventListener('input', e => {
+        // 5~60 → 0.5mm ~ 6.0mm
+        const v = parseInt(e.target.value, 10);
+        d_mm = v * 0.1;
+        $('dVal').textContent = d_mm.toFixed(1);
+        refreshGeom();
+        flashPills(); flashCard();
+    });
+    $('vRange').addEventListener('input', e => {
+        V_src = parseInt(e.target.value, 10);
+        $('vSrcVal').textContent = V_src;
+        // Vc도 비례 조정 (현재 진행률 유지하려면)
+        flashPills();
+    });
+    document.querySelectorAll('.dielectric-pill').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.dielectric-pill').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            er = parseFloat(b.dataset.er);
+            dielectricName = b.dataset.name;
+            $('erVal').textContent = er.toFixed(1);
+            flashPills(); flashCard();
+        });
+    });
+    $('modeCharge').addEventListener('click', () => {
+        mode = 'charge';
+        $('modeCharge').classList.add('active');
+        $('modeDischarge').classList.remove('active');
+        flashCard();
+    });
+    $('modeDischarge').addEventListener('click', () => {
+        mode = 'discharge';
+        $('modeDischarge').classList.add('active');
+        $('modeCharge').classList.remove('active');
+        flashCard();
+    });
+    $('resetBtn').addEventListener('click', () => {
+        A_cm2 = 100; d_mm = 2.0; V_src = 12; er = 1.0; dielectricName = '공기';
+        Vc = 0; mode = 'charge';
+        $('aRange').value = 100; $('aVal').textContent = '100';
+        $('dRange').value = 20; $('dVal').textContent = '2.0';
+        $('vRange').value = 12; $('vSrcVal').textContent = '12';
+        $('erVal').textContent = '1.0';
+        document.querySelectorAll('.dielectric-pill').forEach(x => x.classList.remove('active'));
+        document.querySelector('.dielectric-pill[data-er="1.0"]').classList.add('active');
+        $('modeCharge').classList.add('active');
+        $('modeDischarge').classList.remove('active');
+        refreshGeom();
+        flashPills(); flashCard();
+    });
+}
+
+// =============== 메인 루프 ===============
+function frame() {
+    t++;
+    stepVc();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawDielectric();
+    drawFieldLines();
+    drawFieldFlowParticles();
+    drawCircuit();
+    drawPlates();
+    drawCircuitParticles();
+    drawLabels();
+    updateLivePanel();
+    requestAnimationFrame(frame);
+}
+
+window.addEventListener('load', () => {
+    resize();
+    bind();
+    frame();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>
