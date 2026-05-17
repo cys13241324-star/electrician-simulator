@@ -31,7 +31,7 @@ const cards: HubCard[] = [
     id: "simulator",
     title: "인터랙티브 시뮬레이터",
     subtitle: "Simulator · 지금 이용 가능",
-    desc: "전기력선·변압기·회전 자계·RLC 위상 등 손으로 만져보는 시뮬. 슬라이더를 움직이면 즉시 반응합니다.",
+    desc: "전기력선·변압기·회전 자계·RLC 위상까지 직접 만져보는 시뮬레이터. 슬라이더를 움직이면 결과가 바로 따라옵니다.",
     href: "/simulator",
     status: "live",
     badge: "SIMULATOR",
@@ -60,7 +60,7 @@ const cards: HubCard[] = [
     id: "news",
     title: "별의 소식지",
     subtitle: "News · 지금 이용 가능",
-    desc: "인스타 피드·유튜브 채널·신문 — 같은 학습 내용을 50가지 친숙한 콘셉트로 다시 만나는 보조 채널.",
+    desc: "인스타·유튜브·신문처럼 익숙한 50가지 형태로 같은 학습 내용을 한 번 더 만나는 보조 채널입니다.",
     href: "/news",
     status: "live",
     badge: "NEWS",
@@ -80,7 +80,7 @@ const cards: HubCard[] = [
     id: "flipcard",
     title: "플립 암기카드",
     subtitle: "Flashcards · 지금 이용 가능",
-    desc: "전기기능사 핵심 343장. 앞면 문제 → 뒷면 해설. SRS(간격 반복) 알고리즘으로 잊을 때쯤 다시.",
+    desc: "전기기능사 핵심 343장을 앞면 문제 → 뒷면 해설로. SRS 간격 반복으로 잊을 만하면 다시 꺼내줍니다.",
     href: "/flashcards",
     status: "live",
     badge: "FLIPCARDS",
@@ -106,7 +106,7 @@ const cards: HubCard[] = [
     id: "cbt",
     title: "CBT 모의고사",
     subtitle: "CBT · 지금 이용 가능",
-    desc: "실전 환경 60문항. 시간 측정·자동 채점·약점 분석까지. 시험장 그대로의 인터페이스로 연습.",
+    desc: "실전과 똑같은 환경에서 60문항을 풀어보세요. 시간 측정·자동 채점·약점 분석까지 시험장 그대로입니다.",
     href: "/cbt",
     status: "live",
     badge: "CBT",
@@ -131,7 +131,7 @@ const cards: HubCard[] = [
     id: "guide",
     title: "학습 가이드",
     subtitle: "Guide · 준비 중",
-    desc: "시험 일정·과목 구성·합격 전략·학습 루틴. 처음 시작하는 분을 위한 안내문 (작성 중).",
+    desc: "시험 일정과 과목 구성, 합격 전략, 학습 루틴까지. 처음 시작하는 분을 위한 안내문을 준비하고 있어요.",
     href: "#",
     status: "soon",
     badge: "GUIDE",
@@ -152,7 +152,7 @@ const cards: HubCard[] = [
     id: "stories",
     title: "합격 후기",
     subtitle: "Stories · 준비 중",
-    desc: "이 사이트로 공부해 합격한 분들의 이야기. 학습 루틴·실수담·꿀팁 모음 (작성 중).",
+    desc: "이 사이트로 공부해 합격하신 분들의 이야기. 학습 루틴·실수담·꿀팁을 모아 곧 공개할게요.",
     href: "#",
     status: "soon",
     badge: "STORIES",
@@ -197,8 +197,8 @@ export default function HubPage() {
               전기기능사 학습 허브
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-700 [text-shadow:0_1px_3px_rgba(255,255,255,0.7)] sm:text-base">
-              시뮬레이터·소식지·플립카드·CBT — 흩어진 학습 콘텐츠의 한 입구.
-              지금 이용 가능한 것부터 바로 시작하세요.
+              시뮬레이터·소식지·플립카드·CBT까지 한 곳에서 만나보세요.
+              지금 바로 쓸 수 있는 것부터 가볍게 시작하면 됩니다.
             </p>
           </div>
         </header>
@@ -338,8 +338,8 @@ export default function HubPage() {
 
         {/* 하단 안내 */}
         <p className="mt-10 rounded-2xl border border-dashed border-zinc-200 bg-white p-5 text-center text-xs leading-6 text-zinc-500">
-          🔗 <strong className="font-semibold text-zinc-700">시뮬레이터·소식지·플립카드·CBT</strong>
-          모두 같은 사이트 안에서 바로 열립니다. 학습 가이드·합격 후기는 준비 중입니다.
+          🔗 <strong className="font-semibold text-zinc-700">시뮬레이터·소식지·플립카드·CBT</strong>는
+          모두 같은 사이트 안에서 바로 열립니다. 학습 가이드와 합격 후기도 곧 추가될 예정이에요.
         </p>
       </main>
       <Footer />

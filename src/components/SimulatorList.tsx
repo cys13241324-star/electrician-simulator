@@ -107,9 +107,9 @@ export default function SimulatorList({ simulators }: Props) {
             이론을 직접 만지며 이해하다
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-300 sm:text-base">
-            전기력선·RLC 공진·회전 자계·변압기까지 — 슬라이더를 움직이면 수식과
-            파형이 실시간으로 반응합니다. 글로만 외우던 전기 이론을 눈으로
-            확인하세요.
+            전기력선·RLC 공진·회전 자계·변압기 — 슬라이더를 움직이면 수식과
+            파형이 바로 따라옵니다. 글로만 보던 이론을 직접 만져보며
+            익혀보세요.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Stat label="전체 시뮬레이터" value={`${simulators.length}개`} />
@@ -132,7 +132,7 @@ export default function SimulatorList({ simulators }: Props) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="시뮬레이터 검색 — 예: 옴의 법칙, 변압기, 공진"
+            placeholder="찾고 싶은 시뮬레이터를 입력하세요 (예: 옴의 법칙, 변압기, 공진)"
             aria-label="시뮬레이터 검색"
             className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/70 py-3 pl-11 pr-10 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-100"
           />

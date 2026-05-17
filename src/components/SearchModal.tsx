@@ -51,7 +51,7 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
             type="text"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="시뮬레이터 이름·토픽 등 검색해 보세요"
+            placeholder="시뮬레이터 이름이나 토픽을 검색해 보세요"
             className="flex-1 bg-transparent text-base text-zinc-900 placeholder-zinc-400 outline-none"
           />
           <kbd className="hidden rounded border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-500 sm:inline-block">
@@ -71,11 +71,11 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
           {q.trim() ? (
             <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center">
               <p className="text-sm text-zinc-600">
-                &ldquo;<strong className="text-zinc-900">{q}</strong>&rdquo; 검색
-                기능은 곧 출시됩니다.
+                &ldquo;<strong className="text-zinc-900">{q}</strong>&rdquo;에
+                대한 검색 기능은 준비 중이에요.
               </p>
               <p className="mt-2 text-xs text-zinc-500">
-                현재는 인기 키워드 / 빠른 이동만 사용 가능합니다.
+                지금은 인기 검색어와 빠른 이동만 사용할 수 있어요.
               </p>
             </div>
           ) : (

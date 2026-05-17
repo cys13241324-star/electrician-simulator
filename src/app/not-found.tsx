@@ -10,15 +10,15 @@ export default function NotFound() {
         <div className="max-w-md text-center">
           <div className="text-7xl">⚡</div>
           <p className="mt-4 text-sm font-semibold tracking-wide text-blue-600">
-            404 — 페이지를 찾을 수 없습니다
+            404 — 페이지를 찾을 수 없어요
           </p>
           <h1 className="mt-2 text-3xl font-bold text-zinc-900">
-            요청하신 페이지가 없습니다.
+            찾으시는 페이지가 없습니다
           </h1>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
-            주소가 변경되었거나 더 이상 존재하지 않을 수 있습니다.
+            주소가 바뀌었거나 사라졌을 수 있어요.
             <br />
-            아래 메뉴에서 다시 시작해 보세요.
+            아래에서 원하는 곳으로 바로 이동해 보세요.
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-2">

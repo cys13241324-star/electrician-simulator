@@ -150,7 +150,7 @@ export default function TextbookFloatingPopup() {
           <button
             type="button"
             disabled
-            title="구매 페이지 준비중"
+            title="구매 페이지를 준비 중이에요"
             className="group relative mt-3 w-full cursor-not-allowed overflow-hidden rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-3 py-2.5 text-sm font-bold text-white shadow-md"
           >
             교재 구매하러 가기 →
@@ -160,7 +160,7 @@ export default function TextbookFloatingPopup() {
           </button>
 
           <p className="mt-2 text-center text-[10px] text-zinc-500">
-            ※ 출시 알림은 회원가입 후 받아보실 수 있습니다.
+            ※ 회원가입을 하시면 출시 알림을 받아보실 수 있어요.
           </p>
 
           <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-2">
