@@ -22,6 +22,7 @@ type HubCard = {
   tileBg: string; // thumbnail background
   tileContent: React.ReactNode;
   cta: string;
+  lightTile?: boolean; // 밝은 타일(어두운 텍스트) — 사진 처리 톤 분기
 };
 
 const cards: HubCard[] = [
@@ -135,6 +136,7 @@ const cards: HubCard[] = [
     badge: "GUIDE",
     accent: "from-emerald-400 via-teal-500 to-cyan-600",
     tileBg: "bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100",
+    lightTile: true,
     tileContent: (
       <div className="absolute inset-0 flex flex-col items-center justify-center text-teal-800">
         <div className="text-6xl">🧭</div>
@@ -155,6 +157,7 @@ const cards: HubCard[] = [
     badge: "STORIES",
     accent: "from-amber-400 via-orange-500 to-red-500",
     tileBg: "bg-gradient-to-br from-amber-50 via-orange-50 to-rose-100",
+    lightTile: true,
     tileContent: (
       <div className="absolute inset-0 flex flex-col items-center justify-center text-orange-700">
         <div className="text-6xl">🎉</div>
@@ -173,17 +176,29 @@ export default function HubPage() {
       <Header />
       <main className="mx-auto max-w-5xl px-6 py-12">
         {/* 헤더 */}
-        <header className="mb-10">
-          <p className="text-xs font-semibold tracking-widest text-indigo-600">
-            ⚡ HUB
-          </p>
-          <h1 className="mt-2 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
-            전기기능사 학습 허브
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
-            시뮬레이터·소식지·플립카드·CBT — 흩어진 학습 콘텐츠의 한 입구.
-            지금 이용 가능한 것부터 바로 시작하세요.
-          </p>
+        <header className="relative mb-10 overflow-hidden rounded-2xl border border-zinc-200 bg-white px-6 py-8 shadow-sm sm:px-8 sm:py-10">
+          {/* 은은한 실사진 배경 — 거의 워터마크 수준 */}
+          <img
+            src="/hub/img/hero.jpg"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20 blur-[1px] saturate-75"
+          />
+          {/* 밝은 워시 — 기존 어두운 텍스트 대비 복원 */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/85 via-white/70 to-indigo-50/80" />
+          <div className="relative">
+            <p className="text-xs font-semibold tracking-widest text-indigo-600 [text-shadow:0_1px_3px_rgba(255,255,255,0.8)]">
+              ⚡ HUB
+            </p>
+            <h1 className="mt-2 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
+              전기기능사 학습 허브
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-700 [text-shadow:0_1px_3px_rgba(255,255,255,0.7)] sm:text-base">
+              시뮬레이터·소식지·플립카드·CBT — 흩어진 학습 콘텐츠의 한 입구.
+              지금 이용 가능한 것부터 바로 시작하세요.
+            </p>
+          </div>
         </header>
 
         {/* 카드 그리드 */}
@@ -194,7 +209,46 @@ export default function HubPage() {
               <>
                 {/* 썸네일 영역 */}
                 <div className={`relative h-44 overflow-hidden ${c.tileBg}`}>
-                  {c.tileContent}
+                  {/* (1) 실사진 배경 — 흐린 질감으로만 사용 */}
+                  <img
+                    src={`/hub/img/${c.id}.jpg`}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    className={`pointer-events-none absolute inset-0 h-full w-full scale-105 object-cover blur-[2px] transition duration-500 group-hover:scale-110 ${
+                      c.lightTile
+                        ? "opacity-25 saturate-[.6] group-hover:opacity-30"
+                        : "opacity-35 saturate-50 group-hover:opacity-45"
+                    }`}
+                  />
+                  {/* (2) 타일 본래 색 재오버레이 — 대비 복원 */}
+                  {c.lightTile ? (
+                    <div
+                      className={`pointer-events-none absolute inset-0 ${c.tileBg} opacity-80`}
+                    />
+                  ) : (
+                    <div
+                      className={`pointer-events-none absolute inset-0 ${c.tileBg} opacity-70 mix-blend-multiply`}
+                    />
+                  )}
+                  {/* (3) 스크림 그라데이션 — 톤별 분기 */}
+                  <div
+                    className={`pointer-events-none absolute inset-0 ${
+                      c.lightTile
+                        ? "bg-gradient-to-t from-white/55 via-white/10 to-white/35"
+                        : "bg-gradient-to-t from-black/55 via-black/15 to-black/25"
+                    }`}
+                  />
+                  {/* (4) tileContent/badge/텍스트 — 최상단 + text-shadow */}
+                  <div
+                    className={`absolute inset-0 ${
+                      c.lightTile
+                        ? "[text-shadow:0_1px_4px_rgba(255,255,255,0.7)]"
+                        : "[text-shadow:0_1px_6px_rgba(0,0,0,0.55)]"
+                    }`}
+                  >
+                    {c.tileContent}
+                  </div>
                   <div className="absolute left-3 top-3">
                     <span
                       className={`inline-block rounded-full bg-gradient-to-r ${c.accent} px-2.5 py-1 text-[10px] font-bold tracking-widest text-white shadow-sm`}
