@@ -77,10 +77,10 @@ const cards: HubCard[] = [
   {
     id: "flipcard",
     title: "플립 암기카드",
-    subtitle: "Flashcards · 연결 준비 중",
-    desc: "전기기능사 핵심 343장. 앞면 문제 → 뒷면 해설. SRS(간격 반복) 알고리즘으로 잊을 때쯤 다시. 배포 후 연결됩니다.",
-    href: "#",
-    status: "soon",
+    subtitle: "Flashcards · 지금 이용 가능",
+    desc: "전기기능사 핵심 343장. 앞면 문제 → 뒷면 해설. SRS(간격 반복) 알고리즘으로 잊을 때쯤 다시.",
+    href: "/flashcards",
+    status: "live",
     badge: "FLIPCARDS",
     accent: "from-pink-500 via-fuchsia-500 to-violet-600",
     tileBg: "bg-gradient-to-br from-pink-500 via-fuchsia-600 to-violet-700",
@@ -98,15 +98,15 @@ const cards: HubCard[] = [
         </div>
       </div>
     ),
-    cta: "배포 후 연결 예정",
+    cta: "암기카드 열기",
   },
   {
     id: "cbt",
     title: "CBT 모의고사",
-    subtitle: "CBT · 연결 준비 중",
-    desc: "실전 환경 60문항. 시간 측정·자동 채점·약점 분석까지. 시험장 그대로의 인터페이스로 연습. 배포 후 연결됩니다.",
-    href: "#",
-    status: "soon",
+    subtitle: "CBT · 지금 이용 가능",
+    desc: "실전 환경 60문항. 시간 측정·자동 채점·약점 분석까지. 시험장 그대로의 인터페이스로 연습.",
+    href: "/cbt",
+    status: "live",
     badge: "CBT",
     accent: "from-blue-500 via-indigo-500 to-indigo-700",
     tileBg: "bg-gradient-to-br from-blue-700 via-indigo-700 to-indigo-900",
@@ -123,7 +123,7 @@ const cards: HubCard[] = [
         </div>
       </div>
     ),
-    cta: "배포 후 연결 예정",
+    cta: "CBT 풀기",
   },
   {
     id: "guide",
@@ -279,9 +279,8 @@ export default function HubPage() {
 
         {/* 하단 안내 */}
         <p className="mt-10 rounded-2xl border border-dashed border-zinc-200 bg-white p-5 text-center text-xs leading-6 text-zinc-500">
-          🔗 <strong className="font-semibold text-zinc-700">시뮬레이터·소식지</strong>
-          는 지금 바로 이용 가능합니다. <strong className="font-semibold text-zinc-700">플립카드·CBT</strong>
-          는 별도 사이트 배포 후 이 허브에서 바로 연결될 예정입니다.
+          🔗 <strong className="font-semibold text-zinc-700">시뮬레이터·소식지·플립카드·CBT</strong>
+          모두 같은 사이트 안에서 바로 열립니다. 학습 가이드·합격 후기는 준비 중입니다.
         </p>
       </main>
       <Footer />
