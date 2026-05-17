@@ -23,10 +23,22 @@ export default function NotFound() {
 
           <div className="mt-8 flex flex-wrap justify-center gap-2">
             <Link
-              href="/simulator"
+              href="/hub"
               className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
             >
-              시뮬레이터로
+              학습 허브
+            </Link>
+            <Link
+              href="/simulator"
+              className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+            >
+              시뮬레이터
+            </Link>
+            <Link
+              href="/cbt"
+              className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+            >
+              CBT
             </Link>
           </div>
         </div>

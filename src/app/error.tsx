@@ -40,7 +40,7 @@ export default function GlobalError({
         </Link>
       </div>
       {error.digest && (
-        <p className="mt-6 text-xs text-zinc-400">에러 코드: {error.digest}</p>
+        <p className="mt-6 text-xs text-zinc-500">에러 코드: {error.digest}</p>
       )}
     </div>
   );
