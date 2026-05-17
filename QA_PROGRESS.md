@@ -1,10 +1,7 @@
 # 시뮬레이터 품질 점검 (QA) 진행 현황
 
-> # 🛑 루프 일시정지 (PAUSED) — 2026-05-17
-> 사용자와 함께 시뮬레이터 컨트롤 UX 보완 작업 중. **이 줄이 있으면 루프는
-> iteration을 실행하지 말고, ScheduleWakeup 재예약도 하지 말고 즉시 깨끗이 종료할 것.**
-> (다음 깨어남에서 이 지시를 보면 아무 작업 없이 종료. 사용자가 명시적으로
-> "QA 루프 재개"라고 지시하면 이 블록을 삭제하고 정상 진행.)
+> ▶️ 재개됨 — 2026-05-17 사용자가 /loop 재호출로 명시 재개. (UX 프로토타입은
+> `git stash@{0}` 에 보관 중 — 검토 후 별도 진행, 루프는 건드리지 말 것.)
 
 자가 진행 루프가 관리하는 파일. 매 iteration마다 갱신·커밋.
 
@@ -45,9 +42,16 @@
 - 검증: diff=20삽입만, 한글 무결, U+FFFD 0, 중괄호 1508/1508 균형
 - 상태: 완료
 
-### ⚠️ 다음 iteration 대상 — 등록부 항목 자체가 없는 고아 HTML 5개
+### Iteration 2 — 2026-05-17 — 고아 HTML 등록부 추가 (1/5) ✅
+- 대상: `simulator-arc-furnace.html` (등록부에 id 없어 접근 불가였음)
+- 조치: HTML에서 메타 추출 → `arc-furnace` 등록부 엔트리 신규 추가
+  (전기설비/전력응용, Ayrton 아크전압식 + 3상 전력식 + 예제, htmlPath 연결)
+- 검증: htmlPath 실파일 존재, 한글 무결(U+FFFD 0), 중괄호 1522/1522,
+  `tsc --noEmit` 오류 없음
+- 상태: 완료. 남은 고아 4개는 다음 iteration들에서.
+
+### ⚠️ 남은 고아 HTML 4개 (등록부 항목 없음)
 HTML 파일은 있으나 simulators.ts 에 id 항목이 아예 없어 완전 접근 불가:
-- `simulator-arc-furnace.html`
 - `simulator-electroplating.html`
 - `simulator-hall-effect.html`
 - `simulator-single-phase-induction.html`

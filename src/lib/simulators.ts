@@ -3524,6 +3524,40 @@ export const simulators: Simulator[] = [
       answer: "$I_{circ} \\approx 22$ A (수십 A 수준)",
     },
   },
+  {
+    id: "arc-furnace",
+    title: "전기 아크로 (EAF)",
+    description:
+      "아크를 발생시켜 고철(scrap)을 용융하는 제강용 전기로. 아크 전압·길이·리액턴스·장입량을 조절하며 전력 전달과 운전 효율을 학습합니다.",
+    subject: "전기설비",
+    topic: "전력응용",
+    status: "available",
+    htmlPath: "/samples/simulator-arc-furnace.html",
+    emoji: "🔥",
+    formula: [
+      {
+        name: "아크 전압 (Ayrton 방정식)",
+        expression: "$V_{arc} = A + B \\cdot L_{arc}$",
+        meaning: "아크 길이 $L_{arc}$ 에 비례해 전압 상승. $A,B$ 는 전극·분위기 상수",
+      },
+      {
+        name: "아크 전력 (3상 합)",
+        expression: "$P = \\sqrt{3} \\cdot V_L \\cdot I \\cdot \\cos\\theta$",
+        meaning: "선간전압 $V_L$, 선전류 $I$, 역률 $\\cos\\theta$ 기준 입력 전력",
+      },
+    ],
+    example: {
+      question:
+        "아크 상수 $A = 40$ V, $B = 10$ V/cm 인 전극에서 아크 길이가 3 cm일 때 아크 전압은?",
+      given: ["$A = 40$ V", "$B = 10$ V/cm", "$L_{arc} = 3$ cm"],
+      solution: [
+        "$V_{arc} = A + B \\cdot L_{arc}$",
+        "$V_{arc} = 40 + 10 \\times 3$",
+        "$V_{arc} = 70$ V",
+      ],
+      answer: "$V_{arc} = 70$ V",
+    },
+  },
 ];
 
 export function getSimulator(id: string): Simulator | undefined {
