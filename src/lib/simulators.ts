@@ -3592,6 +3592,40 @@ export const simulators: Simulator[] = [
       answer: "$m \\approx 0.635$ g",
     },
   },
+  {
+    id: "hall-effect",
+    title: "홀 효과 (Hall Effect)",
+    description:
+      "자기장 속 전류 도체에서 로런츠 힘으로 생기는 홀 전압을 시각화. 전류·자속밀도·시편 두께를 조절하며 캐리어 농도와의 관계를 학습합니다.",
+    subject: "전기이론",
+    topic: "자계",
+    status: "available",
+    htmlPath: "/samples/simulator-hall-effect.html",
+    emoji: "🧲",
+    formula: [
+      {
+        name: "홀 전압",
+        expression: "$V_H = \\dfrac{I \\cdot B}{n \\cdot q \\cdot t}$",
+        meaning: "$n$ 캐리어 농도, $q$ 전하량, $t$ 시편 두께. 두께가 얇을수록 큰 전압",
+      },
+      {
+        name: "홀 계수",
+        expression: "$R_H = \\dfrac{1}{n \\cdot q}, \\quad V_H = \\dfrac{R_H \\cdot I \\cdot B}{t}$",
+        meaning: "재료 고유 상수. 부호로 캐리어 종류(전자/정공) 판별",
+      },
+    ],
+    example: {
+      question:
+        "홀 계수 $R_H = 1 \\times 10^{-3}$ m³/C 인 시편에 $I = 5$ A, $B = 0.2$ T, 두께 $t = 2$ mm일 때 홀 전압은?",
+      given: ["$R_H = 1 \\times 10^{-3}$ m³/C", "$I = 5$ A", "$B = 0.2$ T", "$t = 2 \\times 10^{-3}$ m"],
+      solution: [
+        "$V_H = \\dfrac{R_H \\cdot I \\cdot B}{t}$",
+        "$V_H = \\dfrac{(1 \\times 10^{-3}) \\times 5 \\times 0.2}{2 \\times 10^{-3}}$",
+        "$V_H = \\dfrac{1 \\times 10^{-3}}{2 \\times 10^{-3}} = 0.5$ V",
+      ],
+      answer: "$V_H = 0.5$ V",
+    },
+  },
 ];
 
 export function getSimulator(id: string): Simulator | undefined {

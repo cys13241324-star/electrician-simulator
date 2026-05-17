@@ -57,7 +57,14 @@
 - 검증: htmlPath 실파일 존재, U+FFFD 0, 중괄호 1534/1534, tsc 통과
 - 상태: 완료. 남은 고아 3개.
 
-### ⚠️ 남은 고아 HTML 3개 (등록부 항목 없음)
+### Iteration 4 — 2026-05-17 — 고아 HTML 등록부 추가 (3/5) ✅
+- 대상: `simulator-hall-effect.html`
+- 조치: `hall-effect` 엔트리 신규 (전기이론/자계, 홀 전압식·홀 계수식
+  + R_H 기반 예제, htmlPath 연결)
+- 검증: htmlPath 실파일 존재, U+FFFD 0, 중괄호 1557/1557, tsc 통과
+- 상태: 완료. 남은 고아 2개.
+
+### ⚠️ 남은 고아 HTML 2개 (등록부 항목 없음)
 HTML 파일은 있으나 simulators.ts 에 id 항목이 아예 없어 완전 접근 불가:
 - `simulator-hall-effect.html`
 - `simulator-single-phase-induction.html`
