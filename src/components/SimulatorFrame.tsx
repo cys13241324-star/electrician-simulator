@@ -90,7 +90,7 @@ export default function SimulatorFrame({ src, title }: Props) {
         {!loaded && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-slate-950">
             <span className="h-9 w-9 animate-spin rounded-full border-2 border-zinc-700 border-t-indigo-400" />
-            <p className="text-xs tracking-wide text-zinc-500">
+            <p className="text-xs tracking-wide text-zinc-400">
               시뮬레이터 불러오는 중…
             </p>
           </div>
