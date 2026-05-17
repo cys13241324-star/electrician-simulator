@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { readAttempts } from "@/lib/cbt/stats";
 import { mockExams } from "@/lib/cbt/mockData";
-import type { Attempt, Question } from "@/lib/cbt/types";
+import type { Question } from "@/lib/cbt/types";
 
 type WrongItem = {
   attemptId: string;

@@ -178,7 +178,8 @@ export default function HubPage() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         {/* 헤더 */}
         <header className="relative mb-10 overflow-hidden rounded-2xl border border-zinc-200 bg-white px-6 py-8 shadow-sm sm:px-8 sm:py-10">
-          {/* 은은한 실사진 배경 — 거의 워터마크 수준 */}
+          {/* 은은한 실사진 배경 — 거의 워터마크 수준 (장식용, next/image 대신 <img> 의도) */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/hub/img/hero.jpg"
             alt=""
@@ -210,7 +211,8 @@ export default function HubPage() {
               <>
                 {/* 썸네일 영역 */}
                 <div className={`relative h-44 overflow-hidden ${c.tileBg}`}>
-                  {/* (1) 실사진 배경 — 흐린 질감으로만 사용 */}
+                  {/* (1) 실사진 배경 — 흐린 질감으로만 사용 (장식용) */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`/hub/img/${c.id}.jpg`}
                     alt=""

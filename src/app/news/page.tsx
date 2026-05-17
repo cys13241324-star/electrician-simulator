@@ -1697,7 +1697,8 @@ export default function NewsIndexPage() {
                     >
                       {/* 썸네일 영역 — 사진은 분위기로 은은하게 깔리고, 그 위 tileContent가 명확히 읽히도록 처리 */}
                       <div className={`relative h-44 overflow-hidden ${c.tileBg}`}>
-                        {/* 1) 실사진 (Pexels, public/news/img) — 살짝 흐리고 채도/밝기 낮춰 배경 질감으로만 */}
+                        {/* 1) 실사진 (Pexels, public/news/img) — 살짝 흐리고 채도/밝기 낮춰 배경 질감으로만 (장식용) */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/news/img/${c.id}.jpg`}
                           alt=""
