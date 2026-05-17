@@ -2,6 +2,15 @@
 
 자가 진행 루프가 관리하는 파일. 매 iteration마다 갱신·커밋.
 
+## ⚙️ 루프 운영 규칙 (매 iteration 필수 준수)
+
+1. 점검·수정 후 변경분을 커밋한다.
+2. **커밋 직후 반드시 `git -C D:\webpage-simulator push origin main` 실행** —
+   사용자 요청(2026-05-17): 매 iteration 결과를 GitHub에 즉시 반영.
+   (이 저장소는 Vercel 자동배포 연결 가능성 있음 → 푸시 시 재배포될 수 있음, 의도된 동작)
+3. push 실패 시(인증·충돌 등) 루프를 멈추지 말고, QA_PROGRESS.md에 실패 사실을
+   기록한 뒤 다음 iteration 계속 진행. 사용자가 다음 응답에서 볼 수 있게 보고.
+
 ## 점검 항목
 1. `simulators.ts` 등록부 ↔ 실제 HTML 파일 일치 (htmlPath 연결, 고아 파일)
 2. HTML 구문/렌더 동작
