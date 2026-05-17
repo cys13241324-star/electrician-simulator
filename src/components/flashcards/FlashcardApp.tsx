@@ -346,20 +346,20 @@ function ProgressDashboard({
           </div>
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-wider text-zinc-400">
+          <p className="text-xs font-semibold tracking-wider text-zinc-500">
             전체 진도
           </p>
           <p className="mt-0.5 text-lg font-bold text-zinc-900">
             {hydrated ? (
               <>
                 {stats.known}
-                <span className="text-sm font-medium text-zinc-400">
+                <span className="text-sm font-medium text-zinc-500">
                   {" "}
                   / {stats.total}장 암기
                 </span>
               </>
             ) : (
-              <span className="text-sm font-medium text-zinc-400">
+              <span className="text-sm font-medium text-zinc-500">
                 불러오는 중…
               </span>
             )}
@@ -368,7 +368,7 @@ function ProgressDashboard({
             <button
               type="button"
               onClick={onReset}
-              className="mt-1 text-[11px] text-zinc-400 underline-offset-2 hover:text-zinc-600 hover:underline"
+              className="mt-1 text-[11px] text-zinc-500 underline-offset-2 hover:text-zinc-700 hover:underline"
             >
               진도 초기화
             </button>

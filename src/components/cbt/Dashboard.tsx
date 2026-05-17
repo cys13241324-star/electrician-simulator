@@ -415,7 +415,7 @@ function StudyVolumeChart({ stats }: { stats: LearningStats | null }) {
                     className="h-full rounded bg-blue-600 transition-all"
                     style={{ width: `${userWidth}%` }}
                   />
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-white">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 rounded bg-zinc-900/75 px-1.5 py-0.5 text-[11px] font-semibold text-white">
                     {row.formatter(row.user)}
                   </span>
                 </div>

@@ -135,7 +135,7 @@ export default function TextbookFloatingPopup() {
 
         {/* 본문 */}
         <div className="px-5 pb-5 pt-4">
-          <p className="text-center text-[11px] font-semibold tracking-wider text-amber-600">
+          <p className="text-center text-[11px] font-semibold tracking-wider text-amber-700">
             ⚡ 합격을 책임지는 단 하나의 교재
           </p>
           <h3 className="mt-1 text-center text-base font-black leading-tight text-zinc-900">
@@ -158,7 +158,7 @@ export default function TextbookFloatingPopup() {
             </span>
           </button>
 
-          <p className="mt-2 text-center text-[10px] text-zinc-400">
+          <p className="mt-2 text-center text-[10px] text-zinc-500">
             ※ 출시 알림은 회원가입 후 받아보실 수 있습니다.
           </p>
 
@@ -173,7 +173,7 @@ export default function TextbookFloatingPopup() {
             <button
               type="button"
               onClick={hideThisSession}
-              className="text-[11px] text-zinc-400 hover:text-zinc-700"
+              className="text-[11px] text-zinc-500 hover:text-zinc-800"
             >
               닫기
             </button>

@@ -94,7 +94,7 @@ export default async function SimulatorDetailPage({
         {hasInteractive ? (
           <section className="mb-10" aria-label="인터랙티브 시뮬레이터">
             <SimulatorFrame src={sim.htmlPath!} title={sim.title} />
-            <p className="mt-3 text-center text-xs text-zinc-400">
+            <p className="mt-3 text-center text-xs text-zinc-500">
               슬라이더와 입력값을 직접 바꿔보며 변화를 관찰하세요 · 전체화면을
               권장합니다
             </p>
@@ -152,7 +152,7 @@ export default async function SimulatorDetailPage({
           {hasExample && (
             <section className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-6 shadow-sm sm:p-7">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold tracking-wider text-white">
+                <span className="rounded-full bg-emerald-700 px-2.5 py-1 text-[11px] font-bold tracking-wider text-white">
                   ✏️ 예제 풀이
                 </span>
                 <h2 className="text-base font-bold text-zinc-900 sm:text-lg">
@@ -166,7 +166,7 @@ export default async function SimulatorDetailPage({
                 </p>
 
                 <div className="mt-4">
-                  <p className="text-[11px] font-bold tracking-wider text-zinc-400">
+                  <p className="text-[11px] font-bold tracking-wider text-zinc-500">
                     주어진 값
                   </p>
                   <ul className="mt-2 flex flex-wrap gap-2">
@@ -182,7 +182,7 @@ export default async function SimulatorDetailPage({
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-[11px] font-bold tracking-wider text-zinc-400">
+                  <p className="text-[11px] font-bold tracking-wider text-zinc-500">
                     풀이
                   </p>
                   <ol className="mt-2 space-y-1.5">
@@ -194,7 +194,7 @@ export default async function SimulatorDetailPage({
                         <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">
                           {i + 1}
                         </span>
-                        <span className="overflow-x-auto">
+                        <span>
                           <MathText>{s}</MathText>
                         </span>
                       </li>

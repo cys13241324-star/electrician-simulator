@@ -1521,7 +1521,7 @@ export default function NewsIndexPage() {
         >
           <h2
             id="why-title"
-            className="text-sm font-semibold tracking-widest text-zinc-400"
+            className="text-sm font-semibold tracking-widest text-zinc-500"
           >
             이 소식지로 얻는 것
           </h2>
@@ -1583,7 +1583,7 @@ export default function NewsIndexPage() {
         >
           <h2
             id="how-title"
-            className="text-sm font-semibold tracking-widest text-zinc-400"
+            className="text-sm font-semibold tracking-widest text-zinc-500"
           >
             이렇게 써보세요
           </h2>
@@ -1644,7 +1644,7 @@ export default function NewsIndexPage() {
               >
                 <span aria-hidden>{cat.emoji}</span>
                 {cat.label}
-                <span className="ml-0.5 rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-zinc-400">
+                <span className="ml-0.5 rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">
                   {count}
                 </span>
               </a>
@@ -1676,7 +1676,7 @@ export default function NewsIndexPage() {
                     >
                       {cat.label}
                     </h2>
-                    <span className="text-xs font-semibold text-zinc-400">
+                    <span className="text-xs font-semibold text-zinc-500">
                       {items.length}개
                     </span>
                   </div>

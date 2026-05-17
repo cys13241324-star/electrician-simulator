@@ -230,6 +230,7 @@ export default function CardStudy({
       <div
         className="mb-6 h-1.5 overflow-hidden rounded-full bg-zinc-200"
         role="progressbar"
+        aria-label="학습 진도"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progressPct)}

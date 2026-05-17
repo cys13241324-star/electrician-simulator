@@ -16,7 +16,7 @@ export default function WrongNotesPage() {
       <SubTabs active="main" />
       <main className="mx-auto max-w-6xl px-6 py-12">
         <div className="mb-6">
-          <p className="text-sm font-semibold tracking-wide text-rose-600">
+          <p className="text-sm font-semibold tracking-wide text-rose-700">
             오답 노트
           </p>
           <h1 className="mt-2 text-2xl font-bold text-zinc-900 sm:text-3xl">

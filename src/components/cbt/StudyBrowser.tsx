@@ -97,8 +97,8 @@ export default function StudyBrowser({ tree }: { tree: SubjectNode[] }) {
               <span
                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                   isActive
-                    ? "bg-white/20 text-white"
-                    : "bg-zinc-100 text-zinc-600"
+                    ? "bg-black/25 text-white"
+                    : "bg-zinc-100 text-zinc-700"
                 }`}
               >
                 {s.questionCount}

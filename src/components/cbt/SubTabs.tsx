@@ -24,7 +24,7 @@ export default function SubTabs({ active }: { active: TabId }) {
             >
               {tab.label}
               {tab.badge && (
-                <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-600">
+                <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
                   {tab.badge}
                 </span>
               )}
