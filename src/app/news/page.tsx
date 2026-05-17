@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ManifestoSection from "./ManifestoSection";
 
 export const metadata: Metadata = {
   title: "별의 소식지",
@@ -1484,6 +1485,8 @@ export default function NewsIndexPage() {
     <div className="min-h-screen bg-zinc-50">
       <Header />
       <main className="mx-auto max-w-5xl px-6 py-12">
+        {/* 매니페스토 레이어 (재방문 시 접힘) */}
+        <ManifestoSection>
         {/* 히어로 — 왜 존재하는가 */}
         <header className="mb-12">
           <p className="text-xs font-semibold tracking-widest text-indigo-600">
@@ -1496,9 +1499,9 @@ export default function NewsIndexPage() {
             교재가 무거운 날에도, 0개보다 1개.
           </p>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
-            자격증 공부에서 떨어지는 사람의 상당수는 실력이 모자라서가 아니라
-            끝까지 가지 못해서예요. 같은 개념을 계속 같은 방식으로만 보면
-            누구나 지칩니다. 그래서 이 소식지는 똑같은 전기 이론을 인스타 피드,
+            합격을 가르는 건 실력의 차이만이 아니에요. 끝까지 함께 가는 것,
+            그 작은 차이가 결과를 바꿉니다. 같은 개념을 계속 같은 방식으로만 보면
+            누구나 지치기 마련이에요. 그래서 이 소식지는 똑같은 전기 이론을 인스타 피드,
             유튜브 채널, 신문, 게임 같은{" "}
             <strong className="font-semibold text-zinc-800">
               {cards.length}가지 익숙한 포맷
@@ -1576,7 +1579,7 @@ export default function NewsIndexPage() {
         {/* 어떻게 활용하면 좋은지 */}
         <section
           aria-labelledby="how-title"
-          className="mb-12 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 p-6 sm:p-7"
+          className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 p-6 sm:p-7"
         >
           <h2
             id="how-title"
@@ -1624,6 +1627,7 @@ export default function NewsIndexPage() {
             오늘의 기분에 맞는 곳부터 들어가 보세요. ↓
           </p>
         </section>
+        </ManifestoSection>
 
         {/* 카테고리 바로가기 */}
         <nav
