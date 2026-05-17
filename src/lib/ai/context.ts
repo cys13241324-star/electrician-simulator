@@ -28,7 +28,8 @@ export function collectLearnerSnapshot(): LearnerSnapshot {
   }
 
   const recentAttempts = getRecentAttempts();
-  const weakTopics = getWeakTopics(recentAttempts);
+  // 약점 토픽 추출은 추후 구현 — 지금은 빈 배열
+  const weakTopics: string[] = [];
 
   return { recentAttempts, weakTopics };
 }
