@@ -1697,6 +1697,20 @@ export default function NewsIndexPage() {
                     >
                       {/* 썸네일 영역 */}
                       <div className={`relative h-44 ${c.tileBg}`}>
+                        {/* 실사진 커버 (Pexels, public/news/img) */}
+                        <img
+                          src={`/news/img/${c.id}.jpg`}
+                          alt={`${c.title} — ${c.subtitle}`}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                        {/* 사진 위 가독성·테마 유지를 위한 그라데이션 오버레이 */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${c.accent} opacity-55 mix-blend-multiply`}
+                          aria-hidden
+                        />
+                        <div className="absolute inset-0 bg-black/15" aria-hidden />
                         {c.tileContent}
                         <div className="absolute left-3 top-3">
                           <span
