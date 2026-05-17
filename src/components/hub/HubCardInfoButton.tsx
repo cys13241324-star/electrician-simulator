@@ -37,7 +37,7 @@ const CONTENT: Record<string, FeatureModalContent> = {
     badge: "FLIPCARDS",
     accent: "from-pink-500 via-fuchsia-500 to-violet-600",
     description:
-      "전기기능사 핵심 343장을 앞면 문제 → 뒷면 해설로 빠르게 회독합니다. 진도와 과목 필터, 오늘 복습할 카드까지 알아서 챙겨줘요.",
+      "전기기능사 핵심 391장을 앞면 문제 → 뒷면 해설로 빠르게 회독합니다. 진도와 과목 필터, 오늘 복습할 카드까지 알아서 챙겨줘요.",
     shots: [
       {
         src: `${SHOTS}/flashcards-deck.webp`,

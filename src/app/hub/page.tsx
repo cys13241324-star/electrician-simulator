@@ -80,7 +80,7 @@ const cards: HubCard[] = [
     id: "flipcard",
     title: "플립 암기카드",
     subtitle: "Flashcards · 지금 이용 가능",
-    desc: "전기기능사 핵심 343장을 앞면 문제 → 뒷면 해설로. SRS 간격 반복으로 잊을 만하면 다시 꺼내줍니다.",
+    desc: "전기기능사 핵심 391장을 앞면 문제 → 뒷면 해설로. SRS 간격 반복으로 잊을 만하면 다시 꺼내줍니다.",
     href: "/flashcards",
     status: "live",
     badge: "FLIPCARDS",
@@ -96,7 +96,7 @@ const cards: HubCard[] = [
           </div>
         </div>
         <div className="mt-4 text-xs font-bold tracking-widest opacity-95">
-          343 CARDS · SRS
+          391 CARDS · SRS
         </div>
       </div>
     ),

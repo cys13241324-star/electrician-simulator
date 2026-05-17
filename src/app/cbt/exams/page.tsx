@@ -248,7 +248,7 @@ const TONE_STYLES: Record<string, { bg: string; ring: string; text: string; btn:
     bg: "bg-emerald-50",
     ring: "ring-emerald-100",
     text: "text-emerald-700",
-    btn: "bg-emerald-600 hover:bg-emerald-700",
+    btn: "bg-emerald-700 hover:bg-emerald-800",
   },
   indigo: {
     bg: "bg-indigo-50",
@@ -266,7 +266,7 @@ const TONE_STYLES: Record<string, { bg: string; ring: string; text: string; btn:
     bg: "bg-amber-50",
     ring: "ring-amber-100",
     text: "text-amber-700",
-    btn: "bg-amber-600 hover:bg-amber-700",
+    btn: "bg-amber-700 hover:bg-amber-800",
   },
 };
 
@@ -302,11 +302,11 @@ function FocusGrid() {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               <div className={`rounded-lg px-2.5 py-1.5 ${tone.bg}`}>
-                <p className="text-[10px] text-zinc-500">문항</p>
+                <p className="text-[10px] text-zinc-600">문항</p>
                 <p className={`mt-0.5 font-bold ${tone.text}`}>{count}문항</p>
               </div>
               <div className={`rounded-lg px-2.5 py-1.5 ${tone.bg}`}>
-                <p className="text-[10px] text-zinc-500">예상 시간</p>
+                <p className="text-[10px] text-zinc-600">예상 시간</p>
                 <p className={`mt-0.5 font-bold ${tone.text}`}>약 {minutes}분</p>
               </div>
             </div>

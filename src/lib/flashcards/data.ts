@@ -2,6 +2,7 @@ import type { Flashcard } from "./types";
 import { theoryCards } from "./cards/theory";
 import { machineCards } from "./cards/machine";
 import { facilityCards } from "./cards/facility";
+import { extraCards } from "./cards/extras";
 
 /**
  * 수식은 $...$로 감싸 LaTeX 문법 사용.
@@ -1124,13 +1125,14 @@ const presetCardsBase: Flashcard[] = [
 ];
 
 /**
- * 프리셋 카드 = 기존 63장(base) + 과목별 확장 카드 3종.
- * 확장 카드는 src/lib/flashcards/cards/{theory,machine,facility}.ts 에서 관리.
+ * 프리셋 카드 = 기존 63장(base) + 과목별 확장 + 보강 카드.
+ * 보강 카드는 src/lib/flashcards/cards/extras.ts (공식 변형·단위·기호·기준 위주).
  */
 export const presetCards: Flashcard[] = [
   ...presetCardsBase,
   ...theoryCards,
   ...machineCards,
   ...facilityCards,
+  ...extraCards,
 ];
 
