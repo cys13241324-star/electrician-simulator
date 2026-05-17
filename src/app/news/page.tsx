@@ -1695,26 +1695,43 @@ export default function NewsIndexPage() {
                       rel="noreferrer"
                       className="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl"
                     >
-                      {/* 썸네일 영역 */}
-                      <div className={`relative h-44 ${c.tileBg}`}>
-                        {/* 실사진 커버 (Pexels, public/news/img) */}
+                      {/* 썸네일 영역 — 사진은 분위기로 은은하게 깔리고, 그 위 tileContent가 명확히 읽히도록 처리 */}
+                      <div className={`relative h-44 overflow-hidden ${c.tileBg}`}>
+                        {/* 1) 실사진 (Pexels, public/news/img) — 살짝 흐리고 채도/밝기 낮춰 배경 질감으로만 */}
                         <img
                           src={`/news/img/${c.id}.jpg`}
-                          alt={`${c.title} — ${c.subtitle}`}
+                          alt=""
+                          aria-hidden
                           loading="lazy"
                           decoding="async"
-                          className="absolute inset-0 h-full w-full object-cover"
+                          className="absolute inset-0 h-full w-full scale-105 object-cover opacity-30 blur-[2px] saturate-[0.65] brightness-95 transition duration-500 group-hover:opacity-45 group-hover:blur-0"
                         />
-                        {/* 사진 위 가독성·테마 유지를 위한 그라데이션 오버레이 */}
+                        {/* 2) 타일 고유 배경색을 반투명으로 다시 덮어 tileContent가 원래 의도된 대비(밝은 타일=어두운 글자 등)를 유지하게 함 */}
                         <div
-                          className={`absolute inset-0 bg-gradient-to-br ${c.accent} opacity-55 mix-blend-multiply`}
+                          className={`absolute inset-0 ${c.tileBg} opacity-60`}
                           aria-hidden
                         />
-                        <div className="absolute inset-0 bg-black/15" aria-hidden />
-                        {c.tileContent}
+                        {/* 3) 브랜드 액센트 은은한 워시 — 톤 통일 */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br ${c.accent} opacity-25 mix-blend-soft-light`}
+                          aria-hidden
+                        />
+                        {/* 4) 상·하단 스크림 — 뱃지/하단 요소 가독성 확보 (글자 영역 대비) */}
+                        <div
+                          className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/30 to-transparent"
+                          aria-hidden
+                        />
+                        <div
+                          className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/25 to-transparent"
+                          aria-hidden
+                        />
+                        {/* 5) 기존 tileContent (SVG·이모지·텍스트) — 최상단, text-shadow로 어떤 배경에서도 또렷하게 */}
+                        <div className="absolute inset-0 [text-shadow:0_1px_4px_rgba(0,0,0,0.35)]">
+                          {c.tileContent}
+                        </div>
                         <div className="absolute left-3 top-3">
                           <span
-                            className={`inline-block rounded-full bg-gradient-to-r ${c.accent} px-2.5 py-1 text-[10px] font-bold tracking-widest text-white shadow-sm`}
+                            className={`inline-block rounded-full bg-gradient-to-r ${c.accent} px-2.5 py-1 text-[10px] font-bold tracking-widest text-white shadow-md ring-1 ring-white/25 [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]`}
                           >
                             {c.badge}
                           </span>
