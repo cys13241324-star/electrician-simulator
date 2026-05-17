@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import type { Flashcard, Subject } from "@/lib/flashcards/types";
 import { CHAPTERS, ALL_SUBJECTS } from "@/lib/flashcards/chapters";
 import { MathText } from "@/components/Math";
+import { summarize, type ProgressMap } from "@/lib/flashcards/favorites";
 
 type Props = {
   cards: Flashcard[];
   favorites: Set<string>;
+  progress: ProgressMap;
   subjectScope: "all" | Subject;
   onPick: (card: Flashcard) => void;
   onToggleFavorite: (id: string) => void;
@@ -16,31 +18,35 @@ type Props = {
 
 const SUBJECT_STYLE: Record<
   Subject,
-  { chip: string; emoji: string; ring: string; accent: string }
+  { chip: string; emoji: string; ring: string; accent: string; bar: string }
 > = {
   전기이론: {
     chip: "bg-blue-100 text-blue-700",
     emoji: "⚡",
     ring: "ring-blue-100",
     accent: "text-blue-700",
+    bar: "from-blue-400 to-blue-600",
   },
   전기기기: {
     chip: "bg-violet-100 text-violet-700",
     emoji: "🔧",
     ring: "ring-violet-100",
     accent: "text-violet-700",
+    bar: "from-violet-400 to-violet-600",
   },
   전기설비: {
     chip: "bg-amber-100 text-amber-700",
     emoji: "🏗️",
     ring: "ring-amber-100",
     accent: "text-amber-700",
+    bar: "from-amber-400 to-amber-600",
   },
 };
 
 export default function CardList({
   cards,
   favorites,
+  progress,
   subjectScope,
   onPick,
   onToggleFavorite,
@@ -66,15 +72,18 @@ export default function CardList({
     return (
       <div className="rounded-3xl border border-dashed border-zinc-200 bg-white p-12 text-center">
         <p className="text-4xl">🧐</p>
-        <p className="mt-3 text-sm text-zinc-600">
-          조건에 맞는 카드가 없어요. 필터를 바꿔보세요.
+        <p className="mt-3 text-sm font-medium text-zinc-700">
+          조건에 맞는 카드가 없어요
+        </p>
+        <p className="mt-1 text-xs text-zinc-500">
+          상단에서 과목·검색어·필터를 바꾸거나 초기화해 보세요.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {groups.map((g) => (
         <ChapterSection
           key={`${g.subject}-${g.chapter}`}
@@ -82,6 +91,7 @@ export default function CardList({
           chapter={g.chapter}
           cards={g.cards}
           favorites={favorites}
+          progress={progress}
           onPick={onPick}
           onToggleFavorite={onToggleFavorite}
           onStart={() => onStartChapter(g.cards)}
@@ -96,6 +106,7 @@ function ChapterSection({
   chapter,
   cards,
   favorites,
+  progress,
   onPick,
   onToggleFavorite,
   onStart,
@@ -104,27 +115,33 @@ function ChapterSection({
   chapter: string;
   cards: Flashcard[];
   favorites: Set<string>;
+  progress: ProgressMap;
   onPick: (c: Flashcard) => void;
   onToggleFavorite: (id: string) => void;
   onStart: () => void;
 }) {
   const [open, setOpen] = useState(true);
   const style = SUBJECT_STYLE[subject];
+  const stats = useMemo(
+    () => summarize(progress, cards.map((c) => c.id)),
+    [progress, cards],
+  );
 
   return (
-    <section className="rounded-3xl border border-zinc-100 bg-white p-4 shadow-sm sm:p-5">
+    <section className="overflow-hidden rounded-3xl border border-zinc-100 bg-white shadow-sm">
       {/* 챕터 헤더 */}
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex items-center justify-between gap-3 p-4 sm:p-5">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
           aria-label={open ? "챕터 접기" : "챕터 펼치기"}
           className="flex flex-1 items-center gap-3 text-left"
         >
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs transition ${
+            className={`flex h-7 w-7 items-center justify-center rounded-full bg-zinc-100 text-xs text-zinc-500 transition-transform ${
               open ? "rotate-90" : ""
-            } bg-zinc-100 text-zinc-500`}
+            }`}
           >
             ▶
           </span>
@@ -139,6 +156,11 @@ function ChapterSection({
           <span className="text-xs font-medium text-zinc-500">
             {cards.length}장
           </span>
+          {stats.known > 0 && (
+            <span className="hidden text-xs font-semibold text-emerald-600 sm:inline">
+              · {stats.masteredPct}% 암기
+            </span>
+          )}
         </button>
 
         <button
@@ -150,16 +172,45 @@ function ChapterSection({
         </button>
       </header>
 
+      {/* 챕터 진도 바 */}
+      <div className="px-4 sm:px-5">
+        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${style.bar} transition-all duration-500`}
+            style={{ width: `${stats.masteredPct}%` }}
+          />
+        </div>
+      </div>
+
       {/* 카드 그리드 */}
       {open && (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 p-4 pt-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
           {cards.map((card) => {
             const isFav = favorites.has(card.id);
+            const p = progress[card.id];
             return (
               <div
                 key={card.id}
-                className={`group relative rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md ring-1 ${style.ring}`}
+                className={`group relative rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 ring-1 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md ${style.ring}`}
               >
+                {/* 상태 표시 점 */}
+                <span
+                  className={`absolute left-3 top-3 h-2 w-2 rounded-full ${
+                    !p
+                      ? "bg-zinc-200"
+                      : p.status === "known"
+                        ? "bg-emerald-400"
+                        : "bg-rose-400"
+                  }`}
+                  title={
+                    !p
+                      ? "아직 안 봄"
+                      : p.status === "known"
+                        ? "암기 완료"
+                        : "복습 필요"
+                  }
+                  aria-hidden
+                />
                 <button
                   type="button"
                   onClick={() => onToggleFavorite(card.id)}
@@ -175,11 +226,16 @@ function ChapterSection({
                 <button
                   type="button"
                   onClick={() => onPick(card)}
-                  className="block w-full pr-8 text-left"
+                  className="block w-full pl-3 pr-8 text-left"
                 >
                   <p className="line-clamp-3 text-sm font-bold leading-6 text-zinc-900 group-hover:text-blue-700">
                     <MathText>{card.front}</MathText>
                   </p>
+                  {card.hint && (
+                    <p className="mt-2 line-clamp-1 text-[11px] text-zinc-400">
+                      💡 {card.hint}
+                    </p>
+                  )}
                 </button>
               </div>
             );

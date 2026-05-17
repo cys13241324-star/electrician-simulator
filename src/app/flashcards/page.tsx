@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function FlashcardsPage() {
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-gradient-to-b from-zinc-50 via-white to-zinc-50">
       <Header />
       <FlashcardApp />
       <Footer />
