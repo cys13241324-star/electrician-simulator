@@ -5,7 +5,8 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "별의 소식지",
-  description: "전기기능사 학습 사이트의 별도 콘텐츠 — 인스타·유튜브·신문 콘셉트로 풀어낸 학습 자료.",
+  description:
+    "교재가 무거운 날에도 0개보다 1개. 같은 전기기능사 개념을 인스타·유튜브·신문·게임 등 익숙한 포맷으로 다시 만나, 지치지 않고 합격까지 가도록 돕는 학습 콘텐츠 모음입니다.",
 };
 
 type CategoryId =
@@ -1483,21 +1484,146 @@ export default function NewsIndexPage() {
     <div className="min-h-screen bg-zinc-50">
       <Header />
       <main className="mx-auto max-w-5xl px-6 py-12">
-        {/* 헤더 */}
-        <header className="mb-8">
+        {/* 히어로 — 왜 존재하는가 */}
+        <header className="mb-12">
           <p className="text-xs font-semibold tracking-widest text-indigo-600">
             ⭐ 별의 콘텐츠
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+          <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl">
             전기기능사 별의 소식지
           </h1>
+          <p className="mt-4 max-w-2xl text-lg font-semibold leading-8 text-zinc-800 sm:text-xl">
+            교재가 무거운 날에도, 0개보다 1개.
+          </p>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
-            교재·시뮬레이터 말고도 가볍게 즐기며 학습할 수 있는 별도 콘텐츠 모음이에요.
-            같은 전기 이론을 인스타 피드, 유튜브 채널, 신문, 게임 등{" "}
-            <strong className="font-semibold text-zinc-800">{cards.length}가지 콘셉트</strong>로
-            풀어냈어요. 마음에 드는 형식부터 골라 보세요.
+            자격증 공부에서 떨어지는 사람의 상당수는 실력이 모자라서가 아니라
+            끝까지 가지 못해서예요. 같은 개념을 계속 같은 방식으로만 보면
+            누구나 지칩니다. 그래서 이 소식지는 똑같은 전기 이론을 인스타 피드,
+            유튜브 채널, 신문, 게임 같은{" "}
+            <strong className="font-semibold text-zinc-800">
+              {cards.length}가지 익숙한 포맷
+            </strong>
+            으로 다시 풀어 두었어요. 더 많은 정보를 주려는 게 아니라,
+            <strong className="font-semibold text-zinc-800">
+              {" "}끝까지 갈 이유
+            </strong>
+            를 하나 더 만들어 두려는 거예요.
           </p>
         </header>
+
+        {/* 학습자가 얻는 것 3가지 */}
+        <section
+          aria-labelledby="why-title"
+          className="mb-12 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8"
+        >
+          <h2
+            id="why-title"
+            className="text-sm font-semibold tracking-widest text-zinc-400"
+          >
+            이 소식지로 얻는 것
+          </h2>
+          <div className="mt-5 grid gap-6 sm:grid-cols-3">
+            <div>
+              <div className="text-2xl" aria-hidden>
+                🔁
+              </div>
+              <h3 className="mt-3 text-base font-bold text-zinc-900">
+                같은 개념, 다른 각도
+              </h3>
+              <p className="mt-1.5 text-sm leading-6 text-zinc-600">
+                옴의 법칙 하나도 피드로, 영상으로, 기사로 다시 만나요.
+                여러 맥락에서 반복 노출되면 외운 게 아니라
+                <strong className="font-semibold text-zinc-800">
+                  {" "}기억에 남습니다.
+                </strong>
+              </p>
+            </div>
+            <div>
+              <div className="text-2xl" aria-hidden>
+                🪶
+              </div>
+              <h3 className="mt-3 text-base font-bold text-zinc-900">
+                낮아진 시작 부담
+              </h3>
+              <p className="mt-1.5 text-sm leading-6 text-zinc-600">
+                교재를 펴기엔 지친 날에도 카드 하나는 넘길 수 있어요.
+                공부의 정서적 비용을 낮춰{" "}
+                <strong className="font-semibold text-zinc-800">
+                  손이 가게
+                </strong>{" "}
+                만듭니다.
+              </p>
+            </div>
+            <div>
+              <div className="text-2xl" aria-hidden>
+                📈
+              </div>
+              <h3 className="mt-3 text-base font-bold text-zinc-900">
+                끊기지 않는 학습
+              </h3>
+              <p className="mt-1.5 text-sm leading-6 text-zinc-600">
+                &lsquo;오늘 공부 못 함&rsquo;을 &lsquo;오늘 한 카드는 봄&rsquo;으로 바꿔요.
+                작게라도 이어가는 것이{" "}
+                <strong className="font-semibold text-zinc-800">
+                  합격까지 가는 힘
+                </strong>
+                이에요.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 어떻게 활용하면 좋은지 */}
+        <section
+          aria-labelledby="how-title"
+          className="mb-12 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 p-6 sm:p-7"
+        >
+          <h2
+            id="how-title"
+            className="text-sm font-semibold tracking-widest text-zinc-400"
+          >
+            이렇게 써보세요
+          </h2>
+          <ul className="mt-4 space-y-2.5 text-sm leading-6 text-zinc-600">
+            <li className="flex gap-2.5">
+              <span className="select-none text-indigo-500" aria-hidden>
+                —
+              </span>
+              <span>
+                주력은 교재·시뮬레이터. 소식지는{" "}
+                <strong className="font-semibold text-zinc-800">
+                  쉬어가며 복습하는 보조 채널
+                </strong>
+                로 쓰세요.
+              </span>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="select-none text-indigo-500" aria-hidden>
+                —
+              </span>
+              <span>
+                집중이 안 풀리는 날엔 끌리는 포맷 하나만 골라 가볍게 넘겨도
+                충분해요. <strong className="font-semibold text-zinc-800">완독이 목표가 아닙니다.</strong>
+              </span>
+            </li>
+            <li className="flex gap-2.5">
+              <span className="select-none text-indigo-500" aria-hidden>
+                —
+              </span>
+              <span>
+                이미 본 개념을 다른 포맷으로 또 만나면 그냥 넘기지 말고,
+                <strong className="font-semibold text-zinc-800">
+                  {" "}머릿속으로 한 번 설명
+                </strong>
+                해 보세요. 그게 진짜 복습이에요.
+              </span>
+            </li>
+          </ul>
+          <p className="mt-5 text-sm font-medium text-zinc-500">
+            아래는 {cards.length}개 콘텐츠를 6가지 결로 묶어 둔 거예요.
+            오늘의 기분에 맞는 곳부터 들어가 보세요. ↓
+          </p>
+        </section>
 
         {/* 카테고리 바로가기 */}
         <nav
