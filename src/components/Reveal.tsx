@@ -36,6 +36,7 @@ export default function Reveal({
     // 모션 줄이기 사용자는 즉시 표시
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- matchMedia (외부 시스템) 구독 결과 반영
       setVisible(true);
       return;
     }

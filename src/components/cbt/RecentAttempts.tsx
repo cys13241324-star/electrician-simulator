@@ -54,6 +54,7 @@ export default function RecentAttempts() {
   const [rows, setRows] = useState<Row[] | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage attempts 읽기 + window focus 이벤트 재계산
     setRows(computeRows());
     const handler = () => setRows(computeRows());
     window.addEventListener("focus", handler);

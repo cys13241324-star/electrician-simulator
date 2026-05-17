@@ -45,6 +45,8 @@ export default function CardStudy({
   const [drag, setDrag] = useState({ dx: 0, active: false });
 
   useEffect(() => {
+    // TODO(refactor): deck 변경 시 전체 리셋은 부모에서 key={deck.id} 로 unmount/remount 처리 권장
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deck prop 변경 시 학습 상태 초기화 (필터·셔플 변경 흡수)
     setQueue(deck);
     setFlipped(false);
     setDone(0);

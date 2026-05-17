@@ -32,6 +32,7 @@ export default function Dashboard({
   const [stats, setStats] = useState<LearningStats | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 집계 + window focus 이벤트 구독 재계산
     setStats(computeLearningStats());
     const handleFocus = () => setStats(computeLearningStats());
     window.addEventListener("focus", handleFocus);

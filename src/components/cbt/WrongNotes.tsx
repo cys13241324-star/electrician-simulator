@@ -46,6 +46,7 @@ export default function WrongNotes() {
       });
     }
     out.sort((a, b) => b.date - a.date);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage attempts 에서 오답만 추출
     setItems(out);
   }, []);
 

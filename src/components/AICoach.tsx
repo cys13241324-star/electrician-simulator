@@ -57,6 +57,7 @@ export default function AICoach() {
   // 챗 열면 힌트 영구 숨김
   useEffect(() => {
     if (open && showHint) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 영구 저장과 함께 한 번만 적용
       setShowHint(false);
       localStorage.setItem(HINT_KEY, "1");
     }
@@ -85,6 +86,7 @@ export default function AICoach() {
   useEffect(() => {
     if (open) {
       const snap = collectLearnerSnapshot();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage에서 학습 스냅샷 읽어와 동기화
       setLearnerSummary(snapshotToPrompt(snap));
       setRemaining(getRemaining());
     }

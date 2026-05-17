@@ -20,6 +20,7 @@ export default function ReviewView({ exam }: { exam: Exam }) {
     try {
       const saved = localStorage.getItem(`cbt-attempt-${exam.id}`);
       if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 응시 결과 하이드레이션 (해설 보기 화면)
         setAttempt(JSON.parse(saved));
       }
     } catch {
@@ -44,6 +45,8 @@ export default function ReviewView({ exam }: { exam: Exam }) {
   const totalPages = Math.max(1, Math.ceil(visibleIndices.length / PAGE_SIZE));
 
   useEffect(() => {
+    // TODO(refactor): pageIndex 를 useMemo 로 clamping 처리하면 effect 불필요
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 필터 변경으로 totalPages 가 줄어들면 페이지 인덱스 리셋
     if (pageIndex >= totalPages) setPageIndex(0);
   }, [totalPages, pageIndex]);
 

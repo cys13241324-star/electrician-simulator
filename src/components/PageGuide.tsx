@@ -99,6 +99,7 @@ export default function PageGuide({
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 하이드레이션 (SSR/CSR 일관성 위해 마운트 후 동기화)
     setHydrated(true);
     try {
       const stored = localStorage.getItem(`page-guide:${storageKey}`);

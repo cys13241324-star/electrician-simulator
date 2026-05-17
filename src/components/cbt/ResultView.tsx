@@ -67,6 +67,7 @@ export default function ResultView({ exam }: { exam: Exam }) {
     try {
       const saved = localStorage.getItem(`cbt-attempt-${exam.id}`);
       if (saved) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 응시 결과 하이드레이션
         setAttempt(JSON.parse(saved));
       }
     } catch {

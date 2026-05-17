@@ -32,6 +32,7 @@ export default function LearningCurve() {
       });
     }
     out.sort((a, b) => a.ts - b.ts);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage attempts 집계 → 학습 곡선 데이터
     setPoints(out);
   }, []);
 

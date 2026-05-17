@@ -45,6 +45,7 @@ export default function FlashcardApp() {
 
   // localStorage 동기화 (클라이언트 마운트 시)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 즐겨찾기·진도 하이드레이션
     setFavorites(loadFavorites());
     setProgress(loadProgress());
     setHydrated(true);
@@ -66,6 +67,8 @@ export default function FlashcardApp() {
 
   // 필터가 바뀌면 학습 덱도 새로 짜기 (현재 학습 중이면 끊김 → 의도된 동작)
   useEffect(() => {
+    // TODO(refactor): deck 을 useMemo 로 derived 처리하면 effect 불필요 (단 setDeck 다른 호출처 7곳 함께 정리 필요)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 필터 변경 시 deck 재생성 (shuffle 비결정성 때문에 useMemo 보다 useEffect 선택)
     setDeck(shuffleOn ? shuffle(filtered) : filtered);
   }, [filtered, shuffleOn]);
 

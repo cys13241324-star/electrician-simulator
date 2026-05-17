@@ -19,6 +19,7 @@ export default function TextbookFloatingPopup() {
     try {
       const hideUntil = Number(localStorage.getItem(STORAGE_KEY) ?? "0");
       const shouldShow = !hideUntil || Date.now() > hideUntil;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage "오늘 하루 보지 않기" 만료 시간 하이드레이션
       setVisible(shouldShow);
       if (shouldShow) {
         // 페이지 로드 후 살짝 늦게 슬라이드 인

@@ -15,6 +15,7 @@ export default function DDayWidget() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 시계 (외부 시간 시스템) 마운트 시 초기화 + 60초마다 갱신
     setNow(new Date());
     const id = window.setInterval(() => setNow(new Date()), 60_000);
     return () => window.clearInterval(id);

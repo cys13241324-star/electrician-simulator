@@ -32,6 +32,7 @@ export default function ManifestoSection({
       // localStorage 사용 불가(프라이빗 모드 등) → 펼친 상태 유지.
     }
     if (seen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage 하이드레이션 (외부 시스템 동기화, React 공식 권장 패턴)
       setOpen(false);
     }
     setHydrated(true);

@@ -64,6 +64,7 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
           router.replace(`/cbt/${exam.id}/result`);
           return;
         }
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage에서 미제출 응시 진행 상태 하이드레이션
         setAnswers(data.answers);
         setChecked(data.checked);
         setEndsAt(data.endsAt);

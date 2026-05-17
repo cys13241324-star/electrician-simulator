@@ -30,6 +30,7 @@ export default function DailyChallenge() {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage attempts 집계 결과 반영
     setTodayAnswered(count);
 
     // 연속 학습 일수 계산 (간단 버전)
