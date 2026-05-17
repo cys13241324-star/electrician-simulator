@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import HubCardInfoButton from "@/components/hub/HubCardInfoButton";
 
 export const metadata: Metadata = {
   title: "허브 — 전기기능사 학습",
@@ -320,13 +321,15 @@ export default function HubPage() {
             }
 
             return (
-              <Link
+              <div
                 key={c.id}
-                href={c.href}
-                className={`group ${base} border-zinc-200 transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl`}
+                className={`group relative ${base} border-zinc-200 transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl`}
               >
-                {inner}
-              </Link>
+                <Link href={c.href} className="block">
+                  {inner}
+                </Link>
+                <HubCardInfoButton cardId={c.id} />
+              </div>
             );
           })}
         </div>
