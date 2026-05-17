@@ -5,8 +5,10 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "허브 — 전기기능사 학습",
-  description: "시뮬레이터 · 플립카드 · CBT · 소식지를 한 페이지에서.",
+  description: "시뮬레이터 · 소식지 · 플립카드 · CBT 를 한 페이지에서.",
 };
+
+type CardStatus = "live" | "soon";
 
 type HubCard = {
   id: string;
@@ -14,10 +16,10 @@ type HubCard = {
   subtitle: string;
   desc: string;
   href: string;
-  external: boolean;
+  status: CardStatus;
   badge: string;
-  accent: string;       // pill gradient
-  tileBg: string;       // thumbnail background
+  accent: string; // pill gradient
+  tileBg: string; // thumbnail background
   tileContent: React.ReactNode;
   cta: string;
 };
@@ -26,10 +28,10 @@ const cards: HubCard[] = [
   {
     id: "simulator",
     title: "인터랙티브 시뮬레이터",
-    subtitle: "Simulator · 내부 페이지",
+    subtitle: "Simulator · 지금 이용 가능",
     desc: "전기력선·변압기·회전 자계·RLC 위상 등 손으로 만져보는 시뮬. 슬라이더를 움직이면 즉시 반응합니다.",
     href: "/simulator",
-    external: false,
+    status: "live",
     badge: "SIMULATOR",
     accent: "from-cyan-400 via-sky-500 to-indigo-700",
     tileBg: "bg-gradient-to-br from-slate-900 via-sky-900 to-indigo-900",
@@ -55,10 +57,10 @@ const cards: HubCard[] = [
   {
     id: "news",
     title: "별의 소식지",
-    subtitle: "News · 내부 페이지",
-    desc: "인스타 피드·유튜브 채널·신문 — 같은 학습 내용을 세 가지 콘셉트로 풀어낸 별도 콘텐츠.",
+    subtitle: "News · 지금 이용 가능",
+    desc: "인스타 피드·유튜브 채널·신문 — 같은 학습 내용을 50가지 친숙한 콘셉트로 다시 만나는 보조 채널.",
     href: "/news",
-    external: false,
+    status: "live",
     badge: "NEWS",
     accent: "from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]",
     tileBg: "bg-gradient-to-br from-rose-400 via-fuchsia-500 to-violet-600",
@@ -75,10 +77,10 @@ const cards: HubCard[] = [
   {
     id: "flipcard",
     title: "플립 암기카드",
-    subtitle: "Flashcards · 외부 사이트",
-    desc: "전기기능사 핵심 62장. 앞면 문제 → 뒷면 해설. SRS(간격 반복) 알고리즘으로 잊을 때쯤 다시.",
-    href: "http://localhost:3101",
-    external: true,
+    subtitle: "Flashcards · 연결 준비 중",
+    desc: "전기기능사 핵심 343장. 앞면 문제 → 뒷면 해설. SRS(간격 반복) 알고리즘으로 잊을 때쯤 다시. 배포 후 연결됩니다.",
+    href: "#",
+    status: "soon",
     badge: "FLIPCARDS",
     accent: "from-pink-500 via-fuchsia-500 to-violet-600",
     tileBg: "bg-gradient-to-br from-pink-500 via-fuchsia-600 to-violet-700",
@@ -92,19 +94,19 @@ const cards: HubCard[] = [
           </div>
         </div>
         <div className="mt-4 text-xs font-bold tracking-widest opacity-95">
-          62 CARDS · SRS
+          343 CARDS · SRS
         </div>
       </div>
     ),
-    cta: "새 탭에서 열기",
+    cta: "배포 후 연결 예정",
   },
   {
     id: "cbt",
     title: "CBT 모의고사",
-    subtitle: "CBT · 외부 사이트",
-    desc: "실전 환경 60문항. 시간 측정·자동 채점·약점 분석까지. 시험장 그대로의 인터페이스로 연습.",
-    href: "http://localhost:3100",
-    external: true,
+    subtitle: "CBT · 연결 준비 중",
+    desc: "실전 환경 60문항. 시간 측정·자동 채점·약점 분석까지. 시험장 그대로의 인터페이스로 연습. 배포 후 연결됩니다.",
+    href: "#",
+    status: "soon",
     badge: "CBT",
     accent: "from-blue-500 via-indigo-500 to-indigo-700",
     tileBg: "bg-gradient-to-br from-blue-700 via-indigo-700 to-indigo-900",
@@ -121,15 +123,15 @@ const cards: HubCard[] = [
         </div>
       </div>
     ),
-    cta: "새 탭에서 열기",
+    cta: "배포 후 연결 예정",
   },
   {
     id: "guide",
     title: "학습 가이드",
     subtitle: "Guide · 준비 중",
     desc: "시험 일정·과목 구성·합격 전략·학습 루틴. 처음 시작하는 분을 위한 안내문 (작성 중).",
-    href: "/simulator",
-    external: false,
+    href: "#",
+    status: "soon",
     badge: "GUIDE",
     accent: "from-emerald-400 via-teal-500 to-cyan-600",
     tileBg: "bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100",
@@ -148,8 +150,8 @@ const cards: HubCard[] = [
     title: "합격 후기",
     subtitle: "Stories · 준비 중",
     desc: "이 사이트로 공부해 합격한 분들의 이야기. 학습 루틴·실수담·꿀팁 모음 (작성 중).",
-    href: "/simulator",
-    external: false,
+    href: "#",
+    status: "soon",
     badge: "STORIES",
     accent: "from-amber-400 via-orange-500 to-red-500",
     tileBg: "bg-gradient-to-br from-amber-50 via-orange-50 to-rose-100",
@@ -179,14 +181,15 @@ export default function HubPage() {
             전기기능사 학습 허브
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
-            시뮬레이터·플립카드·CBT·소식지 — 흩어진 콘텐츠를 한 페이지에서. 카드를
-            클릭하면 해당 학습 도구로 바로 이동합니다.
+            시뮬레이터·소식지·플립카드·CBT — 흩어진 학습 콘텐츠의 한 입구.
+            지금 이용 가능한 것부터 바로 시작하세요.
           </p>
         </header>
 
         {/* 카드 그리드 */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((c) => {
+            const soon = c.status === "soon";
             const inner = (
               <>
                 {/* 썸네일 영역 */}
@@ -199,17 +202,30 @@ export default function HubPage() {
                       {c.badge}
                     </span>
                   </div>
-                  {c.external && (
-                    <div className="absolute right-3 top-3">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-zinc-700 shadow-sm backdrop-blur-sm">
-                        ↗ 외부
+                  <div className="absolute right-3 top-3">
+                    {soon ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-zinc-900/65 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm backdrop-blur-sm">
+                        준비 중
                       </span>
-                    </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shadow-sm backdrop-blur-sm">
+                        ● 이용 가능
+                      </span>
+                    )}
+                  </div>
+                  {soon && (
+                    <div className="absolute inset-0 bg-zinc-900/35" />
                   )}
                 </div>
                 {/* 본문 */}
                 <div className="p-5">
-                  <h3 className="text-base font-bold text-zinc-900 group-hover:text-indigo-700">
+                  <h3
+                    className={`text-base font-bold ${
+                      soon
+                        ? "text-zinc-500"
+                        : "text-zinc-900 group-hover:text-indigo-700"
+                    }`}
+                  >
                     {c.title}
                   </h3>
                   <p className="mt-1 text-xs font-medium text-zinc-500">
@@ -218,31 +234,43 @@ export default function HubPage() {
                   <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-700">
                     {c.desc}
                   </p>
-                  <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                  <div
+                    className={`mt-4 inline-flex items-center gap-1 text-xs font-semibold ${
+                      soon ? "text-zinc-400" : "text-indigo-600"
+                    }`}
+                  >
                     {c.cta}{" "}
-                    <span className="transition group-hover:translate-x-0.5">
-                      →
-                    </span>
+                    {!soon && (
+                      <span className="transition group-hover:translate-x-0.5">
+                        →
+                      </span>
+                    )}
                   </div>
                 </div>
               </>
             );
 
-            const className =
-              "group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl";
+            const base =
+              "block overflow-hidden rounded-2xl border bg-white shadow-sm";
 
-            return c.external ? (
-              <a
+            if (soon) {
+              return (
+                <div
+                  key={c.id}
+                  aria-disabled="true"
+                  className={`${base} cursor-not-allowed border-zinc-200 opacity-75 select-none`}
+                >
+                  {inner}
+                </div>
+              );
+            }
+
+            return (
+              <Link
                 key={c.id}
                 href={c.href}
-                target="_blank"
-                rel="noreferrer"
-                className={className}
+                className={`group ${base} border-zinc-200 transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl`}
               >
-                {inner}
-              </a>
-            ) : (
-              <Link key={c.id} href={c.href} className={className}>
                 {inner}
               </Link>
             );
@@ -251,8 +279,9 @@ export default function HubPage() {
 
         {/* 하단 안내 */}
         <p className="mt-10 rounded-2xl border border-dashed border-zinc-200 bg-white p-5 text-center text-xs leading-6 text-zinc-500">
-          🔗 플립카드·CBT는 별도 사이트에서 새 탭으로 열립니다. 시뮬레이터·소식지는
-          같은 사이트 내부 페이지입니다.
+          🔗 <strong className="font-semibold text-zinc-700">시뮬레이터·소식지</strong>
+          는 지금 바로 이용 가능합니다. <strong className="font-semibold text-zinc-700">플립카드·CBT</strong>
+          는 별도 사이트 배포 후 이 허브에서 바로 연결될 예정입니다.
         </p>
       </main>
       <Footer />
