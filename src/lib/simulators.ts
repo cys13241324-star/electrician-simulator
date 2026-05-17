@@ -3626,6 +3626,39 @@ export const simulators: Simulator[] = [
       answer: "$V_H = 0.5$ V",
     },
   },
+  {
+    id: "single-phase-induction",
+    title: "단상 유도전동기 기동 방식",
+    description:
+      "단상 유도전동기는 기동 토크가 없어 보조 기동 장치가 필요합니다. 분상·콘덴서·셰이딩코일 방식별 기동 토크와 특성을 비교합니다.",
+    subject: "전기기기",
+    topic: "유도전동기",
+    status: "available",
+    htmlPath: "/samples/simulator-single-phase-induction.html",
+    emoji: "🌀",
+    formula: [
+      {
+        name: "동기속도",
+        expression: "$N_s = \\dfrac{120 \\cdot f}{P}$",
+        meaning: "단상기도 회전자계 동기속도는 3상과 동일. $f$ 주파수, $P$ 극수 [rpm]",
+      },
+      {
+        name: "기동 토크 크기 순서",
+        expression: "반발기동 > 콘덴서기동 > 분상기동 > 셰이딩코일",
+        meaning: "보조권선·콘덴서로 위상차를 만들수록 기동 토크가 커짐",
+      },
+    ],
+    example: {
+      question:
+        "60 Hz, 4극 단상 유도전동기의 동기속도는?",
+      given: ["$f = 60$ Hz", "$P = 4$ 극"],
+      solution: [
+        "$N_s = \\dfrac{120 \\cdot f}{P}$",
+        "$N_s = \\dfrac{120 \\times 60}{4} = 1800$ rpm",
+      ],
+      answer: "$N_s = 1800$ rpm",
+    },
+  },
 ];
 
 export function getSimulator(id: string): Simulator | undefined {

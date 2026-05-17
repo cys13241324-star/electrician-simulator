@@ -1,12 +1,7 @@
 # 시뮬레이터 품질 점검 (QA) 진행 현황
 
-> # 🛑 루프 일시정지 (PAUSED) — 2026-05-17
-> 플립카드·CBT 기능을 webpage-simulator로 통합하는 대규모 작업 진행 중
-> (같은 저장소 다수 파일 추가 — 루프 커밋과 충돌 방지). **이 줄이 있으면
-> 루프는 iteration 실행·ScheduleWakeup 재예약 없이 즉시 깨끗이 종료할 것.**
-> 사용자가 "QA 루프 재개" 명시 지시 시 이 블록 삭제하고 정상 진행.
->
-> (UX 프로토타입은 `git stash@{0}` 에 보관 중 — 별도 진행.)
+> ▶️ 재개됨 — 2026-05-17 사용자 "QA 루프 활성화" 명시 지시.
+> (플립카드·CBT 통합 완료 후 재개. UX 프로토타입은 `git stash@{0}` 보관 중 — 별도 진행.)
 
 자가 진행 루프가 관리하는 파일. 매 iteration마다 갱신·커밋.
 
@@ -69,7 +64,14 @@
 - 검증: htmlPath 실파일 존재, U+FFFD 0, 중괄호 1557/1557, tsc 통과
 - 상태: 완료. 남은 고아 2개.
 
-### ⚠️ 남은 고아 HTML 2개 (등록부 항목 없음)
+### Iteration 5 — 2026-05-17 — 고아 HTML 등록부 추가 (4/5) ✅
+- 대상: `simulator-single-phase-induction.html`
+- 조치: `single-phase-induction` 엔트리 신규 (전기기기/유도전동기,
+  동기속도식 + 기동토크 순서 + 동기속도 예제, htmlPath 연결)
+- 검증: htmlPath 실파일 존재, U+FFFD 0, 중괄호 1567/1567, tsc 통과
+- 상태: 완료. 남은 고아 1개(transformer-inrush).
+
+### ⚠️ 남은 고아 HTML 1개 (등록부 항목 없음)
 HTML 파일은 있으나 simulators.ts 에 id 항목이 아예 없어 완전 접근 불가:
 - `simulator-hall-effect.html`
 - `simulator-single-phase-induction.html`
