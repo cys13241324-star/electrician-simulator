@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import type { Attempt, Exam, Subject } from "@/lib/cbt/types";
+import type {
+  Attempt,
+  Difficulty,
+  Exam,
+  Frequency,
+  Subject,
+} from "@/lib/cbt/types";
 
 const PASS_THRESHOLD = 36;
 
@@ -11,6 +17,8 @@ type SubjectStat = {
   correct: number;
   total: number;
 };
+
+type Bucket = { key: string; label: string; correct: number; total: number };
 
 function computeStats(exam: Exam, attempt: Attempt) {
   const subjectMap = new Map<Subject, SubjectStat>();
@@ -22,22 +30,54 @@ function computeStats(exam: Exam, attempt: Attempt) {
     stat.total += 1;
   });
 
+  // 빈출도·난이도 별 정답률 — 학습 인사이트
+  const freqMap = new Map<Frequency, Bucket>();
+  const diffMap = new Map<Difficulty, Bucket>();
+  const initFreq = (k: Frequency, label: string) =>
+    freqMap.set(k, { key: k, label, correct: 0, total: 0 });
+  const initDiff = (k: Difficulty, label: string) =>
+    diffMap.set(k, { key: k, label, correct: 0, total: 0 });
+  initFreq("high", "빈출");
+  initFreq("medium", "보통 빈출");
+  initFreq("low", "저빈출");
+  initDiff("easy", "쉬움");
+  initDiff("medium", "보통");
+  initDiff("hard", "어려움");
+
   let totalCorrect = 0;
   exam.questions.forEach((q, idx) => {
-    if (attempt.answers[idx] === q.answer) {
+    const isCorrect = attempt.answers[idx] === q.answer;
+    const fb = freqMap.get(q.frequency ?? "medium")!;
+    const db = diffMap.get(q.difficulty ?? "medium")!;
+    fb.total += 1;
+    db.total += 1;
+    if (isCorrect) {
       const stat = subjectMap.get(q.subject)!;
       stat.correct += 1;
       totalCorrect += 1;
+      fb.correct += 1;
+      db.correct += 1;
     }
   });
 
   const subjects = Array.from(subjectMap.values());
+  const frequencies = Array.from(freqMap.values()).filter((b) => b.total > 0);
+  const difficulties = Array.from(diffMap.values()).filter((b) => b.total > 0);
   const passed = totalCorrect >= PASS_THRESHOLD;
   const score100 = Math.round((totalCorrect / exam.totalQuestions) * 100 * 100) / 100;
   const answeredCount = attempt.answers.filter((a) => a !== null).length;
   const margin = totalCorrect - PASS_THRESHOLD;
 
-  return { totalCorrect, passed, score100, subjects, answeredCount, margin };
+  return {
+    totalCorrect,
+    passed,
+    score100,
+    subjects,
+    frequencies,
+    difficulties,
+    answeredCount,
+    margin,
+  };
 }
 
 function formatDuration(ms: number): string {
@@ -309,6 +349,66 @@ export default function ResultView({ exam }: { exam: Exam }) {
           )}
         </section>
 
+        {/* 빈출도·난이도 분석 — 학습 인사이트 */}
+        {(stats.frequencies.length > 0 || stats.difficulties.length > 0) && (
+          <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
+            <h2 className="mb-1 text-base font-bold text-zinc-900">
+              빈출도·난이도 분석
+            </h2>
+            <p className="mb-5 text-xs text-zinc-600">
+              어떤 유형에 강하고 약한지 한눈에 확인하세요.
+            </p>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <BucketGroup
+                title="🔥 출제 빈도별"
+                buckets={stats.frequencies}
+                colorOf={(k) =>
+                  k === "high" ? "rose" : k === "medium" ? "blue" : "zinc"
+                }
+              />
+              <BucketGroup
+                title="📊 난이도별"
+                buckets={stats.difficulties}
+                colorOf={(k) =>
+                  k === "hard" ? "violet" : k === "medium" ? "indigo" : "emerald"
+                }
+              />
+            </div>
+
+            {(() => {
+              const high = stats.frequencies.find((b) => b.key === "high");
+              const hard = stats.difficulties.find((b) => b.key === "hard");
+              const highRate = high && high.total > 0 ? high.correct / high.total : 1;
+              const hardRate = hard && hard.total > 0 ? hard.correct / hard.total : 1;
+              const tips: string[] = [];
+              if (highRate < 0.7 && high) {
+                tips.push(
+                  "빈출 문항 정답률이 낮습니다. /cbt/exams 의 '빈출 문제만' 집중 응시로 다져보세요.",
+                );
+              }
+              if (hardRate < 0.5 && hard) {
+                tips.push(
+                  "어려운 문항 정답률이 낮습니다. 해설을 꼼꼼히 보고 '어려운 문제만' 응시로 익숙해지세요.",
+                );
+              }
+              if (tips.length === 0) return null;
+              return (
+                <ul className="mt-5 space-y-1.5">
+                  {tips.map((t, i) => (
+                    <li
+                      key={i}
+                      className="rounded-lg bg-amber-50 px-4 py-2.5 text-xs text-amber-900"
+                    >
+                      💡 {t}
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
+          </section>
+        )}
+
         {/* Action buttons */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <Link
@@ -476,3 +576,52 @@ function SubjectRadar({ subjects }: { subjects: SubjectStat[] }) {
 }
 
 export type { SubjectStat };
+
+const BUCKET_TONE: Record<string, { bar: string; bg: string; text: string }> = {
+  rose: { bar: "bg-rose-500", bg: "bg-rose-50", text: "text-rose-700" },
+  blue: { bar: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+  zinc: { bar: "bg-zinc-400", bg: "bg-zinc-100", text: "text-zinc-700" },
+  violet: { bar: "bg-violet-500", bg: "bg-violet-50", text: "text-violet-700" },
+  indigo: { bar: "bg-indigo-500", bg: "bg-indigo-50", text: "text-indigo-700" },
+  emerald: { bar: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
+};
+
+function BucketGroup({
+  title,
+  buckets,
+  colorOf,
+}: {
+  title: string;
+  buckets: Bucket[];
+  colorOf: (key: string) => string;
+}) {
+  return (
+    <div>
+      <h3 className="mb-3 text-sm font-bold text-zinc-900">{title}</h3>
+      <div className="space-y-3">
+        {buckets.map((b) => {
+          const ratio = b.total > 0 ? b.correct / b.total : 0;
+          const pct = Math.round(ratio * 100);
+          const tone = BUCKET_TONE[colorOf(b.key)] ?? BUCKET_TONE.zinc;
+          return (
+            <div key={b.key}>
+              <div className="mb-1 flex items-baseline justify-between text-xs">
+                <span className={`font-semibold ${tone.text}`}>{b.label}</span>
+                <span className="font-medium tabular-nums text-zinc-700">
+                  {b.correct}/{b.total}{" "}
+                  <span className="text-zinc-500">({pct}%)</span>
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+                <div
+                  className={`h-full rounded-full transition-[width] duration-700 ${tone.bar}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
