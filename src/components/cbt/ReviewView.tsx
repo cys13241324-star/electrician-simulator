@@ -109,7 +109,7 @@ export default function ReviewView({ exam }: { exam: Exam }) {
   return (
     <div className="min-h-screen bg-zinc-50">
       <main className="mx-auto max-w-5xl px-6 py-12">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold text-blue-600">해설</p>
             <h1 className="mt-1 text-2xl font-bold text-zinc-900">
@@ -119,15 +119,35 @@ export default function ReviewView({ exam }: { exam: Exam }) {
           <div className="flex gap-2">
             <Link
               href={`/cbt/${exam.id}/result`}
-              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
             >
               결과로 돌아가기
             </Link>
           </div>
         </div>
 
+        {/* Summary banner */}
+        <div className="mb-6 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
+            <p className="text-2xl font-bold text-emerald-700">
+              {correctCount}
+            </p>
+            <p className="text-xs font-medium text-emerald-700">맞힌 문항</p>
+          </div>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center">
+            <p className="text-2xl font-bold text-rose-700">{wrongCount}</p>
+            <p className="text-xs font-medium text-rose-700">틀린 문항</p>
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-center">
+            <p className="text-2xl font-bold text-zinc-900">
+              {Math.round((correctCount / exam.totalQuestions) * 100)}%
+            </p>
+            <p className="text-xs font-medium text-zinc-500">정답률</p>
+          </div>
+        </div>
+
         {/* Filter chips */}
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="sticky top-0 z-20 -mx-6 mb-6 flex flex-wrap gap-2 border-b border-zinc-200 bg-zinc-50/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-zinc-50/80">
           <FilterChip
             active={filterMode === "all"}
             onClick={() => {
@@ -318,24 +338,28 @@ export default function ReviewView({ exam }: { exam: Exam }) {
                     })}
                   </ul>
 
-                  <div className="mt-5 rounded-lg bg-zinc-50 p-4">
-                    <p className="mb-2 text-xs font-semibold tracking-wide text-zinc-500">
-                      해설
-                    </p>
-                    <p className="whitespace-pre-line text-sm leading-6 text-zinc-700">
+                  <div className="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">
+                        해설
+                      </span>
+                      <span className="text-xs font-semibold text-zinc-500">
+                        정답 {q.answer}번
+                      </span>
+                      {userAnswer !== null && userAnswer !== q.answer && (
+                        <span className="text-xs font-semibold text-rose-600">
+                          · 내 선택 {userAnswer}번
+                        </span>
+                      )}
+                      {userAnswer === null && (
+                        <span className="text-xs font-semibold text-zinc-400">
+                          · 미응답
+                        </span>
+                      )}
+                    </div>
+                    <p className="whitespace-pre-line text-sm leading-7 text-zinc-700">
                       {q.explanation}
                     </p>
-                    <p className="mt-3 text-sm font-bold text-zinc-900">
-                      정답: {q.answer}번
-                    </p>
-                    {userAnswer !== null && userAnswer !== q.answer && (
-                      <p className="mt-1 text-xs text-rose-600">
-                        선택한 답: {userAnswer}번
-                      </p>
-                    )}
-                    {userAnswer === null && (
-                      <p className="mt-1 text-xs text-zinc-500">미응답</p>
-                    )}
                   </div>
 
                   <div className="mt-4">

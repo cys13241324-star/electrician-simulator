@@ -101,6 +101,21 @@ export default function WrongNotes() {
     });
   }
 
+  const allKeys = filtered.map((it) => `${it.attemptId}-${it.qIndex}`);
+  const allRevealed =
+    allKeys.length > 0 && allKeys.every((k) => reveal.has(k));
+
+  function toggleAll() {
+    setReveal((prev) => {
+      if (allRevealed) {
+        const next = new Set(prev);
+        allKeys.forEach((k) => next.delete(k));
+        return next;
+      }
+      return new Set([...prev, ...allKeys]);
+    });
+  }
+
   return (
     <div>
       {/* Stats + filter */}
@@ -135,6 +150,25 @@ export default function WrongNotes() {
           })}
         </div>
       </div>
+
+      {/* List controls */}
+      {filtered.length > 0 && (
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm text-zinc-500">
+            <span className="font-semibold text-zinc-900">
+              {filtered.length}
+            </span>
+            문항
+          </p>
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+          >
+            {allRevealed ? "정답·해설 모두 접기" : "정답·해설 모두 펼치기"}
+          </button>
+        </div>
+      )}
 
       {/* List */}
       <ul className="space-y-4">

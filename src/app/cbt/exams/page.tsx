@@ -34,14 +34,38 @@ export default function CbtExamsPage() {
             전기기능사 CBT 모의고사
           </h1>
           <p className="mt-2 text-sm text-zinc-600">
-            대상 연도 <strong>{TARGET_YEAR_RANGE}</strong> · 60문항 / 60분 ·
-            과목별 과락 없이 36문항 이상 정답 시 합격
+            대상 연도 <strong>{TARGET_YEAR_RANGE}</strong> · 실제 시험과 동일한
+            환경으로 응시하고 자동 채점·과목별 분석을 받아보세요.
           </p>
         </div>
 
-        <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-          <strong className="font-semibold">안내</strong> · 시험 시작 후에는 일시정지가
-          불가합니다. 시간이 다 되면 자동으로 답안이 제출됩니다.
+        {/* Spec strip */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "문항 수", value: "60문항" },
+            { label: "제한 시간", value: "60분" },
+            { label: "합격 기준", value: "36문항 이상" },
+            { label: "과목 과락", value: "없음" },
+          ].map((spec) => (
+            <div
+              key={spec.label}
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-3"
+            >
+              <p className="text-xs text-zinc-500">{spec.label}</p>
+              <p className="mt-0.5 text-lg font-bold text-zinc-900">
+                {spec.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <span className="text-base leading-none">⚠️</span>
+          <p>
+            <strong className="font-semibold">응시 안내</strong> · 시험 시작
+            후에는 일시정지가 불가합니다. 제한 시간이 끝나면 작성된 답안이
+            자동으로 제출됩니다.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -61,14 +85,26 @@ export default function CbtExamsPage() {
             return (
               <div
                 key={exam.id}
-                className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                className="group flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-zinc-500">전기기능사</p>
-                    <h3 className="mt-1 text-lg font-semibold text-zinc-900">
-                      CBT 모의고사 {exam.round}회
-                    </h3>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 flex-col items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                      <span className="text-[10px] font-medium leading-none">
+                        회차
+                      </span>
+                      <span className="text-lg font-bold leading-tight">
+                        {exam.round}
+                      </span>
+                    </span>
+                    <div>
+                      <p className="text-xs font-medium text-zinc-500">
+                        전기기능사
+                      </p>
+                      <h3 className="mt-0.5 text-lg font-semibold text-zinc-900">
+                        CBT 모의고사 {exam.round}회
+                      </h3>
+                    </div>
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${statusStyles[exam.status]}`}
@@ -78,13 +114,13 @@ export default function CbtExamsPage() {
                 </div>
 
                 <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-md bg-zinc-50 px-3 py-2">
+                  <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
                     <dt className="text-xs text-zinc-500">문항 수</dt>
                     <dd className="mt-0.5 font-semibold text-zinc-900">
                       {exam.totalQuestions}문항
                     </dd>
                   </div>
-                  <div className="rounded-md bg-zinc-50 px-3 py-2">
+                  <div className="rounded-lg bg-zinc-50 px-3 py-2.5">
                     <dt className="text-xs text-zinc-500">제한 시간</dt>
                     <dd className="mt-0.5 font-semibold text-zinc-900">
                       {exam.durationMinutes}분
@@ -94,13 +130,16 @@ export default function CbtExamsPage() {
 
                 <Link
                   href={href}
-                  className={`mt-6 block rounded-md px-4 py-2.5 text-center text-sm font-semibold transition ${
+                  className={`mt-6 flex items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition ${
                     isStarted
                       ? "bg-zinc-900 text-white hover:bg-zinc-700"
                       : "bg-blue-600 text-white hover:bg-blue-700"
                   }`}
                 >
                   {buttonLabel}
+                  <span className="transition group-hover:translate-x-0.5">
+                    →
+                  </span>
                 </Link>
               </div>
             );

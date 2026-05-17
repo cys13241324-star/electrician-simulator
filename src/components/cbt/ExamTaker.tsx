@@ -50,6 +50,7 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
   const [confirmStage, setConfirmStage] = useState<
     "none" | "warn-unanswered" | "final"
   >("none");
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
 
   const submittingRef = useRef(false);
 
@@ -102,6 +103,12 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
   }, []);
+
+  // Scroll question area to top when navigating
+  useEffect(() => {
+    if (!hydrated) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentIndex, hydrated]);
 
   const remainingMs = Math.max(0, endsAt - now);
   const remainingMinutes = Math.floor(remainingMs / 60000);
@@ -182,6 +189,17 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
     goTo(currentIndex + step);
   }
 
+  const goToNextUnanswered = useCallback(() => {
+    const order: number[] = [];
+    for (let i = 1; i <= exam.totalQuestions; i++) {
+      order.push((currentIndex + i) % exam.totalQuestions);
+    }
+    const target = order.find((i) => answers[i] === null);
+    if (target !== undefined) {
+      setCurrentIndex(target);
+    }
+  }, [answers, currentIndex, exam.totalQuestions]);
+
   function handleSubmitClick() {
     if (answeredCount < exam.totalQuestions) {
       setConfirmStage("warn-unanswered");
@@ -189,6 +207,45 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
       setConfirmStage("final");
     }
   }
+
+  // Keyboard shortcuts: ←/→ navigate, 1-4 select, c check, m map
+  useEffect(() => {
+    if (!hydrated) return;
+    function onKey(e: KeyboardEvent) {
+      if (confirmStage !== "none" || showCalculator || showQuestionMap) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const step = layoutMode === "double" ? 2 : 1;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setCurrentIndex((p) => Math.max(0, p - step));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setCurrentIndex((p) =>
+          Math.min(exam.totalQuestions - 1, p + step),
+        );
+      } else if (["1", "2", "3", "4"].includes(e.key)) {
+        e.preventDefault();
+        selectAnswer(currentIndex, Number(e.key) as Choice);
+      } else if (e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        toggleCheck(currentIndex);
+      } else if (e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setShowQuestionMap(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [
+    hydrated,
+    confirmStage,
+    showCalculator,
+    showQuestionMap,
+    layoutMode,
+    currentIndex,
+    exam.totalQuestions,
+  ]);
 
   const fontSizeClass =
     fontScale === 150
@@ -213,36 +270,77 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
   }
 
   const positionLabel = `${currentIndex + 1}/${exam.totalQuestions}`;
+  const progressPct = Math.round(
+    (answeredCount / exam.totalQuestions) * 100,
+  );
+  const timeFractionLeft =
+    endsAt > startedAt
+      ? remainingMs / (exam.durationMinutes * 60 * 1000)
+      : 0;
+  const timerUrgency =
+    remainingMs < 60000
+      ? "critical"
+      : remainingMs < 5 * 60000
+        ? "warning"
+        : "normal";
+  const timerClass =
+    timerUrgency === "critical"
+      ? "bg-rose-600 text-white animate-pulse"
+      : timerUrgency === "warning"
+        ? "bg-amber-100 text-amber-800 ring-1 ring-amber-300"
+        : "bg-zinc-900 text-white";
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100">
       {/* Top bar: title + timer + examinee */}
-      <div className="border-b border-zinc-300 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <h1 className="text-lg font-bold text-zinc-900">
-            전기기능사 CBT 문제풀이
-          </h1>
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-zinc-500">제한시간</span>
-              <span className="font-semibold text-zinc-900">
-                {exam.durationMinutes}분
+      <div className="sticky top-0 z-30 border-b border-zinc-300 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white sm:flex">
+              CBT
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-bold text-zinc-900 sm:text-base">
+                전기기능사 CBT 문제풀이
+              </h1>
+              <p className="hidden text-xs text-zinc-500 sm:block">
+                {exam.title}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-sm sm:gap-5">
+            <div className="hidden text-right text-zinc-700 sm:block">
+              <span className="text-xs text-zinc-500">수험자</span>
+              <p className="font-semibold leading-tight">{examineeName}</p>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                남은 시간
               </span>
               <span
-                className={`rounded-md px-3 py-1 font-mono font-bold ${
-                  remainingMs < 60000
-                    ? "bg-red-100 text-red-700"
-                    : "bg-zinc-100 text-zinc-900"
-                }`}
+                className={`rounded-md px-3 py-1 font-mono text-base font-bold tabular-nums ${timerClass}`}
+                role="timer"
+                aria-live={timerUrgency === "critical" ? "assertive" : "off"}
+                aria-label={`남은 시간 ${remainingMinutes}분 ${remainingSeconds}초`}
               >
                 {remainingDisplay}
               </span>
             </div>
-            <div className="text-zinc-700">
-              <span className="text-zinc-500">수험자명: </span>
-              <span className="font-semibold">{examineeName}</span>
-            </div>
           </div>
+        </div>
+
+        {/* Time progress (depletes) */}
+        <div className="h-1 w-full bg-zinc-200">
+          <div
+            className={`h-full transition-[width] duration-1000 ease-linear ${
+              timerUrgency === "critical"
+                ? "bg-rose-500"
+                : timerUrgency === "warning"
+                  ? "bg-amber-400"
+                  : "bg-blue-500"
+            }`}
+            style={{ width: `${Math.max(0, timeFractionLeft * 100)}%` }}
+          />
         </div>
 
         {/* Toolbar */}
@@ -273,10 +371,37 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
             </ToolGroup>
 
             <ToolButton onClick={() => setShowCalculator(true)}>
-              계산기
+              🔢 계산기
             </ToolButton>
 
+            <button
+              type="button"
+              onClick={() => setShowMobileSheet(true)}
+              className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 lg:hidden"
+            >
+              답안지 ({answeredCount}/{exam.totalQuestions})
+            </button>
+
             <div className="ml-auto flex items-center gap-1">
+              <div className="mr-1 hidden items-center gap-2 rounded-md bg-white px-3 py-1.5 sm:flex">
+                <span className="text-xs text-zinc-500">진행</span>
+                <div
+                  className="h-1.5 w-24 overflow-hidden rounded-full bg-zinc-200"
+                  role="progressbar"
+                  aria-valuenow={progressPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="답안 작성 진행률"
+                >
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <span className="text-xs font-semibold tabular-nums text-zinc-700">
+                  {progressPct}%
+                </span>
+              </div>
               <FilterButton
                 active={filterMode === "all"}
                 onClick={() => {
@@ -370,16 +495,25 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
               return (
                 <article
                   key={q.number}
-                  className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm"
+                  className={`flex flex-col rounded-xl border bg-white p-5 shadow-sm transition sm:p-6 ${
+                    answers[qIdx] !== null
+                      ? "border-blue-200"
+                      : "border-zinc-200"
+                  }`}
                 >
                   <header className="mb-4 flex items-start justify-between gap-4">
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-2xl font-bold text-blue-600">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
                         {String(q.number).padStart(2, "0")}
                       </span>
-                      <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                      <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
                         {q.subject}
                       </span>
+                      {answers[qIdx] !== null && (
+                        <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                          답안 표기됨
+                        </span>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -439,11 +573,24 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
         {/* Answer sheet sidebar */}
         {layoutMode !== "one" && (
           <aside className="hidden w-72 flex-shrink-0 lg:block">
-            <div className="sticky top-4 rounded-xl border border-zinc-200 bg-white shadow-sm">
+            <div className="sticky top-24 rounded-xl border border-zinc-200 bg-white shadow-sm">
               <div className="border-b border-zinc-200 px-4 py-3">
-                <h2 className="text-sm font-bold text-zinc-900">답안 표기란</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-zinc-900">
+                    답안 표기란
+                  </h2>
+                  <span className="text-xs font-semibold tabular-nums text-zinc-500">
+                    {answeredCount}/{exam.totalQuestions}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
               </div>
-              <div className="max-h-[60vh] overflow-y-auto px-2 py-2">
+              <div className="max-h-[58vh] overflow-y-auto px-2 py-2">
                 {visibleIndices.map((qIdx) => {
                   const isCurrent = qIdx === currentIndex;
                   const isChecked = checked[qIdx];
@@ -502,40 +649,135 @@ export default function ExamTaker({ exam }: { exam: Exam }) {
       </div>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 border-t border-zinc-300 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+      <div className="sticky bottom-0 z-30 border-t border-zinc-300 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={goPrev}
             disabled={currentIndex === 0}
-            className="rounded-md border border-zinc-300 bg-white px-5 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
           >
             ← 이전
           </button>
 
-          <div className="text-sm text-zinc-600">
-            <span className="font-semibold text-zinc-900">{positionLabel}</span>
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-semibold tabular-nums text-zinc-900">
+              {positionLabel}
+            </span>
+            <span className="hidden text-[10px] text-zinc-400 sm:block">
+              ← → 이동 · 1~4 선택 · C 체크 · M 문제맵
+            </span>
           </div>
 
           <div className="flex gap-2">
+            {remainingCount > 0 && (
+              <button
+                type="button"
+                onClick={goToNextUnanswered}
+                className="hidden rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 sm:block"
+              >
+                미응답 {remainingCount} →
+              </button>
+            )}
             <button
               type="button"
               onClick={goNext}
               disabled={currentIndex >= exam.totalQuestions - 1}
-              className="rounded-md border border-zinc-300 bg-white px-5 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5"
             >
               다음 →
             </button>
             <button
               type="button"
               onClick={handleSubmitClick}
-              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:px-5"
             >
               답안 제출
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile answer sheet drawer */}
+      {showMobileSheet && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowMobileSheet(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[75vh] overflow-hidden rounded-t-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3">
+              <h2 className="text-sm font-bold text-zinc-900">
+                답안 표기란{" "}
+                <span className="font-medium text-zinc-500">
+                  ({answeredCount}/{exam.totalQuestions})
+                </span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowMobileSheet(false)}
+                aria-label="닫기"
+                className="rounded-md p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto px-3 py-3">
+              {exam.questions.map((_, qIdx) => {
+                const isCurrent = qIdx === currentIndex;
+                const isChecked = checked[qIdx];
+                return (
+                  <div
+                    key={qIdx}
+                    className={`flex items-center gap-2 rounded-md px-2 py-2 ${
+                      isCurrent ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        goTo(qIdx);
+                        setShowMobileSheet(false);
+                      }}
+                      className={`w-7 text-left font-mono text-xs font-semibold ${
+                        isCurrent ? "text-blue-600" : "text-zinc-500"
+                      }`}
+                    >
+                      {String(qIdx + 1).padStart(2, "0")}
+                    </button>
+                    <div className="flex flex-1 gap-1.5">
+                      {[1, 2, 3, 4].map((c) => {
+                        const sel = answers[qIdx] === c;
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() =>
+                              selectAnswer(qIdx, c as Choice)
+                            }
+                            className={`flex h-8 flex-1 items-center justify-center rounded-md border text-xs font-semibold transition ${
+                              sel
+                                ? "border-zinc-900 bg-zinc-900 text-white"
+                                : "border-zinc-300 text-zinc-500"
+                            }`}
+                          >
+                            {c}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {isChecked && (
+                      <span className="text-amber-500" title="체크됨">
+                        ★
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialogs */}
       {showCalculator && (

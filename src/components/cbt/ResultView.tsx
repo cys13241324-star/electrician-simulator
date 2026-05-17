@@ -34,8 +34,10 @@ function computeStats(exam: Exam, attempt: Attempt) {
   const subjects = Array.from(subjectMap.values());
   const passed = totalCorrect >= PASS_THRESHOLD;
   const score100 = Math.round((totalCorrect / exam.totalQuestions) * 100 * 100) / 100;
+  const answeredCount = attempt.answers.filter((a) => a !== null).length;
+  const margin = totalCorrect - PASS_THRESHOLD;
 
-  return { totalCorrect, passed, score100, subjects };
+  return { totalCorrect, passed, score100, subjects, answeredCount, margin };
 }
 
 function formatDuration(ms: number): string {
@@ -124,41 +126,89 @@ export default function ResultView({ exam }: { exam: Exam }) {
           </Link>
         </div>
 
-        {/* Pass/Fail banner */}
+        {/* Pass/Fail hero */}
         <section
           className={`mb-6 overflow-hidden rounded-2xl border ${
             stats.passed
-              ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
-              : "border-rose-200 bg-gradient-to-br from-rose-50 to-white"
+              ? "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white"
+              : "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white"
           }`}
         >
-          <div className="flex flex-col items-center gap-4 px-8 py-10 sm:flex-row sm:justify-between">
+          <div className="flex flex-col items-center gap-8 px-6 py-10 sm:flex-row sm:justify-around sm:px-10">
+            {/* Circular score gauge */}
+            <ScoreGauge
+              score={stats.score100}
+              passed={stats.passed}
+            />
+
             <div className="text-center sm:text-left">
-              <p className="text-sm font-medium text-zinc-600">합격 여부</p>
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold ${
+                  stats.passed
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
+                {stats.passed ? "✓ 합격" : "✕ 불합격"}
+              </span>
               <p
-                className={`mt-1 text-5xl font-bold tracking-tight ${
+                className={`mt-3 text-4xl font-bold tracking-tight sm:text-5xl ${
                   stats.passed ? "text-emerald-600" : "text-rose-600"
                 }`}
               >
                 {stats.passed ? "PASS" : "FAIL"}
               </p>
-              <p className="mt-2 text-sm text-zinc-600">
-                전 60문항 중 <strong>{PASS_THRESHOLD}문항</strong> 이상 정답 시
-                합격 (과목별 과락 없음)
+              <p className="mt-3 text-sm text-zinc-600">
+                정답{" "}
+                <strong className="text-zinc-900">
+                  {stats.totalCorrect}
+                </strong>{" "}
+                / {exam.totalQuestions} · 합격 기준{" "}
+                <strong>{PASS_THRESHOLD}문항</strong>
+              </p>
+              <p
+                className={`mt-1 text-sm font-semibold ${
+                  stats.passed ? "text-emerald-600" : "text-rose-600"
+                }`}
+              >
+                {stats.passed
+                  ? `합격선보다 ${stats.margin}문항 여유`
+                  : `합격까지 ${-stats.margin}문항 부족`}
               </p>
             </div>
-            <div className="text-center sm:text-right">
-              <p className="text-sm font-medium text-zinc-600">100점 환산</p>
-              <p className="mt-1 text-5xl font-bold text-zinc-900">
-                {stats.score100}
-                <span className="ml-1 text-2xl font-medium text-zinc-500">
-                  점
-                </span>
-              </p>
-              <p className="mt-2 text-sm text-zinc-600">
-                정답 {stats.totalCorrect} / {exam.totalQuestions}
-              </p>
+          </div>
+
+          {/* Correct/answered bar */}
+          <div className="border-t border-zinc-200/70 bg-white/60 px-6 py-4 sm:px-10">
+            <div className="flex items-center justify-between text-xs text-zinc-500">
+              <span>정답률</span>
+              <span className="font-semibold tabular-nums text-zinc-700">
+                {Math.round(
+                  (stats.totalCorrect / exam.totalQuestions) * 100,
+                )}
+                % · 응답 {stats.answeredCount}/{exam.totalQuestions}
+              </span>
             </div>
+            <div className="relative mt-2 h-2.5 w-full overflow-hidden rounded-full bg-zinc-200">
+              <div
+                className={`h-full rounded-full ${
+                  stats.passed ? "bg-emerald-500" : "bg-rose-500"
+                }`}
+                style={{
+                  width: `${(stats.totalCorrect / exam.totalQuestions) * 100}%`,
+                }}
+              />
+              <div
+                className="absolute top-0 h-full w-0.5 bg-zinc-700"
+                style={{
+                  left: `${(PASS_THRESHOLD / exam.totalQuestions) * 100}%`,
+                }}
+                title="합격선"
+              />
+            </div>
+            <p className="mt-1 text-right text-[10px] text-zinc-400">
+              ▲ 세로 선 = 합격 기준 {PASS_THRESHOLD}문항
+            </p>
           </div>
         </section>
 
@@ -193,63 +243,136 @@ export default function ResultView({ exam }: { exam: Exam }) {
           </section>
         </div>
 
-        {/* Subject table */}
+        {/* Subject breakdown */}
         <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
-          <h2 className="mb-4 text-base font-bold text-zinc-900">과목별 점수</h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                <th className="py-2 font-medium">과목</th>
-                <th className="py-2 text-right font-medium">정답</th>
-                <th className="py-2 text-right font-medium">정답률</th>
-                <th className="py-2 text-right font-medium">진단</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.subjects.map((s) => {
-                const ratio = s.total > 0 ? s.correct / s.total : 0;
-                const pct = Math.round(ratio * 1000) / 10;
-                const diagnosis =
-                  ratio >= 0.8 ? "강점" : ratio >= 0.5 ? "보통" : "취약";
-                const diagColor =
-                  ratio >= 0.8
-                    ? "text-emerald-600"
-                    : ratio >= 0.5
-                      ? "text-zinc-700"
-                      : "text-rose-600";
-                return (
-                  <tr key={s.name} className="border-b border-zinc-100">
-                    <td className="py-3 font-medium text-zinc-900">{s.name}</td>
-                    <td className="py-3 text-right text-zinc-700">
-                      {s.correct} / {s.total}
-                    </td>
-                    <td className="py-3 text-right text-zinc-700">{pct}%</td>
-                    <td className={`py-3 text-right font-semibold ${diagColor}`}>
-                      {diagnosis}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <h2 className="mb-5 text-base font-bold text-zinc-900">
+            과목별 점수
+          </h2>
+          <div className="space-y-5">
+            {stats.subjects.map((s) => {
+              const ratio = s.total > 0 ? s.correct / s.total : 0;
+              const pct = Math.round(ratio * 1000) / 10;
+              const diagnosis =
+                ratio >= 0.8 ? "강점" : ratio >= 0.5 ? "보통" : "취약";
+              const barColor =
+                ratio >= 0.8
+                  ? "bg-emerald-500"
+                  : ratio >= 0.5
+                    ? "bg-blue-500"
+                    : "bg-rose-500";
+              const badgeColor =
+                ratio >= 0.8
+                  ? "bg-emerald-50 text-emerald-700"
+                  : ratio >= 0.5
+                    ? "bg-zinc-100 text-zinc-600"
+                    : "bg-rose-50 text-rose-700";
+              return (
+                <div key={s.name}>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-zinc-900">
+                        {s.name}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badgeColor}`}
+                      >
+                        {diagnosis}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums text-zinc-700">
+                      {s.correct} / {s.total}{" "}
+                      <span className="text-zinc-400">({pct}%)</span>
+                    </span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-100">
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-700 ${barColor}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {stats.subjects.some(
+            (s) => (s.total > 0 ? s.correct / s.total : 0) < 0.5,
+          ) && (
+            <p className="mt-5 rounded-lg bg-rose-50 px-4 py-3 text-xs text-rose-800">
+              💡 정답률 50% 미만 과목이 있습니다. 해설과 오답노트로 약점
+              과목을 우선 보강하세요.
+            </p>
+          )}
         </section>
 
         {/* Action buttons */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <Link
-            href={`/cbt/${exam.id}/review`}
-            className="rounded-md bg-blue-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
+            href="/cbt/wrong-notes"
+            className="rounded-md border border-rose-200 bg-rose-50 px-6 py-3 text-center text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
           >
-            해설 보기
+            오답 노트로 복습
+          </Link>
+          <Link
+            href={`/cbt/${exam.id}/review`}
+            className="rounded-md bg-blue-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            전체 해설 보기
           </Link>
           <Link
             href="/cbt"
-            className="rounded-md border border-zinc-300 bg-white px-6 py-3 text-center text-sm font-semibold text-zinc-700 hover:bg-zinc-50"
+            className="rounded-md border border-zinc-300 bg-white px-6 py-3 text-center text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
           >
             목록으로 돌아가기
           </Link>
         </div>
       </main>
+    </div>
+  );
+}
+
+function ScoreGauge({
+  score,
+  passed,
+}: {
+  score: number;
+  passed: boolean;
+}) {
+  const radius = 70;
+  const stroke = 12;
+  const circ = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(100, score));
+  const offset = circ - (clamped / 100) * circ;
+  const color = passed ? "#10b981" : "#f43f5e";
+  return (
+    <div className="relative h-44 w-44">
+      <svg viewBox="0 0 180 180" className="h-44 w-44 -rotate-90">
+        <circle
+          cx="90"
+          cy="90"
+          r={radius}
+          fill="none"
+          stroke="#e4e4e7"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx="90"
+          cy="90"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 1s ease-out" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-4xl font-bold tracking-tight text-zinc-900">
+          {score}
+        </span>
+        <span className="text-xs font-medium text-zinc-500">100점 환산</span>
+      </div>
     </div>
   );
 }
