@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function SimulatorIndexPage() {
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="flex min-h-screen flex-col bg-zinc-50">
       <Header />
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8 sm:px-6 sm:py-10">
         <SimulatorList simulators={simulators} />
       </main>
       <Footer />
