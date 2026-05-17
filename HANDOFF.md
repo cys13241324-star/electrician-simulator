@@ -24,21 +24,25 @@
 - **소식지**: 75→50개 정리 + 매니페스토 + 톤다운 + 재방문자 접기 + Pexels 카드 커버·가독성
 - **허브 이미지**: `68865f3` Pexels 7장 + 4겹 가독성 레이어
 
-## 진행 중이던 것 (다음 세션에서 마무리 필요)
+## 소식지 콘텐츠 페이지 실사진 교체 — ✅ 완료 (2026-05-17)
 
-### 소식지 콘텐츠 페이지 실사진 교체 (미완)
-- 목적: `public/news/news-*.html` ~80개의 SVG/CSS 가짜 이미지(photo-role) → Pexels 실사진. UI 골격·테마 보존, 사진자리 없는 테마(터미널·검색·코드 등)는 스킵.
-- 3개 에이전트(A/27 · B/27 · C/26 파일 분할)로 진행. **에이전트는 커밋 안 함 → 메인에서 그룹별 타깃 통합** 방식.
-- ⚠️ **함정**: 일반 node 스크립트는 `.env.local` 자동 로드 안 함. `PEXELS_API_KEY` 는 **`.env.local` 파일을 직접 파싱**해 읽어야 함(`PEXELS_API_KEY=` 줄 split). C그룹 1차 시도가 이걸 못 해 false-negative로 보류 → 키 읽는 법 명시해 재투입함.
-- 키는 정상 존재: `D:\webpage-simulator\.env.local` 의 `PEXELS_API_KEY`(gitignore됨, 절대 커밋·로그노출 금지). Gemini 키도 같은 파일.
-- 이미지 명명: `public/news/img/news-<slug>-N.jpg`, 출처는 `CREDITS-A/B/C.md` 그룹별.
+3그룹 에이전트 전부 통합·푸시·빌드검증 완료:
+- **B그룹** `afbb2ce` — magazine(화보12)·movie·kakao·passport, 17이미지
+- **C그룹** `47b4afa` — recipe·photo-studio, 3이미지
+- **A그룹** `7b10527` — airbnb·auction·food-delivery 등 9개, 25이미지
+- 총 ~45 신규 이미지(~3.3MB), `public/news/img/`, 출처 `CREDITS-A/B/C.md`
+- 원칙: photo-role 자리만 실사진, UI 골격·테마·동적SVG·명명인물·정보아이콘은 의도적 보존(스킵 다수 — 매체 패러디 SVG아트가 곧 디자인)
+- 전체 `npm run build` 통과(/news 정상), 작업트리 클린
+- 참고 함정(다음에 또 Pexels 쓸 때): 일반 node는 `.env.local` 자동로드 안 함 → 파일 직접 파싱해 `PEXELS_API_KEY` 읽을 것. 키는 `.env.local` 에 정상 존재(gitignore, 커밋·노출 금지).
+- 미추적 잡파일(`0002.png`, `src/app/*/_fetch-*.mjs`)은 수집 스크립트·스샷 — 배포 무관, 커밋 안 함.
 
 ## 열린 스레드 (기억할 것)
 
 - **UX 프로토타입 보관**: `git stash@{0}` 에 휘트스톤 우측 sticky 컨트롤 프로토타입. 시뮬 컨트롤이 스크롤해야 보이는 문제 → 사용자와 함께 보완 예정([[project-simulator-control-ux]] 메모리).
 - **CBT AI 기능**: `/api/ai/coach`·`explain` 은 Vercel 환경변수 `GOOGLE_GENERATIVE_AI_API_KEY` 설정해야 작동(빌드·핵심기능엔 무관).
 - **소식지 고아 HTML**: 카드 없는 news-*.html 5개(graduation-album 등) — 정리할지 미정.
-- **루프**: QA 루프 정상 종료됨. 멀티에이전트 오케스트레이션 루프는 사용자 지시로 **마무리(종료)** — 재예약 안 함.
+- **루프**: 전부 종료됨. QA 루프 정상 완료 종료, 멀티에이전트 오케스트레이션 루프도 사용자 지시로 마무리 — **재예약 안 함, 도는 것 없음**. (이전에 걸린 ScheduleWakeup 1건이 한 번 깨어날 수 있으나 새 작업 없이 종료됨.)
+- **소식지 실사진 교체 완료** — 위 섹션 참고. 더 손댈 미완 작업 없음.
 
 ## 재개 방법
 
