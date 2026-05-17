@@ -3558,6 +3558,40 @@ export const simulators: Simulator[] = [
       answer: "$V_{arc} = 70$ V",
     },
   },
+  {
+    id: "electroplating",
+    title: "전기도금 (패러데이 전기분해)",
+    description:
+      "전기분해로 금속을 석출시켜 도금하는 원리. 도금 전류·시간·전해액 농도를 조절하며 패러데이 법칙으로 석출 질량을 계산합니다.",
+    subject: "전기이론",
+    topic: "전기화학",
+    status: "available",
+    htmlPath: "/samples/simulator-electroplating.html",
+    emoji: "🔋",
+    formula: [
+      {
+        name: "패러데이 전기분해 법칙",
+        expression: "$m = \\dfrac{Q \\cdot M}{n \\cdot F} = \\dfrac{I \\cdot t \\cdot M}{n \\cdot F}$",
+        meaning: "석출 질량 $m$ 은 전하량에 비례. $F = 96485$ C/mol, $n$ 이온가, $M$ 원자량",
+      },
+      {
+        name: "전하량",
+        expression: "$Q = I \\cdot t$",
+        meaning: "도금 전류와 통전 시간의 곱 [C]",
+      },
+    ],
+    example: {
+      question:
+        "구리(Cu, $M=63.5$, $n=2$) 도금에서 2 A로 965초 통전했을 때 석출되는 구리 질량은?",
+      given: ["$I = 2$ A", "$t = 965$ s", "$M = 63.5$ g/mol", "$n = 2$", "$F = 96485$ C/mol"],
+      solution: [
+        "$Q = I \\cdot t = 2 \\times 965 = 1930$ C",
+        "$m = \\dfrac{Q \\cdot M}{n \\cdot F} = \\dfrac{1930 \\times 63.5}{2 \\times 96485}$",
+        "$m \\approx 0.635$ g",
+      ],
+      answer: "$m \\approx 0.635$ g",
+    },
+  },
 ];
 
 export function getSimulator(id: string): Simulator | undefined {

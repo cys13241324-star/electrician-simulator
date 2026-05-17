@@ -50,9 +50,15 @@
   `tsc --noEmit` 오류 없음
 - 상태: 완료. 남은 고아 4개는 다음 iteration들에서.
 
-### ⚠️ 남은 고아 HTML 4개 (등록부 항목 없음)
+### Iteration 3 — 2026-05-17 — 고아 HTML 등록부 추가 (2/5) ✅
+- 대상: `simulator-electroplating.html`
+- 조치: `electroplating` 엔트리 신규 (전기이론/전기화학, 패러데이
+  전기분해 법칙 + 전하량식 + Cu 도금 예제, htmlPath 연결)
+- 검증: htmlPath 실파일 존재, U+FFFD 0, 중괄호 1534/1534, tsc 통과
+- 상태: 완료. 남은 고아 3개.
+
+### ⚠️ 남은 고아 HTML 3개 (등록부 항목 없음)
 HTML 파일은 있으나 simulators.ts 에 id 항목이 아예 없어 완전 접근 불가:
-- `simulator-electroplating.html`
 - `simulator-hall-effect.html`
 - `simulator-single-phase-induction.html`
 - `simulator-transformer-inrush.html`
