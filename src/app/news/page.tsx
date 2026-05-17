@@ -8,8 +8,17 @@ export const metadata: Metadata = {
   description: "전기기능사 학습 사이트의 별도 콘텐츠 — 인스타·유튜브·신문 콘셉트로 풀어낸 학습 자료.",
 };
 
+type CategoryId =
+  | "sns"
+  | "broadcast"
+  | "read"
+  | "learn"
+  | "play"
+  | "life";
+
 type NewsCard = {
   id: string;
+  category: CategoryId;
   title: string;
   subtitle: string;
   desc: string;
@@ -20,9 +29,56 @@ type NewsCard = {
   tileContent: React.ReactNode;
 };
 
+type CategoryMeta = {
+  id: CategoryId;
+  emoji: string;
+  label: string;
+  blurb: string;
+};
+
+const categories: CategoryMeta[] = [
+  {
+    id: "sns",
+    emoji: "💬",
+    label: "SNS · 소셜",
+    blurb: "피드 넘기듯 가볍게 — 인스타·X·단톡방 형식으로 풀어낸 짧은 학습 콘텐츠.",
+  },
+  {
+    id: "broadcast",
+    emoji: "🎬",
+    label: "방송 · 미디어",
+    blurb: "보고 들으며 익히기 — 유튜브·팟캐스트·라디오·라이브 방송 콘셉트.",
+  },
+  {
+    id: "read",
+    emoji: "📰",
+    label: "읽을거리 · 출판",
+    blurb: "차분히 읽어 내려가기 — 신문·매거진·만화·블로그·문서 형식.",
+  },
+  {
+    id: "learn",
+    emoji: "🎓",
+    label: "강의 · 자료",
+    blurb: "정공법으로 학습하기 — 강의 덱·검색·전시·자료 형식.",
+  },
+  {
+    id: "play",
+    emoji: "🎮",
+    label: "즐기며 학습",
+    blurb: "놀이처럼 익히기 — 게임·방탈출·탐정·영화 콘셉트.",
+  },
+  {
+    id: "life",
+    emoji: "🧭",
+    label: "일상 속 콘셉트",
+    blurb: "생활 장면으로 비틀어 보기 — 채용·숙소·여권·자판기 등 일상 인터페이스.",
+  },
+];
+
 const cards: NewsCard[] = [
   {
     id: "instagram",
+    category: "sns",
     title: "전기 인스타",
     subtitle: "@addto_electric",
     desc: "피드·스토리·릴스 형식으로 풀어낸 전기 이론. 짧고 시각적이고, 손가락 한 번에 다음 카드.",
@@ -39,6 +95,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "youtube",
+    category: "broadcast",
     title: "전기 유튜브 채널",
     subtitle: "addto 전기기능사 학습",
     desc: "채널 아트·동영상 카드·재생목록·댓글 — 학습 채널 형식. 옴의 법칙부터 3상 결선까지.",
@@ -59,6 +116,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "newspaper",
+    category: "read",
     title: "전기 일보",
     subtitle: "電氣日報 · The Electric Daily",
     desc: "전통 일간지 형식. 헤드라인·기사·만평·인터뷰·합격률 추이. 한 장에 시험 동향이 다 들어있어요.",
@@ -80,6 +138,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "kakao",
+    category: "sns",
     title: "스터디 카톡방",
     subtitle: "🔥 전기기능사 합격 스터디",
     desc: "단톡방 대화로 풀어낸 합격 준비기. 공지·투표·이모지·답장까지. 폰 화면 그대로 옮긴 듯한 분위기.",
@@ -97,6 +156,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "webtoon",
+    category: "read",
     title: "전기왕 김전공",
     subtitle: "네이버웹툰 풍 학습 만화",
     desc: "콧수염 강사 + 의인화된 V·I·R 캐릭터 + 4컷 만화. 어려운 이론도 웹툰으로 보면 쉬워져요.",
@@ -115,6 +175,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "blog",
+    category: "read",
     title: "전기기능사 합격 일지",
     subtitle: "電 — 합격 후기 블로그",
     desc: "벨로그·티스토리 풍 학습 블로그. 목차·코드 블록·표·읽기 진행률 바. 3개월 독학 합격 후기 한 편.",
@@ -135,6 +196,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "twitter",
+    category: "sns",
     title: "전기 X 타임라인",
     subtitle: "@addto_electric",
     desc: "트위터/X 풍 짧은 학습 트윗. 핀 고정 트윗·스레드·리트윗·인증마크까지. 출퇴근길 한 입.",
@@ -151,6 +213,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "discord",
+    category: "sns",
     title: "전기기능사 합격방",
     subtitle: "Discord 서버",
     desc: "디스코드 풍 서버. 채널·DM·임베드·코드블록·이모지 반응. 실시간 학습 커뮤니티 분위기.",
@@ -167,6 +230,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "magazine",
+    category: "read",
     title: "ELECTRIC 매거진",
     subtitle: "電氣 · 月刊",
     desc: "Vogue/National Geographic 풍 9페이지 인쇄 매거진. 표지·특집·인터뷰·인포그래픽·칼럼.",
@@ -188,6 +252,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "podcast",
+    category: "broadcast",
     title: "전기야 놀자",
     subtitle: "Spotify 풍 팟캐스트",
     desc: "주간 팟캐스트. 옴의 법칙·키르히호프·콘덴서 등 EP.12 + 재생목록·하단 플레이어.",
@@ -204,6 +269,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "tv",
+    category: "broadcast",
     title: "ELECTRIC NEWS 24",
     subtitle: "TV 방송 뉴스",
     desc: "CNN/KBS 풍 24시간 뉴스 채널. BREAKING 헤드라인 · 로어3 · 티커 자막 · 시청률 표.",
@@ -225,6 +291,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "radio",
+    category: "broadcast",
     title: "전기파장 88.5 FM",
     subtitle: "라디오 방송",
     desc: "FM 라디오 스튜디오 풍. 회전 다이얼·VU 미터·청취자 사연·음악 큐 시트. ON AIR 깜빡임.",
@@ -245,6 +312,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "notion",
+    category: "read",
     title: "Notion 학습 노트",
     subtitle: "3개월 합격 마스터플랜",
     desc: "노션 워크스페이스 풍 학습 노트. 콜아웃·토글·체크박스·LaTeX 코드 블록·데이터베이스.",
@@ -268,6 +336,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "naver-cafe",
+    category: "sns",
     title: "전기기능사 합격카페",
     subtitle: "네이버 카페 게시판",
     desc: "네이버 카페 풍 자격증 카페. 142,894명 회원 · 게시판 · 등급 별★ · 매니저 뱃지 · 댓글.",
@@ -289,6 +358,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "newsletter",
+    category: "sns",
     title: "addto Weekly",
     subtitle: "이메일 뉴스레터 Vol.42",
     desc: "Gmail 풍 inbox + Substack 본문. 주간 학습 뉴스레터 · SVG 차트 · 콜아웃 · 풀쿼트.",
@@ -310,6 +380,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "course",
+    category: "learn",
     title: "ElecAcademy 강의",
     subtitle: "전기기능사 합격 마스터",
     desc: "Coursera/인프런 풍 온라인 강의. 87강·38시간·★4.9·12,847 수강생·할인 카운트다운.",
@@ -331,6 +402,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "comic",
+    category: "read",
     title: "ELECTRIC HEROES",
     subtitle: "Marvel/DC 풍 만화책 Vol.1",
     desc: "캡틴 옴·닥터 키르히호프·변압맨이 도시를 구한다. 4페이지 만화 + SFX 폭발 + 페이지 넘김.",
@@ -349,6 +421,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "movie",
+    category: "play",
     title: "감전: THE LAST CONDUCTOR",
     subtitle: "영화 상세 페이지",
     desc: "네이버 영화/IMDB 풍. 큰 SVG 포스터·트레일러 플레이어·★9.6·예매 1위·명대사·박스오피스.",
@@ -367,6 +440,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "game",
+    category: "play",
     title: "전기 RPG",
     subtitle: "Elden Ring 풍 학습 게임",
     desc: "캐릭터 Lv.50·퀘스트·인벤토리·스킬트리·5개 던전·NPC·길드 랭킹. LEVEL UP!",
@@ -387,6 +461,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "museum",
+    category: "learn",
     title: "NMEC 박물관",
     subtitle: "전기의 역사: From Ohm to IoT",
     desc: "국립 박물관 풍 전시. 정전기→옴→키르히호프→패러데이→에디슨vs테슬라→현대 IoT. 체험 전시.",
@@ -406,6 +481,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "wikipedia",
+    category: "read",
     title: "위키백과 — 전기기능사",
     subtitle: "Wikipedia 한국어판 항목",
     desc: "위키 풍 한국어 항목. 시험 과목·역사·합격 통계 표·각주·다른 언어 링크·[편집] 태그.",
@@ -424,6 +500,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "ai-chat",
+    category: "sns",
     title: "AI 학습 챗봇",
     subtitle: "ChatGPT/Claude 풍",
     desc: "AI 챗봇으로 학습. 모델 선택·타이핑 효과·코드/수식/표 답변·답변 좋음/나쁨·새 대화.",
@@ -444,6 +521,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "livestream",
+    category: "broadcast",
     title: "스파크쌤 LIVE",
     subtitle: "Twitch 풍 라이브 방송",
     desc: "라이브 스트리밍. 1,247명 시청 · 실시간 채팅 자동 메시지·도네이션 토스트·구독 토글.",
@@ -465,6 +543,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "resume",
+    category: "read",
     title: "김합격 이력서",
     subtitle: "LinkedIn 풍 포트폴리오",
     desc: "전기기능사 합격자 이력서. 경력·자격증·기술 막대·프로젝트·추천서·다크모드·인쇄.",
@@ -486,6 +565,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "search",
+    category: "learn",
     title: "Google 검색 결과",
     subtitle: "\"전기기능사 합격하는 법\"",
     desc: "구글 검색 결과 페이지. 10+ 결과·동영상·PAA·지식 패널·관련 검색·페이지네이션.",
@@ -512,6 +592,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "presentation",
+    category: "learn",
     title: "전기 강의 슬라이드",
     subtitle: "PPT · Keynote 강의 덱 풍",
     desc: "16:9 강의 슬라이드 14장 — 옴부터 합격 후기까지. 키보드 ←→로 넘기고, F로 풀스크린, N으로 발표자 노트.",
@@ -534,6 +615,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "hearing",
+    category: "broadcast",
     title: "국회 청문회 — 전기기능사",
     subtitle: "제413회 산자위 청문회 풍",
     desc: "방송 청문회 화면. 위원장·증인·의원 자막바, 라이브 채팅, CG 자료 화면까지. 가상의 청문회 시나리오.",
@@ -555,6 +637,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "documentary",
+    category: "broadcast",
     title: "전류의 시대",
     subtitle: "전기플릭스 오리지널 다큐멘터리",
     desc: "Netflix 풍 다큐 작품 페이지. ★ 9.4 · 8 에피소드 · 시즌 1. 옴부터 IoT까지 — 가상의 학습 다큐 시리즈.",
@@ -573,9 +656,10 @@ const cards: NewsCard[] = [
   },
   {
     id: "boarding-pass",
+    category: "life",
     title: "합격 보딩패스",
     subtitle: "ELECTRICITY AIRLINES · LRN → PSS",
-    desc: "공항 탑승권 풍 합격증 콘셉트. 바코드·QR·짐 태그·라운지 패스·다른 자격증 connecting flights까지.",
+    desc: "공항 탑승권 콘셉트로 풀어낸 합격증. 바코드·QR·짐 태그·라운지 패스, 다음 자격증으로 가는 환승편까지.",
     href: "/news/news-boarding-pass.html",
     badge: "BOARDING PASS",
     accent: "from-sky-400 to-blue-600",
@@ -611,6 +695,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "notebook",
+    category: "read",
     title: "합격 노트",
     subtitle: "손글씨 학습 노트북 9페이지",
     desc: "Bullet Journal 풍 손글씨 학습 노트. 옴·키르히호프·변압기·RLC·결선·안전·합격 일기·다짐까지. 키보드 ←→로 페이지 넘김.",
@@ -637,6 +722,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "sports-broadcast",
+    category: "broadcast",
     title: "전기 챔피언스 리그",
     subtitle: "스파크쌤 스포츠 · 야구 중계 풍",
     desc: "옴 타이거즈 vs 패러데이 다이너스. 라이브 스코어보드·해설 멘트·응원 채팅까지 — 학습을 야구로 비유.",
@@ -666,6 +752,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "music-festival",
+    category: "broadcast",
     title: "ELECTRIC SPARK FESTIVAL '26",
     subtitle: "록 페스티벌 라인업 풍",
     desc: "OHMS·TESLA·DR. FARADAY 헤드라이너 + 16팀 라인업 + 타임테이블. 학습 개념이 아티스트가 되는 가상 페스티벌.",
@@ -696,6 +783,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "detective",
+    category: "play",
     title: "사건번호 #2026-052",
     subtitle: "사라진 전류의 비밀 · 탐정 사건 파일",
     desc: "코르크 보드 위 폴라로이드·증거품·빨강 실. 옴/키르히호프/패러데이가 용의자가 되어 V=IR로 전류를 찾는 미스터리.",
@@ -731,6 +819,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "recipe",
+    category: "read",
     title: "옴의 법칙 풀코스",
     subtitle: "30분이면 합격까지 · 요리 레시피 풍",
     desc: "만개의레시피 풍 학습 레시피 카드. 재료(공식)·단계 7개·평점·후기·비슷한 레시피 4가지까지.",
@@ -751,6 +840,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "real-estate",
+    category: "life",
     title: "스파크쌤 부동산",
     subtitle: "전기기능사 학습 매물 · 네이버 부동산 풍",
     desc: "옴아파트·키르히호프빌라·변압기타워 매물 시세. 동네별 합격률·지도 핀·즐겨찾기까지 — 학습을 부동산으로.",
@@ -778,6 +868,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "job-listing",
+    category: "life",
     title: "스파크쌤 잡코리아",
     subtitle: "전기기능사 우대 채용 정보",
     desc: "사람인 풍 가상 채용 페이지. 스파크빌딩·볼트일렉트릭·전류기술 등 9개 회사 채용 공고 + 직무·지역 필터.",
@@ -804,6 +895,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "movie-ticket",
+    category: "play",
     title: "스파크 시네마",
     subtitle: "전기 학습 시네마 페스티벌 2026",
     desc: "CGV 풍 가상 영화관. 옴의 법칙·전류의 흐름·테슬라 vs 에디슨 등 8편 + 좌석 선택·결제 UI까지.",
@@ -837,6 +929,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "catalog",
+    category: "read",
     title: "스파크쌤 카탈로그",
     subtitle: "2026 학습 제품 카탈로그 No.014",
     desc: "이케아·무지 풍 미니멀 카탈로그. 옴의 법칙 사전·키르히호프 노트북·변압기 머그컵 등 12종 학습 제품.",
@@ -872,6 +965,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "airbnb",
+    category: "life",
     title: "스파크비앤비",
     subtitle: "전기기능사 학습 합숙소 — 합격까지 머무는 곳",
     desc: "Airbnb 풍 가상 숙소 예약. 옴의 펜션·키르히호프 룸·변압기 빌라 10곳 + 지도·캘린더·예약 UI.",
@@ -898,6 +992,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "arcade",
+    category: "play",
     title: "스파크 아케이드",
     subtitle: "전기 학습 게임존 · INSERT COIN",
     desc: "80년대 오락실 풍 학습 게임 라인업. 옴 인베이더스·테트리스 옴·키르히호프 퍼즐·RLC 리듬 8종 + 명예의 전당.",
@@ -938,6 +1033,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "mobile-app",
+    category: "sns",
     title: "스파크쌤 합격 학습 앱",
     subtitle: "모바일 학습 앱 인터페이스",
     desc: "5개 화면 mockup(홈·학습·퀴즈·프로필·알림) + 가상 다운로드 카운터·리뷰. Duolingo 풍 학습 앱 풀 인터페이스.",
@@ -970,6 +1066,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "car-dashboard",
+    category: "learn",
     title: "스파크 모터스 모델E",
     subtitle: "전기차 계기판 · 학습 합격 드라이브",
     desc: "테슬라 풍 전기차 대시보드. 속도(학습 속도)·배터리(집중도)·미니맵(학습 로드맵) + 트립 컴퓨터·음악·진단.",
@@ -1024,6 +1121,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "escape-room",
+    category: "play",
     title: "스파크 이스케이프",
     subtitle: "전기 학습 방탈출 카페",
     desc: "옴의 실험실·키르히호프의 노드·최종 합격 방 6개 룸 + 예약 캘린더·명예의 전당. 미스터리한 분위기로 풀어낸 학습.",
@@ -1057,6 +1155,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "postcard",
+    category: "read",
     title: "From the Road to 合格",
     subtitle: "합격으로 가는 길에서 보낸 엽서",
     desc: "OHM CITY·VOLTAGE BEACH·HERTZ STATION 등 6도시에서 보낸 빈티지 엽서. 앞뒷면 토글 + 우표 모달 + 엽서 작성.",
@@ -1094,6 +1193,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "vinyl",
+    category: "play",
     title: "스파크 레코드 샵",
     subtitle: "1962 SINCE · 빈티지 LP 음반점",
     desc: "옴의 법칙·키르히호프 LIVE·합격의 송가 등 8장 LP 음반. 턴테이블 미리듣기·트랙리스트·찜 토글까지.",
@@ -1144,6 +1244,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "startup-pitch",
+    category: "learn",
     title: "스파크쌤 데모데이 2026",
     subtitle: "전기기능사 학습 스타트업 시드 라운드",
     desc: "12장 슬라이드 피치덱 — Problem·Solution·Market·Team·Ask까지. 가상 스타트업 5억 시드 라운드 시뮬레이션.",
@@ -1171,6 +1272,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "food-delivery",
+    category: "life",
     title: "스파크 잇츠",
     subtitle: "전기 학습 메뉴 배달 앱",
     desc: "옴라면·키르히호프 피자·변압기 버거 10개 음식점 + 장바구니·결제·주문 추적까지. 학습을 음식으로 비유한 배달 앱.",
@@ -1198,6 +1300,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "gym-tracker",
+    category: "life",
     title: "스파크쌤 핏",
     subtitle: "전기 학습 운동 기록 앱",
     desc: "운동 시간(학습)·정답률(칼로리)·플립카드(걸음수)·집중도(심박)로 비유한 피트니스 트래커. 종목 6개·랭킹·streak.",
@@ -1236,6 +1339,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "terminal",
+    category: "learn",
     title: "sparkssaem CLI",
     subtitle: "개발자 터미널 풍 학습 인터페이스",
     desc: "ANSI 컬러 터미널에서 learn/quiz/simulator 명령어 자동 시퀀스 + 사용자 입력. JetBrains Mono로 풀어낸 CLI 학습.",
@@ -1264,6 +1368,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "fortune",
+    category: "play",
     title: "스파크 타로",
     subtitle: "전기 학습 운세·합격 사주",
     desc: "옴·패러데이·키르히호프 등 메이저 아르카나 22장 + 3장 스프레드 + 사주 합격 점수. 학습 동기 부여용 가상 운세.",
@@ -1306,6 +1411,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "flyer",
+    category: "read",
     title: "스파크 마트 전단지",
     subtitle: "이번 주 특가 · 5/15~5/21",
     desc: "노랑·빨강 톤 마트 전단지 풍 학습 제품 특가. 옴의 법칙 1L·키르히호프 라면·합격 쿠키 등 19개 상품 + 쿠폰.",
@@ -1336,6 +1442,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "science-fair",
+    category: "learn",
     title: "ELECTRIC SCIENCE FAIR 2026",
     subtitle: "전기 학습 과학 박람회",
     desc: "5/20~24 가상 박람회 — 옴 실험실·테슬라 코일 라이브 등 부스 10개 + 입장권·타임테이블·후원사.",
@@ -1368,6 +1475,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "awards-ceremony",
+    category: "broadcast",
     title: "ELECTRIC AWARDS 2026",
     subtitle: "전기 어워즈 라이브 시상식",
     desc: "8개 부문 시상식 — 올해의 전기인·베스트 시뮬레이션·라이징 스타까지. 트로피 애니메이션 + 라이브 채팅.",
@@ -1409,6 +1517,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "passport",
+    category: "life",
     title: "REPUBLIC OF VOLTANIA",
     subtitle: "학습 여권 · STUDY PASSPORT",
     desc: "가상 공화국 학습 여권 — 옴·키르히호프·변압기·실기관 등 도장 컬렉션 5색 5종. 펼치는 책 인터페이스.",
@@ -1454,6 +1563,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "manga",
+    category: "read",
     title: "電気アドベンチャー Vol.壱",
     subtitle: "ELECTRIC ADVENTURES · 일본 만화책",
     desc: "흑백 일본 만화 — 김전기·패러데이 후예·옴 박사 등장 18컷. 우→좌 페이지 넘김 + 양면 펼침 + 효과음.",
@@ -1500,6 +1610,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "vending-machine",
+    category: "life",
     title: "스파크 매트릭스 자판기",
     subtitle: "학습 토큰 자판기 인터페이스",
     desc: "16칸 자판기 — 옴 음료·키르히호프 콜라·시뮬레이터 토큰 등. 키패드 + 동전 투입 + 떨어짐 애니메이션.",
@@ -1532,6 +1643,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "prescription",
+    category: "life",
     title: "스파크 약국 처방전",
     subtitle: "전기 학습 처방전 + 의약품 안내",
     desc: "가상 약국 처방 — 옴서린정·키르히호프알·변압기시럽 6종 처방. 1주일 약 봉지 + 복약 지도 + 가짜 QR.",
@@ -1563,6 +1675,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "hotel-room-service",
+    category: "life",
     title: "SPARK GRAND HOTEL",
     subtitle: "객실 1208호 룸서비스 메뉴",
     desc: "럭셔리 호텔 룸서비스 — 조식·런치·디너·디저트·와인 6 카테고리. TV UI + 객실 환경 + 야경 + 주문서.",
@@ -1590,6 +1703,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "satellite-tracker",
+    category: "learn",
     title: "SPARK MISSION CONTROL",
     subtitle: "전기 학습 위성 관제 시스템",
     desc: "OHM-1·FARADAY-2·TESLA-4 등 6개 가상 위성. 지구본 + 텔레메트리 + 통신 로그 + 다음 패스 카운트다운.",
@@ -1630,6 +1744,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "department-store",
+    category: "life",
     title: "스파크 백화점",
     subtitle: "11개 층 디렉토리 + 매장 60곳",
     desc: "B1~10F 가상 백화점 — 옴 부티크·키르히호프 셀렉트·패러데이 아트리에 등. 이벤트·길찾기·멤버십까지.",
@@ -1666,6 +1781,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "cafe-menu",
+    category: "life",
     title: "스파크 카페",
     subtitle: "전기 학습 카페 메뉴 · EST. 2026",
     desc: "옴 에스프레소·키르히호프 마키아토·변압기 라테 등 13음료 4디저트. 카트·옵션·라떼아트 갤러리·멤버십 4티어.",
@@ -1698,6 +1814,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "library",
+    category: "read",
     title: "스파크 도서관",
     subtitle: "OPAC · 한국 십진 분류 카탈로그",
     desc: "옴의 법칙 입문·키르히호프 완전정복 등 16권 + KDC 10분류 + 회원증 + 대출 영수증·반납 카운트다운.",
@@ -1733,6 +1850,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "graffiti",
+    category: "play",
     title: "SPARK STREET GALLERY",
     subtitle: "전기 스트리트 아트 갤러리",
     desc: "OHMKREW·SPARKNIK·VOLT ART·RLC73 4작가 8작품. 시멘트 벽 + 네온 스프레이 + 거리 지도 + 좋아요 ♥.",
@@ -1780,6 +1898,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "astrology",
+    category: "play",
     title: "SPARK ASTROLOGY",
     subtitle: "전기 학습 호로스코프 · 별자리 차트",
     desc: "12궁도 전기 재해석 — 양자리=전류·황소자리=저항·쌍둥이자리=단상-3상. 천체 차트 + 사주 입력 + 행성 시간표.",
@@ -1821,6 +1940,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "karaoke",
+    category: "broadcast",
     title: "스파크 노래방",
     subtitle: "전기 학습 노래방 · ROOM 7",
     desc: "옴의 노래·키르히호프의 추리극·변압기 사랑 등 20곡 + TV 화면 가사·점수판·마이크 음량·룸서비스.",
@@ -1862,6 +1982,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "call-center",
+    category: "life",
     title: "스파크 상담 센터",
     subtitle: "전기 학습 콜센터 상담",
     desc: "김상담(LV.7) 시니어 상담사 — 통화 #1248 진행 중. 대시보드·음성 파형·AI 보조·일일 통계 만족도까지.",
@@ -1910,6 +2031,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "dna-test",
+    category: "learn",
     title: "SPARK DNA",
     subtitle: "전기 학습 유전체 분석 결과지",
     desc: "학습 성향·약점 유전자·조상(옴/패러데이/키르히호프/테슬라)·합격 ETA 분석. DNA 이중나선 회전 + 6 카테고리.",
@@ -1977,6 +2099,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "auction",
+    category: "life",
     title: "SPARK AUCTION HOUSE",
     subtitle: "전기 골동품 옥션 · 1947 가상 설립",
     desc: "에디슨 백열전구·옴의 친필 노트·패러데이 코일 등 8 로트 라이브 경매. 입찰·자동입찰·낙찰 카운트다운.",
@@ -2020,6 +2143,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "zoo",
+    category: "life",
     title: "SPARK ZOO",
     subtitle: "전기 학습 동물원 · 6 구역 16 동물",
     desc: "옴라이언·전압코끼리·전류치타 등 16종 가상 동물 + 구역 지도·사육사 일정·기념품샵.",
@@ -2065,6 +2189,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "game-pass",
+    category: "play",
     title: "SPARK GAME PASS",
     subtitle: "전기 학습 게임 구독 · 142 게임",
     desc: "옴 인베이더스 II·키르히호프 미스터리 디럭스 등 12게임 + 신작 배너·도전과제·4티어 구독 등급.",
@@ -2136,6 +2261,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "train-schedule",
+    category: "life",
     title: "SPARK STATION 운행 정보",
     subtitle: "전기 학습 가상 기차역 시간표",
     desc: "옴역·키르히호프·변압기·합격역 12편 운행 시간표 + 노선도 + 승차권. LED 전광판 풍 UI와 가상 매표소.",
@@ -2169,6 +2295,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "kiosk",
+    category: "life",
     title: "SPARK BURGER 키오스크",
     subtitle: "터치 주문기 + 가상 메뉴 15종",
     desc: "옴 버거·키르히호프 빅맥·변압기 치킨 등 15 메뉴 + 카트·결제·영수증·대기번호. 풀스크린 키오스크 UI.",
@@ -2204,6 +2331,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "camping",
+    category: "life",
     title: "SPARK CAMPING",
     subtitle: "전기 학습 캠핑장 가이드",
     desc: "옴·패러데이·키르히호프 6 사이트 + 캠핑 장비 체크리스트 + 모닥불 레시피 + 별 관측 가이드.",
@@ -2245,6 +2373,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "live-coding",
+    category: "broadcast",
     title: "@spark_live · 스파크쌤 라이브",
     subtitle: "전기 학습 라이브 코딩 스트림",
     desc: "VS Code 풍 가짜 에디터에서 옴의 법칙 계산기 자동 타이핑 + LIVE 채팅·도네이션 알림·시청자 자동 변동.",
@@ -2282,6 +2411,7 @@ const cards: NewsCard[] = [
   },
   {
     id: "debate",
+    category: "broadcast",
     title: "SPARK DEBATE · 스파크 토론 광장",
     subtitle: "전기 학습 가상 토론 방송",
     desc: "옴 vs 키르히호프·직류 vs 교류 등 3 주제 + 패널 4명 + 사회자 + 시청자 투표·실시간 채팅·박수 게이지.",
@@ -2329,7 +2459,7 @@ export default function NewsIndexPage() {
       <Header />
       <main className="mx-auto max-w-5xl px-6 py-12">
         {/* 헤더 */}
-        <header className="mb-10">
+        <header className="mb-8">
           <p className="text-xs font-semibold tracking-widest text-indigo-600">
             ⭐ 별의 콘텐츠
           </p>
@@ -2337,56 +2467,121 @@ export default function NewsIndexPage() {
             전기기능사 별의 소식지
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
-            교재·시뮬레이터 외에 즐겁게 학습할 수 있는 별도 콘텐츠. 인스타 피드, 유튜브 채널,
-            그리고 신문 — 같은 내용을 세 가지 콘셉트로 풀어냈어요.
+            교재·시뮬레이터 말고도 가볍게 즐기며 학습할 수 있는 별도 콘텐츠 모음이에요.
+            같은 전기 이론을 인스타 피드, 유튜브 채널, 신문, 게임 등{" "}
+            <strong className="font-semibold text-zinc-800">{cards.length}가지 콘셉트</strong>로
+            풀어냈어요. 마음에 드는 형식부터 골라 보세요.
           </p>
         </header>
 
-        {/* 카드 그리드 */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((c) => (
-            <a
-              key={c.id}
-              href={c.href}
-              target="_blank"
-              rel="noreferrer"
-              className="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl"
-            >
-              {/* 썸네일 영역 */}
-              <div className={`relative h-44 ${c.tileBg}`}>
-                {c.tileContent}
-                <div className="absolute left-3 top-3">
-                  <span
-                    className={`inline-block rounded-full bg-gradient-to-r ${c.accent} px-2.5 py-1 text-[10px] font-bold tracking-widest text-white shadow-sm`}
-                  >
-                    {c.badge}
-                  </span>
+        {/* 카테고리 바로가기 */}
+        <nav
+          aria-label="카테고리 바로가기"
+          className="mb-12 flex flex-wrap gap-2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+        >
+          {categories.map((cat) => {
+            const count = cards.filter((c) => c.category === cat.id).length;
+            return (
+              <a
+                key={cat.id}
+                href={`#cat-${cat.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1.5 text-xs font-semibold text-zinc-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                <span aria-hidden>{cat.emoji}</span>
+                {cat.label}
+                <span className="ml-0.5 rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-zinc-400">
+                  {count}
+                </span>
+              </a>
+            );
+          })}
+        </nav>
+
+        {/* 카테고리별 섹션 */}
+        <div className="space-y-16">
+          {categories.map((cat) => {
+            const items = cards.filter((c) => c.category === cat.id);
+            if (items.length === 0) return null;
+            return (
+              <section
+                key={cat.id}
+                id={`cat-${cat.id}`}
+                aria-labelledby={`cat-${cat.id}-title`}
+                className="scroll-mt-24"
+              >
+                {/* 섹션 헤더 */}
+                <div className="mb-6 border-b border-zinc-200 pb-4">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-2xl" aria-hidden>
+                      {cat.emoji}
+                    </span>
+                    <h2
+                      id={`cat-${cat.id}-title`}
+                      className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl"
+                    >
+                      {cat.label}
+                    </h2>
+                    <span className="text-xs font-semibold text-zinc-400">
+                      {items.length}개
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">
+                    {cat.blurb}
+                  </p>
                 </div>
-              </div>
-              {/* 본문 */}
-              <div className="p-5">
-                <h3 className="text-base font-bold text-zinc-900 group-hover:text-indigo-700">
-                  {c.title}
-                </h3>
-                <p className="mt-1 text-xs font-medium text-zinc-500">
-                  {c.subtitle}
-                </p>
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-700">
-                  {c.desc}
-                </p>
-                <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
-                  열어보기 <span className="transition group-hover:translate-x-0.5">↗</span>
+
+                {/* 카드 그리드 */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((c) => (
+                    <a
+                      key={c.id}
+                      href={c.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group block overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl"
+                    >
+                      {/* 썸네일 영역 */}
+                      <div className={`relative h-44 ${c.tileBg}`}>
+                        {c.tileContent}
+                        <div className="absolute left-3 top-3">
+                          <span
+                            className={`inline-block rounded-full bg-gradient-to-r ${c.accent} px-2.5 py-1 text-[10px] font-bold tracking-widest text-white shadow-sm`}
+                          >
+                            {c.badge}
+                          </span>
+                        </div>
+                      </div>
+                      {/* 본문 */}
+                      <div className="p-5">
+                        <h3 className="text-base font-bold text-zinc-900 group-hover:text-indigo-700">
+                          {c.title}
+                        </h3>
+                        <p className="mt-1 text-xs font-medium text-zinc-500">
+                          {c.subtitle}
+                        </p>
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-zinc-700">
+                          {c.desc}
+                        </p>
+                        <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                          열어보기{" "}
+                          <span className="transition group-hover:translate-x-0.5">
+                            ↗
+                          </span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
                 </div>
-              </div>
-            </a>
-          ))}
+              </section>
+            );
+          })}
         </div>
 
         {/* 하단 안내 */}
-        <p className="mt-10 rounded-2xl border border-dashed border-zinc-200 bg-white p-5 text-center text-xs leading-6 text-zinc-500">
-          📝 각 소식지는 새 탭에서 열려요. 콘셉트는 다르지만 다루는 주제는 전부 전기기능사 합격을 위한 학습 자료입니다.
+        <p className="mt-16 rounded-2xl border border-dashed border-zinc-200 bg-white p-5 text-center text-xs leading-6 text-zinc-500">
+          📝 각 소식지는 새 탭에서 열려요. 형식은 제각각이지만 다루는 주제는 모두 전기기능사 합격을 위한 학습 자료예요.
           <br />
-          (가짜 댓글·구독자 수·발행 호수는 콘셉트 연출용이에요.)
+          (등장하는 댓글·구독자 수·발행 호수는 콘셉트 연출용이에요.)
         </p>
 
         {/* 다른 페이지로 */}
