@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STATCOM 시뮬레이터 — 정지형 무효전력 보상기 (VSC)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.45), rgba(168,139,250,0.45), rgba(244,114,182,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(34, 211, 238, 0.45),
+        0 0 40px rgba(168, 139, 250, 0.15);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 500px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#vqCurve, canvas#stepResp {
+    display: block;
+    width: 100%;
+    height: 260px;
+    border-radius: 12px;
+    background: #050714;
+}
+
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+.pulse-dot.warn { background: #f59e0b; box-shadow: 0 0 12px #f59e0b; }
+.pulse-dot.warn::after { border-color: #f59e0b; }
+.pulse-dot.cap { background: #67e8f9; box-shadow: 0 0 12px #67e8f9; }
+.pulse-dot.cap::after { border-color: #67e8f9; }
+.pulse-dot.ind { background: #c4b5fd; box-shadow: 0 0 12px #c4b5fd; }
+.pulse-dot.ind::after { border-color: #c4b5fd; }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(168,139,250,0.4), rgba(34,211,238,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #93c5fd, #67e8f9, #c4b5fd);
+    box-shadow: 0 0 22px rgba(103, 232, 249, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-vg  { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-vsh { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-vref{ background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-load{ background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms, background 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(103, 232, 249, 0.6);
+    box-shadow: 0 0 22px rgba(103, 232, 249, 0.35);
+}
+.live-pill.warn {
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+}
+.live-pill.cap {
+    border-color: rgba(103, 232, 249, 0.8);
+    box-shadow: 0 0 24px rgba(103, 232, 249, 0.5);
+}
+.live-pill.ind {
+    border-color: rgba(196, 181, 253, 0.8);
+    box-shadow: 0 0 24px rgba(196, 181, 253, 0.5);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #93c5fd, #67e8f9, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.cap {
+    background: linear-gradient(135deg, #67e8f9, #22d3ee, #06b6d4);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+.live-num.ind {
+    background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+.live-num.warn {
+    background: linear-gradient(135deg, #fef3c7, #fcd34d, #f59e0b);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(168,139,250,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(103,232,249,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(103, 232, 249, 0.4);
+}
+.preset-btn {
+    background: rgba(34, 211, 238, 0.18);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(34, 211, 238, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.4);
+}
+.preset-btn.ind {
+    background: rgba(168, 139, 250, 0.18);
+    border-color: rgba(168, 139, 250, 0.5);
+    color: #ddd6fe;
+}
+.preset-btn.ind:hover {
+    background: rgba(168, 139, 250, 0.35);
+    box-shadow: 0 0 24px rgba(168, 139, 250, 0.4);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(103, 232, 249, 0.25);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.4), rgba(168,139,250,0.4));
+    border-color: rgba(165, 243, 252, 0.8);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(103, 232, 249, 0.5);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.5), transparent);
+}
+.mode-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+.tag-cap { background: rgba(34, 211, 238, 0.2); border: 1px solid rgba(34, 211, 238, 0.55); color: #67e8f9; }
+.tag-ind { background: rgba(168, 139, 250, 0.2); border: 1px solid rgba(168, 139, 250, 0.55); color: #c4b5fd; }
+.tag-std { background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.45); color: #cbd5e1; }
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span id="hdrDot" class="pulse-dot"></span>
+            INTERACTIVE · STATCOM · VSC-BASED REACTIVE POWER COMPENSATOR
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-indigo-200 to-pink-300 bg-clip-text text-transparent">
+            ⚡ STATCOM 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">VSC(전압형 컨버터)가 그리드 전압보다 <span class="text-cyan-300 font-bold">높으면 진상 무효 공급</span>, <span class="text-violet-300 font-bold">낮으면 지상 무효 흡수</span>. SVR 대비 응답 ms급 — V-Q 슬로프로 전압 안정화.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-vpcc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">PCC 전압 V<sub>PCC</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="vpccVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-q">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">무효 전력 Q <span id="qMode" class="text-[9px] text-slate-400">—</span></p>
+            <p class="mt-1 text-lg font-bold"><span id="qVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-iq">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">무효 전류 I<sub>Q</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="iqVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-tr">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">응답 시간 t<sub>r</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="trVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스: 그리드 + STATCOM + 부하 단선도 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">단선도 — 그리드 · PCC · STATCOM(VSC+DC 콘덴서) · 가변 부하 · I<sub>Q</sub> 방향</span>
+                    <div class="flex items-center gap-2 flex-wrap justify-end">
+                        <button id="presetCap" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">진상 보상 (V<sub>sh</sub>↑)</button>
+                        <button id="presetStd" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold" style="background:rgba(148,163,184,0.18);border-color:rgba(148,163,184,0.45);color:#cbd5e1">대기 (V<sub>sh</sub>=V<sub>g</sub>)</button>
+                        <button id="presetInd" class="preset-btn ind rounded-md px-3 py-1.5 text-xs font-bold">지상 흡수 (V<sub>sh</sub>↓)</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- V-Q 특성 곡선 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">V-Q 특성 — 슬로프 droop · V<sub>ref</sub> 기준 ±10% 보상 영역</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-cyan-300"><span class="legend-dot" style="background:#67e8f9;color:#67e8f9"></span>진상 (Q&gt;0)</span>
+                        <span class="text-violet-300"><span class="legend-dot" style="background:#c4b5fd;color:#c4b5fd"></span>지상 (Q&lt;0)</span>
+                        <span class="text-pink-300"><span class="legend-dot" style="background:#f9a8d4;color:#f9a8d4"></span>현재점</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(34,211,238,0.35), rgba(168,139,250,0.35), rgba(244,114,182,0.35));">
+                    <canvas id="vqCurve"></canvas>
+                </div>
+            </div>
+
+            <!-- 스텝 응답 비교 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">스텝 응답 — STATCOM (ms급) vs SVR(s급) · 부하 무효전력 외란 시</span>
+                    <button id="stepBtn" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">▶ 외란 인가 (스텝)</button>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(103,232,249,0.35), rgba(168,139,250,0.35), rgba(245,158,11,0.35));">
+                    <canvas id="stepResp"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-cyan-300 via-indigo-200 to-pink-300 bg-clip-text text-transparent">STATCOM 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">무효 전력 교환</p>
+                        <div class="math-container mt-2">\(Q = \dfrac{V_g\,(V_{sh} - V_g)}{X_L}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">무효 전류</p>
+                        <div class="math-container mt-2">\(I_Q = \dfrac{V_{sh} - V_g}{X_L}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">V-Q 드룹</p>
+                        <div class="math-container mt-2">\(V_{PCC} = V_{ref} - k_d\, Q\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">V<sub>sh</sub> &gt; V<sub>g</sub></span> · 진상 모드 — STATCOM이 무효전력 <span class="text-cyan-300 font-bold">공급</span> (콘덴서처럼)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">V<sub>sh</sub> &lt; V<sub>g</sub></span> · 지상 모드 — STATCOM이 무효전력 <span class="text-violet-300 font-bold">흡수</span> (리액터처럼)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">응답 시간</span> · <span class="text-emerald-300 font-bold">1~5 ms</span> (IGBT PWM) — SVR(0.5~5 s) 대비 100~1000배 빠름</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">전압 안정화</span> · V-Q 슬로프로 PCC 전압 ±5% 이내 유지 — 풍력/태양광 단지 필수</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-cyan-200">변수 조절</h2>
+
+            <div class="chip-vg chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>그리드 전압 V<sub>g</sub></span><span id="vgDisp" class="font-mono text-base">1.00</span></label>
+                <input type="range" id="vg" min="0.85" max="1.15" step="0.005" value="1.00" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">pu (계통 외란 모의)</p>
+            </div>
+
+            <div class="chip-vsh chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>VSC 출력 전압 V<sub>sh</sub></span><span id="vshDisp" class="font-mono text-base">1.00</span></label>
+                <input type="range" id="vsh" min="0.85" max="1.15" step="0.005" value="1.00" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">pu (수동 / V 제어 시 자동)</p>
+            </div>
+
+            <div class="chip-vref chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>전압 기준 V<sub>ref</sub></span><span id="vrefDisp" class="font-mono text-base">1.00</span></label>
+                <input type="range" id="vref" min="0.95" max="1.05" step="0.005" value="1.00" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">pu (전압 제어 모드)</p>
+            </div>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 Q<sub>L</sub></span><span id="qlDisp" class="font-mono text-base">0.20</span></label>
+                <input type="range" id="ql" min="-0.5" max="0.5" step="0.01" value="0.20" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">pu (+ 지상부하 / − 진상부하)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div>
+                <label class="block text-[11px] font-bold tracking-wider mb-2 text-cyan-200">STATCOM 모드</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button data-mode="V" class="mode-btn rounded-md py-1.5 text-[10px] font-bold active">V 제어</button>
+                    <button data-mode="Q" class="mode-btn rounded-md py-1.5 text-[10px] font-bold">Q 제어</button>
+                    <button data-mode="S" class="mode-btn rounded-md py-1.5 text-[10px] font-bold">대기</button>
+                </div>
+                <p class="mt-2 text-[10px] text-slate-500">V 제어: V<sub>PCC</sub> = V<sub>ref</sub> 유지 · Q 제어: V<sub>sh</sub> 직접 조작 · 대기: V<sub>sh</sub> = V<sub>g</sub></p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-cyan-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">VSC는 <span class="text-cyan-300 font-bold">DC 콘덴서</span>를 PWM으로 AC 전압 생성 — 크기·위상 자유</p>
+                <p class="feature-row rounded-md p-2">정상상태에서 V<sub>sh</sub>는 V<sub>g</sub>와 <span class="text-amber-300 font-bold">동위상</span> → 유효전력 0, 무효전력만 교환</p>
+                <p class="feature-row rounded-md p-2">SVR(탭전환)은 기계식 · STATCOM은 <span class="text-emerald-300 font-bold">반도체 스위칭</span> → 응답 차이</p>
+                <p class="feature-row rounded-md p-2">최대 보상량 = VSC 정격 (대칭형 ±Q) <span class="text-rose-300 font-bold">→ SVC는 비대칭</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const vqCv = $('vqCurve');
+const vqctx = vqCv.getContext('2d');
+const stCv = $('stepResp');
+const stctx = stCv.getContext('2d');
+
+let state = {
+    Vg: 1.00,        // 그리드 전압 pu
+    Vsh: 1.00,       // VSC 출력 전압 pu
+    Vref: 1.00,      // 전압 기준 pu
+    QL: 0.20,        // 부하 무효 pu (+ 지상 / − 진상)
+    mode: 'V',       // V / Q / S
+    XL: 0.10,        // 연결 리액턴스 pu (커플링 트랜스 + 인덕터)
+    Xs: 0.05,        // 계통 등가 리액턴스 pu
+    kd: 0.03,        // V-Q 드룹 (3% slope)
+    // 계산값
+    Vpcc: 1.0, Q: 0, Iq: 0,
+    tr_ms: 3,
+    t: 0,
+    // 스텝 응답용
+    stepActive: false,
+    stepStart: 0,
+    stepHistory: [],   // {t, statcom, svr, target}
+    stepTarget: 0,
+    // 파티클
+    flowPhase: 0,
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 500;
+    vqCv.width = vqCv.parentElement.clientWidth - 2;
+    vqCv.height = 260;
+    stCv.width = stCv.parentElement.clientWidth - 2;
+    stCv.height = 260;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function drawTagLabel(text, x, y, color) {
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// 모드 상태
+function modeState() {
+    // 진상(공급): Vsh > Vg → Q > 0
+    // 지상(흡수): Vsh < Vg → Q < 0
+    if (Math.abs(state.Vsh - state.Vg) < 0.003) return 'standby';
+    return state.Vsh > state.Vg ? 'cap' : 'ind';
+}
+
+// ============================================================
+// 메인 단선도
+// ============================================================
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.32)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.18)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 상단 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ GRID  ·  PCC  ·  STATCOM (VSC + DC CAP)  ·  LOAD', 12, 10);
+    ctx.restore();
+
+    const mode = modeState();
+
+    // 레이아웃: 좌(그리드) → 가운데(PCC 버스) → 우(부하), 가운데 아래(STATCOM)
+    const yBus = H * 0.42;
+    const xGrid = W * 0.10;
+    const xPCC  = W * 0.50;
+    const xLoad = W * 0.90;
+
+    // ============== 1) 그리드 (좌) ==============
+    drawGrid(xGrid, yBus);
+
+    // ============== 2) 그리드 ↔ PCC 라인 ==============
+    drawBusLine(xGrid + 60, yBus, xPCC - 90, yBus, '#94a3b8', 'Xs (계통)');
+
+    // ============== 3) PCC 버스 ==============
+    drawPCCBus(xPCC, yBus);
+
+    // ============== 4) PCC ↔ 부하 라인 ==============
+    drawBusLine(xPCC + 90, yBus, xLoad - 60, yBus, '#94a3b8', '');
+
+    // ============== 5) 부하 ==============
+    drawLoad(xLoad, yBus);
+
+    // ============== 6) STATCOM (가운데 아래) ==============
+    const xStatcom = xPCC;
+    const yStatcom = H * 0.75;
+    // PCC 버스에서 아래로 떨어지는 라인
+    drawDropLine(xStatcom, yBus + 22, xStatcom, yStatcom - 80, mode);
+    drawStatcom(xStatcom, yStatcom, mode);
+
+    // ============== 7) I_Q 방향 화살표 (PCC <-> STATCOM) ==============
+    drawIQFlow(xStatcom, yBus + 22, xStatcom, yStatcom - 80, mode);
+
+    // ============== 8) 우상단 상태 박스 ==============
+    drawStatusBox(W, H, mode);
+}
+
+// 그리드 (전원 심볼 + 송전탑)
+function drawGrid(x, y) {
+    ctx.save();
+    // 전원 원
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#a78bfa';
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.9)';
+    ctx.fillStyle = 'rgba(67, 56, 132, 0.45)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // ~ 심볼
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(221, 214, 254, 1)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = -10; i <= 10; i++) {
+        const yy = y + Math.sin(i * 0.4) * 6;
+        if (i === -10) ctx.moveTo(x + i, yy); else ctx.lineTo(x + i, yy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    drawTagLabel(`GRID  Vg=${state.Vg.toFixed(3)} pu`, x, y - 50, '#c4b5fd');
+
+    // 송전탑 (작은 삼각형 옆에)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1.5;
+    const tx = x - 36, ty = y - 4;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty + 24);
+    ctx.lineTo(tx - 8, ty + 24);
+    ctx.lineTo(tx, ty);
+    ctx.lineTo(tx + 8, ty + 24);
+    ctx.lineTo(tx, ty + 24);
+    ctx.moveTo(tx - 6, ty + 8); ctx.lineTo(tx + 6, ty + 8);
+    ctx.moveTo(tx - 7, ty + 16); ctx.lineTo(tx + 7, ty + 16);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 버스 라인 (수평, 전류 흐름 + 라벨)
+function drawBusLine(x0, y, x1, y1, color, label) {
+    ctx.save();
+    // 라인
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x0, y); ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.restore();
+
+    // 흐름 파티클
+    ctx.save();
+    ctx.fillStyle = 'rgba(165, 243, 252, 0.85)';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#67e8f9';
+    const n = 5;
+    for (let i = 0; i < n; i++) {
+        const u = ((state.flowPhase * 0.5 + i / n) % 1);
+        const px = x0 + (x1 - x0) * u;
+        const py = y + (y1 - y) * u;
+        ctx.beginPath();
+        ctx.arc(px, py, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    if (label) {
+        const mx = (x0 + x1) / 2;
+        drawTagLabel(label, mx, y - 18, '#cbd5e1');
+    }
+}
+
+// PCC 버스 (세로 굵은 막대)
+function drawPCCBus(x, y) {
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#f9a8d4';
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.95)';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x, y - 32); ctx.lineTo(x, y + 32);
+    ctx.stroke();
+    ctx.restore();
+
+    // PCC 라벨
+    drawTagLabel(`PCC  Vpcc=${state.Vpcc.toFixed(3)} pu`, x, y - 52, '#f9a8d4');
+}
+
+// 부하 (사각형 + 화살표 라벨)
+function drawLoad(x, y) {
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#fbbf24';
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.9)';
+    ctx.fillStyle = 'rgba(120, 53, 15, 0.4)';
+    ctx.lineWidth = 2.5;
+    roundRect(ctx, x - 26, y - 22, 52, 44, 6);
+    ctx.fill(); ctx.stroke();
+    // 부하 내부 심볼 (M 또는 화살표)
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fde68a';
+    ctx.font = 'bold 18px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const sym = state.QL >= 0 ? '↘' : '↗';
+    ctx.fillText(sym, x, y);
+    ctx.restore();
+
+    const lbl = state.QL >= 0 ? `LOAD  Q_L=+${state.QL.toFixed(2)} (지상)` : `LOAD  Q_L=${state.QL.toFixed(2)} (진상)`;
+    drawTagLabel(lbl, x, y - 50, '#fcd34d');
+}
+
+// PCC → STATCOM 수직 라인
+function drawDropLine(x0, y0, x1, y1, mode) {
+    let col = '#94a3b8';
+    if (mode === 'cap') col = '#67e8f9';
+    if (mode === 'ind') col = '#c4b5fd';
+
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = col;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.restore();
+
+    // 커플링 인덕터 (지그재그)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
+    ctx.lineWidth = 2;
+    const midY = (y0 + y1) / 2 - 24;
+    const w = 14;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const yy = midY + i * 12;
+        ctx.moveTo(x0, yy);
+        ctx.arc(x0, yy + 6, w / 2, -Math.PI / 2, Math.PI / 2, false);
+    }
+    ctx.stroke();
+    ctx.restore();
+    drawTagLabel('XL', x0 + 32, midY + 28, '#cbd5e1');
+}
+
+// I_Q 방향 화살표
+function drawIQFlow(x0, y0, x1, y1, mode) {
+    if (mode === 'standby') return;
+    // cap: STATCOM → PCC (위로)
+    // ind: PCC → STATCOM (아래로)
+    const upward = (mode === 'cap');
+    const col = upward ? '#67e8f9' : '#c4b5fd';
+
+    ctx.save();
+    ctx.fillStyle = col;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = col;
+    const n = 3;
+    for (let i = 0; i < n; i++) {
+        const u = ((state.flowPhase * 0.7 + i / n) % 1);
+        const py = upward ? (y1 + (y0 - y1) * u) : (y0 + (y1 - y0) * u);
+        const dir = upward ? -1 : 1;
+        // 삼각형 화살촉
+        ctx.beginPath();
+        ctx.moveTo(x0 - 18, py);
+        ctx.lineTo(x0 - 26, py - dir * 6);
+        ctx.lineTo(x0 - 26, py + dir * 6);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // I_Q 라벨
+    drawTagLabel(`I_Q  ${upward ? '→ PCC' : '→ VSC'}`, x0 - 64, (y0 + y1) / 2, col);
+}
+
+// STATCOM 블록 (VSC + DC 콘덴서)
+function drawStatcom(cx, cy, mode) {
+    let col = '#94a3b8', glow = '#94a3b8';
+    if (mode === 'cap') { col = '#67e8f9'; glow = '#22d3ee'; }
+    if (mode === 'ind') { col = '#c4b5fd'; glow = '#a78bfa'; }
+
+    // 외곽 박스 (VSC 인버터)
+    ctx.save();
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = glow;
+    ctx.strokeStyle = col;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+    ctx.lineWidth = 2.5;
+    roundRect(ctx, cx - 85, cy - 60, 170, 110, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // VSC 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    ctx.fillText('VSC (IGBT)', cx, cy - 42);
+    ctx.restore();
+
+    // IGBT 4개 (브릿지)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(165, 243, 252, 0.7)';
+    ctx.lineWidth = 1.8;
+    const igbtPositions = [
+        [cx - 50, cy - 22], [cx - 50, cy + 18],
+        [cx + 50, cy - 22], [cx + 50, cy + 18]
+    ];
+    for (const [ix, iy] of igbtPositions) {
+        roundRect(ctx, ix - 10, iy - 7, 20, 14, 3);
+        ctx.stroke();
+        // PWM 스위칭 깜빡임
+        if (mode !== 'standby' && Math.sin(state.t * 0.4 + ix * 0.1) > 0.4) {
+            ctx.save();
+            ctx.fillStyle = `rgba(165, 243, 252, ${0.25 + 0.2 * Math.random()})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = glow;
+            roundRect(ctx, ix - 10, iy - 7, 20, 14, 3);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+    ctx.restore();
+
+    // DC 콘덴서 (가운데)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.85)';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fbbf24';
+    ctx.lineWidth = 2.5;
+    // 두 평행선
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy - 12); ctx.lineTo(cx - 8, cy + 12);
+    ctx.moveTo(cx + 8, cy - 12); ctx.lineTo(cx + 8, cy + 12);
+    ctx.stroke();
+    // 연결선
+    ctx.beginPath();
+    ctx.moveTo(cx - 20, cy); ctx.lineTo(cx - 8, cy);
+    ctx.moveTo(cx + 8, cy); ctx.lineTo(cx + 20, cy);
+    ctx.stroke();
+    ctx.restore();
+
+    // C_dc 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center';
+    ctx.fillText('C_dc', cx, cy + 28);
+    ctx.restore();
+
+    // STATCOM 라벨 (아래)
+    drawTagLabel(`STATCOM  V_sh=${state.Vsh.toFixed(3)} pu`, cx, cy + 72, col);
+}
+
+// 우상단 상태 박스
+function drawStatusBox(W, H, mode) {
+    const bx = W - 196, by = 32;
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, bx, by, 180, 92, 10);
+    ctx.fill(); ctx.stroke();
+
+    let tagColor = '#cbd5e1', tagBg = 'rgba(148,163,184,0.18)';
+    let tagText = 'STANDBY';
+    if (mode === 'cap') { tagColor = '#67e8f9'; tagBg = 'rgba(34,211,238,0.20)'; tagText = 'CAPACITIVE (진상)'; }
+    if (mode === 'ind') { tagColor = '#c4b5fd'; tagBg = 'rgba(168,139,250,0.20)'; tagText = 'INDUCTIVE (지상)'; }
+
+    ctx.fillStyle = tagBg;
+    roundRect(ctx, bx + 10, by + 10, 160, 22, 10);
+    ctx.fill();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = tagColor;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(tagText, bx + 90, by + 21);
+
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Q  = ${(state.Q*100).toFixed(1)} % Sb`, bx + 14, by + 48);
+    ctx.fillText(`I_Q = ${(state.Iq*100).toFixed(1)} % In`, bx + 14, by + 64);
+    ctx.fillText(`MODE: ${state.mode === 'V' ? 'V CTRL' : state.mode === 'Q' ? 'Q CTRL' : 'STANDBY'}`, bx + 14, by + 80);
+    ctx.restore();
+}
+
+// ============================================================
+// V-Q 특성 곡선
+// ============================================================
+function drawVQ() {
+    const W = vqCv.width, H = vqCv.height;
+    vqctx.clearRect(0, 0, W, H);
+
+    // 배경
+    vqctx.fillStyle = 'rgba(5, 7, 20, 0.95)';
+    vqctx.fillRect(0, 0, W, H);
+    // 격자
+    vqctx.save();
+    vqctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    for (let i = 0; i < W; i += 40) {
+        vqctx.beginPath(); vqctx.moveTo(i, 0); vqctx.lineTo(i, H); vqctx.stroke();
+    }
+    for (let i = 0; i < H; i += 30) {
+        vqctx.beginPath(); vqctx.moveTo(0, i); vqctx.lineTo(W, i); vqctx.stroke();
+    }
+    vqctx.restore();
+
+    // 좌상단 라벨
+    vqctx.save();
+    vqctx.font = 'bold 10px ui-monospace, monospace';
+    vqctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    vqctx.textAlign = 'left'; vqctx.textBaseline = 'top';
+    vqctx.fillText('◯ V-Q CHARACTERISTIC · V_PCC vs Q_STATCOM', 12, 10);
+    vqctx.restore();
+
+    const padL = 60, padR = 24, padT = 32, padB = 36;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    // 축
+    vqctx.save();
+    vqctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    vqctx.lineWidth = 1.5;
+    // X축 (Q): 0이 중앙
+    const cy = padT + plotH / 2;
+    vqctx.beginPath();
+    vqctx.moveTo(padL, cy); vqctx.lineTo(padL + plotW, cy);
+    // Y축 (V): 1.0이 중앙
+    vqctx.moveTo(padL + plotW / 2, padT); vqctx.lineTo(padL + plotW / 2, padT + plotH);
+    vqctx.stroke();
+    // 축 라벨
+    vqctx.font = '10px ui-monospace, monospace';
+    vqctx.fillStyle = 'rgba(203, 213, 225, 0.8)';
+    vqctx.textAlign = 'center';
+    vqctx.fillText('Q (pu)  →', padL + plotW - 30, cy - 6);
+    vqctx.fillText('지상', padL + 20, cy - 6);
+    vqctx.fillText('진상', padL + plotW - 20, cy + 14);
+    vqctx.save();
+    vqctx.translate(padL - 36, padT + plotH/2);
+    vqctx.rotate(-Math.PI/2);
+    vqctx.fillText('V_PCC (pu)', 0, 0);
+    vqctx.restore();
+    // 눈금
+    for (let q = -1; q <= 1; q += 0.5) {
+        if (q === 0) continue;
+        const px = padL + plotW/2 + q * (plotW/2.4);
+        vqctx.beginPath();
+        vqctx.moveTo(px, cy - 4); vqctx.lineTo(px, cy + 4);
+        vqctx.stroke();
+        vqctx.fillText(q.toFixed(1), px, cy + 16);
+    }
+    for (let v = 0.94; v <= 1.06; v += 0.02) {
+        if (Math.abs(v - 1.0) < 0.005) continue;
+        const py = padT + plotH/2 - (v - 1.0) * (plotH / 0.16);
+        vqctx.beginPath();
+        vqctx.moveTo(padL + plotW/2 - 4, py); vqctx.lineTo(padL + plotW/2 + 4, py);
+        vqctx.stroke();
+        vqctx.fillText(v.toFixed(2), padL - 14, py + 3);
+    }
+    // 원점 V_ref
+    vqctx.fillStyle = '#f9a8d4';
+    vqctx.fillText('V_ref', padL + plotW/2 + 22, padT + plotH/2 - (state.Vref - 1.0) * (plotH / 0.16) - 6);
+    vqctx.restore();
+
+    // 보상 영역 (±10% Q 까지 슬로프)
+    const qmaxX = plotW / 2.4;  // Q=1.0의 픽셀 거리
+    const slope = state.kd;     // V-Q 드룹 (pu/pu)
+    const Vrefpu = state.Vref;
+
+    // V_PCC = V_ref - kd * Q
+    // 사다리꼴 영역 (Qmax = ±1.0)
+    vqctx.save();
+    // 드룹 선
+    vqctx.shadowBlur = 14;
+    vqctx.shadowColor = '#67e8f9';
+    vqctx.strokeStyle = 'rgba(165, 243, 252, 0.85)';
+    vqctx.lineWidth = 3;
+    vqctx.beginPath();
+    // Q = -1.0 (지상, 좌측)
+    const x_neg = padL + plotW/2 - qmaxX;
+    const y_neg = padT + plotH/2 - (Vrefpu - 1.0 + slope * 1.0) * (plotH / 0.16);
+    // Q = +1.0 (진상, 우측)
+    const x_pos = padL + plotW/2 + qmaxX;
+    const y_pos = padT + plotH/2 - (Vrefpu - 1.0 - slope * 1.0) * (plotH / 0.16);
+    vqctx.moveTo(x_neg, y_neg); vqctx.lineTo(x_pos, y_pos);
+    vqctx.stroke();
+
+    // 진상 절반 (오른쪽: 시안)
+    vqctx.shadowColor = '#22d3ee';
+    vqctx.strokeStyle = 'rgba(34, 211, 238, 0.9)';
+    vqctx.lineWidth = 4;
+    vqctx.beginPath();
+    vqctx.moveTo(padL + plotW/2, padT + plotH/2 - (Vrefpu - 1.0) * (plotH / 0.16));
+    vqctx.lineTo(x_pos, y_pos);
+    vqctx.stroke();
+
+    // 지상 절반 (왼쪽: 보라)
+    vqctx.shadowColor = '#a78bfa';
+    vqctx.strokeStyle = 'rgba(168, 139, 250, 0.9)';
+    vqctx.beginPath();
+    vqctx.moveTo(padL + plotW/2, padT + plotH/2 - (Vrefpu - 1.0) * (plotH / 0.16));
+    vqctx.lineTo(x_neg, y_neg);
+    vqctx.stroke();
+
+    // 한계 (수직 hard limit)
+    vqctx.shadowBlur = 0;
+    vqctx.setLineDash([6, 4]);
+    vqctx.strokeStyle = 'rgba(244, 114, 182, 0.5)';
+    vqctx.lineWidth = 1.5;
+    vqctx.beginPath();
+    vqctx.moveTo(x_neg, padT); vqctx.lineTo(x_neg, padT + plotH);
+    vqctx.moveTo(x_pos, padT); vqctx.lineTo(x_pos, padT + plotH);
+    vqctx.stroke();
+    vqctx.setLineDash([]);
+    vqctx.restore();
+
+    // 현재점
+    const Qpu = Math.max(-1, Math.min(1, state.Q));
+    const Vpcc = state.Vpcc;
+    const cpx = padL + plotW/2 + Qpu * qmaxX;
+    const cpy = padT + plotH/2 - (Vpcc - 1.0) * (plotH / 0.16);
+
+    vqctx.save();
+    vqctx.shadowBlur = 18;
+    vqctx.shadowColor = '#f9a8d4';
+    vqctx.fillStyle = '#f9a8d4';
+    vqctx.beginPath();
+    const pulse = 5 + 2.5 * (0.5 + 0.5 * Math.sin(state.t * 0.15));
+    vqctx.arc(cpx, cpy, pulse, 0, Math.PI * 2);
+    vqctx.fill();
+    // 외곽 링
+    vqctx.strokeStyle = 'rgba(252, 211, 230, 0.85)';
+    vqctx.lineWidth = 2;
+    vqctx.beginPath();
+    vqctx.arc(cpx, cpy, pulse + 4, 0, Math.PI * 2);
+    vqctx.stroke();
+    vqctx.restore();
+
+    // 현재점 좌표 텍스트
+    vqctx.save();
+    vqctx.font = 'bold 11px ui-monospace, monospace';
+    vqctx.fillStyle = '#fce7f3';
+    vqctx.textAlign = 'left';
+    vqctx.fillText(`(Q=${Qpu.toFixed(2)}, V=${Vpcc.toFixed(3)})`, cpx + 12, cpy - 8);
+    vqctx.restore();
+}
+
+// ============================================================
+// 스텝 응답 그래프 (STATCOM vs SVR)
+// ============================================================
+function drawStep() {
+    const W = stCv.width, H = stCv.height;
+    stctx.clearRect(0, 0, W, H);
+
+    stctx.fillStyle = 'rgba(5, 7, 20, 0.95)';
+    stctx.fillRect(0, 0, W, H);
+
+    stctx.save();
+    stctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    for (let i = 0; i < W; i += 40) {
+        stctx.beginPath(); stctx.moveTo(i, 0); stctx.lineTo(i, H); stctx.stroke();
+    }
+    for (let i = 0; i < H; i += 30) {
+        stctx.beginPath(); stctx.moveTo(0, i); stctx.lineTo(W, i); stctx.stroke();
+    }
+    stctx.restore();
+
+    stctx.save();
+    stctx.font = 'bold 10px ui-monospace, monospace';
+    stctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    stctx.textAlign = 'left'; stctx.textBaseline = 'top';
+    stctx.fillText('◯ STEP RESPONSE · STATCOM (ms급) vs SVR (s급)', 12, 10);
+    stctx.restore();
+
+    const padL = 56, padR = 80, padT = 32, padB = 30;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const T_MAX = 500;  // ms 표시 범위
+
+    // 축
+    stctx.save();
+    stctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    stctx.lineWidth = 1.5;
+    stctx.beginPath();
+    stctx.moveTo(padL, padT + plotH); stctx.lineTo(padL + plotW, padT + plotH);
+    stctx.moveTo(padL, padT); stctx.lineTo(padL, padT + plotH);
+    stctx.stroke();
+    stctx.font = '10px ui-monospace, monospace';
+    stctx.fillStyle = 'rgba(203, 213, 225, 0.8)';
+    stctx.textAlign = 'center';
+    stctx.fillText('t (ms)', padL + plotW - 16, padT + plotH + 18);
+    // X 눈금
+    for (let tt = 0; tt <= T_MAX; tt += 100) {
+        const px = padL + (tt / T_MAX) * plotW;
+        stctx.beginPath();
+        stctx.moveTo(px, padT + plotH); stctx.lineTo(px, padT + plotH + 4);
+        stctx.stroke();
+        stctx.fillText(`${tt}`, px, padT + plotH + 18);
+    }
+    // Y 눈금 (V_PCC pu)
+    stctx.textAlign = 'right';
+    for (let v = 0.92; v <= 1.08; v += 0.02) {
+        const py = padT + plotH * (1 - (v - 0.92) / 0.16);
+        stctx.beginPath();
+        stctx.moveTo(padL - 4, py); stctx.lineTo(padL, py);
+        stctx.stroke();
+        stctx.fillText(v.toFixed(2), padL - 8, py + 3);
+    }
+    stctx.save();
+    stctx.translate(padL - 38, padT + plotH/2);
+    stctx.rotate(-Math.PI/2);
+    stctx.textAlign = 'center';
+    stctx.fillText('V_PCC (pu)', 0, 0);
+    stctx.restore();
+
+    // 외란 인가 시점
+    stctx.setLineDash([4, 3]);
+    stctx.strokeStyle = 'rgba(252, 211, 77, 0.45)';
+    stctx.beginPath();
+    stctx.moveTo(padL + 30, padT); stctx.lineTo(padL + 30, padT + plotH);
+    stctx.stroke();
+    stctx.setLineDash([]);
+    stctx.fillStyle = 'rgba(252, 211, 77, 0.85)';
+    stctx.textAlign = 'left';
+    stctx.fillText('외란', padL + 34, padT + 14);
+
+    // 목표 라인
+    const Vt = 1.00;
+    const ytgt = padT + plotH * (1 - (Vt - 0.92) / 0.16);
+    stctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    stctx.setLineDash([3, 3]);
+    stctx.beginPath();
+    stctx.moveTo(padL, ytgt); stctx.lineTo(padL + plotW, ytgt);
+    stctx.stroke();
+    stctx.setLineDash([]);
+    stctx.restore();
+
+    // 응답 곡선
+    drawStepCurves(padL, padT, plotW, plotH, T_MAX);
+
+    // 범례
+    stctx.save();
+    stctx.font = 'bold 10px ui-monospace, monospace';
+    const lgX = padL + plotW + 8;
+    stctx.fillStyle = '#67e8f9';
+    stctx.fillRect(lgX, padT + 18, 18, 3);
+    stctx.fillText('STATCOM', lgX, padT + 32);
+    stctx.fillText('(τ≈3ms)', lgX, padT + 44);
+
+    stctx.fillStyle = '#fbbf24';
+    stctx.fillRect(lgX, padT + 64, 18, 3);
+    stctx.fillText('SVR', lgX, padT + 78);
+    stctx.fillText('(τ≈800ms)', lgX, padT + 90);
+    stctx.restore();
+}
+
+function drawStepCurves(padL, padT, plotW, plotH, T_MAX) {
+    // 외란: 0.05pu 강하 (지상부하 ↑)
+    const dropAmount = 0.05;
+    const Vt = 1.00;
+    const stepDelayPx = 30;   // 외란 인가 시점의 픽셀 위치
+
+    // 외란 전: Vt
+    // 외란 후 (t>0): V(t) = Vt - drop * exp(-t/τ_response) ... no, more like:
+    // 안정화 응답: V(t) = Vt - drop + drop * (1 - exp(-t/τ_response))   (외란 인가 후 회복)
+    // Better: V(t) = Vt - drop * exp(-t/τ_response)
+
+    const tau_statcom = 3;     // ms
+    const tau_svr = 200;        // ms (정착시간 ≈ 4*tau = 800ms)
+
+    // STATCOM
+    stctx.save();
+    stctx.strokeStyle = '#67e8f9';
+    stctx.shadowBlur = 12;
+    stctx.shadowColor = '#22d3ee';
+    stctx.lineWidth = 2.5;
+    stctx.lineCap = 'round';
+    stctx.beginPath();
+    let first = true;
+    for (let px = padL; px <= padL + plotW; px += 1) {
+        const t_ms = ((px - padL - stepDelayPx) / plotW) * T_MAX;
+        let v;
+        if (t_ms < 0) {
+            v = Vt;
+        } else {
+            // 사용자의 현재 부하/모드/V_ref가 이상적인 응답
+            const overshoot = 1 + 0.08 * Math.exp(-t_ms / 8) * Math.sin(t_ms * 0.3);
+            v = Vt - dropAmount * Math.exp(-t_ms / tau_statcom) * overshoot;
+        }
+        const py = padT + plotH * (1 - (v - 0.92) / 0.16);
+        if (first) { stctx.moveTo(px, py); first = false; }
+        else stctx.lineTo(px, py);
+    }
+    stctx.stroke();
+    stctx.restore();
+
+    // SVR
+    stctx.save();
+    stctx.strokeStyle = '#fbbf24';
+    stctx.shadowBlur = 12;
+    stctx.shadowColor = '#f59e0b';
+    stctx.lineWidth = 2.5;
+    stctx.lineCap = 'round';
+    stctx.beginPath();
+    first = true;
+    for (let px = padL; px <= padL + plotW; px += 1) {
+        const t_ms = ((px - padL - stepDelayPx) / plotW) * T_MAX;
+        let v;
+        if (t_ms < 0) {
+            v = Vt;
+        } else {
+            // 첫 100ms 데드타임 + 느린 회복 (탭 전환 단계식)
+            const deadtime = 80;
+            if (t_ms < deadtime) {
+                v = Vt - dropAmount;  // 응답 없음
+            } else {
+                v = Vt - dropAmount * Math.exp(-(t_ms - deadtime) / tau_svr);
+            }
+        }
+        const py = padT + plotH * (1 - (v - 0.92) / 0.16);
+        if (first) { stctx.moveTo(px, py); first = false; }
+        else stctx.lineTo(px, py);
+    }
+    stctx.stroke();
+    stctx.restore();
+
+    // 외란 인가 시 V drop 초기 표시 (수직 점프)
+    stctx.save();
+    stctx.strokeStyle = 'rgba(252, 165, 165, 0.5)';
+    stctx.lineWidth = 1;
+    stctx.setLineDash([2, 2]);
+    const x0 = padL + stepDelayPx;
+    const yA = padT + plotH * (1 - (Vt - 0.92) / 0.16);
+    const yB = padT + plotH * (1 - (Vt - dropAmount - 0.92) / 0.16);
+    stctx.beginPath();
+    stctx.moveTo(x0, yA); stctx.lineTo(x0, yB);
+    stctx.stroke();
+    stctx.setLineDash([]);
+    stctx.restore();
+
+    // 진행 마커 (애니메이션 - 스텝 활성화 시)
+    if (state.stepActive) {
+        const elapsed = (performance.now() - state.stepStart);
+        const t_ms = Math.min(T_MAX, elapsed);
+        const px = padL + stepDelayPx + (t_ms / T_MAX) * plotW * (1 - stepDelayPx / plotW);
+
+        // STATCOM 마커
+        const overshoot = 1 + 0.08 * Math.exp(-t_ms / 8) * Math.sin(t_ms * 0.3);
+        const v_st = Vt - 0.05 * Math.exp(-t_ms / tau_statcom) * overshoot;
+        const py_st = padT + plotH * (1 - (v_st - 0.92) / 0.16);
+
+        stctx.save();
+        stctx.fillStyle = '#67e8f9';
+        stctx.shadowBlur = 16;
+        stctx.shadowColor = '#22d3ee';
+        stctx.beginPath();
+        stctx.arc(px, py_st, 4.5, 0, Math.PI * 2);
+        stctx.fill();
+        stctx.restore();
+
+        // SVR 마커
+        const deadtime = 80;
+        let v_svr;
+        if (t_ms < deadtime) v_svr = Vt - 0.05;
+        else v_svr = Vt - 0.05 * Math.exp(-(t_ms - deadtime) / tau_svr);
+        const py_svr = padT + plotH * (1 - (v_svr - 0.92) / 0.16);
+
+        stctx.save();
+        stctx.fillStyle = '#fbbf24';
+        stctx.shadowBlur = 16;
+        stctx.shadowColor = '#f59e0b';
+        stctx.beginPath();
+        stctx.arc(px, py_svr, 4.5, 0, Math.PI * 2);
+        stctx.fill();
+        stctx.restore();
+
+        if (elapsed > T_MAX) state.stepActive = false;
+    }
+}
+
+// ============================================================
+// 물리 계산
+// ============================================================
+function compute() {
+    // 모드별 V_sh 결정
+    if (state.mode === 'S') {
+        // 대기: V_sh = V_g (수동 슬라이더는 무시하고 자동 동기화)
+        state.Vsh = state.Vg;
+        $('vsh').value = state.Vg.toFixed(3);
+        $('vshDisp').textContent = state.Vg.toFixed(3);
+    } else if (state.mode === 'V') {
+        // 전압 제어 모드: V_PCC = V_ref 가 되도록 Q 조절
+        // V_PCC ≈ V_g - Xs * I_q_load + Xs * (Q_statcom/V_g)
+        // 간단화: V_sh를 적절히 조정해서 V_PCC = V_ref
+        // V_PCC = V_g + Xs*Q_sh / V_g - Xs * Q_load / V_g  (지상부하 → 강하)
+        // 우리는 단순 모델: Q_target = (V_ref - V_g + Xs * QL_eff) / (Xs)
+        // 좀 더 직관적: V_sh = V_ref + (Xs/X_total) * 부하 영향
+        // 단순화: V_sh 가 V_g와의 차이로 Q를 만들고, Q는 PCC 전압을 V_ref로 끌어올림
+        const needQ = (state.Vref - state.Vg) / state.Xs + state.QL;
+        // V_sh - V_g = X_L * I_Q = X_L * Q / V_g
+        const dV = needQ * state.XL / state.Vg;
+        state.Vsh = Math.max(0.85, Math.min(1.15, state.Vg + dV));
+        $('vsh').value = state.Vsh.toFixed(3);
+        $('vshDisp').textContent = state.Vsh.toFixed(3);
+    }
+    // Q 제어: V_sh 슬라이더 그대로
+
+    // 무효 전력 (pu)
+    // Q_statcom = V_g * (V_sh - V_g) / X_L
+    state.Q = state.Vg * (state.Vsh - state.Vg) / state.XL;
+    // 무효 전류
+    state.Iq = (state.Vsh - state.Vg) / state.XL;
+
+    // PCC 전압 (드룹)
+    // V_PCC = V_g + Xs * (Q_statcom - Q_load) / V_g
+    state.Vpcc = state.Vg + state.Xs * (state.Q - state.QL) / state.Vg;
+
+    // 응답 시간 (mode별)
+    if (state.mode === 'S') state.tr_ms = 0;
+    else state.tr_ms = 1.5 + Math.random() * 2.5;  // 1.5~4 ms
+
+    updateUI();
+}
+
+function updateUI() {
+    const mode = modeState();
+
+    // 라이브 칩
+    $('vpccVal').textContent = `${state.Vpcc.toFixed(3)} pu`;
+    const qPct = state.Q * 100;
+    $('qVal').textContent = `${qPct >= 0 ? '+' : ''}${qPct.toFixed(1)} %`;
+    $('qMode').textContent = mode === 'cap' ? '(진상)' : mode === 'ind' ? '(지상)' : '(대기)';
+    $('iqVal').textContent = `${state.Iq >= 0 ? '+' : ''}${(state.Iq * 100).toFixed(1)} %`;
+    $('trVal').textContent = state.mode === 'S' ? '— (대기)' : `${state.tr_ms.toFixed(1)} ms`;
+
+    // pill 색
+    const pq = $('pill-q'), piq = $('pill-iq');
+    pq.classList.remove('cap', 'ind', 'warn', 'flash');
+    piq.classList.remove('cap', 'ind', 'warn', 'flash');
+    if (mode === 'cap') { pq.classList.add('cap'); piq.classList.add('cap'); }
+    else if (mode === 'ind') { pq.classList.add('ind'); piq.classList.add('ind'); }
+
+    const qNum = $('qVal'), iqNum = $('iqVal');
+    qNum.classList.remove('cap', 'ind', 'warn');
+    iqNum.classList.remove('cap', 'ind', 'warn');
+    if (mode === 'cap') { qNum.classList.add('cap'); iqNum.classList.add('cap'); }
+    else if (mode === 'ind') { qNum.classList.add('ind'); iqNum.classList.add('ind'); }
+
+    // V_PCC 경고 (±5%)
+    const dvp = Math.abs(state.Vpcc - 1.0);
+    $('pill-vpcc').classList.toggle('warn', dvp > 0.05);
+    $('vpccVal').classList.toggle('warn', dvp > 0.05);
+
+    // 응답시간 flash
+    $('pill-tr').classList.toggle('flash', state.mode !== 'S');
+
+    // 헤더 닷
+    const hd = $('hdrDot');
+    hd.classList.remove('warn', 'cap', 'ind');
+    if (mode === 'cap') hd.classList.add('cap');
+    else if (mode === 'ind') hd.classList.add('ind');
+    else if (dvp > 0.05) hd.classList.add('warn');
+}
+
+// ============================================================
+// 이벤트 바인딩
+// ============================================================
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(103,232,249,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(103,232,249,0)', duration: 0.6 });
+}
+
+['vg', 'vsh', 'vref', 'ql'].forEach(id => {
+    $(id).addEventListener('input', e => {
+        if (id === 'vg')   { state.Vg   = +e.target.value; $('vgDisp').textContent = state.Vg.toFixed(3); }
+        if (id === 'vsh')  { state.Vsh  = +e.target.value; $('vshDisp').textContent = state.Vsh.toFixed(3); }
+        if (id === 'vref') { state.Vref = +e.target.value; $('vrefDisp').textContent = state.Vref.toFixed(3); }
+        if (id === 'ql')   { state.QL   = +e.target.value; $('qlDisp').textContent  = state.QL.toFixed(2); }
+        compute();
+        flashCard();
+    });
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.mode = btn.dataset.mode;
+        // V_sh 슬라이더 활성/비활성
+        const dis = (state.mode !== 'Q');
+        $('vsh').disabled = dis;
+        $('vsh').style.opacity = dis ? 0.5 : 1;
+        $('vref').disabled = (state.mode !== 'V');
+        $('vref').style.opacity = (state.mode !== 'V') ? 0.5 : 1;
+        compute();
+        flashCard();
+    });
+});
+
+function tweenSlider(id, target, prop) {
+    const apply = v => {
+        $(id).value = v;
+        if (prop === 'Vg')   { state.Vg   = v; $('vgDisp').textContent = v.toFixed(3); }
+        if (prop === 'Vsh')  { state.Vsh  = v; $('vshDisp').textContent = v.toFixed(3); }
+        if (prop === 'Vref') { state.Vref = v; $('vrefDisp').textContent = v.toFixed(3); }
+        if (prop === 'QL')   { state.QL   = v; $('qlDisp').textContent  = v.toFixed(2); }
+        compute();
+    };
+    if (window.gsap) {
+        const obj = { v: +$(id).value };
+        gsap.to(obj, { v: target, duration: 0.7, ease: 'power3.out',
+            onUpdate: () => apply(obj.v) });
+    } else apply(target);
+}
+
+$('presetCap').addEventListener('click', () => {
+    // Q 모드로 전환 후 V_sh 올림
+    document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === 'Q');
+    });
+    state.mode = 'Q';
+    $('vsh').disabled = false; $('vsh').style.opacity = 1;
+    $('vref').disabled = true; $('vref').style.opacity = 0.5;
+    tweenSlider('vsh', 1.06, 'Vsh');
+    flashCard();
+});
+$('presetStd').addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === 'S');
+    });
+    state.mode = 'S';
+    $('vsh').disabled = true; $('vsh').style.opacity = 0.5;
+    $('vref').disabled = true; $('vref').style.opacity = 0.5;
+    compute();
+    flashCard();
+});
+$('presetInd').addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === 'Q');
+    });
+    state.mode = 'Q';
+    $('vsh').disabled = false; $('vsh').style.opacity = 1;
+    $('vref').disabled = true; $('vref').style.opacity = 0.5;
+    tweenSlider('vsh', 0.94, 'Vsh');
+    flashCard();
+});
+
+$('stepBtn').addEventListener('click', () => {
+    state.stepActive = true;
+    state.stepStart = performance.now();
+    if (window.gsap) gsap.fromTo('#stepBtn',
+        { scale: 0.92 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+});
+
+// ============================================================
+// 메인 루프
+// ============================================================
+function animate() {
+    state.t++;
+    state.flowPhase = (state.flowPhase + 0.012) % 1;
+
+    drawMain();
+    drawVQ();
+    drawStep();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    // 초기 슬라이더 disabled 상태 (V 모드: vsh 잠금)
+    $('vsh').disabled = true;
+    $('vsh').style.opacity = 0.5;
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

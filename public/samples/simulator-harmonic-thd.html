@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 비정현파/THD 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 114, 182, 0.13), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.5), rgba(168,139,250,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(244, 114, 182, 0.4),
+        0 0 40px rgba(168, 139, 250, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 720px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-h1 { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.55); color: #fbcfe8; }
+.chip-h3 { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.chip-h5 { background: linear-gradient(135deg, rgba(125,211,252,0.22), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.55); color: #7dd3fc; }
+.chip-h7 { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.55); color: #67e8f9; }
+.chip-h9 { background: linear-gradient(135deg, rgba(110,231,183,0.22), rgba(110,231,183,0.06)); border-color: rgba(110,231,183,0.55); color: #6ee7b7; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(168, 139, 250, 0.6);
+    box-shadow: 0 0 22px rgba(168, 139, 250, 0.35);
+}
+.live-pill.grade-ok {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.42);
+}
+.live-pill.grade-warn {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45);
+}
+.live-pill.grade-danger {
+    border-color: rgba(248, 113, 113, 0.75);
+    box-shadow: 0 0 28px rgba(248, 113, 113, 0.5);
+    animation: dangerGlow 1.4s ease-in-out infinite alternate;
+}
+@keyframes dangerGlow {
+    0% { box-shadow: 0 0 22px rgba(248,113,113,0.4) }
+    100% { box-shadow: 0 0 40px rgba(248,113,113,0.75) }
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.preset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.preset-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.40), rgba(99,102,241,0.30));
+    border-color: rgba(168, 139, 250, 0.65);
+    color: white;
+    box-shadow: 0 0 22px rgba(168, 139, 250, 0.45);
+}
+.reset-btn {
+    background: rgba(248, 113, 113, 0.18);
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    color: #fecaca;
+    transition: all 200ms;
+}
+.reset-btn:hover {
+    background: rgba(248, 113, 113, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(248, 113, 113, 0.4);
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(244,114,182,0.18), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 114, 182, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #e0e7ff; }
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.grade-badge {
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+.grade-ok-badge { background: linear-gradient(135deg, rgba(110,231,183,0.3), rgba(110,231,183,0.1)); color: #6ee7b7; border: 1px solid rgba(110,231,183,0.5); }
+.grade-warn-badge { background: linear-gradient(135deg, rgba(251,191,36,0.3), rgba(251,191,36,0.1)); color: #fcd34d; border: 1px solid rgba(251,191,36,0.5); }
+.grade-danger-badge { background: linear-gradient(135deg, rgba(248,113,113,0.3), rgba(248,113,113,0.1)); color: #fca5a5; border: 1px solid rgba(248,113,113,0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-pink-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · HARMONIC SYNTHESIS · THD ANALYZER
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-200 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            〰 비정현파 / THD 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">위 — 푸리에 합성 파형(기본파 + 3·5·7·9차 고조파) · 아래 — 주파수 스펙트럼(막대 그래프). <span class="text-pink-200 font-semibold">THD</span>로 전력 품질을 등급화합니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-v1">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">기본파 RMS V₁</p>
+            <p class="mt-1 text-lg font-bold"><span id="v1Val" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-vh">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">고조파 RMS V<sub>H</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="vhVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-thd">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">THD %</p>
+            <p class="mt-1 text-lg font-bold"><span id="thdVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-grade">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">전력 품질 등급</p>
+            <p class="mt-1 text-lg font-bold"><span id="gradeVal" class="grade-badge grade-ok-badge">정상</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">위 — 합성 파형 · 아래 — 주파수 스펙트럼</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button data-preset="sine" class="preset-btn active rounded-md px-3 py-1.5 text-xs font-bold">sin</button>
+                        <button data-preset="square" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">사각</button>
+                        <button data-preset="sawtooth" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">톱니</button>
+                        <button data-preset="triangle" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">삼각</button>
+                        <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">↺ RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-[11px] flex-wrap">
+                    <span class="text-pink-200"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>합성 v(t)</span>
+                    <span class="text-slate-300"><span class="legend-dot" style="background:#94a3b8;color:#94a3b8"></span>기본파 (참조)</span>
+                    <span class="text-indigo-200"><span class="legend-dot" style="background:#a78bfa;color:#a78bfa"></span>스펙트럼 막대</span>
+                    <span class="text-emerald-200"><span class="legend-dot" style="background:#6ee7b7;color:#6ee7b7"></span>5% IEEE 한계선</span>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-200 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">비정현파 / THD 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">푸리에 합성</p>
+                        <div class="math-container mt-2">\(v(t)=\sum_{n} V_n\sin(n\omega t)\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">THD 정의</p>
+                        <div class="math-container mt-2">\(\mathrm{THD}=\dfrac{\sqrt{\sum_{n\ge2}V_n^2}}{V_1}\times 100\%\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">총 RMS</p>
+                        <div class="math-container mt-2">\(V_{\mathrm{rms}}=\sqrt{\sum_{n}V_n^2}/\sqrt{2}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">THD ≤ 5%</span> · 정상 (IEEE 519 권고)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">5% &lt; THD ≤ 8%</span> · 주의 · 일부 정밀 부하 영향</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-red-300">THD &gt; 8%</span> · 위험 · 변압기 과열·중성선 과부하</li>
+                </ul>
+                <div class="neon-divider my-4"></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-slate-300">
+                    <p class="feature-row rounded-md p-2"><span class="text-pink-200 font-bold">사각파</span> · 홀수차 1/n</p>
+                    <p class="feature-row rounded-md p-2"><span class="text-indigo-200 font-bold">톱니파</span> · 모든차 1/n</p>
+                    <p class="feature-row rounded-md p-2"><span class="text-cyan-200 font-bold">삼각파</span> · 홀수차 1/n²</p>
+                    <p class="feature-row rounded-md p-2"><span class="text-emerald-200 font-bold">사인파</span> · 기본파만</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">고조파 크기 (V₁ 대비 %)</h2>
+
+            <div class="chip-h1 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>기본파 V₁ (1차)</span><span id="v1Disp" class="font-mono text-base">100</span></label>
+                <input type="range" id="v1" min="20" max="100" value="100" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">% (기준)</p>
+            </div>
+            <div class="chip-h3 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>V₃ (3차)</span><span id="v3Disp" class="font-mono text-base">0</span></label>
+                <input type="range" id="v3" min="0" max="60" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">%</p>
+            </div>
+            <div class="chip-h5 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>V₅ (5차)</span><span id="v5Disp" class="font-mono text-base">0</span></label>
+                <input type="range" id="v5" min="0" max="40" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">%</p>
+            </div>
+            <div class="chip-h7 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>V₇ (7차)</span><span id="v7Disp" class="font-mono text-base">0</span></label>
+                <input type="range" id="v7" min="0" max="30" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">%</p>
+            </div>
+            <div class="chip-h9 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>V₉ (9차)</span><span id="v9Disp" class="font-mono text-base">0</span></label>
+                <input type="range" id="v9" min="0" max="25" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">%</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="rounded-lg p-3" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold mb-1">현재 프리셋</p>
+                <p id="presetBadge" class="font-bold text-pink-300">◯ 순수 정현파 (THD = 0)</p>
+                <p class="text-[10px] text-slate-500 mt-2">홀수차 고조파(3·5·7·9)는 단상·3상 비선형 부하(인버터, SMPS, 형광등 안정기)에서 흔히 발생합니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 보조 카드 -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">📐 사각파 푸리에 급수</h3>
+            <div class="math-container">
+                $$v(t) = \frac{4V_m}{\pi}\sum_{k=1}^{\infty}\frac{\sin((2k-1)\omega t)}{2k-1}$$
+            </div>
+        </div>
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">📐 THD 와 RMS</h3>
+            <div class="math-container">
+                $$V_{\mathrm{rms}} = V_{1,\mathrm{rms}}\sqrt{1 + \mathrm{THD}^2}$$
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const WAVE_H = 380;
+const SPEC_H = 340;
+const TOTAL_H = WAVE_H + SPEC_H;
+
+// 상태 (각 차수의 진폭, V₁ 대비 % — 내부적으로는 0..1 스케일)
+let state = {
+    amps: { 1: 1.00, 3: 0.0, 5: 0.0, 7: 0.0, 9: 0.0 },
+    preset: 'sine',
+    tick: 0
+};
+
+// 푸리에 합성: 각 차수 sin(nωt)
+function vAt(theta) {
+    let v = 0;
+    for (const n of [1, 3, 5, 7, 9]) {
+        v += state.amps[n] * Math.sin(n * theta);
+    }
+    return v;
+}
+// 기본파만
+function v1At(theta) {
+    return state.amps[1] * Math.sin(theta);
+}
+
+function rmsTotal() {
+    let s = 0;
+    for (const n of [1, 3, 5, 7, 9]) s += state.amps[n] * state.amps[n];
+    return Math.sqrt(s / 2);
+}
+function rmsFundamental() {
+    return state.amps[1] / Math.sqrt(2);
+}
+function rmsHarmonics() {
+    let s = 0;
+    for (const n of [3, 5, 7, 9]) s += state.amps[n] * state.amps[n];
+    return Math.sqrt(s / 2);
+}
+function thdPercent() {
+    const V1 = state.amps[1];
+    if (V1 < 1e-6) return 0;
+    let s = 0;
+    for (const n of [3, 5, 7, 9]) s += state.amps[n] * state.amps[n];
+    return (Math.sqrt(s) / V1) * 100;
+}
+// 합성 파형 피크 (그래프 정규화용) — 최악의 경우 모든 항 합
+function peakSum() {
+    let s = 0;
+    for (const n of [1, 3, 5, 7, 9]) s += state.amps[n];
+    return Math.max(s, 0.05);
+}
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ====================================================
+// 위: 시간 영역 합성 파형
+// ====================================================
+function drawWaveBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, WAVE_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, WAVE_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WAVE_H); ctx.stroke();
+    }
+    for (let i = 0; i < WAVE_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.65)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ TIME DOMAIN · 푸리에 합성 v(t) = Σ Vₙ·sin(nωt)', 12, 10);
+
+    ctx.textAlign = 'right';
+    const presetLabels = { sine: '◯ SINE', square: '▭ SQUARE', sawtooth: '◢ SAWTOOTH', triangle: '△ TRIANGLE', custom: '✎ CUSTOM' };
+    const label = presetLabels[state.preset] || presetLabels.custom;
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.85)';
+    ctx.fillText(label, canvas.width - 12, 10);
+    ctx.restore();
+}
+
+function drawWave() {
+    const W = canvas.width;
+    const padL = 60, padR = 30, padT = 36, padB = 28;
+    const top0 = padT;
+    const plotW = W - padL - padR;
+    const plotH = WAVE_H - padT - padB;
+    const midY = top0 + plotH / 2;
+
+    // 0축
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, midY); ctx.lineTo(padL + plotW, midY);
+    ctx.stroke();
+    ctx.restore();
+
+    // y축 격자/라벨
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.65)';
+    for (let k = -2; k <= 2; k++) {
+        const y = midY - (k / 2) * (plotH / 2) * 0.9;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        const v = (k / 2).toFixed(1);
+        ctx.fillText(`${v}`, padL - 6, y);
+    }
+    // x축 라벨 (한 주기, 0..2π)
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    const xLabels = ['0', 'π/2', 'π', '3π/2', '2π'];
+    for (let k = 0; k < 5; k++) {
+        const x = padL + (k / 4) * plotW;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.moveTo(x, top0); ctx.lineTo(x, top0 + plotH); ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(xLabels[k], x, top0 + plotH + 6);
+    }
+    ctx.restore();
+
+    // 정규화 인자 — 그래프 안에 들어오도록
+    const yScale = (plotH / 2) * 0.9 / peakSum();
+
+    // 기본파 (참조선)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    const N = 360;
+    for (let i = 0; i <= N; i++) {
+        const theta = (i / N) * 2 * Math.PI;
+        const v = v1At(theta);
+        const x = padL + (i / N) * plotW;
+        const y = midY - v * yScale;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 합성 파형 (메인) — fill 글로우 포함
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#f472b6';
+    const lineGrad = ctx.createLinearGradient(padL, 0, padL + plotW, 0);
+    lineGrad.addColorStop(0, 'rgba(125, 211, 252, 0.95)');
+    lineGrad.addColorStop(0.5, 'rgba(196, 181, 253, 0.95)');
+    lineGrad.addColorStop(1, 'rgba(244, 114, 182, 0.98)');
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const theta = (i / N) * 2 * Math.PI;
+        const v = vAt(theta);
+        const x = padL + (i / N) * plotW;
+        const y = midY - v * yScale;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 흐르는 펄스 마커 (현재 위상)
+    const phase = (state.tick * 0.012) % 1;
+    const theta = phase * 2 * Math.PI;
+    const v = vAt(theta);
+    const xCur = padL + phase * plotW;
+    const yCur = midY - v * yScale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xCur, top0); ctx.lineTo(xCur, top0 + plotH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const pulse = 6 + Math.sin(state.tick * 0.15) * 2.5;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#f472b6';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.98)';
+    ctx.beginPath();
+    ctx.arc(xCur, yCur, pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 현재 v 값 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const txt = `v(t) = ${v.toFixed(3)}`;
+    const tw = ctx.measureText(txt).width;
+    const lx = Math.min(padL + plotW - tw - 14, xCur + 12);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, lx - 6, yCur - 22, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#f9a8d4';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, lx, yCur - 13);
+    ctx.restore();
+
+    // y축 단위 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.save();
+    ctx.translate(16, midY);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('v(t) [p.u.]', 0, 0);
+    ctx.restore();
+    ctx.restore();
+}
+
+// ====================================================
+// 아래: 주파수 스펙트럼 (막대 그래프)
+// ====================================================
+function drawSpectrumBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, WAVE_H, 0, WAVE_H + SPEC_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, WAVE_H, canvas.width, SPEC_H);
+
+    // 분할선
+    const divGrad = ctx.createLinearGradient(0, WAVE_H, canvas.width, WAVE_H);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(244, 114, 182, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, WAVE_H); ctx.lineTo(canvas.width, WAVE_H);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.65)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ FREQUENCY DOMAIN · 고조파 스펙트럼 (V₁ 대비 %)', 12, WAVE_H + 10);
+    ctx.restore();
+}
+
+function drawSpectrum() {
+    const W = canvas.width;
+    const padL = 60, padR = 30, padT = 36, padB = 38;
+    const top0 = WAVE_H + padT;
+    const plotW = W - padL - padR;
+    const plotH = SPEC_H - padT - padB;
+    const yBase = top0 + plotH;
+
+    // 격자 + y축 라벨 (0..100%)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.font = '10px ui-monospace, monospace';
+    for (let k = 0; k <= 5; k++) {
+        const y = yBase - (k / 5) * plotH;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+        ctx.fillStyle = 'rgba(196, 181, 253, 0.75)';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(`${k * 20}%`, padL - 6, y);
+    }
+    ctx.restore();
+
+    // 5% IEEE 한계선 (THD ≤ 5% — 막대 자체가 아닌 THD 기준이지만, 시각 보조선으로 표시)
+    // 여기서는 각 고조파의 5% 기준선
+    ctx.save();
+    const y5 = yBase - (0.05 * plotH);
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.55)';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, y5); ctx.lineTo(padL + plotW, y5);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('5% IEEE limit (개별 고조파)', padL + plotW - 4, y5 - 2);
+    ctx.restore();
+
+    // 막대 5개 (1·3·5·7·9차)
+    const orders = [1, 3, 5, 7, 9];
+    const colors = {
+        1: { fill: 'rgba(244, 114, 182, 0.95)', glow: '#f472b6', stroke: 'rgba(251, 207, 232, 0.95)' },
+        3: { fill: 'rgba(168, 139, 250, 0.95)', glow: '#a78bfa', stroke: 'rgba(196, 181, 253, 0.95)' },
+        5: { fill: 'rgba(125, 211, 252, 0.95)', glow: '#7dd3fc', stroke: 'rgba(186, 230, 253, 0.95)' },
+        7: { fill: 'rgba(34, 211, 238, 0.95)',  glow: '#22d3ee', stroke: 'rgba(165, 243, 252, 0.95)' },
+        9: { fill: 'rgba(110, 231, 183, 0.95)', glow: '#6ee7b7', stroke: 'rgba(167, 243, 208, 0.95)' }
+    };
+
+    const barW = plotW / (orders.length * 2);
+    orders.forEach((n, idx) => {
+        const cx = padL + (plotW * (idx + 0.5)) / orders.length;
+        const amp = state.amps[n]; // 0..1
+        const h = amp * plotH;
+        const x = cx - barW / 2;
+        const y = yBase - h;
+
+        // 막대
+        ctx.save();
+        ctx.shadowBlur = 14 + amp * 14;
+        ctx.shadowColor = colors[n].glow;
+        const g = ctx.createLinearGradient(x, y, x, yBase);
+        g.addColorStop(0, colors[n].fill);
+        g.addColorStop(1, colors[n].fill.replace(/[\d.]+\)$/, '0.35)'));
+        ctx.fillStyle = g;
+        roundRect(ctx, x, y, barW, h, 6);
+        ctx.fill();
+        ctx.strokeStyle = colors[n].stroke;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // 막대 위 값
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        const valTxt = `${(amp * 100).toFixed(0)}%`;
+        const tw = ctx.measureText(valTxt).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, cx - tw/2 - 6, y - 22, tw + 12, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = colors[n].stroke;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(valTxt, cx, y - 13);
+        ctx.restore();
+
+        // x축 라벨 (n차 — 주파수)
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillStyle = colors[n].stroke;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(`${n}f`, cx, yBase + 8);
+        ctx.font = '9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText(`(${n * 60} Hz)`, cx, yBase + 22);
+        ctx.restore();
+    });
+
+    // y축 단위 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.85)';
+    ctx.save();
+    ctx.translate(16, top0 + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('Vₙ / V₁ [%]', 0, 0);
+    ctx.restore();
+    ctx.restore();
+}
+
+// ====================================================
+// 라이브 패널 + 등급
+// ====================================================
+function gradeOf(thd) {
+    if (thd <= 5) return { key: 'ok',    label: '정상',  cls: 'grade-ok-badge' };
+    if (thd <= 8) return { key: 'warn',  label: '주의',  cls: 'grade-warn-badge' };
+    return                { key: 'danger', label: '위험', cls: 'grade-danger-badge' };
+}
+
+function updateLive() {
+    const v1Rms = rmsFundamental();
+    const vhRms = rmsHarmonics();
+    const thd = thdPercent();
+    const g = gradeOf(thd);
+
+    $('v1Val').textContent = `${v1Rms.toFixed(3)} p.u.`;
+    $('vhVal').textContent = `${vhRms.toFixed(3)} p.u.`;
+    $('thdVal').textContent = `${thd.toFixed(1)} %`;
+    $('gradeVal').textContent = g.label;
+    $('gradeVal').className = `grade-badge ${g.cls}`;
+
+    // pill 글로우 — 등급 반영
+    const pillThd = $('pill-thd');
+    const pillGrade = $('pill-grade');
+    pillThd.classList.remove('grade-ok', 'grade-warn', 'grade-danger');
+    pillGrade.classList.remove('grade-ok', 'grade-warn', 'grade-danger');
+    pillThd.classList.add(`grade-${g.key}`);
+    pillGrade.classList.add(`grade-${g.key}`);
+}
+
+// ====================================================
+// 컨트롤
+// ====================================================
+function readControls() {
+    state.amps[1] = (+$('v1').value) / 100;
+    state.amps[3] = (+$('v3').value) / 100;
+    state.amps[5] = (+$('v5').value) / 100;
+    state.amps[7] = (+$('v7').value) / 100;
+    state.amps[9] = (+$('v9').value) / 100;
+
+    $('v1Disp').textContent = $('v1').value;
+    $('v3Disp').textContent = $('v3').value;
+    $('v5Disp').textContent = $('v5').value;
+    $('v7Disp').textContent = $('v7').value;
+    $('v9Disp').textContent = $('v9').value;
+}
+
+function setSliders(vals) {
+    // vals: {1, 3, 5, 7, 9} in percent (0..100 etc)
+    $('v1').value = vals[1] ?? 100;
+    $('v3').value = vals[3] ?? 0;
+    $('v5').value = vals[5] ?? 0;
+    $('v7').value = vals[7] ?? 0;
+    $('v9').value = vals[9] ?? 0;
+    readControls();
+}
+
+// 푸리에 계수 근사 (V_n / V_1 비율, 5차까지만 — UI 슬라이더 한계 안에서)
+// 사각파:  Vn ∝ 1/n  (홀수만)        → 3:33%, 5:20%, 7:14%, 9:11%
+// 톱니파:  Vn ∝ 1/n  (모든 차)       → 3:33%, 5:20%, 7:14%, 9:11% (홀수만 시뮬, 짝수는 슬라이더에 없음)
+// 삼각파:  Vn ∝ 1/n² (홀수만)        → 3:11%, 5: 4%, 7: 2%, 9: 1%
+const PRESETS = {
+    sine:     { 1: 100, 3:  0, 5:  0, 7:  0, 9:  0, label: '◯ 순수 정현파 (THD = 0)' },
+    square:   { 1: 100, 3: 33, 5: 20, 7: 14, 9: 11, label: '▭ 사각파 (1/n 홀수차)' },
+    sawtooth: { 1: 100, 3: 33, 5: 20, 7: 14, 9: 11, label: '◢ 톱니파 근사 (1/n)' },
+    triangle: { 1: 100, 3: 11, 5:  4, 7:  2, 9:  1, label: '△ 삼각파 (1/n² 홀수차)' }
+};
+
+function applyPreset(key) {
+    const p = PRESETS[key];
+    if (!p) return;
+    state.preset = key;
+    setSliders({ 1: p[1], 3: p[3], 5: p[5], 7: p[7], 9: p[9] });
+    document.querySelectorAll('[data-preset]').forEach(b => {
+        b.classList.toggle('active', b.dataset.preset === key);
+    });
+    $('presetBadge').textContent = p.label;
+    flashCard();
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+    document.querySelectorAll('.live-pill').forEach(el => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 350);
+    });
+}
+
+['v1', 'v3', 'v5', 'v7', 'v9'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        readControls();
+        // 슬라이더 수동 조작 시 preset = custom
+        state.preset = 'custom';
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
+        $('presetBadge').textContent = '✎ 사용자 정의 (Custom)';
+        flashCard();
+    });
+});
+
+document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => applyPreset(btn.dataset.preset));
+});
+
+$('resetBtn').addEventListener('click', () => applyPreset('sine'));
+
+// ====================================================
+// 메인 루프
+// ====================================================
+function animate() {
+    state.tick++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawWaveBg();
+    drawWave();
+    drawSpectrumBg();
+    drawSpectrum();
+
+    updateLive();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    readControls();
+    resize();
+    requestAnimationFrame(animate);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

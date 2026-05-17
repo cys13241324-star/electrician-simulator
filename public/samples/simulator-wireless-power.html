@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - Qi 무선 전력 전송 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 211, 238, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(168, 139, 250, 0.13), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.5), rgba(168,139,250,0.45), rgba(244,114,182,0.4));
+    box-shadow:
+        0 30px 100px -20px rgba(34, 211, 238, 0.4),
+        0 0 40px rgba(168, 139, 250, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border-radius: 17px;
+    background: #050714;
+    cursor: grab;
+    touch-action: none;
+}
+canvas#main.grabbing { cursor: grabbing; }
+canvas#mini {
+    display: block;
+    width: 100%;
+    height: 160px;
+    border-radius: 12px;
+    background: #050714;
+}
+
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px;
+    border-radius: 9999px; border: 2px solid #34d399;
+    opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,211,238,0.4), rgba(168,139,250,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #fda4af);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-d { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-a { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-f { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-p { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.5); color: #fcd34d; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(34, 211, 238, 0.6);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+}
+.live-pill.full {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 28px rgba(110, 231, 183, 0.45);
+    animation: fullGlow 1.4s ease-in-out infinite alternate;
+}
+.live-pill.low {
+    border-color: rgba(148, 163, 184, 0.4);
+    opacity: 0.85;
+}
+@keyframes fullGlow {
+    0% { box-shadow: 0 0 22px rgba(110,231,183,0.35) }
+    100% { box-shadow: 0 0 40px rgba(110,231,183,0.7) }
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.low {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.full {
+    background: linear-gradient(135deg, #6ee7b7, #34d399, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #e0e7ff; }
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(34, 211, 238, 0.4);
+}
+.mode-btn {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.mode-btn:hover, .mode-btn.active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.32), rgba(168,139,250,0.25));
+    transform: translateY(-1px);
+    border-color: rgba(34, 211, 238, 0.7);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.4);
+    color: #ecfeff;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(34,211,238,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.alert-zero {
+    background: linear-gradient(135deg, rgba(148,163,184,0.18), rgba(71,85,105,0.12));
+    border: 1px dashed rgba(148,163,184,0.4);
+    color: #cbd5e1;
+}
+.alert-active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(34,211,238,0.45);
+    color: #a5f3fc;
+}
+.alert-good {
+    background: linear-gradient(135deg, rgba(110,231,183,0.18), rgba(34,211,238,0.12));
+    border: 1px solid rgba(110,231,183,0.5);
+    color: #a7f3d0;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · Qi WIRELESS POWER · DRAG THE PHONE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-200 via-indigo-200 to-pink-200 bg-clip-text text-transparent">
+            📱 Qi 무선 전력 전송 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">송신 코일 L₁에서 발생한 자기장이 수신 코일 L₂(핸드폰)에 유도. 거리·정렬·공진주파수가 결합계수 k와 전송 효율 η를 결정합니다. 핸드폰을 드래그해 보세요.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-k">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">결합계수 k</p>
+            <p class="mt-1 text-lg font-bold"><span id="kVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-eta">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">전송 효율 η</p>
+            <p class="mt-1 text-lg font-bold"><span id="etaVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">%</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-pout">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">출력 전력 P<sub>out</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="poutVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">W</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-dist">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">코일 간 거리 d</p>
+            <p class="mt-1 text-lg font-bold"><span id="distVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">mm</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 영역 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">DRAG · 핸드폰을 끌어 거리·정렬 조정</span>
+                <div class="flex gap-2">
+                    <button id="modeManual" class="mode-btn active rounded-md px-3 py-1.5 text-xs font-bold">수동 배치</button>
+                    <button id="modeAuto" class="mode-btn rounded-md px-3 py-1.5 text-xs font-bold">자동 스윕</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <!-- 상태 알림 -->
+            <div id="zeroAlert" class="mt-3 rounded-lg px-3 py-2 text-xs alert-active">
+                <span class="font-bold">충전 중</span> · 결합 양호, 자속이 수신 코일을 효과적으로 관통합니다.
+            </div>
+
+            <!-- 효율-거리 미니 그래프 -->
+            <div class="mt-3 canvas-wrap" style="border-radius: 13px;">
+                <canvas id="mini"></canvas>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 tracking-wider">◯ EFFICIENCY η vs DISTANCE d — 현재 위치는 시안 마커</p>
+
+            <!-- 컨트롤 (거리 + 정렬 + 주파수 + 송신전력) -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="chip-d chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>거리 d</span><span id="dDisp" class="font-mono text-base">5</span></label>
+                    <input type="range" id="dRange" min="0" max="30" step="0.5" value="5" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">코일 간격 (mm) · 0 = 밀착</p>
+                </div>
+                <div class="chip-a chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>정렬 오프셋</span><span id="aDisp" class="font-mono text-base">0</span></label>
+                    <input type="range" id="aRange" min="-30" max="30" step="1" value="0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">수평 어긋남 (mm) · 0 = 정렬</p>
+                </div>
+                <div class="chip-f chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>주파수 f</span><span id="fDisp" class="font-mono text-base">125</span></label>
+                    <input type="range" id="fRange" min="80" max="205" step="1" value="125" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">kHz · Qi 공진 f₀ ≈ 125</p>
+                </div>
+                <div class="chip-p chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>송신 전력 P<sub>in</sub></span><span id="pDisp" class="font-mono text-base">10</span></label>
+                    <input type="range" id="pRange" min="2" max="15" step="0.5" value="10" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">W</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사이드 -->
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="text-lg">💡</span>
+                    <span class="bg-gradient-to-r from-cyan-300 to-pink-200 bg-clip-text text-transparent">무선 전력 핵심 5</span>
+                </h2>
+                <ul class="mt-4 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">1. 유도 결합</span> · 송신 코일의 변화 자속이 수신 코일에 기전력 유도 (M = k√(L₁L₂))</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">2. 거리 ↑ → k ↓</span> · 결합계수는 거리에 급격히 감소 (k ≈ k₀·exp(−d/d₀))</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">3. 정렬</span> · 수평 어긋남 시 자속이 코일 면을 비스듬히 통과 → η 감소</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">4. 공진 주파수</span> · f = f₀에서 LC 공진으로 임피던스 최소 → η 최대</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">5. Qi 표준</span> · 87.6 ~ 205 kHz, 5 ~ 15 W, 거리 ≲ 4 mm 권장</li>
+                </ul>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">📐 결합 & 효율</h3>
+                <div class="math-container">
+                    $$M = k\,\sqrt{L_1 L_2},\quad \eta \;\propto\; \frac{k^2 Q_1 Q_2}{1+k^2 Q_1 Q_2}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">M: 상호 인덕턴스, k: 결합계수 (0~1), Q: 코일 품질계수</p>
+            </div>
+
+            <div class="formula-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">⚡ 지금 이 순간</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">상호 인덕턴스 M</span><span id="mLabel" class="font-mono text-cyan-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">공진 이탈 Δf</span><span id="fLabel" class="font-mono text-indigo-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">정렬 손실</span><span id="aLabel" class="font-mono text-pink-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">충전 상태</span><span id="sLabel" class="font-mono text-emerald-200">—</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const mini = $('mini');
+const mctx = mini.getContext('2d');
+
+// ============================================
+// 상태
+// ============================================
+let state = {
+    // 사용자 입력
+    d: 5,            // 거리 (mm)
+    align: 0,        // 정렬 오프셋 (mm, 수평)
+    f: 125,          // 주파수 (kHz)
+    Pin: 10,         // 송신 전력 (W)
+    mode: 'manual',  // 'manual' | 'auto'
+
+    // Qi 상수
+    f0: 125,         // 공진 주파수 (kHz)
+    d0: 8,           // 결합 감쇠 거리상수 (mm)
+    a0: 22,          // 정렬 손실 폭 (mm)
+
+    // 캔버스 좌표
+    txX: 0, txY: 0,  // 송신 코일 중심
+    rxX: 0, rxY: 0,  // 수신 코일(핸드폰) 중심
+    txR: 70,         // 송신 코일 반경 (px)
+
+    // 스케일: 1 mm = 4 px (수직)
+    mmPerPxV: 0.25,
+
+    // 물리량
+    k: 0,
+    eta: 0,
+    Pout: 0,
+    M: 0,
+
+    // 애니메이션
+    autoT: 0,
+    dragging: false,
+    t: 0,
+};
+
+// 미니그래프 곡선용 정적 데이터: 다양한 d에서의 η (mm 0~30)
+const etaCurve = new Array(61).fill(0); // 0.5 mm 단위, 31 ~ 61점
+
+// ============================================
+// 리사이즈
+// ============================================
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 560;
+    // 송신 코일: 좌측 1/3 위치, 캔버스 하단 부근 (충전 패드)
+    state.txX = canvas.width * 0.5;
+    state.txY = canvas.height * 0.78;
+    state.txR = 70;
+    // 수신 코일(핸드폰)
+    state.mmPerPxV = 1 / 4; // 1 px = 0.25 mm (수직)
+    state.rxX = state.txX + state.align / state.mmPerPxV;
+    state.rxY = state.txY - state.d / state.mmPerPxV - 30;
+
+    mini.width = mini.parentElement.clientWidth - 2;
+    mini.height = 160;
+}
+window.addEventListener('resize', resize);
+
+// ============================================
+// 컨트롤
+// ============================================
+$('dRange').addEventListener('input', e => {
+    state.d = +e.target.value;
+    $('dDisp').textContent = state.d.toFixed(1);
+    if (state.mode === 'manual') {
+        state.rxY = state.txY - state.d / state.mmPerPxV - 30;
+    }
+    flashCard();
+});
+$('aRange').addEventListener('input', e => {
+    state.align = +e.target.value;
+    $('aDisp').textContent = state.align.toFixed(0);
+    if (state.mode === 'manual') {
+        state.rxX = state.txX + state.align / state.mmPerPxV;
+    }
+    flashCard();
+});
+$('fRange').addEventListener('input', e => {
+    state.f = +e.target.value;
+    $('fDisp').textContent = state.f.toFixed(0);
+    flashCard();
+});
+$('pRange').addEventListener('input', e => {
+    state.Pin = +e.target.value;
+    $('pDisp').textContent = state.Pin.toFixed(1);
+    flashCard();
+});
+$('modeManual').addEventListener('click', () => {
+    state.mode = 'manual';
+    $('modeManual').classList.add('active');
+    $('modeAuto').classList.remove('active');
+});
+$('modeAuto').addEventListener('click', () => {
+    state.mode = 'auto';
+    state.autoT = 0;
+    $('modeAuto').classList.add('active');
+    $('modeManual').classList.remove('active');
+});
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(34,211,238,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(34,211,238,0)', duration: 0.6 });
+}
+
+// ============================================
+// 마우스 / 터치 드래그 — 핸드폰
+// ============================================
+function pointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t0 = e.touches ? e.touches[0] : e;
+    return { x: t0.clientX - rect.left, y: t0.clientY - rect.top };
+}
+const PHONE_W = 120, PHONE_H = 200;
+function tryStartDrag(e) {
+    if (state.mode !== 'manual') return;
+    const { x, y } = pointerPos(e);
+    const dx = x - state.rxX, dy = y - state.rxY;
+    if (Math.abs(dx) < PHONE_W/2 + 10 && Math.abs(dy) < PHONE_H/2 + 10) {
+        state.dragging = true;
+        canvas.classList.add('grabbing');
+    }
+}
+function dragMove(e) {
+    if (!state.dragging) return;
+    const { x, y } = pointerPos(e);
+    // 좌우 제한
+    const newX = Math.max(PHONE_W/2 + 10, Math.min(canvas.width - PHONE_W/2 - 10, x));
+    // 위로만 (거리), 송신 코일에서 너무 멀어지지 않게
+    const minY = 60;
+    const maxY = state.txY - 30; // 송신 패드 위
+    const newY = Math.max(minY, Math.min(maxY, y));
+    state.rxX = newX;
+    state.rxY = newY;
+
+    // align / d 역산
+    state.align = (newX - state.txX) * state.mmPerPxV;
+    state.d = (state.txY - newY - 30) * state.mmPerPxV;
+    // clamp
+    state.align = Math.max(-30, Math.min(30, state.align));
+    state.d = Math.max(0, Math.min(30, state.d));
+    // 슬라이더 동기화
+    $('dRange').value = state.d.toFixed(1);
+    $('dDisp').textContent = state.d.toFixed(1);
+    $('aRange').value = Math.round(state.align);
+    $('aDisp').textContent = Math.round(state.align);
+}
+function endDrag() {
+    state.dragging = false;
+    canvas.classList.remove('grabbing');
+}
+canvas.addEventListener('mousedown', tryStartDrag);
+canvas.addEventListener('mousemove', dragMove);
+window.addEventListener('mouseup', endDrag);
+canvas.addEventListener('touchstart', e => { tryStartDrag(e); }, { passive: true });
+canvas.addEventListener('touchmove', e => { dragMove(e); e.preventDefault(); }, { passive: false });
+window.addEventListener('touchend', endDrag);
+
+// ============================================
+// 물리 모델 (Qi 무선전력 — 단순화)
+// ============================================
+// 결합계수: 거리 + 정렬 손실 + 살짝의 경험식
+function computeK(d, align) {
+    // 기본: 거리 지수 감쇠
+    const kDist = Math.exp(-d / state.d0); // d=0 → 1, d=8mm → 0.37, d=24 → 0.05
+    // 정렬: 가우시안 손실
+    const kAlign = Math.exp(-(align*align) / (2 * state.a0 * state.a0)); // align=0 → 1
+    // 최대 k는 0.6 정도 (실제 Qi)
+    return 0.6 * kDist * kAlign;
+}
+
+// 공진 효율 — Lorentzian (f = f0에서 1)
+function resonanceFactor(f) {
+    const Q = 18; // 품질계수
+    const df = (f - state.f0) / state.f0;
+    return 1 / (1 + Math.pow(2 * Q * df, 2));
+}
+
+// 효율 η — 결합 + 공진 + Q 모델
+function computeEta(k, f) {
+    const Q1 = 35, Q2 = 35;
+    const kQ = k * k * Q1 * Q2;
+    const baseEta = kQ / (1 + kQ); // 0~1
+    return baseEta * resonanceFactor(f);
+}
+
+function updatePhysics() {
+    // 자동 모드: d, align을 천천히 스윕
+    if (state.mode === 'auto') {
+        state.autoT += 0.012;
+        state.d = 8 + Math.sin(state.autoT * 0.7) * 8;
+        state.align = Math.sin(state.autoT * 0.4) * 18;
+        state.d = Math.max(0, state.d);
+        // 슬라이더 동기화
+        $('dRange').value = state.d.toFixed(1);
+        $('dDisp').textContent = state.d.toFixed(1);
+        $('aRange').value = Math.round(state.align);
+        $('aDisp').textContent = Math.round(state.align);
+        // 캔버스 좌표
+        state.rxX = state.txX + state.align / state.mmPerPxV;
+        state.rxY = state.txY - state.d / state.mmPerPxV - 30;
+    }
+
+    state.k = computeK(state.d, state.align);
+    state.eta = computeEta(state.k, state.f);
+    state.Pout = state.Pin * state.eta;
+    // L1, L2 ≈ 24 μH (Qi 송수신 코일 전형값)
+    const L = 24e-6;
+    state.M = state.k * L * 1e6; // μH 단위
+
+    state.t++;
+}
+
+// 미니그래프 곡선 사전계산
+function recomputeEtaCurve() {
+    for (let i = 0; i < etaCurve.length; i++) {
+        const d = i * 0.5;
+        const k = computeK(d, state.align);
+        etaCurve[i] = computeEta(k, state.f);
+    }
+}
+
+// ============================================
+// 그리기 헬퍼
+// ============================================
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+// ============================================
+// 배경
+// ============================================
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ Qi WIRELESS POWER · SIDE VIEW', 12, 10);
+    // 우상단 측정 정보
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(103, 232, 249, 0.7)';
+    ctx.fillText(`f = ${state.f.toFixed(0)} kHz   |   P_in = ${state.Pin.toFixed(1)} W`, canvas.width - 12, 10);
+    ctx.restore();
+
+    // 송신 패드 바닥
+    ctx.save();
+    const padY = state.txY + 18;
+    ctx.fillStyle = 'rgba(34, 211, 238, 0.06)';
+    ctx.fillRect(0, padY, canvas.width, canvas.height - padY);
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.25)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, padY); ctx.lineTo(canvas.width, padY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+}
+
+// 자기장 라인 — 송신 코일 중심에서 위쪽으로 퍼지는 루프
+function drawMagneticField() {
+    const cx = state.txX, cy = state.txY;
+    const R = state.txR;
+    const intensity = Math.max(0.15, state.Pin / 15) * (0.5 + state.k * 0.7);
+
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#a855f7';
+
+    // 자기장 라인 — 코일 위/아래로 대칭으로 퍼지는 루프 (8개)
+    const lineCount = 8;
+    for (let k = 0; k < lineCount; k++) {
+        const x0 = cx - R * 0.85 + (k / (lineCount - 1)) * R * 1.7; // 코일 면 위 시작점
+        // 위로 솟아오르는 곡선 — 코일 중앙에서 가장 높이
+        const dist = Math.abs(x0 - cx);
+        const archH = (R * 1.5) * Math.exp(-(dist * dist) / (R * R * 0.6)) + 30;
+
+        // 위쪽 루프 (송신 → 수신 방향)
+        ctx.strokeStyle = `rgba(216, 180, 254, ${0.25 + intensity * 0.4})`;
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(x0, cy);
+        ctx.bezierCurveTo(x0, cy - archH * 0.5, cx + (x0 - cx) * 0.5, cy - archH, cx, cy - archH);
+        ctx.bezierCurveTo(cx - (x0 - cx) * 0.5, cy - archH, 2*cx - x0, cy - archH * 0.5, 2*cx - x0, cy);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 자기장 화살표 (위로 흐름) — 코일 중앙 축
+    ctx.save();
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.8)';
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    for (let k = 0; k < 5; k++) {
+        const t = ((state.t * 0.015 + k * 0.2) % 1);
+        // 위로 이동하는 작은 원
+        const y = cy - 20 - t * (R * 1.4);
+        const alpha = Math.sin(t * Math.PI);
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(196, 181, 253, ${alpha * 0.85 * intensity})`;
+        ctx.arc(cx, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // B 벡터 화살표 (송신 코일 중심에서 위로) — 강도 비례
+    ctx.save();
+    const bLen = 30 + intensity * 50;
+    const bx = cx - R - 50;
+    const by1 = cy;
+    const by2 = cy - bLen;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#c4b5fd';
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.95)';
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.95)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bx, by1);
+    ctx.lineTo(bx, by2);
+    ctx.stroke();
+    // 화살촉
+    ctx.beginPath();
+    ctx.moveTo(bx, by2);
+    ctx.lineTo(bx - 5, by2 + 8);
+    ctx.lineTo(bx + 5, by2 + 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText('B', bx, by2 - 6);
+    ctx.restore();
+}
+
+// 송신 코일 — 측면 뷰 (가로 평면 코일 = 측면에서 길쭉한 타원)
+function drawTxCoil() {
+    const cx = state.txX, cy = state.txY;
+    const R = state.txR;
+    const turns = 8;
+
+    ctx.save();
+    // 글로우 (송신 전력 비례)
+    const glowI = state.Pin / 15;
+    ctx.shadowBlur = 8 + glowI * 22;
+    ctx.shadowColor = `rgba(34, 211, 238, ${0.5 + glowI * 0.4})`;
+
+    // 코일 측면 — 위쪽 반원 (코일 위)
+    const coilW = R * 2;
+    // 코일 단면 — 양쪽에 작은 원들 (권선 절단면)
+    for (let k = 0; k < turns; k++) {
+        const offsetX = -coilW/2 + 10 + k * (coilW - 20) / (turns - 1);
+        // 왼쪽/오른쪽 단면이 아닌, 평면 코일이므로 가로로 권선이 늘어선 모양
+        // 위쪽: 동선이 위로 보이는 부분
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.95)';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        // 권선 단면 (작은 원)
+        ctx.arc(cx + offsetX, cy, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(125, 211, 252, 0.25)';
+        ctx.fill();
+        // 중심 점
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.9)';
+        ctx.beginPath();
+        ctx.arc(cx + offsetX, cy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 페라이트 코어 (코일 하단)
+    ctx.save();
+    ctx.fillStyle = 'rgba(75, 85, 99, 0.7)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, cx - R - 5, cy + 8, (R + 5) * 2, 12, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 충전 패드 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const label = 'TX · L₁ (충전 패드)';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, cx - tw/2 - 8, cy + 28, tw + 16, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = '#67e8f9';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx, cy + 38);
+    ctx.restore();
+}
+
+// 핸드폰 (수신 코일 L2 내장) — 드래그 가능
+function drawPhone() {
+    const x = state.rxX, y = state.rxY;
+    const w = PHONE_W, h = PHONE_H;
+    const r = 18;
+
+    ctx.save();
+    ctx.shadowBlur = state.dragging ? 30 : 18;
+    ctx.shadowColor = '#67e8f9';
+
+    // 본체
+    const grad = ctx.createLinearGradient(x - w/2, y - h/2, x + w/2, y + h/2);
+    grad.addColorStop(0, '#1f2937');
+    grad.addColorStop(0.5, '#111827');
+    grad.addColorStop(1, '#020617');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x - w/2, y - h/2, w, h, r);
+    ctx.fill();
+
+    // 테두리
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 화면 (안쪽)
+    ctx.save();
+    const screenPad = 8;
+    const sx = x - w/2 + screenPad;
+    const sy = y - h/2 + screenPad + 12;
+    const sw = w - screenPad * 2;
+    const sh = h - screenPad * 2 - 24;
+    const screenGrad = ctx.createLinearGradient(sx, sy, sx, sy + sh);
+    screenGrad.addColorStop(0, '#0c1424');
+    screenGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = screenGrad;
+    roundRect(ctx, sx, sy, sw, sh, 8);
+    ctx.fill();
+    ctx.restore();
+
+    // 노치/스피커
+    ctx.save();
+    ctx.fillStyle = '#0f172a';
+    roundRect(ctx, x - 22, y - h/2 + 6, 44, 6, 3);
+    ctx.fill();
+    ctx.restore();
+
+    // 충전 아이콘 (화면 가운데)
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const cx = x, cy = y - 10;
+    const isOK = state.eta > 0.05;
+    const flashY = isOK ? Math.sin(state.t * 0.08) * 1.5 : 0;
+    ctx.font = 'bold 36px ui-monospace, monospace';
+    if (isOK) {
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#34d399';
+        ctx.fillStyle = '#6ee7b7';
+        ctx.fillText('⚡', cx, cy + flashY);
+    } else {
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+        ctx.fillText('⚡', cx, cy);
+    }
+
+    // 배터리 % 텍스트
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = isOK ? '#a7f3d0' : '#64748b';
+    ctx.shadowBlur = isOK ? 8 : 0;
+    ctx.shadowColor = '#34d399';
+    const pct = (state.eta * 100).toFixed(0);
+    ctx.fillText(`${pct}%`, cx, cy + 32);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = isOK ? '#67e8f9' : '#64748b';
+    ctx.shadowBlur = 0;
+    ctx.fillText(`P_out ${state.Pout.toFixed(1)} W`, cx, cy + 48);
+    ctx.restore();
+
+    // 수신 코일 (핸드폰 하단 내부) — 살짝 보이게
+    ctx.save();
+    const rxR = 32;
+    const ry = y + h/2 - 22;
+    ctx.shadowBlur = state.eta > 0.05 ? 10 + state.eta * 16 : 4;
+    ctx.shadowColor = state.eta > 0.05 ? '#22d3ee' : '#475569';
+    ctx.strokeStyle = state.eta > 0.05 ? 'rgba(125, 211, 252, 0.9)' : 'rgba(100, 116, 139, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, ry, rxR, 5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // 내부 권선 점들
+    for (let k = 0; k < 5; k++) {
+        const px = x - rxR * 0.7 + k * (rxR * 1.4 / 4);
+        ctx.fillStyle = state.eta > 0.05 ? 'rgba(186, 230, 253, 0.85)' : 'rgba(100, 116, 139, 0.6)';
+        ctx.beginPath();
+        ctx.arc(px, ry, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // L2 라벨
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(103, 232, 249, 0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText('RX · L₂', x, y + h/2 - 4);
+    ctx.restore();
+}
+
+// 거리 + 정렬 표시기
+function drawMeasureLines() {
+    const txX = state.txX, txY = state.txY;
+    const rxX = state.rxX, rxY = state.rxY + PHONE_H/2 - 22; // 수신 코일 위치 y
+
+    // 거리 d (수직)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(103, 232, 249, 0.6)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 4]);
+    const mLineX = Math.max(state.txX + state.txR + 30, canvas.width - 80);
+    ctx.beginPath();
+    ctx.moveTo(mLineX, txY);
+    ctx.lineTo(mLineX, rxY);
+    ctx.stroke();
+    // 양 끝 가로선
+    ctx.beginPath();
+    ctx.moveTo(mLineX - 6, txY); ctx.lineTo(mLineX + 6, txY);
+    ctx.moveTo(mLineX - 6, rxY); ctx.lineTo(mLineX + 6, rxY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 거리 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    const dLabel = `d = ${state.d.toFixed(1)} mm`;
+    const tw = ctx.measureText(dLabel).width;
+    roundRect(ctx, mLineX + 10, (txY + rxY)/2 - 9, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#67e8f9';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(dLabel, mLineX + 16, (txY + rxY)/2);
+    ctx.restore();
+
+    // 정렬 오프셋 (수평) — txY 위에 표시 (송신 패드 라벨 아래)
+    if (Math.abs(state.align) > 0.5) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(244, 114, 182, 0.7)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([4, 4]);
+        const yLine = txY - 18;
+        ctx.beginPath();
+        ctx.moveTo(txX, yLine);
+        ctx.lineTo(rxX, yLine);
+        ctx.stroke();
+        // 양 끝 세로선
+        ctx.beginPath();
+        ctx.moveTo(txX, yLine - 5); ctx.lineTo(txX, yLine + 5);
+        ctx.moveTo(rxX, yLine - 5); ctx.lineTo(rxX, yLine + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 라벨
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        const aLabel = `Δx = ${state.align.toFixed(0)} mm`;
+        const atw = ctx.measureText(aLabel).width;
+        const lx = (txX + rxX) / 2;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, lx - atw/2 - 6, yLine - 22, atw + 12, 16, 8);
+        ctx.fill();
+        ctx.fillStyle = '#f9a8d4';
+        ctx.fillText(aLabel, lx, yLine - 10);
+        ctx.restore();
+    }
+}
+
+// ============================================
+// 미니 그래프 — η vs d
+// ============================================
+function drawMiniGraph() {
+    const W = mini.width, H = mini.height;
+    mctx.save();
+    const grad = mctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    mctx.fillStyle = grad;
+    mctx.fillRect(0, 0, W, H);
+
+    const padL = 36, padR = 14, padT = 18, padB = 22;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    // 격자
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i <= 6; i++) {
+        const x = padL + (plotW * i) / 6;
+        mctx.beginPath(); mctx.moveTo(x, padT); mctx.lineTo(x, padT + plotH); mctx.stroke();
+    }
+    for (let i = 0; i <= 4; i++) {
+        const y = padT + (plotH * i) / 4;
+        mctx.beginPath(); mctx.moveTo(padL, y); mctx.lineTo(padL + plotW, y); mctx.stroke();
+    }
+
+    // 축 라벨
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    mctx.textAlign = 'right'; mctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const v = 100 - i * 25;
+        const y = padT + (plotH * i) / 4;
+        mctx.fillText(`${v}%`, padL - 4, y);
+    }
+    mctx.textAlign = 'center'; mctx.textBaseline = 'top';
+    for (let i = 0; i <= 6; i++) {
+        const d = (i * 30) / 6;
+        const x = padL + (plotW * i) / 6;
+        mctx.fillText(`${d.toFixed(0)}`, x, padT + plotH + 4);
+    }
+
+    // 타이틀
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = 'rgba(103, 232, 249, 0.85)';
+    mctx.fillText('◯ η (%) vs d (mm) @ 현재 정렬·주파수', padL, 4);
+
+    // 곡선 (etaCurve)
+    mctx.save();
+    mctx.shadowBlur = 10;
+    mctx.shadowColor = '#22d3ee';
+    const lineGrad = mctx.createLinearGradient(padL, 0, padL + plotW, 0);
+    lineGrad.addColorStop(0, 'rgba(110, 231, 183, 0.95)');
+    lineGrad.addColorStop(0.5, 'rgba(103, 232, 249, 0.95)');
+    lineGrad.addColorStop(1, 'rgba(196, 181, 253, 0.7)');
+    mctx.strokeStyle = lineGrad;
+    mctx.lineWidth = 2.4;
+    mctx.lineCap = 'round';
+    mctx.beginPath();
+    for (let i = 0; i < etaCurve.length; i++) {
+        const d = i * 0.5;
+        const x = padL + (d / 30) * plotW;
+        const y = padT + plotH - etaCurve[i] * plotH;
+        if (i === 0) mctx.moveTo(x, y); else mctx.lineTo(x, y);
+    }
+    mctx.stroke();
+
+    // 곡선 아래 면 채우기
+    mctx.lineTo(padL + plotW, padT + plotH);
+    mctx.lineTo(padL, padT + plotH);
+    mctx.closePath();
+    const fillGrad = mctx.createLinearGradient(0, padT, 0, padT + plotH);
+    fillGrad.addColorStop(0, 'rgba(34, 211, 238, 0.25)');
+    fillGrad.addColorStop(1, 'rgba(34, 211, 238, 0.02)');
+    mctx.fillStyle = fillGrad;
+    mctx.fill();
+    mctx.restore();
+
+    // 현재 d 위치 마커
+    const curX = padL + (state.d / 30) * plotW;
+    const curY = padT + plotH - state.eta * plotH;
+    mctx.save();
+    // 수직 라인
+    mctx.strokeStyle = 'rgba(244, 114, 182, 0.4)';
+    mctx.setLineDash([3, 3]);
+    mctx.beginPath();
+    mctx.moveTo(curX, padT); mctx.lineTo(curX, padT + plotH);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    // 마커
+    mctx.shadowBlur = 14;
+    mctx.shadowColor = '#f472b6';
+    mctx.fillStyle = 'rgba(244, 114, 182, 0.98)';
+    mctx.beginPath();
+    mctx.arc(curX, curY, 5, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.strokeStyle = 'white';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+
+    // 마커 라벨
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    const lbl = `${(state.eta * 100).toFixed(1)}%`;
+    mctx.textAlign = curX > padL + plotW - 60 ? 'right' : 'left';
+    const lblX = curX > padL + plotW - 60 ? curX - 8 : curX + 8;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    const tw = mctx.measureText(lbl).width;
+    if (curX > padL + plotW - 60) {
+        roundRect(mctx, lblX - tw - 6, curY - 9, tw + 10, 16, 8);
+    } else {
+        roundRect(mctx, lblX - 2, curY - 9, tw + 10, 16, 8);
+    }
+    mctx.fill();
+    mctx.fillStyle = '#f9a8d4';
+    mctx.textBaseline = 'middle';
+    mctx.fillText(lbl, lblX + (curX > padL + plotW - 60 ? -tw - 1 : 3), curY);
+    mctx.restore();
+
+    mctx.restore();
+}
+
+// ============================================
+// 라이브 패널 갱신
+// ============================================
+function updateLivePanel() {
+    $('kVal').textContent = state.k.toFixed(3);
+    $('etaVal').textContent = (state.eta * 100).toFixed(1);
+    $('poutVal').textContent = state.Pout.toFixed(2);
+    $('distVal').textContent = state.d.toFixed(1);
+
+    const isLow = state.eta < 0.05;
+    const isFull = state.eta > 0.7;
+
+    ['pill-k','pill-eta','pill-pout','pill-dist'].forEach(id => {
+        const el = $(id);
+        const num = el.querySelector('.live-num');
+        el.classList.remove('low', 'full');
+        num.classList.remove('low', 'full');
+        if (id === 'pill-eta' || id === 'pill-pout') {
+            if (isLow) { el.classList.add('low'); num.classList.add('low'); }
+            else if (isFull) { el.classList.add('full'); num.classList.add('full'); }
+        }
+    });
+
+    // 알림 전환
+    const alert = $('zeroAlert');
+    if (isLow) {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-zero';
+        let cause = '';
+        if (state.d > 15) cause = '거리 과대 (d > 15 mm)';
+        else if (Math.abs(state.align) > 18) cause = '심한 정렬 어긋남';
+        else if (Math.abs(state.f - state.f0) > 40) cause = '공진 주파수 이탈';
+        else cause = '결합 약함';
+        alert.innerHTML = `<span class="font-bold">충전 불가</span> · ${cause} → η ≈ ${(state.eta*100).toFixed(1)}%, P_out ≈ 0`;
+    } else if (isFull) {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-good';
+        alert.innerHTML = `<span class="font-bold">고효율 충전</span> · k = ${state.k.toFixed(2)}, η = ${(state.eta*100).toFixed(0)}%, P_out = ${state.Pout.toFixed(1)} W (정렬·거리 양호)`;
+    } else {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-active';
+        alert.innerHTML = `<span class="font-bold">충전 중</span> · η = ${(state.eta*100).toFixed(0)}%, P_out = ${state.Pout.toFixed(1)} W. 거리를 줄이거나 정렬하면 효율 상승.`;
+    }
+
+    // 사이드 정보
+    $('mLabel').textContent = `${state.M.toFixed(2)} μH`;
+    const df = state.f - state.f0;
+    $('fLabel').textContent = `${df >= 0 ? '+' : ''}${df.toFixed(0)} kHz`;
+    const alignLoss = (1 - Math.exp(-(state.align*state.align)/(2*state.a0*state.a0))) * 100;
+    $('aLabel').textContent = `${alignLoss.toFixed(1)} %`;
+    $('sLabel').textContent = isLow ? '대기' : (isFull ? '⚡ 고속' : '⚡ 충전 중');
+}
+
+// ============================================
+// 메인 루프
+// ============================================
+let lastEtaRecalc = -1, lastFRecalc = -1, lastARecalc = -1;
+function animate() {
+    updatePhysics();
+
+    // 정렬·주파수가 바뀌면 미니 곡선 재계산
+    if (state.f !== lastFRecalc || state.align !== lastARecalc) {
+        recomputeEtaCurve();
+        lastFRecalc = state.f;
+        lastARecalc = state.align;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawMagneticField();
+    drawTxCoil();
+    drawMeasureLines();
+    drawPhone();
+
+    drawMiniGraph();
+    updateLivePanel();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    recomputeEtaCurve();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 와전류 (Eddy Current) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(251, 146, 60, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.45), rgba(168,139,250,0.45), rgba(251,146,60,0.45));
+    box-shadow: 0 30px 100px -20px rgba(34, 211, 238, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 540px;
+    border-radius: 17px;
+    background: #050714;
+    cursor: grab;
+    touch-action: none;
+}
+canvas#main.grabbing { cursor: grabbing; }
+canvas#mini {
+    display: block;
+    width: 100%;
+    height: 140px;
+    border-radius: 12px;
+    background: #050714;
+}
+
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px;
+    border-radius: 9999px; border: 2px solid #34d399;
+    opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,211,238,0.4), rgba(168,139,250,0.4), rgba(251,146,60,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #fdba74);
+    box-shadow: 0 0 22px rgba(103, 232, 249, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-b { background: linear-gradient(135deg, rgba(168,85,247,0.20), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-t { background: linear-gradient(135deg, rgba(251,146,60,0.20), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.5); color: #fdba74; }
+.chip-r { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(34, 211, 238, 0.6);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+}
+.live-pill.zero {
+    border-color: rgba(148, 163, 184, 0.4);
+    opacity: 0.85;
+}
+.live-pill.lam {
+    border-color: rgba(52, 211, 153, 0.55);
+    box-shadow: 0 0 18px rgba(52, 211, 153, 0.25);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #fdba74);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.zero {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.green {
+    background: linear-gradient(135deg, #6ee7b7, #34d399, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(34,211,238,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(103, 232, 249, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #cffafe; }
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(103, 232, 249, 0.4);
+}
+.mode-btn {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.mode-btn:hover, .mode-btn.active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.3), rgba(168,139,250,0.25));
+    transform: translateY(-1px);
+    border-color: rgba(34,211,238,0.6);
+    box-shadow: 0 0 22px rgba(34,211,238,0.4);
+    color: #cffafe;
+}
+.lam-btn {
+    background: linear-gradient(135deg, rgba(71,85,105,0.4), rgba(51,65,85,0.3));
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #cbd5e1;
+    transition: all 200ms;
+}
+.lam-btn.active {
+    background: linear-gradient(135deg, rgba(52,211,153,0.3), rgba(16,185,129,0.18));
+    border-color: rgba(52,211,153,0.6);
+    box-shadow: 0 0 22px rgba(52,211,153,0.35);
+    color: #d1fae5;
+    transform: translateY(-1px);
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(34,211,238,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.alert-zero {
+    background: linear-gradient(135deg, rgba(148,163,184,0.18), rgba(71,85,105,0.12));
+    border: 1px dashed rgba(148,163,184,0.4);
+    color: #cbd5e1;
+}
+.alert-active {
+    background: linear-gradient(135deg, rgba(251,146,60,0.18), rgba(244,114,182,0.10));
+    border: 1px solid rgba(251,146,60,0.45);
+    color: #fed7aa;
+}
+.alert-lam {
+    background: linear-gradient(135deg, rgba(52,211,153,0.18), rgba(16,185,129,0.10));
+    border: 1px solid rgba(52,211,153,0.45);
+    color: #d1fae5;
+}
+.loss-bar-bg {
+    height: 14px;
+    background: rgba(15,23,42,0.85);
+    border: 1px solid rgba(148,163,184,0.2);
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+}
+.loss-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #fbbf24, #f97316, #ef4444);
+    box-shadow: 0 0 18px rgba(251, 146, 60, 0.5);
+    transition: width 200ms ease-out, background 300ms;
+}
+.loss-bar.green {
+    background: linear-gradient(90deg, #6ee7b7, #34d399, #10b981);
+    box-shadow: 0 0 18px rgba(52, 211, 153, 0.45);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · EDDY CURRENT · DRAG THE MAGNET
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-indigo-200 to-orange-200 bg-clip-text text-transparent">
+            🌀 와전류 (Eddy Current) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">자석을 도체판 위에서 움직이면 판 내부에 <span class="text-cyan-300 font-bold">소용돌이 모양 폐쇄 전류</span>가 유도됩니다. 변압기 철심을 <span class="text-emerald-300 font-bold">얇게 적층</span>하면 와전류가 작은 영역에 갇혀 손실이 급격히 줄어듭니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-ie">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">와전류 크기 |i꜀|</p>
+            <p class="mt-1 text-lg font-bold"><span id="ieVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">상대</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-pe">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">와전류 손실 P꜀</p>
+            <p class="mt-1 text-lg font-bold"><span id="peVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">W (정성)</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-fd">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">저항 힘 F_drag</p>
+            <p class="mt-1 text-lg font-bold"><span id="fdVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">N (정성)</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-lam">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">적층 손실 감소율</p>
+            <p class="mt-1 text-lg font-bold"><span id="lamVal" class="live-num">0</span> <span class="text-[10px] text-slate-400">%</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">DRAG · 자석을 도체판 위에서 움직여 보세요</span>
+                <div class="flex gap-2">
+                    <button id="modeManual" class="mode-btn active rounded-md px-3 py-1.5 text-xs font-bold">수동 드래그</button>
+                    <button id="modeAuto" class="mode-btn rounded-md px-3 py-1.5 text-xs font-bold">자동 진동</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <!-- 상태 알림 -->
+            <div id="zeroAlert" class="mt-3 rounded-lg px-3 py-2 text-xs alert-zero">
+                <span class="font-bold">정지 상태</span> · 자석이 움직이지 않아 자속 변화 dΦ/dt = 0 → 와전류도 0
+            </div>
+
+            <!-- 적층 토글 (큰 비교) -->
+            <div class="mt-4 grid grid-cols-2 gap-2">
+                <button id="btnSolid" class="lam-btn active rounded-lg px-4 py-3 text-xs font-bold">
+                    <span class="block text-sm">솔리드 철심</span>
+                    <span class="block text-[10px] opacity-80 font-normal mt-0.5">큰 와전류 루프 → 손실 큼</span>
+                </button>
+                <button id="btnLaminated" class="lam-btn rounded-lg px-4 py-3 text-xs font-bold">
+                    <span class="block text-sm">적층 (Laminated)</span>
+                    <span class="block text-[10px] opacity-80 font-normal mt-0.5">작은 루프 갇힘 → 손실 ↓↓</span>
+                </button>
+            </div>
+
+            <!-- P꜀(t) 미니 그래프 -->
+            <div class="mt-3 canvas-wrap" style="border-radius: 13px;">
+                <canvas id="mini"></canvas>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 tracking-wider">◯ EDDY POWER LOSS · TIME RESPONSE — 와전류 손실의 시간 변화</p>
+
+            <!-- 컨트롤 (자동 속도 + B + 두께/저항률 + 적층 수) -->
+            <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="chip-v chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>자석 속도 v</span><span id="vDisp" class="font-mono text-base">3.0</span></label>
+                    <input type="range" id="vRange" min="0" max="10" step="0.1" value="3" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">자동 모드용</p>
+                </div>
+                <div class="chip-b chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>자속밀도 B</span><span id="bDisp" class="font-mono text-base">1.0</span></label>
+                    <input type="range" id="bRange" min="0.2" max="2" step="0.1" value="1.0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">T · 손실 ∝ B²</p>
+                </div>
+                <div class="chip-t chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>도체 두께 t</span><span id="tDisp" class="font-mono text-base">1.0</span></label>
+                    <input type="range" id="tRange" min="0.2" max="3" step="0.1" value="1.0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">mm · 손실 ∝ t²</p>
+                </div>
+                <div class="chip-r chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>저항률 ρ</span><span id="rDisp" class="font-mono text-base">1.0</span></label>
+                    <input type="range" id="rRange" min="0.3" max="3" step="0.1" value="1.0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">상대 · 손실 ∝ 1/ρ</p>
+                </div>
+            </div>
+
+            <!-- 적층 분할 슬라이더 (적층 모드일 때만 의미) -->
+            <div class="mt-3 chip rounded-lg p-3" style="border-color: rgba(52,211,153,0.35);">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider text-emerald-200">
+                    <span>적층 매수 n (Laminations)</span><span id="nDisp" class="font-mono text-base">8</span>
+                </label>
+                <input type="range" id="nRange" min="2" max="20" step="1" value="8" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">매수 ↑ → 각 층 두께 ↓ → 손실 ∝ 1/n²</p>
+            </div>
+
+            <!-- 손실 비교 게이지 -->
+            <div class="mt-4 glass rounded-lg p-3" style="background: rgba(15,23,42,0.7);">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] tracking-widest text-slate-400 font-bold">와전류 손실 게이지 (정성)</span>
+                    <span id="lossLabel" class="text-xs font-mono text-orange-200">—</span>
+                </div>
+                <div class="loss-bar-bg"><div id="lossBar" class="loss-bar" style="width: 0%;"></div></div>
+                <p class="mt-2 text-[10px] text-slate-500">P꜀ ∝ B²·f²·t²/ρ — 적층 시 t → t/n 으로 작아져 손실은 1/n²배.</p>
+            </div>
+        </div>
+
+        <!-- 사이드 -->
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="text-lg">💡</span>
+                    <span class="bg-gradient-to-r from-cyan-300 to-orange-200 bg-clip-text text-transparent">와전류 핵심 5</span>
+                </h2>
+                <ul class="mt-4 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">1. 폐쇄 소용돌이</span> · 변화하는 자속이 도체 내부에 <span class="text-cyan-300 font-bold">맴도는 폐쇄 전류</span> 유도</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">2. 렌츠 결과</span> · 와전류는 자속 변화를 방해 → 자석에 <span class="text-pink-300 font-bold">제동력(drag)</span> 작용</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-orange-300">3. 손실 공식</span> · P꜀ ∝ B²·f²·t²/ρ — 두께 t의 <span class="text-orange-300 font-bold">제곱</span>에 비례</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">4. 적층 철심</span> · 얇게 자르고 절연 → 각 층 t → t/n → 손실 <span class="text-emerald-300 font-bold">1/n²</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">5. 응용</span> · 유도가열, 와전류 제동, 금속탐지기, 비파괴검사(ECT)</li>
+                </ul>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-cyan-200">📐 와전류 손실 공식</h3>
+                <div class="math-container">
+                    $$P_e \;\propto\; \frac{B_m^{2}\,f^{2}\,t^{2}}{\rho}\;\;[\text{W/m}^3]$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">Bₘ: 최대 자속밀도, f: 주파수, t: 판 두께, ρ: 저항률. 적층 시 t→t/n 이므로 손실은 <span class="text-emerald-300 font-bold">1/n²</span>로 감소.</p>
+            </div>
+
+            <div class="formula-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">⚡ 지금 이 순간</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">철심 상태</span><span id="coreLabel" class="font-mono text-cyan-200">솔리드</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">자석 속도</span><span id="velLabel" class="font-mono text-orange-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">루프 방향</span><span id="dirLabel" class="font-mono text-cyan-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">상대 손실비</span><span id="ratioLabel" class="font-mono text-pink-200">1.00×</span></div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-emerald-200">🪞 솔리드 vs 적층</h3>
+                <p class="text-[11px] text-slate-400 leading-relaxed">변압기·전동기 철심에 <span class="text-emerald-300 font-bold">규소강판</span>을 0.35mm 두께로 절연 적층해 사용하는 이유. 적층 면이 자속 방향과 평행하면 와전류 루프 면적이 축소되어 손실이 매수의 제곱에 반비례합니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const mini = $('mini');
+const mctx = mini.getContext('2d');
+
+// ============================================
+// 상태
+// ============================================
+let state = {
+    B: 1.0,
+    v: 3.0,
+    t: 1.0,       // 도체 두께 (상대)
+    rho: 1.0,     // 저항률 (상대)
+    n: 8,         // 적층 매수
+    laminated: false,
+    mode: 'manual',
+    magX: 0,
+    magY: 0,
+    plateX: 0,
+    plateY: 0,
+    plateW: 0,
+    plateH: 0,
+    velocity: 0,
+    prevX: 0,
+    autoT: 0,
+    dragging: false,
+    t_step: 0,
+    // 파생량 (정성)
+    ieddy: 0,
+    peddy: 0,
+    fdrag: 0,
+    peddySolid: 0,    // 솔리드 기준 손실
+    lamReduction: 0,  // 적층에 의한 감소율 (%)
+};
+
+// 손실 시간 버퍼
+const P_BUF_LEN = 200;
+const pBuf = new Array(P_BUF_LEN).fill(0);
+
+// 와전류 파티클 (소용돌이 방향 시각화)
+const MAX_PARTICLES = 50;
+let particles = [];
+
+// ============================================
+// 리사이즈
+// ============================================
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 540;
+    state.plateW = Math.min(canvas.width - 80, 720);
+    state.plateH = 220;
+    state.plateX = (canvas.width - state.plateW) / 2;
+    state.plateY = canvas.height - state.plateH - 40;
+    if (state.magX === 0) {
+        state.magX = canvas.width * 0.5;
+        state.magY = state.plateY - 90;
+        state.prevX = state.magX;
+    }
+    mini.width = mini.parentElement.clientWidth - 2;
+    mini.height = 140;
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+// ============================================
+// 컨트롤
+// ============================================
+$('vRange').addEventListener('input', e => {
+    state.v = +e.target.value;
+    $('vDisp').textContent = state.v.toFixed(1);
+    flashCard();
+});
+$('bRange').addEventListener('input', e => {
+    state.B = +e.target.value;
+    $('bDisp').textContent = state.B.toFixed(1);
+    flashCard();
+});
+$('tRange').addEventListener('input', e => {
+    state.t = +e.target.value;
+    $('tDisp').textContent = state.t.toFixed(1);
+    flashCard();
+});
+$('rRange').addEventListener('input', e => {
+    state.rho = +e.target.value;
+    $('rDisp').textContent = state.rho.toFixed(1);
+    flashCard();
+});
+$('nRange').addEventListener('input', e => {
+    state.n = +e.target.value;
+    $('nDisp').textContent = state.n;
+    flashCard();
+});
+$('modeManual').addEventListener('click', () => {
+    state.mode = 'manual';
+    $('modeManual').classList.add('active');
+    $('modeAuto').classList.remove('active');
+});
+$('modeAuto').addEventListener('click', () => {
+    state.mode = 'auto';
+    state.autoT = 0;
+    $('modeAuto').classList.add('active');
+    $('modeManual').classList.remove('active');
+});
+$('btnSolid').addEventListener('click', () => {
+    state.laminated = false;
+    $('btnSolid').classList.add('active');
+    $('btnLaminated').classList.remove('active');
+    flashCard();
+});
+$('btnLaminated').addEventListener('click', () => {
+    state.laminated = true;
+    $('btnLaminated').classList.add('active');
+    $('btnSolid').classList.remove('active');
+    flashCard();
+});
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(34,211,238,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(34,211,238,0)', duration: 0.6 });
+}
+
+// ============================================
+// 마우스 / 터치 드래그
+// ============================================
+function pointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t0 = e.touches ? e.touches[0] : e;
+    return { x: t0.clientX - rect.left, y: t0.clientY - rect.top };
+}
+function tryStartDrag(e) {
+    if (state.mode !== 'manual') return;
+    const { x, y } = pointerPos(e);
+    const dx = x - state.magX, dy = y - state.magY;
+    if (Math.abs(dx) < 60 && Math.abs(dy) < 36) {
+        state.dragging = true;
+        canvas.classList.add('grabbing');
+    }
+}
+function dragMove(e) {
+    if (!state.dragging) return;
+    const { x, y } = pointerPos(e);
+    state.magX = Math.max(60, Math.min(canvas.width - 60, x));
+    // y는 도체판 위쪽으로 제한
+    state.magY = Math.max(state.plateY - 130, Math.min(state.plateY - 30, y));
+}
+function endDrag() {
+    state.dragging = false;
+    canvas.classList.remove('grabbing');
+}
+canvas.addEventListener('mousedown', tryStartDrag);
+canvas.addEventListener('mousemove', dragMove);
+window.addEventListener('mouseup', endDrag);
+canvas.addEventListener('touchstart', e => { tryStartDrag(e); }, { passive: true });
+canvas.addEventListener('touchmove', e => { dragMove(e); e.preventDefault(); }, { passive: false });
+window.addEventListener('touchend', endDrag);
+
+// ============================================
+// 물리 (정성)
+// ============================================
+function updatePhysics() {
+    if (state.mode === 'auto') {
+        state.autoT += 0.016;
+        const amp = state.plateW * 0.35;
+        const freq = state.v * 0.18;
+        state.magX = state.plateX + state.plateW / 2 + Math.sin(state.autoT * freq) * amp;
+        state.magY = state.plateY - 70;
+    }
+
+    const rawV = state.magX - state.prevX;
+    state.velocity = state.velocity * 0.65 + rawV * 0.35;
+    state.prevX = state.magX;
+
+    // |dB/dt| ∝ |v|·B (자석 통과로 인한 자속 변화)
+    const dBdt = Math.abs(state.velocity) * state.B * 0.4;
+
+    // 와전류 크기 (정성): i ∝ dB/dt · t / ρ
+    const ieddySolid = dBdt * state.t / state.rho;
+    // 적층 시 각 층 두께 = t/n 이므로 i_layer ∝ (t/n)/ρ
+    const effT = state.laminated ? state.t / state.n : state.t;
+    const ieddy = dBdt * effT / state.rho;
+    state.ieddy = ieddy;
+
+    // 손실 P ∝ B²·v²·t²/ρ (정성)
+    const v2 = state.velocity * state.velocity;
+    state.peddySolid = state.B * state.B * v2 * state.t * state.t / state.rho * 0.02;
+    state.peddy = state.B * state.B * v2 * effT * effT / state.rho * 0.02;
+
+    // 적층 감소율
+    if (state.peddySolid > 0.001) {
+        state.lamReduction = state.laminated ? (1 - 1 / (state.n * state.n)) * 100 : 0;
+    } else {
+        state.lamReduction = state.laminated ? (1 - 1 / (state.n * state.n)) * 100 : 0;
+    }
+
+    // 저항힘 F_drag ∝ B²·v·t/ρ (단순 모델)
+    const fSign = Math.sign(state.velocity);
+    state.fdrag = state.B * state.B * Math.abs(state.velocity) * effT / state.rho * 0.06 * fSign;
+
+    // 버퍼
+    pBuf.shift();
+    pBuf.push(state.peddy);
+}
+
+// ============================================
+// 파티클 (소용돌이 시각화)
+// ============================================
+function seedParticles() {
+    particles = [];
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+        particles.push({
+            angle: Math.random() * Math.PI * 2,
+            r: 8 + Math.random() * 22,
+            loopId: 0,        // 어느 와전류 루프에 속하는지 (적층 시 분할)
+            life: Math.random(),
+        });
+    }
+}
+
+// ============================================
+// 그리기
+// ============================================
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ EDDY CURRENT · TOP VIEW', 12, 10);
+    ctx.restore();
+}
+
+function drawPlate() {
+    const x = state.plateX, y = state.plateY, w = state.plateW, h = state.plateH;
+    ctx.save();
+
+    // 그림자
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    roundRect(ctx, x + 6, y + 8, w, h, 10);
+    ctx.fill();
+
+    // 본체 — 금속 그라데이션
+    const g = ctx.createLinearGradient(x, y, x, y + h);
+    if (state.laminated) {
+        g.addColorStop(0, '#475569');
+        g.addColorStop(0.4, '#334155');
+        g.addColorStop(1, '#1e293b');
+    } else {
+        g.addColorStop(0, '#52525b');
+        g.addColorStop(0.4, '#3f3f46');
+        g.addColorStop(1, '#27272a');
+    }
+    ctx.fillStyle = g;
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+
+    // 테두리 (적층은 에메랄드 강조)
+    ctx.strokeStyle = state.laminated ? 'rgba(52,211,153,0.8)' : 'rgba(148,163,184,0.55)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = state.laminated ? '#a7f3d0' : '#cbd5e1';
+    ctx.textAlign = 'left';
+    ctx.fillText(state.laminated ? `▮ LAMINATED CORE (n=${state.n})` : '▮ SOLID CONDUCTOR PLATE', x + 10, y + 14);
+
+    ctx.restore();
+
+    // 적층 라인 (적층 모드)
+    if (state.laminated) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 3]);
+        for (let i = 1; i < state.n; i++) {
+            const lx = x + (w / state.n) * i;
+            ctx.beginPath();
+            ctx.moveTo(lx, y);
+            ctx.lineTo(lx, y + h);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        // 절연 라벨 (가운데 한 곳만)
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.7)';
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('절연 (insulation)', x + w/2, y + h - 12);
+        ctx.restore();
+    }
+}
+
+function drawEddyLoops() {
+    const x = state.plateX, y = state.plateY, w = state.plateW, h = state.plateH;
+    const intensity = Math.min(1.2, state.ieddy * 1.5);
+    if (intensity < 0.04) return;
+
+    const dir = Math.sign(state.velocity) || 1; // 자석 진행 방향
+    // 자석 바로 아래가 와전류 중심
+    const cx = Math.max(x + 40, Math.min(x + w - 40, state.magX));
+    const cy = y + h / 2;
+
+    ctx.save();
+
+    if (!state.laminated) {
+        // 솔리드: 큰 두 루프 (전방, 후방)
+        // 자석 전방(진행 방향): 한 방향 루프
+        // 자석 후방: 반대 방향 루프
+        const baseR = Math.min(h / 2 - 8, 75) * (0.7 + intensity * 0.3);
+        // 전방 루프
+        drawSingleLoop(cx + dir * 50, cy, baseR, baseR * 0.7, dir > 0 ? 1 : -1, intensity, '#22d3ee', '#67e8f9');
+        // 후방 루프
+        drawSingleLoop(cx - dir * 50, cy, baseR, baseR * 0.7, dir > 0 ? -1 : 1, intensity, '#f472b6', '#f9a8d4');
+    } else {
+        // 적층: 각 슬랏 내부에 작은 루프들
+        const slotW = w / state.n;
+        // 자석 영향권 (자석 좌우 1.5 슬랏)
+        const startSlot = Math.max(0, Math.floor((state.magX - x - slotW * 1.5) / slotW));
+        const endSlot = Math.min(state.n - 1, Math.ceil((state.magX - x + slotW * 1.5) / slotW));
+        const layerR = Math.min(h / 2 - 12, slotW * 0.42);
+        for (let s = startSlot; s <= endSlot; s++) {
+            const slotCx = x + slotW * (s + 0.5);
+            const slotCy = cy;
+            // 자석으로부터 거리 감쇠
+            const distF = Math.exp(-Math.pow((slotCx - state.magX) / (slotW * 1.6), 2));
+            const localInt = intensity * distF * 0.9;
+            if (localInt < 0.05) continue;
+            // 각 층 안에서도 자석 좌우는 반대 방향
+            const layerDir = (slotCx > state.magX ? dir : -dir);
+            const color = layerDir > 0 ? '#22d3ee' : '#f472b6';
+            const accent = layerDir > 0 ? '#67e8f9' : '#f9a8d4';
+            drawSingleLoop(slotCx, slotCy, layerR, layerR * 1.4, layerDir, localInt, color, accent);
+        }
+    }
+    ctx.restore();
+}
+
+function drawSingleLoop(cx, cy, rx, ry, dir, intensity, color, accent) {
+    ctx.save();
+    ctx.shadowBlur = 6 + intensity * 12;
+    ctx.shadowColor = color;
+
+    // 여러 동심 타원 (소용돌이 깊이감)
+    const rings = 3;
+    for (let k = 0; k < rings; k++) {
+        const sc = 0.55 + k * 0.22;
+        const a = (0.18 + intensity * 0.6) * (1 - k * 0.18);
+        ctx.strokeStyle = `rgba(${k===0?'255,255,255':k===1? '186,230,253':'196,181,253'}, ${a})`;
+        ctx.lineWidth = 1.2 + intensity * 1.4;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx * sc, ry * sc, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // 화살표 (방향 표시) — 회전 위상
+    const phase = state.t_step * 0.04 * dir;
+    const arrowCount = 4;
+    ctx.fillStyle = accent;
+    for (let k = 0; k < arrowCount; k++) {
+        const a = phase + (k / arrowCount) * Math.PI * 2;
+        const ax = cx + Math.cos(a) * rx * 0.8;
+        const ay = cy + Math.sin(a) * ry * 0.8;
+        // 접선 방향
+        const tx = -Math.sin(a) * dir;
+        const ty = Math.cos(a) * dir;
+        const len = 9 + intensity * 6;
+        ctx.beginPath();
+        ctx.moveTo(ax + tx * len * 0.5, ay + ty * len * 0.5);
+        ctx.lineTo(ax - tx * len * 0.5 + ty * 4, ay - ty * len * 0.5 - tx * 4);
+        ctx.lineTo(ax - tx * len * 0.5 - ty * 4, ay - ty * len * 0.5 + tx * 4);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+function drawParticles() {
+    // 와전류 파티클: 솔리드는 큰 영역, 적층은 슬랏 안에 갇힘
+    if (Math.abs(state.velocity) < 0.2) return;
+    const intensity = Math.min(1, state.ieddy * 1.5);
+    if (intensity < 0.05) return;
+
+    const x = state.plateX, w = state.plateW;
+    const cy = state.plateY + state.plateH / 2;
+    const dir = Math.sign(state.velocity) || 1;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (const p of particles) {
+        p.angle += 0.06 * dir * (0.6 + intensity);
+        p.life += 0.012;
+        if (p.life > 1) p.life = 0;
+
+        let cx, cyL, rx, ry, hueDir;
+        if (!state.laminated) {
+            // 자석 앞/뒤로 분리 루프
+            const side = (p.loopId % 2 === 0) ? 1 : -1;
+            cx = Math.max(x + 60, Math.min(x + w - 60, state.magX + side * dir * 50));
+            cyL = cy;
+            rx = 60; ry = 42;
+            hueDir = (side * dir);
+        } else {
+            // 슬랏 내부에 갇힘
+            const slotW = w / state.n;
+            const slotIdx = Math.min(state.n - 1, Math.max(0, Math.round((state.magX - x) / slotW + (p.loopId % 3 - 1))));
+            cx = x + slotW * (slotIdx + 0.5);
+            cyL = cy;
+            rx = Math.min(slotW * 0.4, 24); ry = Math.min(40, state.plateH * 0.35);
+            // 자석 좌우 방향
+            hueDir = (cx > state.magX ? dir : -dir);
+        }
+        const px = cx + Math.cos(p.angle) * rx * (0.5 + p.life * 0.5);
+        const py = cyL + Math.sin(p.angle) * ry * (0.5 + p.life * 0.5);
+
+        const alpha = (1 - p.life) * 0.55 * intensity;
+        ctx.fillStyle = hueDir > 0 ? `rgba(103, 232, 249, ${alpha})` : `rgba(244, 114, 182, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5 + intensity * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawMagnet() {
+    const mx = state.magX, my = state.magY;
+    const w = 90, h = 40;
+
+    // 자석에서 도체판으로 내려가는 자속선 (변화하는 자기장 시각화)
+    ctx.save();
+    ctx.strokeStyle = `rgba(216, 180, 254, ${0.3 + state.B * 0.15})`;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 3]);
+    for (let k = -3; k <= 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(mx + k * 10, my + h/2);
+        ctx.bezierCurveTo(
+            mx + k * 14, my + h/2 + 30,
+            mx + k * 18, state.plateY - 10,
+            mx + k * 22, state.plateY + 8
+        );
+        ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 그림자
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(mx, state.plateY - 4, 50, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 자석 본체 (위는 N=빨강, 아래는 S=파랑 — 도체판을 향해 S극)
+    ctx.save();
+    ctx.shadowBlur = state.dragging ? 28 : 16;
+    ctx.shadowColor = '#f472b6';
+
+    // N (위)
+    const gN = ctx.createLinearGradient(mx - w/2, my - h/2, mx - w/2, my);
+    gN.addColorStop(0, '#fda4af');
+    gN.addColorStop(1, '#dc2626');
+    ctx.fillStyle = gN;
+    roundRect(ctx, mx - w/2, my - h/2, w, h/2, 6);
+    ctx.fill();
+
+    ctx.shadowColor = '#60a5fa';
+    // S (아래)
+    const gS = ctx.createLinearGradient(mx - w/2, my, mx - w/2, my + h/2);
+    gS.addColorStop(0, '#3b82f6');
+    gS.addColorStop(1, '#1e3a8a');
+    ctx.fillStyle = gS;
+    roundRect(ctx, mx - w/2, my, w, h/2, 6);
+    ctx.fill();
+    ctx.restore();
+
+    // 테두리
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, mx - w/2, my - h/2, w, h, 6);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(mx - w/2, my); ctx.lineTo(mx + w/2, my);
+    ctx.stroke();
+
+    // 라벨
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('N', mx, my - h/4);
+    ctx.fillText('S', mx, my + h/4);
+
+    // 속도 화살표
+    if (Math.abs(state.velocity) > 0.3) {
+        const dir = Math.sign(state.velocity);
+        const speed = Math.min(60, Math.abs(state.velocity) * 8 + 20);
+        const ax = mx + dir * (w/2 + 12);
+        const ay = my - h/2 - 16;
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#fbbf24';
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)';
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.95)';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ax - dir * speed, ay);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - dir * 8, ay - 5);
+        ctx.lineTo(ax - dir * 8, ay + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = dir > 0 ? 'right' : 'left';
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillText('v', ax - dir * speed - 4 * dir, ay - 8);
+        ctx.restore();
+    }
+
+    // 제동력 화살표 (자석 진행 반대방향)
+    if (Math.abs(state.fdrag) > 0.02) {
+        const dir = -Math.sign(state.fdrag); // F_drag와 반대로 그림(실제 자석에 가해지는 힘 방향)
+        const mag = Math.min(70, Math.abs(state.fdrag) * 80 + 12);
+        const ax = mx + dir * (w/2 + 8);
+        const ay = my + h/2 + 24;
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#f472b6';
+        ctx.strokeStyle = 'rgba(244, 114, 182, 0.95)';
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.95)';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ax + (-dir) * mag, ay);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax + (-dir) * 8, ay - 5);
+        ctx.lineTo(ax + (-dir) * 8, ay + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f9a8d4';
+        ctx.fillText('F_drag', ax - dir * mag * 0.5, ay + 14);
+        ctx.restore();
+    }
+}
+
+// 열 표시 (적층 vs 솔리드 비교)
+function drawHeatHint() {
+    if (state.peddy < 0.05) return;
+    const x = state.plateX, y = state.plateY, w = state.plateW, h = state.plateH;
+    const cx = Math.max(x + 40, Math.min(x + w - 40, state.magX));
+    const cy = y + h / 2;
+    const intensity = Math.min(1, state.peddy / 6);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const rad = state.laminated ? 30 : 80;
+    const heat = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    heat.addColorStop(0, `rgba(251, 146, 60, ${0.45 * intensity})`);
+    heat.addColorStop(0.6, `rgba(239, 68, 68, ${0.18 * intensity})`);
+    heat.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = heat;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+// ============================================
+// 미니 그래프 — P꜀(t)
+// ============================================
+function drawMiniGraph() {
+    const W = mini.width, H = mini.height;
+    mctx.save();
+    const grad = mctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    mctx.fillStyle = grad;
+    mctx.fillRect(0, 0, W, H);
+
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 30) {
+        mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke();
+    }
+    for (let i = 0; i < H; i += 28) {
+        mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke();
+    }
+    mctx.strokeStyle = 'rgba(168, 139, 250, 0.4)';
+    mctx.setLineDash([4, 4]);
+    mctx.beginPath();
+    mctx.moveTo(0, H - 10); mctx.lineTo(W, H - 10);
+    mctx.stroke();
+    mctx.setLineDash([]);
+
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = state.laminated ? 'rgba(52, 211, 153, 0.85)' : 'rgba(251, 146, 60, 0.85)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillText(`◯ P꜀(t) · ${state.laminated ? 'LAMINATED' : 'SOLID'}`, 8, 6);
+
+    // y 스케일
+    let maxAbs = 0.5;
+    for (const v of pBuf) if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
+    maxAbs = Math.max(maxAbs, 1.0);
+
+    // 면적 채우기
+    mctx.save();
+    mctx.shadowBlur = 8;
+    mctx.shadowColor = state.laminated ? '#34d399' : '#f97316';
+    const fillGrad = mctx.createLinearGradient(0, 0, 0, H);
+    if (state.laminated) {
+        fillGrad.addColorStop(0, 'rgba(52, 211, 153, 0.55)');
+        fillGrad.addColorStop(1, 'rgba(52, 211, 153, 0.04)');
+    } else {
+        fillGrad.addColorStop(0, 'rgba(251, 146, 60, 0.55)');
+        fillGrad.addColorStop(1, 'rgba(251, 146, 60, 0.04)');
+    }
+    mctx.fillStyle = fillGrad;
+    mctx.beginPath();
+    mctx.moveTo(0, H - 10);
+    for (let i = 0; i < pBuf.length; i++) {
+        const x = (i / (pBuf.length - 1)) * W;
+        const y = (H - 10) - (pBuf[i] / maxAbs) * (H - 24);
+        mctx.lineTo(x, y);
+    }
+    mctx.lineTo(W, H - 10);
+    mctx.closePath();
+    mctx.fill();
+    mctx.restore();
+
+    // 곡선
+    mctx.save();
+    mctx.shadowBlur = 10;
+    mctx.shadowColor = state.laminated ? '#34d399' : '#fb923c';
+    const lineGrad = mctx.createLinearGradient(0, 0, W, 0);
+    if (state.laminated) {
+        lineGrad.addColorStop(0, 'rgba(110, 231, 183, 0.9)');
+        lineGrad.addColorStop(1, 'rgba(16, 185, 129, 0.95)');
+    } else {
+        lineGrad.addColorStop(0, 'rgba(253, 186, 116, 0.9)');
+        lineGrad.addColorStop(1, 'rgba(239, 68, 68, 0.95)');
+    }
+    mctx.strokeStyle = lineGrad;
+    mctx.lineWidth = 2;
+    mctx.lineCap = 'round';
+    mctx.beginPath();
+    for (let i = 0; i < pBuf.length; i++) {
+        const x = (i / (pBuf.length - 1)) * W;
+        const y = (H - 10) - (pBuf[i] / maxAbs) * (H - 24);
+        if (i === 0) mctx.moveTo(x, y); else mctx.lineTo(x, y);
+    }
+    mctx.stroke();
+    mctx.restore();
+
+    // 현재 값 마커
+    mctx.save();
+    const lastV = pBuf[pBuf.length - 1];
+    const lastY = (H - 10) - (lastV / maxAbs) * (H - 24);
+    mctx.shadowBlur = 14;
+    mctx.shadowColor = state.laminated ? '#34d399' : '#f97316';
+    mctx.fillStyle = state.laminated ? 'rgba(52, 211, 153, 0.95)' : 'rgba(251, 146, 60, 0.95)';
+    mctx.beginPath();
+    mctx.arc(W - 4, lastY, 4, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.restore();
+
+    mctx.restore();
+}
+
+// ============================================
+// 라이브 패널 갱신
+// ============================================
+function updateLivePanel() {
+    const ieddy = state.ieddy;
+    const peddy = state.peddy;
+    const fdrag = Math.abs(state.fdrag);
+    const lamPct = state.lamReduction;
+
+    $('ieVal').textContent = ieddy.toFixed(2);
+    $('peVal').textContent = peddy.toFixed(2);
+    $('fdVal').textContent = fdrag.toFixed(2);
+    $('lamVal').textContent = lamPct.toFixed(1);
+
+    const isZero = ieddy < 0.04;
+    ['pill-ie','pill-pe','pill-fd'].forEach(id => {
+        const el = $(id);
+        el.classList.toggle('zero', isZero);
+        el.querySelector('.live-num').classList.toggle('zero', isZero);
+    });
+    // 적층칩은 적층 ON일 때 강조
+    const lamPill = $('pill-lam');
+    lamPill.classList.toggle('lam', state.laminated);
+    lamPill.querySelector('.live-num').classList.toggle('green', state.laminated && lamPct > 5);
+
+    // 알림 전환
+    const alert = $('zeroAlert');
+    if (isZero) {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-zero';
+        alert.innerHTML = '<span class="font-bold">정지 상태</span> · 자석이 움직이지 않아 자속 변화 dΦ/dt = 0 → 와전류도 0';
+    } else if (state.laminated) {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-lam';
+        alert.innerHTML = `<span class="font-bold">적층 효과</span> · 와전류 루프가 각 ${state.n}개 슬랏에 갇혀 손실 약 <span class="font-bold text-emerald-200">${lamPct.toFixed(1)}%</span> 감소`;
+    } else {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-active';
+        alert.innerHTML = `<span class="font-bold">와전류 유도 중</span> · 자석 좌우로 반대 방향 폐쇄 루프 형성 → 열 손실 P꜀ ≈ <span class="font-mono">${peddy.toFixed(2)}</span>`;
+    }
+
+    // 손실 게이지
+    const ratio = state.peddySolid > 0.001 ? (state.laminated ? state.peddy / state.peddySolid : 1) : (state.laminated ? 1 / (state.n * state.n) : 1);
+    const lossBar = $('lossBar');
+    const lossPct = Math.min(100, peddy * 16);
+    lossBar.style.width = lossPct.toFixed(1) + '%';
+    lossBar.classList.toggle('green', state.laminated);
+    $('lossLabel').textContent = state.laminated
+        ? `적층 ${state.n}매 · 솔리드 대비 ${(ratio * 100).toFixed(1)}%`
+        : `솔리드 · 100%`;
+
+    // 사이드 정보
+    $('coreLabel').textContent = state.laminated ? `적층 (n=${state.n})` : '솔리드';
+    $('coreLabel').style.color = state.laminated ? '#a7f3d0' : '#67e8f9';
+    $('velLabel').textContent = `${(state.velocity * 60).toFixed(1)} px/s`;
+    if (ieddy < 0.04) $('dirLabel').textContent = '—';
+    else $('dirLabel').textContent = state.velocity > 0 ? '→ (자석 우진행)' : '← (자석 좌진행)';
+    $('ratioLabel').textContent = state.laminated ? `${(1/(state.n*state.n)).toFixed(3)}× (이론)` : '1.00×';
+}
+
+// ============================================
+// 메인 루프
+// ============================================
+function animate() {
+    state.t_step++;
+    updatePhysics();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawPlate();
+    drawHeatHint();
+    drawEddyLoops();
+    drawParticles();
+    drawMagnet();
+
+    drawMiniGraph();
+    updateLivePanel();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    seedParticles();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

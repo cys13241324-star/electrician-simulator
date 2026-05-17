@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크쌤 · 2026 학습 제품 카탈로그</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbfaf7;
+    --paper-2:#f4f1ea;
+    --beige:#e8e1d3;
+    --beige-2:#d9cdb4;
+    --ink:#1a1a1a;
+    --ink-2:#4a4a4a;
+    --muted:#8c8478;
+    --line:#e3ddd1;
+    --accent-red:#c0392b;
+    --accent-blue:#365a78;
+    --accent-green:#5b7a4a;
+    --accent-yellow:#d4a843;
+  }
+  html,body{background:var(--paper);color:var(--ink);font-family:'Inter','Noto Serif KR',serif;-webkit-font-smoothing:antialiased;}
+  .font-serif{font-family:'Noto Serif KR',serif;}
+  .font-sans{font-family:'Inter',sans-serif;}
+  .ruler{background:linear-gradient(to right,var(--line) 1px,transparent 1px) 0 0/8px 100%;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:#fff;}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:500;border:1px solid transparent;transition:all .18s ease;cursor:pointer;}
+  .chip:hover{border-color:var(--ink);}
+  .chip.is-active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .product-card{background:#fff;border:1px solid var(--line);transition:all .25s ease;position:relative;}
+  .product-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.06);border-color:#c9c1b0;}
+  .product-thumb{background:var(--paper-2);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .product-thumb svg{width:78%;height:78%;}
+  .star-btn{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease;}
+  .star-btn:hover{background:#fff;}
+  .star-btn.is-on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .cover-grid{background-image:radial-gradient(circle,var(--beige-2) 1px,transparent 1px);background-size:14px 14px;}
+  .price-tag{font-feature-settings:'tnum';letter-spacing:-.01em;}
+  .divider-dot::before{content:'·';margin:0 8px;color:var(--muted);}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;}
+  .seg button{padding:6px 12px;font-size:12px;color:var(--ink-2);background:transparent;border:none;cursor:pointer;}
+  .seg button.is-active{background:var(--ink);color:#fff;}
+  .modal-bg{background:rgba(20,18,15,.5);backdrop-filter:blur(2px);}
+  .scroll-shadow{mask-image:linear-gradient(to right,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%);}
+  .number-mark{font-family:'Noto Serif KR',serif;font-size:10px;color:var(--muted);letter-spacing:.2em;}
+  .ikea-arrow{display:inline-block;width:14px;height:14px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);}
+  details[open] .toggle-arrow{transform:rotate(90deg);}
+  .toggle-arrow{transition:transform .2s ease;}
+  .stock-bar{height:4px;background:var(--paper-2);border-radius:2px;overflow:hidden;}
+  .stock-bar span{display:block;height:100%;background:var(--accent-green);}
+  .review-card{border-left:2px solid var(--beige-2);padding:10px 14px;}
+  @media print{ .no-print{display:none !important;} }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============ 상단 바 ============ -->
+<header class="border-b border-[var(--line)] bg-[var(--paper)] sticky top-0 z-30 no-print">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-[var(--ink)] text-[var(--paper)] flex items-center justify-center font-serif text-lg">스</div>
+      <div class="leading-tight">
+        <div class="font-semibold tracking-tight">스파크쌤 · SPARK</div>
+        <div class="text-[11px] text-[var(--muted)] tracking-[.18em] uppercase">Learning Goods Catalog 2026</div>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-6 text-sm text-[var(--ink-2)]">
+      <a href="#cover" class="hover:text-[var(--ink)]">표지</a>
+      <a href="#catalog" class="hover:text-[var(--ink)]">제품</a>
+      <a href="#bestseller" class="hover:text-[var(--ink)]">베스트셀러</a>
+      <a href="#guide" class="hover:text-[var(--ink)]">조립 가이드</a>
+    </nav>
+    <button id="openCart" class="pill hover:bg-white">
+      <span>★</span><span>위시리스트</span><span id="cartCount" class="font-semibold text-[var(--ink)]">0</span>
+    </button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6">
+
+<!-- ============ 표지 ============ -->
+<section id="cover" class="cover-grid border-l border-r border-[var(--line)] mt-8 px-8 md:px-16 py-16 md:py-24">
+  <div class="grid md:grid-cols-12 gap-10 items-end">
+    <div class="md:col-span-7">
+      <div class="number-mark mb-6">No. 014 · SPRING / SUMMER 2026</div>
+      <h1 class="font-serif text-5xl md:text-7xl leading-[1.05] tracking-tight">
+        책상 위의<br/>
+        <span class="italic">작은 변전소.</span>
+      </h1>
+      <p class="mt-8 max-w-md text-[var(--ink-2)] leading-relaxed">
+        2026년 봄·여름, 스파크쌤이 제안하는 학습 제품 카탈로그.
+        조립이 쉬운 교재부터 책상 위에 두는 작은 회로까지 — 시험 합격을 향한 64개의 사물.
+      </p>
+      <div class="mt-10 flex flex-wrap gap-3">
+        <span class="pill">A4 · 64p</span>
+        <span class="pill">한정 · 2,000부</span>
+        <span class="pill">₩ 0 · 무료배포</span>
+      </div>
+    </div>
+    <div class="md:col-span-5">
+      <!-- 표지 일러스트: 책상 위의 작은 정물 -->
+      <svg viewBox="0 0 320 320" class="w-full h-auto">
+        <rect width="320" height="320" fill="#fbfaf7"/>
+        <!-- 책상 라인 -->
+        <line x1="20" y1="240" x2="300" y2="240" stroke="#1a1a1a" stroke-width="1.5"/>
+        <!-- 책 더미 -->
+        <rect x="50" y="200" width="110" height="14" fill="#c0392b" stroke="#1a1a1a" stroke-width="1.2"/>
+        <rect x="56" y="186" width="98" height="14" fill="#365a78" stroke="#1a1a1a" stroke-width="1.2"/>
+        <rect x="62" y="172" width="86" height="14" fill="#d4a843" stroke="#1a1a1a" stroke-width="1.2"/>
+        <!-- 머그컵 -->
+        <rect x="190" y="190" width="50" height="50" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+        <path d="M240 200 q14 0 14 14 t-14 14" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+        <text x="200" y="222" font-family="Noto Serif KR" font-size="14" fill="#1a1a1a">V=IR</text>
+        <!-- 연필 -->
+        <g transform="translate(70 156) rotate(-8)">
+          <rect width="90" height="6" fill="#e8e1d3" stroke="#1a1a1a" stroke-width="1"/>
+          <polygon points="90,0 100,3 90,6" fill="#1a1a1a"/>
+        </g>
+        <!-- 전구 -->
+        <g transform="translate(260 90)">
+          <circle r="22" fill="#fff8e0" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M-6 18 L-6 26 L6 26 L6 18" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M-4 28 L4 28 M-4 31 L4 31" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M-8 -4 Q0 4 8 -4" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+        </g>
+        <!-- 작은 회로 -->
+        <g transform="translate(70 70)" stroke="#1a1a1a" stroke-width="1.2" fill="none">
+          <rect x="0" y="0" width="80" height="50"/>
+          <circle cx="20" cy="0" r="6" fill="#fbfaf7"/>
+          <circle cx="60" cy="50" r="6" fill="#fbfaf7"/>
+          <path d="M0 25 L-10 25 M80 25 L90 25"/>
+        </g>
+        <!-- 별 장식 -->
+        <text x="20" y="40" font-family="Noto Serif KR" font-size="12" fill="#8c8478">✦</text>
+        <text x="290" y="60" font-family="Noto Serif KR" font-size="12" fill="#8c8478">✦</text>
+      </svg>
+    </div>
+  </div>
+  <div class="mt-16 pt-6 border-t border-[var(--line)] flex flex-wrap items-center justify-between text-xs text-[var(--muted)] tracking-[.15em] uppercase">
+    <span>SPARK · 2026 / VOL.014</span>
+    <span class="hidden md:inline">조립이 쉬운 학습</span>
+    <span>본 책자는 무료입니다 · ₩ 0</span>
+  </div>
+</section>
+
+<!-- ============ 카탈로그 본문 ============ -->
+<section id="catalog" class="mt-16 grid md:grid-cols-12 gap-10">
+
+  <!-- 좌측 사이드 (카테고리) -->
+  <aside class="md:col-span-3">
+    <div class="md:sticky md:top-24">
+      <div class="number-mark mb-2">01 · 카테고리</div>
+      <h2 class="font-serif text-2xl mb-5">제품 분류</h2>
+      <ul id="catList" class="space-y-1 text-sm">
+        <li><button data-cat="all" class="cat-btn w-full text-left py-2 px-3 border-l-2 border-[var(--ink)] bg-[var(--paper-2)] flex justify-between items-center"><span>전체</span><span class="text-[var(--muted)] text-xs" data-cnt="all">—</span></button></li>
+        <li><button data-cat="desk" class="cat-btn w-full text-left py-2 px-3 border-l-2 border-transparent hover:bg-[var(--paper-2)] flex justify-between items-center"><span>책상 위</span><span class="text-[var(--muted)] text-xs" data-cnt="desk">—</span></button></li>
+        <li><button data-cat="book" class="cat-btn w-full text-left py-2 px-3 border-l-2 border-transparent hover:bg-[var(--paper-2)] flex justify-between items-center"><span>교재</span><span class="text-[var(--muted)] text-xs" data-cnt="book">—</span></button></li>
+        <li><button data-cat="sim" class="cat-btn w-full text-left py-2 px-3 border-l-2 border-transparent hover:bg-[var(--paper-2)] flex justify-between items-center"><span>시뮬레이터</span><span class="text-[var(--muted)] text-xs" data-cnt="sim">—</span></button></li>
+        <li><button data-cat="digital" class="cat-btn w-full text-left py-2 px-3 border-l-2 border-transparent hover:bg-[var(--paper-2)] flex justify-between items-center"><span>디지털</span><span class="text-[var(--muted)] text-xs" data-cnt="digital">—</span></button></li>
+        <li><button data-cat="goods" class="cat-btn w-full text-left py-2 px-3 border-l-2 border-transparent hover:bg-[var(--paper-2)] flex justify-between items-center"><span>합격 굿즈</span><span class="text-[var(--muted)] text-xs" data-cnt="goods">—</span></button></li>
+      </ul>
+
+      <div class="mt-10 number-mark mb-2">02 · 색상 코드</div>
+      <h3 class="font-serif text-lg mb-3">카테고리 색</h3>
+      <ul class="text-xs space-y-2 text-[var(--ink-2)]">
+        <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#5b7a4a"></span>책상 위 · Sage</li>
+        <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#c0392b"></span>교재 · Brick</li>
+        <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#365a78"></span>시뮬레이터 · Steel</li>
+        <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#1a1a1a"></span>디지털 · Ink</li>
+        <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background:#d4a843"></span>굿즈 · Amber</li>
+      </ul>
+
+      <div class="mt-10 number-mark mb-2">03 · 안내</div>
+      <p class="text-xs text-[var(--muted)] leading-relaxed">
+        모든 가격은 가상 통화(SP)이며, 학습 목표 달성 시 차감됩니다. 실제 결제는 발생하지 않습니다.
+      </p>
+    </div>
+  </aside>
+
+  <!-- 우측 제품 그리드 -->
+  <div class="md:col-span-9">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div>
+        <div class="number-mark mb-1">PRODUCTS</div>
+        <h2 class="font-serif text-3xl tracking-tight">제품 컬렉션 <span id="resultCount" class="text-[var(--muted)] text-base ml-2">(0)</span></h2>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-[var(--muted)]">정렬</span>
+        <div class="seg" id="sortSeg">
+          <button data-sort="popular" class="is-active">인기순</button>
+          <button data-sort="price">가격↑</button>
+          <button data-sort="price-desc">가격↓</button>
+          <button data-sort="rating">평점</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+    <div id="empty" class="hidden text-center text-[var(--muted)] py-16 border border-dashed border-[var(--line)] mt-6">
+      해당 카테고리의 제품이 없습니다.
+    </div>
+  </div>
+</section>
+
+<!-- ============ 베스트셀러 ============ -->
+<section id="bestseller" class="mt-24 bg-[var(--paper-2)] -mx-6 px-6 py-14 border-y border-[var(--line)]">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-end justify-between mb-8">
+      <div>
+        <div class="number-mark mb-1">04 · BEST SELLERS</div>
+        <h2 class="font-serif text-3xl tracking-tight">이번 분기 베스트셀러</h2>
+        <p class="text-sm text-[var(--ink-2)] mt-2">학습자들이 가장 많이 담은 제품 다섯 가지.</p>
+      </div>
+      <button class="pill" onclick="openGuide()">조립 가이드 보기 <span class="ikea-arrow"></span></button>
+    </div>
+    <div id="bestList" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
+  </div>
+</section>
+
+<!-- ============ 사용 가이드 ============ -->
+<section id="guide" class="mt-24 grid md:grid-cols-12 gap-10">
+  <div class="md:col-span-5">
+    <div class="number-mark mb-2">05 · ASSEMBLY GUIDE</div>
+    <h2 class="font-serif text-3xl tracking-tight">조립도 — 학습 책상 셋업</h2>
+    <p class="mt-4 text-[var(--ink-2)] leading-relaxed">
+      모든 제품에는 한 장의 조립도가 함께 옵니다. 도구는 단 두 가지 —
+      <em>연필</em>과 <em>호기심</em>.
+    </p>
+    <ol class="mt-6 space-y-4 text-sm">
+      <li class="flex gap-4"><span class="font-serif text-2xl text-[var(--muted)] w-8">1</span><div><div class="font-medium">평평한 책상을 준비합니다</div><div class="text-[var(--ink-2)]">최소 60×40cm, 그리고 60분의 집중.</div></div></li>
+      <li class="flex gap-4"><span class="font-serif text-2xl text-[var(--muted)] w-8">2</span><div><div class="font-medium">옴의 법칙 사전을 펼칩니다</div><div class="text-[var(--ink-2)]">왼쪽에 두면 좌뇌가 좋아합니다.</div></div></li>
+      <li class="flex gap-4"><span class="font-serif text-2xl text-[var(--muted)] w-8">3</span><div><div class="font-medium">암기 카드 데크를 섞습니다</div><div class="text-[var(--ink-2)]">62장 중 5장만 뽑아 책 위에 올립니다.</div></div></li>
+      <li class="flex gap-4"><span class="font-serif text-2xl text-[var(--muted)] w-8">4</span><div><div class="font-medium">변압기 머그컵을 채웁니다</div><div class="text-[var(--ink-2)]">물 250ml — 1차 권선 비율과 동일.</div></div></li>
+      <li class="flex gap-4"><span class="font-serif text-2xl text-[var(--muted)] w-8">5</span><div><div class="font-medium">시작합니다</div><div class="text-[var(--ink-2)]">조립 완료. 평균 소요시간 4분.</div></div></li>
+    </ol>
+  </div>
+  <div class="md:col-span-7">
+    <!-- 조립도 SVG -->
+    <div class="bg-[var(--paper-2)] border border-[var(--line)] p-8">
+      <svg viewBox="0 0 520 360" class="w-full h-auto">
+        <rect width="520" height="360" fill="#f4f1ea"/>
+        <!-- 책상 -->
+        <line x1="40" y1="280" x2="480" y2="280" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="60" y1="280" x2="60" y2="320" stroke="#1a1a1a" stroke-width="1.5"/>
+        <line x1="460" y1="280" x2="460" y2="320" stroke="#1a1a1a" stroke-width="1.5"/>
+        <!-- 1. 책 -->
+        <g>
+          <rect x="80" y="240" width="120" height="40" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+          <line x1="80" y1="250" x2="200" y2="250" stroke="#1a1a1a" stroke-width="0.8"/>
+          <circle cx="65" cy="225" r="11" fill="#1a1a1a"/>
+          <text x="65" y="229" text-anchor="middle" fill="#fff" font-family="Noto Serif KR" font-size="12">1</text>
+          <line x1="76" y1="225" x2="98" y2="235" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="2 2"/>
+        </g>
+        <!-- 2. 카드 데크 -->
+        <g>
+          <rect x="220" y="244" width="60" height="36" fill="#c0392b" stroke="#1a1a1a" stroke-width="1.2"/>
+          <rect x="225" y="240" width="60" height="36" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+          <rect x="230" y="236" width="60" height="36" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+          <circle cx="240" cy="215" r="11" fill="#1a1a1a"/>
+          <text x="240" y="219" text-anchor="middle" fill="#fff" font-family="Noto Serif KR" font-size="12">2</text>
+          <line x1="251" y1="215" x2="258" y2="232" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="2 2"/>
+        </g>
+        <!-- 3. 머그컵 -->
+        <g>
+          <rect x="310" y="232" width="44" height="48" rx="2" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M354 244 q12 0 12 12 t-12 12" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+          <text x="316" y="262" font-family="Noto Serif KR" font-size="11">V=IR</text>
+          <circle cx="332" cy="210" r="11" fill="#1a1a1a"/>
+          <text x="332" y="214" text-anchor="middle" fill="#fff" font-family="Noto Serif KR" font-size="12">3</text>
+          <line x1="332" y1="221" x2="332" y2="230" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="2 2"/>
+        </g>
+        <!-- 4. 노트 + 연필 -->
+        <g>
+          <rect x="380" y="252" width="78" height="28" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+          <line x1="385" y1="260" x2="450" y2="260" stroke="#8c8478" stroke-width="0.6"/>
+          <line x1="385" y1="266" x2="450" y2="266" stroke="#8c8478" stroke-width="0.6"/>
+          <line x1="385" y1="272" x2="430" y2="272" stroke="#8c8478" stroke-width="0.6"/>
+          <g transform="translate(380 238) rotate(-6)">
+            <rect width="70" height="5" fill="#d4a843" stroke="#1a1a1a" stroke-width="0.8"/>
+            <polygon points="70,0 78,2.5 70,5" fill="#1a1a1a"/>
+          </g>
+          <circle cx="465" cy="220" r="11" fill="#1a1a1a"/>
+          <text x="465" y="224" text-anchor="middle" fill="#fff" font-family="Noto Serif KR" font-size="12">4</text>
+          <line x1="454" y1="220" x2="448" y2="240" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="2 2"/>
+        </g>
+        <!-- 전구(완료) -->
+        <g transform="translate(260 80)">
+          <circle r="26" fill="#fff8e0" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M-7 22 L-7 32 L7 32 L7 22" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M-5 34 L5 34 M-5 37 L5 37" stroke="#1a1a1a" stroke-width="1.2"/>
+          <path d="M-10 -6 Q0 6 10 -6" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+          <text x="0" y="60" text-anchor="middle" font-family="Noto Serif KR" font-size="12" fill="#1a1a1a">완료 · 4분</text>
+        </g>
+        <text x="40" y="335" font-family="Inter" font-size="10" fill="#8c8478" letter-spacing="2">FIG. 01 — DESK ASSEMBLY · NO TOOLS REQUIRED</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 푸터 ============ -->
+<footer class="mt-24 border-t border-[var(--line)] pt-10 pb-14">
+  <div class="grid md:grid-cols-12 gap-8 text-sm">
+    <div class="md:col-span-4">
+      <div class="font-serif text-2xl mb-2">스파크쌤</div>
+      <p class="text-[var(--ink-2)] leading-relaxed">전기기능사 학습을 위한 작은 사물들. <br/>책상 위에 두는 64개의 도구로 합격에 한 발 가까워지길.</p>
+    </div>
+    <div class="md:col-span-2">
+      <div class="number-mark mb-3">제품</div>
+      <ul class="space-y-1.5 text-[var(--ink-2)]">
+        <li>책상 위</li><li>교재</li><li>시뮬레이터</li><li>디지털</li><li>굿즈</li>
+      </ul>
+    </div>
+    <div class="md:col-span-3">
+      <div class="number-mark mb-3">콘셉트</div>
+      <ul class="space-y-1.5 text-[var(--ink-2)]">
+        <li>북유럽 가구 스타일 · 조립의 즐거움</li>
+        <li>일본 미니멀 스타일 · 군더더기 없는</li>
+        <li>영국 가전 스타일 · 한 가지를 잘하는</li>
+      </ul>
+    </div>
+    <div class="md:col-span-3">
+      <div class="number-mark mb-3">정보</div>
+      <p class="text-[var(--muted)] text-xs leading-relaxed">
+        본 콘텐츠는 가상 카탈로그 시뮬레이션입니다. 실제 판매 제품이 아니며, 모든 가격·재고·평점은 학습용 예시입니다.
+      </p>
+    </div>
+  </div>
+  <div class="mt-10 pt-6 border-t border-[var(--line)] flex flex-wrap items-center justify-between text-xs text-[var(--muted)] tracking-[.15em] uppercase">
+    <span>© 2026 SPARK · Catalog Vol.014</span>
+    <span class="hidden md:inline">조립이 쉬운 학습</span>
+    <span>PRINTED ON RECYCLED PIXELS</span>
+  </div>
+</footer>
+
+</main>
+
+<!-- ============ 제품 상세 모달 ============ -->
+<div id="modal" class="hidden fixed inset-0 z-50 modal-bg items-center justify-center p-4">
+  <div class="bg-[var(--paper)] max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[var(--line)] shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--line)] sticky top-0 bg-[var(--paper)] z-10">
+      <div class="text-xs tracking-[.2em] uppercase text-[var(--muted)]" id="mCatLabel">DESK</div>
+      <button id="closeModal" class="text-2xl leading-none text-[var(--ink-2)] hover:text-[var(--ink)]">×</button>
+    </div>
+    <div class="grid md:grid-cols-2 gap-0">
+      <div class="bg-[var(--paper-2)] p-10 flex items-center justify-center min-h-[300px]" id="mThumb"></div>
+      <div class="p-8">
+        <div class="number-mark mb-1" id="mSku">SKU —</div>
+        <h3 class="font-serif text-3xl tracking-tight" id="mName">—</h3>
+        <p class="mt-3 text-[var(--ink-2)] leading-relaxed" id="mDesc">—</p>
+        <div class="mt-6 flex items-baseline gap-3">
+          <span class="font-serif text-3xl price-tag" id="mPrice">—</span>
+          <span class="text-xs text-[var(--muted)]">SP · 학습 포인트</span>
+        </div>
+        <div class="mt-5">
+          <div class="flex items-center justify-between text-xs text-[var(--muted)] mb-1.5">
+            <span>재고</span><span id="mStockTxt">—</span>
+          </div>
+          <div class="stock-bar"><span id="mStockBar" style="width:60%"></span></div>
+        </div>
+        <dl class="mt-6 grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+          <div><dt class="text-[var(--muted)] text-xs uppercase tracking-wider">사이즈</dt><dd id="mSize">—</dd></div>
+          <div><dt class="text-[var(--muted)] text-xs uppercase tracking-wider">재질</dt><dd id="mMat">—</dd></div>
+          <div><dt class="text-[var(--muted)] text-xs uppercase tracking-wider">평점</dt><dd id="mRating">—</dd></div>
+          <div><dt class="text-[var(--muted)] text-xs uppercase tracking-wider">카테고리</dt><dd id="mCat">—</dd></div>
+        </dl>
+        <button id="mStar" class="mt-7 w-full py-3 border border-[var(--ink)] text-[var(--ink)] font-medium hover:bg-[var(--ink)] hover:text-[var(--paper)] transition">★ 위시리스트에 담기</button>
+      </div>
+    </div>
+    <div class="border-t border-[var(--line)] px-8 py-6">
+      <div class="number-mark mb-3">사용법</div>
+      <p class="text-sm text-[var(--ink-2)] leading-relaxed" id="mUsage">—</p>
+    </div>
+    <div class="border-t border-[var(--line)] px-8 py-6">
+      <div class="number-mark mb-3">학습자 후기</div>
+      <div id="mReviews" class="space-y-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 조립 가이드 모달 ============ -->
+<div id="guideModal" class="hidden fixed inset-0 z-50 modal-bg items-center justify-center p-4">
+  <div class="bg-[var(--paper)] max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[var(--line)] shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--line)]">
+      <div class="text-xs tracking-[.2em] uppercase text-[var(--muted)]">ASSEMBLY · FIG. 02</div>
+      <button id="closeGuide" class="text-2xl leading-none text-[var(--ink-2)] hover:text-[var(--ink)]">×</button>
+    </div>
+    <div class="p-8">
+      <h3 class="font-serif text-3xl mb-2">학습 회로 조립</h3>
+      <p class="text-[var(--ink-2)] text-sm">암기 카드 데크와 머그컵, 노트 한 권으로 만드는 작은 회로.</p>
+      <div class="mt-6 bg-[var(--paper-2)] border border-[var(--line)] p-6">
+        <svg viewBox="0 0 480 240" class="w-full h-auto">
+          <rect width="480" height="240" fill="#f4f1ea"/>
+          <!-- 회로 박스 -->
+          <rect x="60" y="60" width="360" height="120" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+          <!-- 전지 -->
+          <line x1="60" y1="120" x2="40" y2="120" stroke="#1a1a1a" stroke-width="1.5"/>
+          <line x1="40" y1="100" x2="40" y2="140" stroke="#1a1a1a" stroke-width="2"/>
+          <line x1="34" y1="108" x2="34" y2="132" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="14" y="125" font-size="10" font-family="Inter" fill="#1a1a1a">9V</text>
+          <!-- 저항 (지그재그) -->
+          <polyline points="180,60 190,50 200,70 210,50 220,70 230,50 240,60" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="200" y="44" text-anchor="middle" font-size="10" font-family="Inter" fill="#1a1a1a">R = 220Ω</text>
+          <!-- 전구 -->
+          <circle cx="350" cy="120" r="18" fill="#fff8e0" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="350" y="124" text-anchor="middle" font-size="10" font-family="Inter" fill="#1a1a1a">LED</text>
+          <!-- 스위치 -->
+          <circle cx="120" cy="180" r="3" fill="#1a1a1a"/>
+          <circle cx="160" cy="180" r="3" fill="#1a1a1a"/>
+          <line x1="120" y1="180" x2="155" y2="170" stroke="#1a1a1a" stroke-width="1.5"/>
+          <text x="140" y="200" text-anchor="middle" font-size="10" font-family="Inter" fill="#1a1a1a">SW</text>
+          <!-- 라벨 -->
+          <text x="60" y="40" font-size="11" font-family="Noto Serif KR" fill="#8c8478" letter-spacing="2">FIG. 02 — LEARNING CIRCUIT</text>
+          <text x="60" y="215" font-size="10" font-family="Inter" fill="#8c8478">조립 시간 : 약 6분 · 도구 : 손 · 부품 : 4종</text>
+        </svg>
+      </div>
+      <ol class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <li class="flex gap-3"><span class="font-serif text-xl text-[var(--muted)]">A</span><span>9V 전지를 왼쪽에 배치합니다. 극성 확인.</span></li>
+        <li class="flex gap-3"><span class="font-serif text-xl text-[var(--muted)]">B</span><span>저항 220Ω을 직렬로 연결합니다.</span></li>
+        <li class="flex gap-3"><span class="font-serif text-xl text-[var(--muted)]">C</span><span>LED 전구의 긴 다리를 +쪽에.</span></li>
+        <li class="flex gap-3"><span class="font-serif text-xl text-[var(--muted)]">D</span><span>스위치를 닫고, 빛이 들어오면 성공.</span></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 위시리스트 모달 ============ -->
+<div id="cartModal" class="hidden fixed inset-0 z-50 modal-bg items-center justify-center p-4">
+  <div class="bg-[var(--paper)] max-w-md w-full max-h-[80vh] overflow-y-auto border border-[var(--line)] shadow-2xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--line)]">
+      <div>
+        <div class="text-xs tracking-[.2em] uppercase text-[var(--muted)]">WISHLIST</div>
+        <h3 class="font-serif text-xl">담은 제품</h3>
+      </div>
+      <button id="closeCart" class="text-2xl leading-none text-[var(--ink-2)] hover:text-[var(--ink)]">×</button>
+    </div>
+    <div id="cartList" class="p-6 space-y-3">
+      <p class="text-[var(--muted)] text-sm" id="cartEmpty">아직 담긴 제품이 없습니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== 데이터 ==========
+const ICONS = {
+  book(color='#c0392b'){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="22" y="20" width="76" height="86" fill="${color}" stroke="#1a1a1a" stroke-width="1.5"/>
+      <rect x="28" y="20" width="70" height="86" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+      <line x1="60" y1="20" x2="60" y2="106" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="3 3"/>
+      <text x="44" y="60" text-anchor="middle" font-family="Noto Serif KR" font-size="11" fill="#1a1a1a">옴</text>
+      <text x="76" y="60" text-anchor="middle" font-family="Noto Serif KR" font-size="11" fill="#1a1a1a">V=IR</text>
+      <text x="60" y="100" text-anchor="middle" font-family="Inter" font-size="6" fill="#8c8478" letter-spacing="2">SPARK</text>
+    </svg>`;},
+  notebook(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="26" y="22" width="68" height="82" fill="#365a78" stroke="#1a1a1a" stroke-width="1.5"/>
+      <rect x="22" y="22" width="6" height="82" fill="#1a1a1a"/>
+      <circle cx="25" cy="34" r="2" fill="#fff"/><circle cx="25" cy="50" r="2" fill="#fff"/>
+      <circle cx="25" cy="66" r="2" fill="#fff"/><circle cx="25" cy="82" r="2" fill="#fff"/>
+      <circle cx="25" cy="98" r="2" fill="#fff"/>
+      <text x="60" y="60" text-anchor="middle" font-family="Noto Serif KR" font-size="10" fill="#fff">K</text>
+      <text x="60" y="74" text-anchor="middle" font-family="Inter" font-size="6" fill="#fff" letter-spacing="2">KIRCHHOFF</text>
+    </svg>`;},
+  mug(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="32" y="40" width="50" height="60" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <path d="M82 54 q16 0 16 16 t-16 16" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="57" y="74" text-anchor="middle" font-family="Noto Serif KR" font-size="11" fill="#1a1a1a">V₁:V₂</text>
+      <text x="57" y="88" text-anchor="middle" font-family="Inter" font-size="7" fill="#8c8478">= N₁:N₂</text>
+      <ellipse cx="57" cy="40" rx="25" ry="3" fill="none" stroke="#1a1a1a" stroke-width="0.8"/>
+    </svg>`;},
+  poster(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="20" y="16" width="80" height="92" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="30" y1="50" x2="50" y2="50" stroke="#1a1a1a" stroke-width="1"/>
+      <polyline points="50,40 56,45 50,50 56,55 50,60 56,65" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="56" y1="55" x2="80" y2="55" stroke="#1a1a1a" stroke-width="1"/>
+      <circle cx="80" cy="55" r="6" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="50" y1="70" x2="80" y2="70" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="30" y1="50" x2="30" y2="80" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="86" y1="55" x2="86" y2="80" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="30" y1="80" x2="86" y2="80" stroke="#1a1a1a" stroke-width="1"/>
+      <text x="60" y="100" text-anchor="middle" font-family="Inter" font-size="6" fill="#8c8478" letter-spacing="2">CIRCUIT</text>
+    </svg>`;},
+  cards(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="30" y="40" width="46" height="64" rx="3" fill="#d4a843" stroke="#1a1a1a" stroke-width="1.2" transform="rotate(-8 53 72)"/>
+      <rect x="38" y="32" width="46" height="64" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="1.2"/>
+      <rect x="46" y="24" width="46" height="64" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <text x="69" y="50" text-anchor="middle" font-family="Noto Serif KR" font-size="12" fill="#1a1a1a">Q.</text>
+      <line x1="54" y1="60" x2="84" y2="60" stroke="#1a1a1a" stroke-width="0.6"/>
+      <line x1="54" y1="68" x2="84" y2="68" stroke="#1a1a1a" stroke-width="0.6"/>
+      <line x1="54" y1="76" x2="76" y2="76" stroke="#1a1a1a" stroke-width="0.6"/>
+    </svg>`;},
+  digital(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="20" y="32" width="80" height="56" rx="2" fill="#1a1a1a"/>
+      <rect x="24" y="36" width="72" height="44" fill="#fbfaf7"/>
+      <circle cx="60" cy="58" r="11" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+      <line x1="60" y1="58" x2="60" y2="51" stroke="#1a1a1a" stroke-width="1.2"/>
+      <line x1="60" y1="58" x2="66" y2="58" stroke="#1a1a1a" stroke-width="1.2"/>
+      <rect x="48" y="92" width="24" height="3" fill="#1a1a1a"/>
+      <text x="60" y="106" text-anchor="middle" font-family="Inter" font-size="6" fill="#8c8478" letter-spacing="2">ACCESS PASS</text>
+    </svg>`;},
+  diary(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="26" y="20" width="68" height="84" fill="#5b7a4a" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="60" y1="20" x2="60" y2="104" stroke="#1a1a1a" stroke-width="0.8" stroke-dasharray="3 3"/>
+      <rect x="50" y="40" width="20" height="14" fill="#d4a843" stroke="#1a1a1a" stroke-width="1"/>
+      <text x="60" y="50" text-anchor="middle" font-family="Noto Serif KR" font-size="9" fill="#1a1a1a">PASS</text>
+      <text x="60" y="80" text-anchor="middle" font-family="Inter" font-size="6" fill="#fff" letter-spacing="2">2026 DIARY</text>
+      <text x="60" y="92" text-anchor="middle" font-family="Noto Serif KR" font-size="7" fill="#fff">합격</text>
+    </svg>`;},
+  shelf(){return `
+    <svg viewBox="0 0 120 120">
+      <line x1="20" y1="100" x2="100" y2="100" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="20" y1="60" x2="100" y2="60" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="20" y1="20" x2="20" y2="100" stroke="#1a1a1a" stroke-width="1.5"/>
+      <line x1="100" y1="20" x2="100" y2="100" stroke="#1a1a1a" stroke-width="1.5"/>
+      <rect x="26" y="68" width="8" height="30" fill="#c0392b" stroke="#1a1a1a" stroke-width="0.8"/>
+      <rect x="36" y="64" width="8" height="34" fill="#365a78" stroke="#1a1a1a" stroke-width="0.8"/>
+      <rect x="46" y="72" width="8" height="26" fill="#d4a843" stroke="#1a1a1a" stroke-width="0.8"/>
+      <rect x="56" y="68" width="8" height="30" fill="#5b7a4a" stroke="#1a1a1a" stroke-width="0.8"/>
+      <rect x="26" y="28" width="38" height="30" fill="#fff" stroke="#1a1a1a" stroke-width="0.8"/>
+      <text x="45" y="48" text-anchor="middle" font-family="Noto Serif KR" font-size="10" fill="#1a1a1a">電</text>
+    </svg>`;},
+  headband(){return `
+    <svg viewBox="0 0 120 120">
+      <path d="M30 70 Q60 30 90 70" fill="none" stroke="#c0392b" stroke-width="6"/>
+      <path d="M30 70 Q60 30 90 70" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+      <text x="60" y="56" text-anchor="middle" font-family="Noto Serif KR" font-size="11" fill="#fff">合格</text>
+      <ellipse cx="60" cy="90" rx="22" ry="6" fill="#e8e1d3" stroke="#1a1a1a" stroke-width="1"/>
+      <text x="60" y="106" text-anchor="middle" font-family="Inter" font-size="6" fill="#8c8478" letter-spacing="2">FOCUS BAND</text>
+    </svg>`;},
+  headset(){return `
+    <svg viewBox="0 0 120 120">
+      <path d="M30 70 Q60 24 90 70" fill="none" stroke="#1a1a1a" stroke-width="3"/>
+      <rect x="22" y="62" width="14" height="26" rx="3" fill="#1a1a1a"/>
+      <rect x="84" y="62" width="14" height="26" rx="3" fill="#1a1a1a"/>
+      <circle cx="29" cy="75" r="4" fill="#d4a843"/>
+      <circle cx="91" cy="75" r="4" fill="#d4a843"/>
+      <text x="60" y="106" text-anchor="middle" font-family="Inter" font-size="6" fill="#8c8478" letter-spacing="2">AUDIOBOOK</text>
+    </svg>`;},
+  lamp(){return `
+    <svg viewBox="0 0 120 120">
+      <line x1="60" y1="50" x2="60" y2="100" stroke="#1a1a1a" stroke-width="1.5"/>
+      <ellipse cx="60" cy="100" rx="22" ry="4" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>
+      <path d="M40 50 L80 50 L70 24 L50 24 Z" fill="#d4a843" stroke="#1a1a1a" stroke-width="1.2"/>
+      <line x1="40" y1="50" x2="80" y2="50" stroke="#1a1a1a" stroke-width="1"/>
+      <circle cx="60" cy="62" r="6" fill="#fff8e0" stroke="#1a1a1a" stroke-width="1"/>
+    </svg>`;},
+  ruler(){return `
+    <svg viewBox="0 0 120 120">
+      <rect x="20" y="50" width="80" height="20" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+      <g stroke="#1a1a1a" stroke-width="0.8">
+        <line x1="28" y1="50" x2="28" y2="58"/>
+        <line x1="36" y1="50" x2="36" y2="62"/>
+        <line x1="44" y1="50" x2="44" y2="58"/>
+        <line x1="52" y1="50" x2="52" y2="62"/>
+        <line x1="60" y1="50" x2="60" y2="58"/>
+        <line x1="68" y1="50" x2="68" y2="62"/>
+        <line x1="76" y1="50" x2="76" y2="58"/>
+        <line x1="84" y1="50" x2="84" y2="62"/>
+        <line x1="92" y1="50" x2="92" y2="58"/>
+      </g>
+      <text x="60" y="80" text-anchor="middle" font-family="Inter" font-size="7" fill="#8c8478" letter-spacing="2">CIRCUIT SCALE</text>
+    </svg>`;}
+};
+
+const CAT_LABEL = {desk:'책상 위',book:'교재',sim:'시뮬레이터',digital:'디지털',goods:'합격 굿즈'};
+const CAT_COLOR = {desk:'#5b7a4a',book:'#c0392b',sim:'#365a78',digital:'#1a1a1a',goods:'#d4a843'};
+
+const PRODUCTS = [
+  {id:'p01',sku:'SP·001',name:'옴의 법칙 사전',cat:'book',price:18000,stock:42,maxStock:60,rating:4.8,reviews:128,size:'A5 · 280p',material:'재생 종이 · 실제본',icon:'book',sold:520,
+   desc:'V=IR을 280페이지에 걸쳐 천천히. 시험 한 달 전에 매일 한 장씩 넘기기 좋은 두께.',
+   usage:'책상 왼쪽에 두고, 헷갈리는 공식이 나올 때마다 인덱스에서 찾아 보세요. 표지는 살짝 빨갛지만 내용은 차분합니다.',
+   rev:[{u:'박○○',t:'30일에 한 권. 야금야금 외워졌어요.',r:5},{u:'김○○',t:'두께 대비 글씨가 커서 좋음.',r:4}]},
+  {id:'p02',sku:'SP·002',name:'키르히호프 노트북',cat:'desk',price:9800,stock:28,maxStock:50,rating:4.6,reviews:84,size:'B5 · 96매',material:'80g 무선 제본',icon:'notebook',sold:410,
+   desc:'전류 법칙과 전압 법칙을 위한 격자노트. 모눈은 4mm, 회로 그리기에 적당.',
+   usage:'왼쪽 페이지에 회로, 오른쪽 페이지에 방정식. 매일 한 페이지씩 채우면 두 달 안에 한 권이 완성됩니다.',
+   rev:[{u:'이○○',t:'모눈이 너무 진하지 않아 좋음.',r:5},{u:'최○○',t:'펜이 살짝 비침. 한 페이지 띄어 쓰면 OK.',r:4}]},
+  {id:'p03',sku:'SP·003',name:'변압기 머그컵',cat:'goods',price:12500,stock:15,maxStock:30,rating:4.9,reviews:202,size:'400ml',material:'세라믹 · 한국 제조',icon:'mug',sold:680,
+   desc:'1차 권선과 2차 권선의 비율이 새겨진 머그. 물 250ml를 채우면 변압비 5:8.',
+   usage:'아침 커피 한 잔과 함께 V₁:V₂ = N₁:N₂ 공식을 외워보세요.',
+   rev:[{u:'정○○',t:'손잡이 각도 좋음. 매일 들어요.',r:5},{u:'한○○',t:'식기세척기 가능 — 검증 완료.',r:5}]},
+  {id:'p04',sku:'SP·004',name:'회로도 포스터',cat:'desk',price:7500,stock:60,maxStock:80,rating:4.5,reviews:56,size:'A2 · 420×594mm',material:'무광 종이',icon:'poster',sold:240,
+   desc:'기초 회로 14종을 한 장에. 책상 위가 아닌, 벽에 거는 종류.',
+   usage:'책상 정면 벽에 핀으로. 자주 보면 회로기호가 자동으로 읽힙니다.',
+   rev:[{u:'조○○',t:'아침마다 한 번씩 봅니다.',r:4}]},
+  {id:'p05',sku:'SP·005',name:'암기 카드 데크',cat:'book',price:14000,stock:33,maxStock:50,rating:4.7,reviews:312,size:'62장 · 명함 사이즈',material:'두꺼운 코팅 카드',icon:'cards',sold:890,
+   desc:'62장의 카드, 한 면엔 질문, 한 면엔 답. 시험에 자주 나오는 핵심 62개.',
+   usage:'매일 아침 5장씩 뽑아 책 위에 올려두세요. 저녁에 답을 맞춰봅니다.',
+   rev:[{u:'윤○○',t:'카드 두께가 적당. 잘 안 휘어요.',r:5},{u:'장○○',t:'한 달 만에 62장 다 외움.',r:5}]},
+  {id:'p06',sku:'SP·006',name:'시뮬레이터 액세스 패스',cat:'digital',price:29000,stock:99,maxStock:99,rating:4.9,reviews:441,size:'1년 이용권',material:'디지털 · 즉시 발급',icon:'digital',sold:1240,
+   desc:'직병렬 회로·전압분배·전류분배 시뮬레이터 전부. 1년 동안 무제한.',
+   usage:'발급된 코드를 시뮬레이터 페이지에 입력. 브라우저만 있으면 어디서든.',
+   rev:[{u:'서○○',t:'직접 값 바꿔보니 외워짐.',r:5},{u:'문○○',t:'모바일에서도 쾌적.',r:5}]},
+  {id:'p07',sku:'SP·007',name:'합격 다이어리',cat:'goods',price:16500,stock:22,maxStock:40,rating:4.8,reviews:97,size:'A6 · 256p',material:'양장 · 가름끈 2개',icon:'diary',sold:330,
+   desc:'시험일까지의 D-day와 매일의 학습 시간을 기록하는 다이어리.',
+   usage:'첫 페이지에 시험일을 적고, 매일 한 줄씩. 끝나는 날 합격.',
+   rev:[{u:'배○○',t:'가름끈 2개 너무 편함.',r:5}]},
+  {id:'p08',sku:'SP·008',name:'전기 책꽂이',cat:'desk',price:38000,stock:8,maxStock:20,rating:4.6,reviews:42,size:'420×220×280mm',material:'자작나무 합판',icon:'shelf',sold:140,
+   desc:'2단 책꽂이. 위에는 카드 데크, 아래에는 사전과 노트 4권.',
+   usage:'조립 시간 약 12분, 도구 불필요. 부품 6개, 나무못 4개.',
+   rev:[{u:'홍○○',t:'생각보다 단단함.',r:4},{u:'안○○',t:'책상 위가 정리됨.',r:5}]},
+  {id:'p09',sku:'SP·009',name:'공식 머리띠',cat:'goods',price:8500,stock:50,maxStock:60,rating:4.3,reviews:78,size:'프리 사이즈',material:'면 · 자수',icon:'headband',sold:260,
+   desc:'합격(合格)이 자수로 박힌 빨간 머리띠. 시험 전날 거울 앞에서 묶기.',
+   usage:'시험장 입구에서는 가방에. 자기 전 책상 위에는 합격 부적처럼.',
+   rev:[{u:'노○○',t:'생각보다 진지하게 만들어짐.',r:4}]},
+  {id:'p10',sku:'SP·010',name:'오디오북 헤드셋',cat:'digital',price:45000,stock:12,maxStock:20,rating:4.7,reviews:189,size:'무선 · 24시간',material:'ABS · 메모리폼',icon:'headset',sold:380,
+   desc:'스파크쌤 오디오북에 최적화된 무선 헤드셋. 노이즈 캔슬링 가벼움.',
+   usage:'출퇴근길에 한 챕터씩. 24시간 재생, 충전은 USB-C.',
+   rev:[{u:'유○○',t:'가벼워서 1시간도 안 아픔.',r:5}]},
+  {id:'p11',sku:'SP·011',name:'책상 위 스탠드',cat:'desk',price:24000,stock:18,maxStock:30,rating:4.5,reviews:63,size:'H 380mm',material:'알루미늄 · LED',icon:'lamp',sold:200,
+   desc:'3단계 색온도, 책 한 페이지를 부드럽게 밝히는 작은 스탠드.',
+   usage:'밤 9시 이후엔 가장 따뜻한 색온도로. 눈이 덜 피로합니다.',
+   rev:[{u:'전○○',t:'각도 자유로움.',r:4}]},
+  {id:'p12',sku:'SP·012',name:'회로 자',cat:'desk',price:6500,stock:70,maxStock:80,rating:4.4,reviews:51,size:'150mm',material:'아크릴',icon:'ruler',sold:180,
+   desc:'회로기호 14종이 새겨진 자. 손으로 회로 그릴 때 사용.',
+   usage:'노트 위에 두고 기호 따라 그리기. 정자체 회로도가 완성됩니다.',
+   rev:[{u:'오○○',t:'기호 외울 때 좋음.',r:5}]}
+];
+
+// ========== 상태 ==========
+let currentCat = 'all';
+let currentSort = 'popular';
+const wishlist = new Set();
+let escapeEl = document.createElement('div');
+function escapeHTML(s){escapeEl.textContent = s == null ? '' : String(s); return escapeEl.innerHTML;}
+
+// ========== 렌더 ==========
+function sortProducts(list){
+  const arr = [...list];
+  if(currentSort==='popular') arr.sort((a,b)=>b.sold - a.sold);
+  else if(currentSort==='price') arr.sort((a,b)=>a.price-b.price);
+  else if(currentSort==='price-desc') arr.sort((a,b)=>b.price-a.price);
+  else if(currentSort==='rating') arr.sort((a,b)=>b.rating-a.rating);
+  return arr;
+}
+function filterProducts(){
+  let list = currentCat==='all' ? PRODUCTS : PRODUCTS.filter(p=>p.cat===currentCat);
+  return sortProducts(list);
+}
+function fmt(n){return n.toLocaleString('ko-KR');}
+function star(r){const full = Math.round(r); return '★★★★★'.slice(0,full)+'☆☆☆☆☆'.slice(0,5-full);}
+
+function renderGrid(){
+  const list = filterProducts();
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+  document.getElementById('resultCount').textContent = `(${list.length})`;
+  if(list.length === 0){grid.innerHTML=''; empty.classList.remove('hidden'); return;}
+  empty.classList.add('hidden');
+  grid.innerHTML = list.map(p => {
+    const color = CAT_COLOR[p.cat];
+    const isStar = wishlist.has(p.id);
+    return `
+      <article class="product-card cursor-pointer" data-id="${p.id}">
+        <button class="star-btn ${isStar?'is-on':''}" data-star="${p.id}" aria-label="위시리스트">★</button>
+        <div class="product-thumb">${ICONS[p.icon] ? ICONS[p.icon]() : ''}</div>
+        <div class="p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-2 h-2 rounded-full" style="background:${color}"></span>
+            <span class="text-[10px] tracking-[.15em] uppercase text-[var(--muted)]">${escapeHTML(CAT_LABEL[p.cat])} · ${escapeHTML(p.sku)}</span>
+          </div>
+          <h3 class="font-serif text-lg leading-tight">${escapeHTML(p.name)}</h3>
+          <p class="text-xs text-[var(--ink-2)] mt-1 line-clamp-2">${escapeHTML(p.desc)}</p>
+          <div class="mt-4 flex items-end justify-between">
+            <div>
+              <div class="price-tag font-serif text-xl">₩ ${fmt(p.price)}</div>
+              <div class="text-[11px] text-[var(--muted)] mt-0.5">${star(p.rating)} <span class="ml-1">${p.rating}</span> · 후기 ${p.reviews}</div>
+            </div>
+            <div class="text-right text-[11px] text-[var(--muted)]">
+              <div>재고 ${p.stock}</div>
+              <div>${p.size}</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function renderBest(){
+  const top = [...PRODUCTS].sort((a,b)=>b.sold - a.sold).slice(0,5);
+  document.getElementById('bestList').innerHTML = top.map((p,i)=>`
+    <article class="bg-[var(--paper)] border border-[var(--line)] p-4 hover:shadow-md transition cursor-pointer" data-id="${p.id}">
+      <div class="flex items-center justify-between mb-3">
+        <span class="font-serif text-3xl text-[var(--ink)]">${String(i+1).padStart(2,'0')}</span>
+        <span class="text-[10px] tracking-[.15em] uppercase text-[var(--muted)]">${escapeHTML(p.sku)}</span>
+      </div>
+      <div class="product-thumb h-32 mb-3">${ICONS[p.icon] ? ICONS[p.icon]() : ''}</div>
+      <div class="font-medium text-sm">${escapeHTML(p.name)}</div>
+      <div class="text-xs text-[var(--muted)] mt-1">${star(p.rating)} ${p.rating}</div>
+      <div class="price-tag text-sm mt-2 font-serif">₩ ${fmt(p.price)}</div>
+    </article>
+  `).join('');
+}
+
+function renderCatCounts(){
+  document.querySelectorAll('[data-cnt]').forEach(el=>{
+    const c = el.dataset.cnt;
+    const cnt = c==='all' ? PRODUCTS.length : PRODUCTS.filter(p=>p.cat===c).length;
+    el.textContent = cnt;
+  });
+}
+
+function renderCart(){
+  document.getElementById('cartCount').textContent = wishlist.size;
+  const wrap = document.getElementById('cartList');
+  if(wishlist.size === 0){
+    wrap.innerHTML = '<p class="text-[var(--muted)] text-sm">아직 담긴 제품이 없습니다.</p>';
+    return;
+  }
+  let total = 0;
+  const items = [...wishlist].map(id => PRODUCTS.find(p=>p.id===id)).filter(Boolean);
+  wrap.innerHTML = items.map(p=>{total+=p.price; return `
+    <div class="flex items-center gap-3 border-b border-[var(--line)] pb-3">
+      <div class="w-12 h-12 bg-[var(--paper-2)] flex items-center justify-center flex-shrink-0">${ICONS[p.icon] ? ICONS[p.icon]() : ''}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium truncate">${escapeHTML(p.name)}</div>
+        <div class="text-xs text-[var(--muted)]">${escapeHTML(p.sku)}</div>
+      </div>
+      <div class="text-sm font-serif">₩ ${fmt(p.price)}</div>
+      <button class="text-[var(--muted)] hover:text-[var(--ink)] text-lg" data-rm="${p.id}" aria-label="제거">×</button>
+    </div>
+  `;}).join('') + `
+    <div class="flex items-center justify-between pt-3 text-sm">
+      <span class="text-[var(--muted)]">합계</span>
+      <span class="font-serif text-xl">₩ ${fmt(total)}</span>
+    </div>
+  `;
+}
+
+// ========== 모달 ==========
+function openModal(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('mSku').textContent = `SKU ${p.sku}`;
+  document.getElementById('mCatLabel').textContent = CAT_LABEL[p.cat];
+  document.getElementById('mName').textContent = p.name;
+  document.getElementById('mDesc').textContent = p.desc;
+  document.getElementById('mPrice').textContent = `₩ ${fmt(p.price)}`;
+  document.getElementById('mStockTxt').textContent = `${p.stock} / ${p.maxStock}`;
+  document.getElementById('mStockBar').style.width = `${Math.round(p.stock/p.maxStock*100)}%`;
+  document.getElementById('mSize').textContent = p.size;
+  document.getElementById('mMat').textContent = p.material;
+  document.getElementById('mRating').textContent = `${star(p.rating)} ${p.rating} (${p.reviews})`;
+  document.getElementById('mCat').textContent = CAT_LABEL[p.cat];
+  document.getElementById('mUsage').textContent = p.usage;
+  document.getElementById('mThumb').innerHTML = ICONS[p.icon] ? `<div style="width:80%;height:80%">${ICONS[p.icon]()}</div>` : '';
+  document.getElementById('mReviews').innerHTML = p.rev.map(r=>`
+    <div class="review-card">
+      <div class="flex items-center justify-between">
+        <span class="font-medium text-sm">${escapeHTML(r.u)}</span>
+        <span class="text-xs text-[var(--muted)]">${star(r.r)}</span>
+      </div>
+      <p class="text-sm text-[var(--ink-2)] mt-1">${escapeHTML(r.t)}</p>
+    </div>
+  `).join('');
+  const starBtn = document.getElementById('mStar');
+  function refreshStar(){
+    if(wishlist.has(p.id)){ starBtn.textContent='★ 위시리스트에서 빼기'; starBtn.classList.add('bg-[var(--ink)]','text-[var(--paper)]'); }
+    else{ starBtn.textContent='★ 위시리스트에 담기'; starBtn.classList.remove('bg-[var(--ink)]','text-[var(--paper)]'); }
+  }
+  refreshStar();
+  starBtn.onclick = ()=>{
+    if(wishlist.has(p.id)) wishlist.delete(p.id); else wishlist.add(p.id);
+    refreshStar(); renderGrid(); renderCart();
+  };
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal').classList.add('flex');
+}
+function closeModalFn(){document.getElementById('modal').classList.add('hidden');document.getElementById('modal').classList.remove('flex');}
+function openGuide(){document.getElementById('guideModal').classList.remove('hidden');document.getElementById('guideModal').classList.add('flex');}
+function closeGuideFn(){document.getElementById('guideModal').classList.add('hidden');document.getElementById('guideModal').classList.remove('flex');}
+function openCart(){renderCart();document.getElementById('cartModal').classList.remove('hidden');document.getElementById('cartModal').classList.add('flex');}
+function closeCartFn(){document.getElementById('cartModal').classList.add('hidden');document.getElementById('cartModal').classList.remove('flex');}
+
+// ========== 이벤트 ==========
+document.getElementById('grid').addEventListener('click', e=>{
+  const starBtn = e.target.closest('[data-star]');
+  if(starBtn){
+    e.stopPropagation();
+    const id = starBtn.dataset.star;
+    if(wishlist.has(id)) wishlist.delete(id); else wishlist.add(id);
+    renderGrid(); renderCart();
+    return;
+  }
+  const card = e.target.closest('[data-id]');
+  if(card) openModal(card.dataset.id);
+});
+document.getElementById('bestList').addEventListener('click', e=>{
+  const card = e.target.closest('[data-id]');
+  if(card) openModal(card.dataset.id);
+});
+document.getElementById('catList').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-cat]');
+  if(!btn) return;
+  currentCat = btn.dataset.cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>{
+    if(b.dataset.cat===currentCat){ b.classList.add('border-[var(--ink)]','bg-[var(--paper-2)]'); b.classList.remove('border-transparent'); }
+    else{ b.classList.remove('border-[var(--ink)]','bg-[var(--paper-2)]'); b.classList.add('border-transparent'); }
+  });
+  renderGrid();
+});
+document.getElementById('sortSeg').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-sort]');
+  if(!btn) return;
+  currentSort = btn.dataset.sort;
+  document.querySelectorAll('#sortSeg button').forEach(b=>b.classList.toggle('is-active', b===btn));
+  renderGrid();
+});
+document.getElementById('cartList').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-rm]');
+  if(!btn) return;
+  wishlist.delete(btn.dataset.rm);
+  renderGrid(); renderCart();
+});
+
+document.getElementById('closeModal').addEventListener('click', closeModalFn);
+document.getElementById('closeGuide').addEventListener('click', closeGuideFn);
+document.getElementById('closeCart').addEventListener('click', closeCartFn);
+document.getElementById('openCart').addEventListener('click', openCart);
+
+[document.getElementById('modal'), document.getElementById('guideModal'), document.getElementById('cartModal')].forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target === m){
+    if(m.id==='modal') closeModalFn();
+    else if(m.id==='guideModal') closeGuideFn();
+    else closeCartFn();
+  }});
+});
+window.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModalFn(); closeGuideFn(); closeCartFn(); }});
+window.openGuide = openGuide;
+
+// ========== 초기화 ==========
+renderCatCounts();
+renderGrid();
+renderBest();
+renderCart();
+</script>
+</body>
+</html>

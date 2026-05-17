@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>태양광 발전 MPPT 시뮬레이터 (P-V / I-V Curve · P&O)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(245, 158, 11, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(245,158,11,0.45), rgba(244,114,182,0.40), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(245, 158, 11, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 520px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#curveCanvas {
+    display: block;
+    width: 100%;
+    height: 380px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fbbf24; box-shadow: 0 0 12px #fbbf24;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fbbf24; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(245,158,11,0.4), rgba(244,114,182,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fde68a, #fda4af, #67e8f9);
+    box-shadow: 0 0 22px rgba(252, 211, 77, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-g { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-t { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-r { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.live-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.15); transition: border-color 220ms, box-shadow 220ms; }
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #f9a8d4, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(245,158,11,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+    font-variant-numeric: tabular-nums;
+}
+.preset-btn:hover {
+    border-color: rgba(252, 211, 77, 0.6);
+    color: #fde68a;
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.3);
+}
+.preset-btn.active {
+    background: linear-gradient(135deg, rgba(245,158,11,0.35), rgba(244,114,182,0.30));
+    border-color: rgba(245,158,11,0.8);
+    color: #fde68a;
+    box-shadow: 0 0 22px rgba(245,158,11,0.45);
+}
+.mppt-toggle {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.mppt-toggle.on {
+    background: linear-gradient(135deg, rgba(110,231,183,0.30), rgba(34,211,238,0.30));
+    border-color: rgba(110,231,183,0.7);
+    color: #d1fae5;
+    box-shadow: 0 0 22px rgba(110,231,183,0.45);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.status-good { color: #6ee7b7; }
+.status-warn { color: #fcd34d; }
+.status-bad  { color: #fca5a5; }
+.eff-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+}
+.eff-fill {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, #6ee7b7, #34d399, #fbbf24);
+    transition: width 220ms ease;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · SOLAR PV · MPPT · P&O ALGORITHM
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-300 via-pink-200 to-cyan-200 bg-clip-text text-transparent">
+            ☀️ 태양광 발전 MPPT 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">조도(G)·온도(T)에 따른 I-V / P-V 곡선과 최대전력점(MPP) 추적. MPPT ON 시 P&O(섭동·관측) 알고리즘이 동작점을 MPP로 끌어옵니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">개방전압 V_oc</p>
+            <p class="mt-1 text-lg font-bold"><span id="vocVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">단락전류 I_sc</p>
+            <p class="mt-1 text-lg font-bold"><span id="iscVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">최대출력 P_max (MPP)</p>
+            <p class="mt-1 text-lg font-bold"><span id="pmaxVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">동작 효율 η</p>
+            <p class="mt-1 text-lg font-bold"><span id="effVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스: 태양 + 패널 + 인버터 + 부하 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">태양광 패널 (6×10 셀) · MPPT 컨버터 · 부하</span>
+                    <span id="mpptBadge" class="text-[10px] tracking-widest font-bold text-emerald-200">MPPT · ON</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- I-V / P-V 곡선 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="curveCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">I-V 곡선 (왼쪽 Y축) · P-V 곡선 (오른쪽 Y축) · MPP 마커 · 현재 동작점</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-cyan-300"><span class="legend-dot" style="background:#67e8f9;color:#67e8f9"></span>I-V</span>
+                        <span class="text-amber-300"><span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>P-V</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#6ee7b7;color:#6ee7b7"></span>MPP</span>
+                        <span class="text-pink-300"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>동작점</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="curveCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">태양광 셀 · MPPT 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">광생성 전류</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$I_{ph} = I_{sc,STC}\,\dfrac{G}{1000}$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">PV 셀 I-V 식</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$I = I_{ph} - I_0\!\left(e^{\frac{V}{nV_T}} - 1\right)$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">P&O 알고리즘</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$\Delta P>0\Rightarrow$ 같은 방향, $\Delta P<0\Rightarrow$ 반전</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-amber-200">변수 조절</h2>
+
+            <div class="chip-g chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>조도 G (Irradiance)</span><span id="gDisp" class="font-mono text-base">1000</span></label>
+                <input type="range" id="g" min="200" max="1000" step="10" value="1000" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">W/㎡ (STC = 1000)</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>온도 T (Cell Temp)</span><span id="tDisp" class="font-mono text-base">25</span></label>
+                <input type="range" id="t" min="-10" max="60" step="1" value="25" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">°C (STC = 25°C)</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 저항 R_load</span><span id="rDisp" class="font-mono text-base">12</span></label>
+                <input type="range" id="r" min="1" max="80" step="0.5" value="12" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω (MPPT OFF 시 직결 동작점)</p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3">
+                <p class="text-[10px] uppercase tracking-widest text-indigo-200 mb-2 font-bold">MPPT 제어</p>
+                <button id="mpptBtn" class="mppt-toggle on rounded-md w-full px-3 py-2 text-xs font-bold">MPPT · ON (P&O)</button>
+                <p class="text-[10px] text-slate-400 mt-2" id="mpptNote">ON: DC-DC 컨버터가 듀티비를 미세 조정해 dP/dV → 0인 MPP로 추적.</p>
+            </div>
+
+            <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">날씨 프리셋</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="preset-btn active rounded-md px-2 py-2 text-xs font-bold" data-preset="clear">☀️ 맑음</button>
+                    <button class="preset-btn rounded-md px-2 py-2 text-xs font-bold" data-preset="cloudy">☁️ 흐림</button>
+                    <button class="preset-btn rounded-md px-2 py-2 text-xs font-bold" data-preset="dawn">🌅 새벽</button>
+                </div>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 space-y-1.5 text-[11px]">
+                <p class="text-slate-300"><span class="text-amber-300 font-bold">PV 출력</span> · V=<span id="d_v" class="font-mono">—</span> · I=<span id="d_i" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-cyan-300 font-bold">MPP</span> · V=<span id="d_vmp" class="font-mono">—</span> · I=<span id="d_imp" class="font-mono">—</span></p>
+                <p class="text-slate-300">현재 P = <span id="d_p" class="font-mono">—</span> / P_max = <span id="d_pmax" class="font-mono">—</span></p>
+                <div class="mt-2">
+                    <p class="text-[10px] text-slate-400">동작 효율 η = P/P_max</p>
+                    <div class="eff-bar mt-1.5"><div id="effFill" class="eff-fill" style="width:0%"></div></div>
+                </div>
+                <p class="text-slate-400 text-[10px] pt-1 border-t border-white/5">상태: <span id="statusLabel" class="font-bold">대기 중</span></p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed">
+                <p class="text-amber-200 font-bold mb-1">💡 학습 포인트</p>
+                <p id="learnNote" class="text-slate-300">조도 G가 줄면 I_sc(단락전류)가 거의 비례해 감소 → 곡선이 아래로. 온도 T가 오르면 V_oc(개방전압)가 감소(-0.3%/°C) → 곡선이 좌측으로. MPPT는 dP/dV=0 지점을 자동 추적.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const curveCanvas = $('curveCanvas');
+const cctx = curveCanvas.getContext('2d');
+
+const TOTAL_H = 520;
+const CURVE_H = 380;
+
+// ===== STC 정격 (60셀 모듈 가정) =====
+const I_SC_STC = 8.5;     // A
+const V_OC_STC = 38.0;    // V (60셀 × ~0.63V)
+const V_MP_STC = 31.0;    // V
+const I_MP_STC = 8.0;     // A
+const TEMP_COEFF_VOC = -0.0033;  // -0.33%/°C
+const TEMP_COEFF_ISC =  0.0006;  //  +0.06%/°C
+const NS = 60;            // 셀 수
+const N_FACTOR = 1.3;     // 이상계수
+const Vt_25 = 0.02585;    // 열전압 @25°C (kT/q)
+
+let state = {
+    G: 1000,
+    T: 25,
+    R: 12,
+    mpptOn: true,
+    // 동작점 (PV 모듈 단자 전압) — 컨버터가 등가적으로 만드는 입력 전압
+    Vop: V_MP_STC,
+    duty: 0.5,           // P&O가 조정하는 듀티비 (시각화용)
+    perturb: 0.5,        // 섭동 크기 (V 단위, P&O step)
+    perturbDir: 1,
+    prevP: 0,
+    prevV: V_MP_STC,
+    t: 0,
+    // 캐시: 현재 G·T에서의 곡선/MPP
+    curve: { pts: [], voc: 0, isc: 0, mpp: { V: 0, I: 0, P: 0 } }
+};
+
+let layout = {};
+let curveLayout = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    curveCanvas.width = curveCanvas.parentElement.clientWidth - 2;
+    curveCanvas.height = CURVE_H;
+    computeLayout();
+    computeCurveLayout();
+}
+window.addEventListener('resize', resize);
+
+function computeLayout() {
+    const W = canvas.width;
+    const H = TOTAL_H;
+    // 태양 (좌상)
+    layout.sun = { cx: W * 0.13, cy: H * 0.22, r: 38 };
+    // 패널 (중앙) — 6행 × 10열 = 60셀 격자
+    const panelW = Math.min(W * 0.42, 380);
+    const panelH = panelW * 0.50;
+    layout.panel = {
+        x: W * 0.30,
+        y: H * 0.32,
+        w: panelW,
+        h: panelH,
+        cols: 10,
+        rows: 6
+    };
+    // 인버터 / MPPT 컨버터 (패널 우측)
+    layout.mppt = {
+        x: layout.panel.x + panelW + 56,
+        y: H * 0.42,
+        w: 110,
+        h: 140
+    };
+    // 부하 (우측 끝)
+    layout.load = {
+        cx: layout.mppt.x + layout.mppt.w + 64,
+        cy: layout.mppt.y + layout.mppt.h / 2
+    };
+}
+
+function computeCurveLayout() {
+    const W = curveCanvas.width;
+    const H = CURVE_H;
+    curveLayout = {
+        x0: 60,
+        y0: H - 50,
+        x1: W - 60,
+        y1: 30,
+        get plotW() { return this.x1 - this.x0; },
+        get plotH() { return this.y0 - this.y1; }
+    };
+}
+
+// ===== PV 모델 =====
+// 단순 1다이오드 모델 (역포화 전류 자동 추정)
+function pvModel(G, T_c) {
+    // 온도 보정
+    const dT = T_c - 25;
+    const Isc = I_SC_STC * (G / 1000) * (1 + TEMP_COEFF_ISC * dT);
+    const Voc_base = V_OC_STC * (1 + TEMP_COEFF_VOC * dT);
+    // 저조도에서 V_oc는 로그 감소
+    const Voc = Voc_base + NS * N_FACTOR * Vt_25 * Math.log(Math.max(G, 1) / 1000);
+
+    // 열전압
+    const Vt = (273.15 + T_c) / 298.15 * Vt_25;
+    const nVt_total = NS * N_FACTOR * Vt;
+    // 역포화 전류 I0: I_sc ≈ I_ph 가정, V_oc 에서 I=0
+    // I_ph = I0 * (exp(Voc/nVt) - 1) → I0
+    const I0 = Isc / (Math.exp(Voc / nVt_total) - 1);
+    const Iph = Isc;
+    return { Iph, I0, Voc, Isc, nVt: nVt_total };
+}
+
+function pvCurrentAt(V, model) {
+    // I(V) = Iph - I0 (exp(V/nVt) - 1)
+    if (V <= 0) return model.Isc;
+    if (V >= model.Voc) return 0;
+    const I = model.Iph - model.I0 * (Math.exp(V / model.nVt) - 1);
+    return Math.max(0, I);
+}
+
+function computeCurve() {
+    const m = pvModel(state.G, state.T);
+    const pts = [];
+    const N = 160;
+    let mpp = { V: 0, I: 0, P: 0 };
+    for (let i = 0; i <= N; i++) {
+        const V = (m.Voc * i) / N;
+        const I = pvCurrentAt(V, m);
+        const P = V * I;
+        pts.push({ V, I, P });
+        if (P > mpp.P) mpp = { V, I, P };
+    }
+    state.curve = { pts, voc: m.Voc, isc: m.Isc, mpp, model: m };
+}
+
+// 부하 직결 동작점 (MPPT OFF): I = V/R 직선과 PV 곡선의 교점
+function findDirectOpPoint(R) {
+    const m = state.curve.model;
+    // 이분법: f(V) = pvCurrentAt(V) - V/R = 0
+    let lo = 0, hi = state.curve.voc;
+    for (let k = 0; k < 50; k++) {
+        const mid = (lo + hi) / 2;
+        const f = pvCurrentAt(mid, m) - mid / R;
+        if (f > 0) lo = mid; else hi = mid;
+    }
+    const V = (lo + hi) / 2;
+    const I = pvCurrentAt(V, m);
+    return { V, I, P: V * I };
+}
+
+// P&O MPPT 한 스텝
+function poStep() {
+    const m = state.curve.model;
+    const V_cur = state.Vop;
+    const I_cur = pvCurrentAt(V_cur, m);
+    const P_cur = V_cur * I_cur;
+    const dP = P_cur - state.prevP;
+    const dV = V_cur - state.prevV;
+    // 알고리즘: dP*dV > 0 → 같은 방향, < 0 → 반전
+    if (Math.abs(dV) > 1e-6) {
+        if (dP * dV < 0) state.perturbDir = -state.perturbDir;
+    }
+    state.prevP = P_cur;
+    state.prevV = V_cur;
+    // 새 동작점
+    let Vnext = V_cur + state.perturbDir * state.perturb;
+    // 경계 clamp
+    Vnext = Math.max(0.5, Math.min(state.curve.voc - 0.5, Vnext));
+    state.Vop = Vnext;
+    // 듀티비도 미세 갱신 (시각화용) — 듀티 ∝ Vop/Voc 로 근사
+    state.duty = state.Vop / Math.max(state.curve.voc, 1);
+}
+
+// ===== 그리기 유틸 =====
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function badgeText(ctx, text, x, y, color, font = 'bold 11px ui-monospace, monospace', bg = 'rgba(15, 23, 42, 0.92)') {
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = bg;
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// ===== 메인 캔버스 그리기 =====
+function drawBg() {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
+    g.addColorStop(0, '#0a1024');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, TOTAL_H);
+    // 지표면(하단 살짝)
+    const gG = ctx.createLinearGradient(0, TOTAL_H * 0.75, 0, TOTAL_H);
+    gG.addColorStop(0, 'rgba(15, 23, 42, 0)');
+    gG.addColorStop(1, 'rgba(30, 41, 59, 0.6)');
+    ctx.fillStyle = gG;
+    ctx.fillRect(0, TOTAL_H * 0.78, canvas.width, TOTAL_H * 0.22);
+    // 그리드
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TOTAL_H); ctx.stroke();
+    }
+    for (let i = 0; i < TOTAL_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`▮ SOLAR PV · G=${state.G} W/㎡ · T=${state.T}°C · MPPT ${state.mpptOn ? 'ON' : 'OFF'}`, 12, 10);
+    ctx.restore();
+}
+
+function drawSun() {
+    const s = layout.sun;
+    const intensity = state.G / 1000;   // 0.2 ~ 1.0
+    const wobble = Math.sin(state.t * 0.04) * 1.5;
+
+    // 광선
+    ctx.save();
+    ctx.translate(s.cx, s.cy);
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = 'rgba(252, 211, 77, 0.8)';
+    const rayLen = 22 + 10 * intensity;
+    const rayCount = 12;
+    for (let i = 0; i < rayCount; i++) {
+        const ang = (i / rayCount) * Math.PI * 2 + state.t * 0.005;
+        const alpha = 0.35 + 0.55 * intensity + Math.sin(state.t * 0.06 + i) * 0.1;
+        ctx.strokeStyle = `rgba(253, 224, 71, ${alpha})`;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        const r0 = s.r + 6 + wobble;
+        const r1 = s.r + 6 + rayLen + wobble;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(ang) * r0, Math.sin(ang) * r0);
+        ctx.lineTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 태양 본체
+    ctx.save();
+    ctx.shadowBlur = 40 * intensity + 14;
+    ctx.shadowColor = '#fbbf24';
+    const gSun = ctx.createRadialGradient(s.cx - 8, s.cy - 8, 4, s.cx, s.cy, s.r);
+    gSun.addColorStop(0, '#fef3c7');
+    gSun.addColorStop(0.55, '#fbbf24');
+    gSun.addColorStop(1, `rgba(180, 83, 9, ${0.5 + 0.5 * intensity})`);
+    ctx.fillStyle = gSun;
+    ctx.beginPath();
+    ctx.arc(s.cx, s.cy, s.r * (0.85 + 0.15 * intensity), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    badgeText(ctx, `G = ${state.G} W/㎡`, s.cx, s.cy + s.r + 28, '#fde68a');
+
+    // 광선 → 패널 흐름 표시
+    const p = layout.panel;
+    ctx.save();
+    ctx.globalAlpha = 0.18 + 0.35 * intensity;
+    const grad = ctx.createLinearGradient(s.cx + s.r, s.cy, p.x + p.w * 0.3, p.y);
+    grad.addColorStop(0, 'rgba(253, 224, 71, 0.5)');
+    grad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 28;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(s.cx + s.r + 4, s.cy + 14);
+    ctx.lineTo(p.x + p.w * 0.18, p.y + 6);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawPanel() {
+    const p = layout.panel;
+    const intensity = state.G / 1000;
+    const tempK = (state.T - 25) / 60;  // -0.58 ~ 0.58
+    ctx.save();
+
+    // 패널 프레임
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(59, 130, 246, 0.45)';
+    const gF = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+    gF.addColorStop(0, '#475569');
+    gF.addColorStop(0.5, '#64748b');
+    gF.addColorStop(1, '#334155');
+    ctx.fillStyle = gF;
+    roundRect(ctx, p.x - 8, p.y - 8, p.w + 16, p.h + 16, 10);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 셀 격자
+    const gap = 2;
+    const cellW = (p.w - gap * (p.cols + 1)) / p.cols;
+    const cellH = (p.h - gap * (p.rows + 1)) / p.rows;
+    for (let r = 0; r < p.rows; r++) {
+        for (let c = 0; c < p.cols; c++) {
+            const cx = p.x + gap + c * (cellW + gap);
+            const cy = p.y + gap + r * (cellH + gap);
+            // 셀 색: 조도에 따라 푸른빛 → 검푸른, 온도에 따라 약간 붉어짐
+            const blue = 90 + 60 * intensity;
+            const red = 18 + 40 * Math.max(0, tempK);
+            const grn = 32 + 28 * intensity;
+            const gradCell = ctx.createLinearGradient(cx, cy, cx + cellW, cy + cellH);
+            gradCell.addColorStop(0, `rgb(${red + 8}, ${grn + 12}, ${blue + 30})`);
+            gradCell.addColorStop(1, `rgb(${red}, ${grn}, ${blue})`);
+            ctx.fillStyle = gradCell;
+            ctx.fillRect(cx, cy, cellW, cellH);
+            // 셀 내부 X 그리드(실제 다결정 셀 모방)
+            ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(cx + cellW * 0.5, cy);
+            ctx.lineTo(cx + cellW * 0.5, cy + cellH);
+            ctx.moveTo(cx, cy + cellH * 0.5);
+            ctx.lineTo(cx + cellW, cy + cellH * 0.5);
+            ctx.stroke();
+        }
+    }
+
+    // 패널 표면에 햇빛 반사광 (intensity에 따라)
+    ctx.globalAlpha = 0.18 * intensity;
+    const gShine = ctx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+    gShine.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+    gShine.addColorStop(0.4, 'rgba(255, 255, 255, 0.1)');
+    gShine.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = gShine;
+    roundRect(ctx, p.x, p.y, p.w, p.h, 4);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // 라벨
+    badgeText(ctx, `PV 모듈 (${p.rows}×${p.cols} 셀)`, p.x + p.w / 2, p.y + p.h + 26, '#a5b4fc');
+    badgeText(ctx, `T = ${state.T}°C`, p.x + p.w + 32, p.y - 4, '#f9a8d4', 'bold 10px ui-monospace, monospace');
+}
+
+function drawMPPT() {
+    const m = layout.mppt;
+    ctx.save();
+    // 컨버터 박스
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = state.mpptOn ? 'rgba(110, 231, 183, 0.6)' : 'rgba(148, 163, 184, 0.4)';
+    const gM = ctx.createLinearGradient(m.x, m.y, m.x + m.w, m.y + m.h);
+    if (state.mpptOn) {
+        gM.addColorStop(0, '#065f46');
+        gM.addColorStop(0.5, '#10b981');
+        gM.addColorStop(1, '#047857');
+    } else {
+        gM.addColorStop(0, '#334155');
+        gM.addColorStop(0.5, '#64748b');
+        gM.addColorStop(1, '#1e293b');
+    }
+    ctx.fillStyle = gM;
+    roundRect(ctx, m.x, m.y, m.w, m.h, 12);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 텍스트
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('MPPT', m.x + m.w / 2, m.y + 22);
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.78)';
+    ctx.fillText('DC–DC Boost', m.x + m.w / 2, m.y + 40);
+
+    // 듀티비 게이지 (세로 바)
+    const barX = m.x + 18;
+    const barY = m.y + 58;
+    const barW = m.w - 36;
+    const barH = m.h - 80;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+    roundRect(ctx, barX, barY, barW, barH, 4);
+    ctx.fill();
+    const dutyClamp = Math.max(0, Math.min(1, state.duty));
+    const fillH = barH * dutyClamp;
+    const gDuty = ctx.createLinearGradient(barX, barY + barH, barX, barY);
+    gDuty.addColorStop(0, '#fbbf24');
+    gDuty.addColorStop(0.6, '#fde68a');
+    gDuty.addColorStop(1, '#fef3c7');
+    ctx.fillStyle = gDuty;
+    roundRect(ctx, barX, barY + (barH - fillH), barW, fillH, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    roundRect(ctx, barX, barY, barW, barH, 4);
+    ctx.stroke();
+
+    // 듀티 라벨
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`D=${(dutyClamp * 100).toFixed(0)}%`, m.x + m.w / 2, m.y + m.h - 8);
+
+    // 상태 LED
+    const ledX = m.x + m.w - 14;
+    const ledY = m.y + 14;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = state.mpptOn ? '#34d399' : '#64748b';
+    ctx.fillStyle = state.mpptOn ? '#34d399' : '#64748b';
+    ctx.beginPath();
+    ctx.arc(ledX, ledY, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+function drawLoad() {
+    const ld = layout.load;
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#67e8f9';
+    const gR = ctx.createLinearGradient(ld.cx - 28, ld.cy - 20, ld.cx + 28, ld.cy + 20);
+    gR.addColorStop(0, '#0891b2');
+    gR.addColorStop(0.5, '#22d3ee');
+    gR.addColorStop(1, '#0e7490');
+    ctx.fillStyle = gR;
+    roundRect(ctx, ld.cx - 28, ld.cy - 20, 56, 40, 10);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.stroke();
+    // zigzag (저항 기호)
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const zs = ld.cx - 20, ze = ld.cx + 20;
+    for (let k = 0; k <= 6; k++) {
+        const x = zs + ((ze - zs) * k) / 6;
+        const y = ld.cy + (k % 2 === 0 ? -6 : 6);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    badgeText(ctx, `R = ${state.R} Ω`, ld.cx, ld.cy + 36, '#67e8f9');
+    badgeText(ctx, '부하', ld.cx, ld.cy - 30, '#a5f3fc', 'bold 10px ui-monospace, monospace');
+}
+
+function drawWires() {
+    const p = layout.panel;
+    const m = layout.mppt;
+    const ld = layout.load;
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fbbf24';
+    ctx.strokeStyle = 'rgba(253, 224, 71, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    // 패널 → MPPT (상·하 2선)
+    ctx.beginPath();
+    ctx.moveTo(p.x + p.w + 8, p.y + 12);
+    ctx.lineTo(m.x - 8, m.y + 16);
+    ctx.moveTo(p.x + p.w + 8, p.y + p.h - 12);
+    ctx.lineTo(m.x - 8, m.y + m.h - 16);
+    ctx.stroke();
+    // MPPT → 부하
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.85)';
+    ctx.shadowColor = '#6ee7b7';
+    ctx.beginPath();
+    ctx.moveTo(m.x + m.w + 8, m.y + 22);
+    ctx.lineTo(ld.cx - 28, ld.cy - 10);
+    ctx.moveTo(m.x + m.w + 8, m.y + m.h - 22);
+    ctx.lineTo(ld.cx - 28, ld.cy + 10);
+    ctx.stroke();
+    ctx.restore();
+
+    // 전류 입자 (조도/MPPT 효율에 따라 속도·밀도)
+    drawCurrentParticles();
+}
+
+function drawCurrentParticles() {
+    const p = layout.panel;
+    const m = layout.mppt;
+    const ld = layout.load;
+    const intensity = state.G / 1000;
+    const I = state.curve.mpp.P > 0 ? (state.Vop * pvCurrentAt(state.Vop, state.curve.model)) / state.curve.mpp.P : 0;
+    const flow = intensity * (0.4 + 0.6 * Math.max(0, Math.min(1, I)));
+    if (flow < 0.05) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // 패널 → MPPT
+    const segs = [
+        { ax: p.x + p.w + 8, ay: p.y + 12, bx: m.x - 8, by: m.y + 16, color: '#fde68a' },
+        { ax: p.x + p.w + 8, ay: p.y + p.h - 12, bx: m.x - 8, by: m.y + m.h - 16, color: '#fde68a' },
+        { ax: m.x + m.w + 8, ay: m.y + 22, bx: ld.cx - 28, by: ld.cy - 10, color: '#6ee7b7' },
+        { ax: m.x + m.w + 8, ay: m.y + m.h - 22, bx: ld.cx - 28, by: ld.cy + 10, color: '#6ee7b7' },
+    ];
+    for (const s of segs) {
+        const len = Math.hypot(s.bx - s.ax, s.by - s.ay);
+        const n = Math.max(2, Math.floor(len / 22));
+        for (let i = 0; i < n; i++) {
+            const phase = ((state.t * 0.02 * flow + i / n) % 1);
+            const px = s.ax + (s.bx - s.ax) * phase;
+            const py = s.ay + (s.by - s.ay) * phase;
+            ctx.fillStyle = s.color;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = s.color;
+            ctx.beginPath();
+            ctx.arc(px, py, 2.4 + flow * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+// ===== I-V / P-V 곡선 캔버스 =====
+function drawCurveBg() {
+    cctx.save();
+    const g = cctx.createLinearGradient(0, 0, 0, CURVE_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    cctx.fillStyle = g;
+    cctx.fillRect(0, 0, curveCanvas.width, CURVE_H);
+    // 그리드
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+    cctx.lineWidth = 1;
+    const L = curveLayout;
+    for (let i = 0; i <= 10; i++) {
+        const x = L.x0 + (L.plotW * i) / 10;
+        cctx.beginPath(); cctx.moveTo(x, L.y1); cctx.lineTo(x, L.y0); cctx.stroke();
+    }
+    for (let i = 0; i <= 8; i++) {
+        const y = L.y1 + (L.plotH * i) / 8;
+        cctx.beginPath(); cctx.moveTo(L.x0, y); cctx.lineTo(L.x1, y); cctx.stroke();
+    }
+    cctx.restore();
+}
+
+function drawAxes(Vmax, Imax, Pmax) {
+    const L = curveLayout;
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+    cctx.lineWidth = 1.5;
+    cctx.beginPath();
+    cctx.moveTo(L.x0, L.y1 - 6);
+    cctx.lineTo(L.x0, L.y0);
+    cctx.lineTo(L.x1, L.y0);
+    cctx.lineTo(L.x1, L.y1 - 6);
+    cctx.stroke();
+
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.fillStyle = '#94a3b8';
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'top';
+    // X축 (전압)
+    for (let i = 0; i <= 5; i++) {
+        const v = (Vmax * i) / 5;
+        const x = L.x0 + (L.plotW * i) / 5;
+        cctx.fillText(v.toFixed(0), x, L.y0 + 6);
+    }
+    cctx.fillText('V (V)', (L.x0 + L.x1) / 2, L.y0 + 24);
+
+    // 좌 Y축 (전류 I)
+    cctx.textAlign = 'right';
+    cctx.textBaseline = 'middle';
+    cctx.fillStyle = '#67e8f9';
+    for (let i = 0; i <= 4; i++) {
+        const yV = (Imax * i) / 4;
+        const y = L.y0 - (L.plotH * i) / 4;
+        cctx.fillText(yV.toFixed(1), L.x0 - 6, y);
+    }
+    cctx.save();
+    cctx.translate(L.x0 - 38, (L.y0 + L.y1) / 2);
+    cctx.rotate(-Math.PI / 2);
+    cctx.textAlign = 'center';
+    cctx.fillText('I (A)', 0, 0);
+    cctx.restore();
+
+    // 우 Y축 (전력 P)
+    cctx.textAlign = 'left';
+    cctx.fillStyle = '#fbbf24';
+    for (let i = 0; i <= 4; i++) {
+        const pV = (Pmax * i) / 4;
+        const y = L.y0 - (L.plotH * i) / 4;
+        cctx.fillText(pV.toFixed(0), L.x1 + 6, y);
+    }
+    cctx.save();
+    cctx.translate(L.x1 + 40, (L.y0 + L.y1) / 2);
+    cctx.rotate(Math.PI / 2);
+    cctx.textAlign = 'center';
+    cctx.fillText('P (W)', 0, 0);
+    cctx.restore();
+    cctx.restore();
+}
+
+function drawCurves() {
+    const L = curveLayout;
+    const c = state.curve;
+    if (!c.pts.length) return;
+    const Vmax = V_OC_STC + 2;
+    const Imax = I_SC_STC + 0.5;
+    const Pmax = (V_MP_STC * I_MP_STC) + 30;
+
+    const X = v => L.x0 + (v / Vmax) * L.plotW;
+    const YI = i => L.y0 - (i / Imax) * L.plotH;
+    const YP = p => L.y0 - (p / Pmax) * L.plotH;
+
+    drawCurveBg();
+    drawAxes(Vmax, Imax, Pmax);
+
+    // 부하선 (R) — I = V/R (MPPT OFF 시 강조)
+    cctx.save();
+    cctx.strokeStyle = state.mpptOn ? 'rgba(148, 163, 184, 0.30)' : 'rgba(252, 165, 165, 0.75)';
+    cctx.setLineDash([6, 4]);
+    cctx.lineWidth = state.mpptOn ? 1.2 : 2;
+    cctx.beginPath();
+    cctx.moveTo(X(0), YI(0));
+    const vEnd = Math.min(Vmax, Imax * state.R);
+    cctx.lineTo(X(vEnd), YI(vEnd / state.R));
+    cctx.stroke();
+    cctx.setLineDash([]);
+    if (!state.mpptOn) {
+        cctx.fillStyle = '#fca5a5';
+        cctx.font = 'bold 10px ui-monospace, monospace';
+        cctx.textAlign = 'left';
+        cctx.fillText(`부하선 I=V/R (${state.R}Ω)`, X(vEnd) + 4, YI(vEnd / state.R) - 6);
+    }
+    cctx.restore();
+
+    // P-V 곡선 (오른쪽 Y축)
+    cctx.save();
+    cctx.shadowBlur = 14;
+    cctx.shadowColor = 'rgba(251, 191, 36, 0.55)';
+    cctx.strokeStyle = 'rgba(251, 191, 36, 0.9)';
+    cctx.lineWidth = 2.4;
+    cctx.beginPath();
+    for (let i = 0; i < c.pts.length; i++) {
+        const pt = c.pts[i];
+        const x = X(pt.V), y = YP(pt.P);
+        if (i === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+    }
+    cctx.stroke();
+    cctx.restore();
+
+    // I-V 곡선 (좌측 Y축)
+    cctx.save();
+    cctx.shadowBlur = 14;
+    cctx.shadowColor = 'rgba(34, 211, 238, 0.6)';
+    cctx.strokeStyle = 'rgba(103, 232, 249, 0.95)';
+    cctx.lineWidth = 2.6;
+    cctx.beginPath();
+    for (let i = 0; i < c.pts.length; i++) {
+        const pt = c.pts[i];
+        const x = X(pt.V), y = YI(pt.I);
+        if (i === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+    }
+    cctx.stroke();
+    cctx.restore();
+
+    // MPP 마커
+    const mpp = c.mpp;
+    cctx.save();
+    cctx.strokeStyle = 'rgba(110, 231, 183, 0.55)';
+    cctx.setLineDash([4, 4]);
+    cctx.lineWidth = 1.2;
+    cctx.beginPath();
+    cctx.moveTo(X(mpp.V), L.y0);
+    cctx.lineTo(X(mpp.V), YP(mpp.P));
+    cctx.moveTo(L.x0, YP(mpp.P));
+    cctx.lineTo(X(mpp.V), YP(mpp.P));
+    cctx.stroke();
+    cctx.setLineDash([]);
+    // MPP 원
+    cctx.shadowBlur = 18;
+    cctx.shadowColor = '#34d399';
+    cctx.fillStyle = '#6ee7b7';
+    cctx.beginPath();
+    cctx.arc(X(mpp.V), YP(mpp.P), 6, 0, Math.PI * 2);
+    cctx.fill();
+    cctx.fillStyle = '#a7f3d0';
+    cctx.beginPath();
+    cctx.arc(X(mpp.V), YI(mpp.I), 5, 0, Math.PI * 2);
+    cctx.fill();
+    cctx.shadowBlur = 0;
+    cctx.font = 'bold 11px ui-monospace, monospace';
+    cctx.fillStyle = '#6ee7b7';
+    cctx.textAlign = 'left';
+    cctx.fillText(`MPP · ${mpp.V.toFixed(1)}V × ${mpp.I.toFixed(2)}A = ${mpp.P.toFixed(1)}W`,
+        Math.min(X(mpp.V) + 10, L.x1 - 160), YP(mpp.P) - 12);
+    cctx.restore();
+
+    // 현재 동작점
+    const opV = state.Vop;
+    const opI = pvCurrentAt(opV, c.model);
+    const opP = opV * opI;
+    cctx.save();
+    // 동작점 (P)
+    cctx.shadowBlur = 18;
+    cctx.shadowColor = '#f472b6';
+    cctx.fillStyle = '#f9a8d4';
+    cctx.beginPath();
+    cctx.arc(X(opV), YP(opP), 6, 0, Math.PI * 2);
+    cctx.fill();
+    // 동작점 (I)
+    cctx.fillStyle = '#fbcfe8';
+    cctx.beginPath();
+    cctx.arc(X(opV), YI(opI), 5, 0, Math.PI * 2);
+    cctx.fill();
+    // 점선
+    cctx.shadowBlur = 0;
+    cctx.strokeStyle = 'rgba(244, 114, 182, 0.55)';
+    cctx.setLineDash([3, 3]);
+    cctx.lineWidth = 1.2;
+    cctx.beginPath();
+    cctx.moveTo(X(opV), L.y0);
+    cctx.lineTo(X(opV), YP(opP));
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.fillStyle = '#f472b6';
+    cctx.textAlign = 'center';
+    cctx.fillText(`동작점 V=${opV.toFixed(1)}V`, X(opV), L.y0 + 18);
+    cctx.restore();
+}
+
+// ===== 계산 / UI 업데이트 =====
+function compute() {
+    state.G = +$('g').value;
+    state.T = +$('t').value;
+    state.R = +$('r').value;
+
+    $('gDisp').textContent = state.G;
+    $('tDisp').textContent = state.T;
+    $('rDisp').textContent = state.R;
+
+    computeCurve();
+    const c = state.curve;
+
+    // MPPT 동작
+    if (!state.mpptOn) {
+        const op = findDirectOpPoint(state.R);
+        state.Vop = op.V;
+        state.duty = 0;   // OFF 시 컨버터 비활성
+        state.prevP = op.P;
+        state.prevV = op.V;
+    } else {
+        // P&O 한 스텝 (애니메이션에서도 매 프레임 호출)
+        poStep();
+    }
+
+    const opV = state.Vop;
+    const opI = pvCurrentAt(opV, c.model);
+    const opP = opV * opI;
+    const eff = c.mpp.P > 0 ? (opP / c.mpp.P) * 100 : 0;
+
+    // 라이브 4칩
+    $('vocVal').textContent = `${c.voc.toFixed(1)} V`;
+    $('iscVal').textContent = `${c.isc.toFixed(2)} A`;
+    $('pmaxVal').textContent = `${c.mpp.P.toFixed(1)} W`;
+    $('effVal').textContent = `${eff.toFixed(1)} %`;
+
+    // 컨트롤 패널 상세
+    $('d_v').textContent = `${opV.toFixed(1)} V`;
+    $('d_i').textContent = `${opI.toFixed(2)} A`;
+    $('d_vmp').textContent = `${c.mpp.V.toFixed(1)} V`;
+    $('d_imp').textContent = `${c.mpp.I.toFixed(2)} A`;
+    $('d_p').textContent  = `${opP.toFixed(1)} W`;
+    $('d_pmax').textContent = `${c.mpp.P.toFixed(1)} W`;
+
+    // 효율 바
+    $('effFill').style.width = `${Math.min(100, eff)}%`;
+
+    // 상태 라벨
+    const sl = $('statusLabel');
+    if (state.mpptOn) {
+        if (eff >= 98) {
+            sl.textContent = 'MPP 추적 완료 (η ≥ 98%)';
+            sl.className = 'font-bold status-good';
+        } else if (eff >= 85) {
+            sl.textContent = 'P&O 수렴 중 (η ≥ 85%)';
+            sl.className = 'font-bold status-warn';
+        } else {
+            sl.textContent = '추적 진행 중…';
+            sl.className = 'font-bold status-warn';
+        }
+    } else {
+        if (eff >= 85) {
+            sl.textContent = `부하 직결 (R=${state.R}Ω · η=${eff.toFixed(0)}%)`;
+            sl.className = 'font-bold status-warn';
+        } else {
+            sl.textContent = `부하 부정합 (η=${eff.toFixed(0)}% · MPPT 필요)`;
+            sl.className = 'font-bold status-bad';
+        }
+    }
+
+    $('mpptBadge').textContent = `MPPT · ${state.mpptOn ? 'ON' : 'OFF'}`;
+}
+
+// ===== 애니메이션 =====
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(252, 211, 77, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(252, 211, 77, 0)', duration: 0.6 });
+}
+
+// ===== 이벤트 =====
+['g', 't', 'r'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        // 새 곡선 → MPPT 추적이 새 환경에 다시 적응하도록 perturbDir 유지, Vop는 그대로
+        compute();
+        flashCard();
+    });
+});
+
+$('mpptBtn').addEventListener('click', () => {
+    state.mpptOn = !state.mpptOn;
+    $('mpptBtn').classList.toggle('on', state.mpptOn);
+    $('mpptBtn').textContent = state.mpptOn ? 'MPPT · ON (P&O)' : 'MPPT · OFF (부하 직결)';
+    $('mpptNote').textContent = state.mpptOn
+        ? 'ON: DC-DC 컨버터가 듀티비를 미세 조정해 dP/dV → 0인 MPP로 추적.'
+        : 'OFF: 컨버터 우회 → 부하선(I=V/R)과 PV 곡선의 교점에서 동작.';
+    $('learnNote').textContent = state.mpptOn
+        ? 'P&O(Perturb & Observe): V를 ΔV만큼 흔든 뒤 P 변화를 관찰. ΔP·ΔV > 0이면 같은 방향, < 0이면 반전. MPP 주변에서 미세 진동(steady-state oscillation).'
+        : 'MPPT를 끄면 PV 모듈이 부하 R과 직접 만나므로 동작점은 I=V/R 직선과 I-V 곡선의 교점. R이 V_mp/I_mp와 다르면 P_max를 놓침.';
+    compute();
+    flashCard();
+});
+
+const presets = {
+    clear:  { G: 1000, T: 30 },
+    cloudy: { G: 450,  T: 22 },
+    dawn:   { G: 250,  T: 12 }
+};
+document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const k = btn.dataset.preset;
+        const p = presets[k];
+        $('g').value = p.G;
+        $('t').value = p.T;
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('active', b === btn));
+        compute();
+        flashCard();
+    });
+});
+
+// ===== 메인 루프 =====
+function animate() {
+    state.t++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawSun();
+    drawPanel();
+    drawMPPT();
+    drawLoad();
+    drawWires();
+
+    // 곡선 캔버스
+    cctx.clearRect(0, 0, curveCanvas.width, CURVE_H);
+    drawCurves();
+
+    // MPPT가 켜져 있으면 매 프레임 P&O 한 스텝씩 추적
+    if (state.mpptOn && state.t % 3 === 0) {
+        compute();
+    }
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#curveCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

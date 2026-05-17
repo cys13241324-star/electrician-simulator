@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크쌤 핏 · SPARK FIT — 전기 학습 운동량 트래커</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg-0: #0a0e1a;
+    --bg-1: #111827;
+    --bg-2: #1a2233;
+    --bg-3: #232d44;
+    --line: rgba(255,255,255,0.08);
+    --cyan: #22d3ee;
+    --cyan-soft: #67e8f9;
+    --cyan-deep: #0891b2;
+    --orange: #fb923c;
+    --orange-soft: #fdba74;
+    --orange-deep: #c2410c;
+    --ink-0: #f8fafc;
+    --ink-1: #cbd5e1;
+    --ink-2: #94a3b8;
+    --ink-3: #64748b;
+    --green: #34d399;
+    --pink: #f472b6;
+    --purple: #a78bfa;
+    --yellow: #fbbf24;
+    --red: #f87171;
+  }
+  * { -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background:
+      radial-gradient(800px 400px at 8% -10%, rgba(34,211,238,0.18) 0%, transparent 60%),
+      radial-gradient(700px 360px at 95% 5%, rgba(251,146,60,0.14) 0%, transparent 55%),
+      radial-gradient(900px 500px at 50% 110%, rgba(167,139,250,0.10) 0%, transparent 65%),
+      linear-gradient(180deg, #060912 0%, #0a0e1a 40%, #0d1424 100%);
+    min-height: 100vh;
+    color: var(--ink-0);
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* App shell */
+  .app-shell {
+    background: linear-gradient(180deg, rgba(17,24,39,0.92) 0%, rgba(10,14,26,0.92) 100%);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow:
+      0 50px 100px -40px rgba(0,0,0,0.7),
+      0 20px 60px -20px rgba(34,211,238,0.10),
+      inset 0 0 0 1px rgba(255,255,255,0.02);
+    overflow: hidden;
+  }
+  .card {
+    background: linear-gradient(160deg, rgba(26,34,51,0.85) 0%, rgba(17,24,39,0.85) 100%);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .card-interactive { cursor: pointer; }
+  .card-interactive:hover {
+    transform: translateY(-3px);
+    border-color: rgba(34,211,238,0.35);
+    box-shadow: 0 18px 36px -18px rgba(34,211,238,0.25);
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-1);
+  }
+  .chip-cyan { background: rgba(34,211,238,0.10); border-color: rgba(34,211,238,0.35); color: var(--cyan-soft); }
+  .chip-orange { background: rgba(251,146,60,0.10); border-color: rgba(251,146,60,0.35); color: var(--orange-soft); }
+  .chip-green { background: rgba(52,211,153,0.10); border-color: rgba(52,211,153,0.35); color: #6ee7b7; }
+  .chip-purple { background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.35); color: #c4b5fd; }
+  .chip-red { background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.35); color: #fca5a5; }
+  .chip-yellow { background: rgba(251,191,36,0.10); border-color: rgba(251,191,36,0.35); color: #fde68a; }
+
+  .data-num {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  .gradient-cyan { background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 60%, #0891b2 100%); }
+  .gradient-orange { background: linear-gradient(135deg, #fb923c 0%, #f97316 60%, #ea580c 100%); }
+  .gradient-pink { background: linear-gradient(135deg, #f472b6 0%, #ec4899 60%, #db2777 100%); }
+  .gradient-green { background: linear-gradient(135deg, #34d399 0%, #10b981 60%, #059669 100%); }
+
+  .text-cyan-grad {
+    background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 50%, #0891b2 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .text-orange-grad {
+    background: linear-gradient(135deg, #fdba74 0%, #fb923c 50%, #ea580c 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* Ring progress */
+  .ring-bg { stroke: rgba(255,255,255,0.07); }
+  .ring-fg { stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset .8s cubic-bezier(.2,.7,.2,1); }
+
+  /* Animated dot for heartbeat */
+  @keyframes pulse-heart {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.18); opacity: 0.75; }
+  }
+  .pulse-heart { animation: pulse-heart 1s ease-in-out infinite; }
+
+  @keyframes blink-rec {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.25; }
+  }
+  .blink-rec { animation: blink-rec 1.4s steps(2) infinite; }
+
+  /* Graph */
+  .graph-grid line { stroke: rgba(255,255,255,0.06); }
+  .graph-axis text { fill: var(--ink-3); font-size: 9px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .graph-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .graph-area { opacity: 0.18; }
+  .graph-dot { transition: r .15s ease; cursor: pointer; }
+  .graph-dot:hover { r: 6; }
+
+  /* Streak heatmap */
+  .streak-cell {
+    width: 100%; aspect-ratio: 1; border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .streak-l1 { background: rgba(34,211,238,0.18); border-color: rgba(34,211,238,0.10); }
+  .streak-l2 { background: rgba(34,211,238,0.38); border-color: rgba(34,211,238,0.20); }
+  .streak-l3 { background: rgba(34,211,238,0.62); border-color: rgba(34,211,238,0.30); }
+  .streak-l4 { background: rgba(34,211,238,0.88); border-color: rgba(34,211,238,0.45); }
+
+  /* Bottom tab bar */
+  .tab-btn {
+    flex: 1;
+    padding: 10px 6px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: var(--ink-2); cursor: pointer;
+    border-top: 2px solid transparent;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .tab-btn:hover { color: var(--ink-1); }
+  .tab-btn.active { color: var(--cyan); border-top-color: var(--cyan); }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(2,6,15,0.78);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-card {
+    width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+    background: linear-gradient(180deg, #131a2c 0%, #0d1322 100%);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.7);
+    animation: pop .25s cubic-bezier(.2,.7,.2,1);
+  }
+  @keyframes pop { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute; pointer-events: none;
+    padding: 6px 10px;
+    background: rgba(2,6,15,0.95);
+    border: 1px solid rgba(34,211,238,0.35);
+    border-radius: 8px;
+    font-size: 11px; color: var(--ink-0);
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.5);
+    transform: translate(-50%, -100%);
+    white-space: nowrap;
+    transition: opacity .12s ease;
+    opacity: 0;
+    z-index: 50;
+  }
+  .tooltip.show { opacity: 1; }
+
+  /* Timer ring */
+  @keyframes spin-slow { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+  .spin-slow { animation: spin-slow 12s linear infinite; }
+
+  /* Hide scrollbar but keep scroll */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); }
+
+  .bar-fill {
+    height: 100%; border-radius: 999px;
+    transition: width .8s cubic-bezier(.2,.7,.2,1);
+  }
+
+  /* Focus ring for a11y */
+  button:focus-visible, [role="button"]:focus-visible {
+    outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px;
+  }
+</style>
+</head>
+<body class="px-4 py-8 md:px-8 md:py-12">
+
+<!-- Tooltip (graph) -->
+<div id="graph-tooltip" class="tooltip"></div>
+
+<div class="mx-auto max-w-6xl">
+
+  <!-- Top brand strip -->
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="grid h-11 w-11 place-items-center rounded-2xl gradient-cyan shadow-lg shadow-cyan-500/30">
+        <!-- Lightning + dumbbell merged -->
+        <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="#0a0e1a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2 L4 14 h7 L9 22 L20 10 h-7 z" fill="#0a0e1a" />
+        </svg>
+      </div>
+      <div>
+        <div class="text-[11px] mono tracking-[0.3em] text-slate-400">SPARK · FIT</div>
+        <div class="text-lg font-bold tracking-tight">스파크쌤 핏</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="chip chip-cyan"><span class="h-1.5 w-1.5 rounded-full bg-cyan-400 pulse-heart"></span>SYNC LIVE</span>
+      <span class="chip mono">v2.4.7</span>
+    </div>
+  </div>
+
+  <!-- App shell -->
+  <div class="app-shell">
+
+    <!-- Header: profile + today goal -->
+    <header class="relative overflow-hidden px-6 pt-7 pb-8 md:px-9">
+      <!-- background glows -->
+      <div class="pointer-events-none absolute -top-24 -left-16 h-64 w-64 rounded-full bg-cyan-500/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -top-16 right-0 h-56 w-56 rounded-full bg-orange-500/15 blur-3xl"></div>
+
+      <div class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <!-- Profile -->
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <div class="grid h-16 w-16 place-items-center rounded-2xl gradient-orange text-2xl font-black text-slate-900 shadow-lg shadow-orange-500/30">
+              김
+            </div>
+            <div class="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-slate-900 ring-2 ring-cyan-400">
+              <span class="text-[10px] mono font-bold text-cyan-300">42</span>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl font-bold tracking-tight md:text-2xl">김전기 <span class="text-slate-400 text-base">· 수험생</span></h1>
+              <span class="chip chip-orange">LV.42 헤비웨이트</span>
+            </div>
+            <div class="mt-1 text-sm text-slate-400">
+              D-23 · 전기기능사 필기 · 누적 운동 <span class="mono text-slate-200">142h</span>
+            </div>
+            <div class="mt-3 flex items-center gap-2">
+              <span class="chip chip-cyan">
+                <svg viewBox="0 0 24 24" class="h-3 w-3" fill="currentColor"><path d="M12 2 L4 13 h7 L9 22 L20 11 h-7 z"/></svg>
+                연속 14일
+              </span>
+              <span class="chip chip-green">PR 갱신 3</span>
+              <span class="chip">친구 12</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today goal ring -->
+        <div class="flex items-center gap-5">
+          <div class="relative h-28 w-28">
+            <svg viewBox="0 0 100 100" class="h-full w-full">
+              <circle class="ring-bg" cx="50" cy="50" r="42" stroke-width="9" fill="none"/>
+              <circle id="goal-ring" class="ring-fg" cx="50" cy="50" r="42" stroke-width="9" fill="none"
+                stroke="url(#goal-grad)" stroke-dasharray="263.9" stroke-dashoffset="60"/>
+              <defs>
+                <linearGradient id="goal-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#22d3ee"/>
+                  <stop offset="100%" stop-color="#fb923c"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="absolute inset-0 grid place-items-center">
+              <div class="text-center">
+                <div class="data-num text-2xl text-orange-grad">77%</div>
+                <div class="text-[10px] mono tracking-widest text-slate-400">DAILY</div>
+              </div>
+            </div>
+          </div>
+          <div class="text-sm">
+            <div class="text-slate-400 text-[11px] mono tracking-widest">TODAY · 5/15 (금)</div>
+            <div class="mt-1 font-bold text-lg">목표 60분 / <span class="text-cyan-300">46분</span></div>
+            <div class="text-slate-500 text-xs">14분만 더, 새 PR이 가까워요</div>
+            <button onclick="openTimer('빠른 학습 세트', 'cyan')" class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-200 ring-1 ring-cyan-400/40 hover:bg-cyan-500/30">
+              <svg viewBox="0 0 24 24" class="h-3 w-3" fill="currentColor"><path d="M7 5 V19 L20 12 Z"/></svg>
+              퀵 스타트
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="divider"></div>
+
+    <!-- Main dashboard: 4 metric cards -->
+    <section class="px-6 py-7 md:px-9">
+      <div class="mb-4 flex items-end justify-between">
+        <div>
+          <div class="text-[11px] mono tracking-[0.3em] text-slate-500">TODAY · DASHBOARD</div>
+          <h2 class="mt-1 text-xl font-bold tracking-tight">오늘의 학습 운동량</h2>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
+          <span class="h-1.5 w-1.5 rounded-full bg-green-400 pulse-heart"></span>
+          실시간 측정 중
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+
+        <!-- Card 1: 학습 시간 -->
+        <div class="card p-4">
+          <div class="flex items-start justify-between">
+            <span class="chip chip-cyan">
+              <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15 14"/></svg>
+              학습 시간
+            </span>
+            <span class="text-[10px] mono text-slate-500">분</span>
+          </div>
+          <div class="mt-3 flex items-end gap-1">
+            <div class="data-num text-4xl text-cyan-grad">47</div>
+            <div class="mb-1 text-xs text-slate-400">/ 60 min</div>
+          </div>
+          <div class="mt-3 h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+            <div class="bar-fill gradient-cyan" style="width: 78%"></div>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[11px]">
+            <span class="text-slate-500">어제 39분</span>
+            <span class="chip chip-green !py-0.5 !text-[10px]">+8 min</span>
+          </div>
+        </div>
+
+        <!-- Card 2: 정답률 (칼로리) -->
+        <div class="card p-4">
+          <div class="flex items-start justify-between">
+            <span class="chip chip-orange">
+              <svg viewBox="0 0 24 24" class="h-3 w-3" fill="currentColor"><path d="M12 2 C10 7 6 8 6 13 a6 6 0 0 0 12 0 c0 -3 -2 -5 -3 -7 c-1 2 -3 3 -3 1 c0 -2 1 -3 0 -5z"/></svg>
+              정답률
+            </span>
+            <span class="text-[10px] mono text-slate-500">%</span>
+          </div>
+          <div class="mt-3 flex items-end gap-1">
+            <div class="data-num text-4xl text-orange-grad">78</div>
+            <div class="mb-1 text-xs text-slate-400">/ 100</div>
+          </div>
+          <div class="mt-3 h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+            <div class="bar-fill gradient-orange" style="width: 78%"></div>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[11px]">
+            <span class="text-slate-500">최근 50문항</span>
+            <span class="chip chip-green !py-0.5 !text-[10px]">+4%</span>
+          </div>
+        </div>
+
+        <!-- Card 3: 플립카드 회전수 (걸음) -->
+        <div class="card p-4">
+          <div class="flex items-start justify-between">
+            <span class="chip chip-purple">
+              <svg viewBox="0 0 24 24" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5 V19"/></svg>
+              플립카드
+            </span>
+            <span class="text-[10px] mono text-slate-500">회전</span>
+          </div>
+          <div class="mt-3 flex items-end gap-1">
+            <div class="data-num text-4xl text-slate-100">234</div>
+            <div class="mb-1 text-xs text-slate-400">/ 300</div>
+          </div>
+          <div class="mt-3 h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+            <div class="bar-fill gradient-pink" style="width: 78%"></div>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[11px]">
+            <span class="text-slate-500">미숙 19장 남음</span>
+            <span class="chip chip-green !py-0.5 !text-[10px]">+42</span>
+          </div>
+        </div>
+
+        <!-- Card 4: 집중도 (심박) -->
+        <div class="card p-4">
+          <div class="flex items-start justify-between">
+            <span class="chip chip-red">
+              <svg viewBox="0 0 24 24" class="h-3 w-3 pulse-heart" fill="currentColor"><path d="M12 21 C-2 12 4 3 12 8 C20 3 26 12 12 21 Z"/></svg>
+              집중도
+            </span>
+            <span class="text-[10px] mono text-slate-500">bpm</span>
+          </div>
+          <div class="mt-3 flex items-end gap-1">
+            <div class="data-num text-4xl text-slate-100">82</div>
+            <div class="mb-1 text-xs text-slate-400">avg</div>
+          </div>
+          <!-- mini heart line -->
+          <svg viewBox="0 0 120 24" class="mt-2 h-6 w-full">
+            <polyline fill="none" stroke="#f87171" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"
+              points="0,12 12,12 18,12 22,4 26,20 30,8 34,12 60,12 66,12 70,6 74,18 78,9 82,12 120,12"/>
+          </svg>
+          <div class="mt-1 flex items-center justify-between text-[11px]">
+            <span class="text-slate-500">존: 깊은 집중</span>
+            <span class="chip chip-cyan !py-0.5 !text-[10px]">안정</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Workout categories grid -->
+    <section class="px-6 py-7 md:px-9">
+      <div class="mb-4 flex items-end justify-between">
+        <div>
+          <div class="text-[11px] mono tracking-[0.3em] text-slate-500">WORKOUTS · 오늘의 종목</div>
+          <h2 class="mt-1 text-xl font-bold tracking-tight">5종목 · 28세트 완료</h2>
+        </div>
+        <button onclick="openCatalog()" class="rounded-full border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:border-cyan-400/40 hover:text-cyan-300">
+          전체 카탈로그 →
+        </button>
+      </div>
+
+      <div id="workout-grid" class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <!-- filled by JS -->
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Weekly graph + Streak -->
+    <section class="grid grid-cols-1 gap-6 px-6 py-7 md:px-9 lg:grid-cols-5">
+
+      <!-- Graph -->
+      <div class="card p-5 lg:col-span-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-[11px] mono tracking-[0.3em] text-slate-500">PROGRESS · 7 DAYS</div>
+            <h3 class="mt-1 text-lg font-bold">주간 학습 운동량</h3>
+          </div>
+          <div class="flex gap-1 rounded-full bg-white/5 p-1 text-[11px]">
+            <button id="rng-week" class="rounded-full bg-cyan-500/30 px-2.5 py-1 text-cyan-200">주간</button>
+            <button id="rng-month" class="rounded-full px-2.5 py-1 text-slate-400 hover:text-slate-200">월간</button>
+          </div>
+        </div>
+
+        <div class="mt-4 relative">
+          <svg id="graph-svg" viewBox="0 0 520 220" class="w-full h-auto" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- grid -->
+            <g class="graph-grid">
+              <line x1="40" y1="20" x2="510" y2="20"/>
+              <line x1="40" y1="65" x2="510" y2="65"/>
+              <line x1="40" y1="110" x2="510" y2="110"/>
+              <line x1="40" y1="155" x2="510" y2="155"/>
+              <line x1="40" y1="200" x2="510" y2="200"/>
+            </g>
+            <!-- y axis labels -->
+            <g class="graph-axis">
+              <text x="34" y="23" text-anchor="end">90</text>
+              <text x="34" y="68" text-anchor="end">70</text>
+              <text x="34" y="113" text-anchor="end">50</text>
+              <text x="34" y="158" text-anchor="end">30</text>
+              <text x="34" y="203" text-anchor="end">10</text>
+            </g>
+            <!-- data placeholders -->
+            <path id="graph-area" class="graph-area" fill="url(#area-grad)"/>
+            <path id="graph-line" class="graph-line" stroke="#22d3ee"/>
+            <g id="graph-dots"></g>
+            <g id="graph-xlabels" class="graph-axis"></g>
+          </svg>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-xl bg-white/5 px-3 py-2">
+            <div class="text-[10px] mono tracking-widest text-slate-500">평균/일</div>
+            <div class="mt-0.5 data-num text-lg text-slate-100">52<span class="text-xs text-slate-400">분</span></div>
+          </div>
+          <div class="rounded-xl bg-white/5 px-3 py-2">
+            <div class="text-[10px] mono tracking-widest text-slate-500">총 시간</div>
+            <div class="mt-0.5 data-num text-lg text-slate-100">6:24</div>
+          </div>
+          <div class="rounded-xl bg-white/5 px-3 py-2">
+            <div class="text-[10px] mono tracking-widest text-slate-500">PR</div>
+            <div class="mt-0.5 data-num text-lg text-orange-grad">82분</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Streak + Badges -->
+      <div class="lg:col-span-2 flex flex-col gap-4">
+
+        <!-- Streak -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[11px] mono tracking-[0.3em] text-slate-500">STREAK · 35일</div>
+              <h3 class="mt-1 text-lg font-bold">연속 학습일</h3>
+            </div>
+            <div class="relative">
+              <div class="grid h-12 w-12 place-items-center rounded-2xl gradient-orange text-slate-900 shadow-lg shadow-orange-500/20">
+                <svg viewBox="0 0 24 24" class="h-7 w-7" fill="currentColor"><path d="M12 2 C13 6 17 8 17 13 a5 5 0 0 1 -10 0 C7 9 11 7 12 2 Z"/></svg>
+              </div>
+              <span class="absolute -bottom-1 -right-1 rounded-full bg-slate-900 px-1.5 py-0.5 text-[10px] mono font-bold text-orange-300 ring-1 ring-orange-400/50">14</span>
+            </div>
+          </div>
+          <div id="streak-grid" class="mt-4 grid grid-cols-10 gap-1.5">
+            <!-- filled by JS, 5 rows × 10 cols = 50 days -->
+          </div>
+          <div class="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+            <span>지난 50일</span>
+            <div class="flex items-center gap-1">
+              <span>적음</span>
+              <span class="streak-cell !w-3"></span>
+              <span class="streak-cell streak-l1 !w-3"></span>
+              <span class="streak-cell streak-l2 !w-3"></span>
+              <span class="streak-cell streak-l3 !w-3"></span>
+              <span class="streak-cell streak-l4 !w-3"></span>
+              <span>많음</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between">
+            <div class="text-[11px] mono tracking-[0.3em] text-slate-500">BADGES · 12 / 30</div>
+            <span class="chip chip-yellow">NEW · 3</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-2">
+            <div class="group rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-2 text-center" title="옴 마스터">
+              <div class="text-2xl">Ω</div>
+              <div class="text-[9px] mono mt-0.5 text-yellow-200">옴 마스터</div>
+            </div>
+            <div class="rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-2 text-center" title="100세트">
+              <div class="text-xl">💪</div>
+              <div class="text-[9px] mono mt-0.5 text-cyan-200">100세트</div>
+            </div>
+            <div class="rounded-xl border border-orange-400/30 bg-orange-400/10 p-2 text-center" title="연속 14일">
+              <div class="text-xl">🔥</div>
+              <div class="text-[9px] mono mt-0.5 text-orange-200">14일 불꽃</div>
+            </div>
+            <div class="rounded-xl border border-white/10 bg-white/5 p-2 text-center opacity-50" title="잠금">
+              <div class="text-xl">🔒</div>
+              <div class="text-[9px] mono mt-0.5 text-slate-400">D-23</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Ranking + Recommended -->
+    <section class="grid grid-cols-1 gap-6 px-6 py-7 md:px-9 lg:grid-cols-5">
+
+      <!-- Friends ranking -->
+      <div class="card p-5 lg:col-span-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-[11px] mono tracking-[0.3em] text-slate-500">FRIENDS · WEEKLY</div>
+            <h3 class="mt-1 text-lg font-bold">친구 랭킹</h3>
+          </div>
+          <span class="chip">12명</span>
+        </div>
+        <ul class="mt-4 space-y-2.5">
+          <li class="flex items-center gap-3">
+            <span class="data-num w-6 text-orange-grad text-lg">1</span>
+            <div class="grid h-9 w-9 place-items-center rounded-xl gradient-orange text-sm font-bold text-slate-900">박</div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold">박전압</div>
+              <div class="h-1 w-full rounded-full bg-white/5"><div class="bar-fill gradient-orange" style="width:92%"></div></div>
+            </div>
+            <span class="data-num text-sm text-orange-soft">9:12</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="data-num w-6 text-cyan-grad text-lg">2</span>
+            <div class="grid h-9 w-9 place-items-center rounded-xl gradient-cyan text-sm font-bold text-slate-900">최</div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold">최저항</div>
+              <div class="h-1 w-full rounded-full bg-white/5"><div class="bar-fill gradient-cyan" style="width:78%"></div></div>
+            </div>
+            <span class="data-num text-sm text-cyan-soft">7:46</span>
+          </li>
+          <li class="flex items-center gap-3 rounded-xl bg-cyan-500/10 px-2 py-1 ring-1 ring-cyan-400/30">
+            <span class="data-num w-6 text-cyan-300 text-lg">3</span>
+            <div class="grid h-9 w-9 place-items-center rounded-xl gradient-orange text-sm font-bold text-slate-900">김</div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-cyan-200">김전기 <span class="text-[10px] mono text-cyan-300">· YOU</span></div>
+              <div class="h-1 w-full rounded-full bg-white/5"><div class="bar-fill gradient-cyan" style="width:68%"></div></div>
+            </div>
+            <span class="data-num text-sm text-cyan-soft">6:24</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="data-num w-6 text-slate-400 text-lg">4</span>
+            <div class="grid h-9 w-9 place-items-center rounded-xl bg-slate-700 text-sm font-bold text-slate-200">이</div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold">이전류</div>
+              <div class="h-1 w-full rounded-full bg-white/5"><div class="bar-fill bg-slate-500" style="width:54%"></div></div>
+            </div>
+            <span class="data-num text-sm text-slate-300">5:08</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="data-num w-6 text-slate-400 text-lg">5</span>
+            <div class="grid h-9 w-9 place-items-center rounded-xl bg-slate-700 text-sm font-bold text-slate-200">정</div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold">정주파</div>
+              <div class="h-1 w-full rounded-full bg-white/5"><div class="bar-fill bg-slate-500" style="width:42%"></div></div>
+            </div>
+            <span class="data-num text-sm text-slate-300">3:55</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Recommended workouts -->
+      <div class="card p-5 lg:col-span-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-[11px] mono tracking-[0.3em] text-slate-500">RECOMMENDED · 약점 보강</div>
+            <h3 class="mt-1 text-lg font-bold">코치 추천 운동</h3>
+          </div>
+          <span class="chip chip-cyan">AI 코치</span>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-transparent p-4">
+            <div class="text-xs mono tracking-widest text-cyan-300">WEAK · 67%</div>
+            <div class="mt-1 font-bold">3상 교류 인터벌</div>
+            <div class="mt-1 text-xs text-slate-400">선간/상전압 환산 12세트</div>
+            <button onclick="openTimer('3상 교류 인터벌','cyan')" class="mt-3 w-full rounded-full bg-cyan-500/30 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/40">시작</button>
+          </div>
+          <div class="rounded-2xl border border-orange-400/20 bg-gradient-to-br from-orange-500/10 to-transparent p-4">
+            <div class="text-xs mono tracking-widest text-orange-300">WEAK · 71%</div>
+            <div class="mt-1 font-bold">전력 슈퍼세트</div>
+            <div class="mt-1 text-xs text-slate-400">유효/무효/피상 8세트</div>
+            <button onclick="openTimer('전력 슈퍼세트','orange')" class="mt-3 w-full rounded-full bg-orange-500/30 px-3 py-1.5 text-xs font-semibold text-orange-200 hover:bg-orange-500/40">시작</button>
+          </div>
+          <div class="rounded-2xl border border-purple-400/20 bg-gradient-to-br from-purple-500/10 to-transparent p-4">
+            <div class="text-xs mono tracking-widest text-purple-300">NEW</div>
+            <div class="mt-1 font-bold">접지 핀치프레스</div>
+            <div class="mt-1 text-xs text-slate-400">접지저항 측정법 6세트</div>
+            <button onclick="openTimer('접지 핀치프레스','purple')" class="mt-3 w-full rounded-full bg-purple-500/30 px-3 py-1.5 text-xs font-semibold text-purple-200 hover:bg-purple-500/40">시작</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- Bottom tab bar -->
+    <nav class="flex items-stretch border-t border-white/5 bg-black/30">
+      <button class="tab-btn active" data-tab="home">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12 L12 4 L21 12 V20 a1 1 0 0 1 -1 1 H15 V14 H9 V21 H4 a1 1 0 0 1 -1 -1 z"/></svg>
+        <span class="text-[10px] mono">HOME</span>
+      </button>
+      <button class="tab-btn" data-tab="workout">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9 V15 M6 7 V17 M9 5 V19 M15 5 V19 M18 7 V17 M21 9 V15"/></svg>
+        <span class="text-[10px] mono">WORKOUT</span>
+      </button>
+      <button class="tab-btn" data-tab="stats">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20 V14 M10 20 V8 M16 20 V11 M22 20 V4"/></svg>
+        <span class="text-[10px] mono">STATS</span>
+      </button>
+      <button class="tab-btn" data-tab="social">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20 c1 -4 5 -5 6 -5 s5 1 6 5 M14 19 c1 -2 3 -3 5 -3 c1 0 2 1 2 1"/></svg>
+        <span class="text-[10px] mono">FRIENDS</span>
+      </button>
+      <button class="tab-btn" data-tab="profile">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M3 21 c1 -5 6 -7 9 -7 s8 2 9 7"/></svg>
+        <span class="text-[10px] mono">PROFILE</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-6 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+    <div class="flex items-center gap-2">
+      <span class="h-1.5 w-1.5 rounded-full bg-red-400 blink-rec"></span>
+      <span class="mono tracking-widest">DISCLAIMER</span>
+      <span>가상 운동·학습 시뮬레이션 · 실제 헬스 앱 아님</span>
+    </div>
+    <div class="mono">© 2026 SPARK FIT · v2.4.7 · build #20260515</div>
+  </footer>
+</div>
+
+<!-- Workout detail modal -->
+<div id="workout-modal" class="modal-backdrop" onclick="closeModalIfBackdrop(event,'workout-modal')">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div id="workout-modal-body" class="p-6"></div>
+  </div>
+</div>
+
+<!-- Timer modal -->
+<div id="timer-modal" class="modal-backdrop" onclick="closeModalIfBackdrop(event,'timer-modal')">
+  <div class="modal-card max-w-sm" onclick="event.stopPropagation()">
+    <div id="timer-modal-body" class="p-6"></div>
+  </div>
+</div>
+
+<!-- Catalog modal -->
+<div id="catalog-modal" class="modal-backdrop" onclick="closeModalIfBackdrop(event,'catalog-modal')">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-[11px] mono tracking-[0.3em] text-slate-500">CATALOG · 전체</div>
+          <h3 class="mt-1 text-xl font-bold">운동 종목 카탈로그</h3>
+        </div>
+        <button class="rounded-full bg-white/5 px-3 py-1 text-sm hover:bg-white/10" onclick="closeModal('catalog-modal')">닫기 ✕</button>
+      </div>
+      <div id="catalog-list" class="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Utilities ----
+  const escapeHtml = (s) => String(s).replace(/[&<>"'`=\/]/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;','=':'&#61;','/':'&#47;'
+  }[c]));
+
+  // ---- Workout data ----
+  const WORKOUTS = [
+    {
+      id: 'ohm-pushup',
+      title: '옴라이브 푸시업',
+      tag: '옴의 법칙',
+      tagColor: 'cyan',
+      reps: '15 × 3세트',
+      time: '12분',
+      score: 96,
+      pr: true,
+      desc: 'V = I × R 의 3가지 변형을 가슴팍으로 받아내는 정통 푸시업. 천천히 내려가며 단위 환산까지 함께 합니다.',
+      sets: [
+        { n:1, val:'15회 · 4:02', ok:true },
+        { n:2, val:'15회 · 4:08', ok:true },
+        { n:3, val:'15회 · 3:55 · PR', ok:true, pr:true },
+      ],
+      icon: 'pushup'
+    },
+    {
+      id: 'kirchhoff-squat',
+      title: '키르히호프 스쿼트',
+      tag: 'KCL · KVL',
+      tagColor: 'orange',
+      reps: '10 × 4세트',
+      time: '15분',
+      score: 84,
+      desc: '들어오는 전류 = 나가는 전류. 무릎과 발끝을 따라 노드/루프를 점검하며 1회씩 깊게 앉습니다.',
+      sets: [
+        { n:1, val:'10회 · 3:30', ok:true },
+        { n:2, val:'10회 · 3:42', ok:true },
+        { n:3, val:'10회 · 3:58', ok:true },
+        { n:4, val:'9회 · 4:10', ok:false },
+      ],
+      icon: 'squat'
+    },
+    {
+      id: 'transformer-deadlift',
+      title: '변압기 데드리프트',
+      tag: '권수비',
+      tagColor: 'purple',
+      reps: '8 × 3세트',
+      time: '11분',
+      score: 79,
+      desc: '1차/2차 권수비를 양손에 나눠 들고 천천히 들어 올립니다. N1:N2 = V1:V2 의 비율이 곧 자세의 비율.',
+      sets: [
+        { n:1, val:'8회 · 3:22', ok:true },
+        { n:2, val:'8회 · 3:30', ok:true },
+        { n:3, val:'7회 · 3:48', ok:false },
+      ],
+      icon: 'deadlift'
+    },
+    {
+      id: 'rlc-plank',
+      title: 'RLC 플랭크',
+      tag: '공진 주파수',
+      tagColor: 'cyan',
+      reps: '60s × 3세트',
+      time: '9분',
+      score: 88,
+      desc: 'f₀ = 1 / (2π√LC). 코어를 잡고 호흡 주기를 일정하게 — 회로의 공진 주파수처럼 흔들리지 않게.',
+      sets: [
+        { n:1, val:'60s · ok', ok:true },
+        { n:2, val:'60s · ok', ok:true },
+        { n:3, val:'55s · 흔들림', ok:false },
+      ],
+      icon: 'plank'
+    },
+    {
+      id: 'safety-stretch',
+      title: '안전 스트레칭',
+      tag: '안전 수칙',
+      tagColor: 'green',
+      reps: '8자세 × 1세트',
+      time: '7분',
+      score: 100,
+      desc: '활선 차단 · 검전 · 단락접지. 시작과 끝에 3분씩, 부상 없이 다음 세트로 가는 가장 빠른 길.',
+      sets: [
+        { n:1, val:'8자세 · 완료', ok:true },
+      ],
+      icon: 'stretch'
+    },
+    {
+      id: 'wire-row',
+      title: '전선규격 로우',
+      tag: '허용전류',
+      tagColor: 'orange',
+      reps: '12 × 3세트',
+      time: '10분',
+      score: 73,
+      desc: 'AWG/SQ 환산표를 등으로 당겨옵니다. 굵을수록 무겁고, 허용전류가 큽니다.',
+      sets: [
+        { n:1, val:'12회 · 3:01', ok:true },
+        { n:2, val:'12회 · 3:10', ok:true },
+        { n:3, val:'10회 · 3:25', ok:false },
+      ],
+      icon: 'row'
+    }
+  ];
+
+  // ---- Icon library (SVG poses) ----
+  function poseSvg(kind) {
+    const wrap = (inner) => `<svg viewBox="0 0 80 80" class="h-full w-full" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+    switch (kind) {
+      case 'pushup':
+        return wrap('<path d="M8 58 L72 58"/><path d="M18 58 V46 a4 4 0 0 1 4 -4 H32"/><circle cx="38" cy="38" r="5"/><path d="M42 40 L56 32 L64 36"/><path d="M28 46 L40 46 L48 50"/>');
+      case 'squat':
+        return wrap('<circle cx="40" cy="14" r="6"/><path d="M40 20 V36 L30 50 L30 66"/><path d="M40 36 L52 50 L52 66"/><path d="M40 28 L26 24 M40 28 L54 24"/>');
+      case 'deadlift':
+        return wrap('<circle cx="40" cy="14" r="6"/><path d="M40 20 V40"/><path d="M28 44 L52 44 M28 44 V36 M52 44 V36"/><path d="M40 40 L30 62 M40 40 L50 62"/><rect x="16" y="58" width="48" height="6" rx="2"/>');
+      case 'plank':
+        return wrap('<circle cx="20" cy="32" r="5"/><path d="M24 34 L62 46"/><path d="M62 46 L66 60"/><path d="M22 40 L26 60"/><path d="M8 60 L72 60"/>');
+      case 'stretch':
+        return wrap('<circle cx="40" cy="14" r="6"/><path d="M40 20 V36"/><path d="M40 28 L20 22 M40 28 L60 22"/><path d="M40 36 L28 60 M40 36 L52 60"/>');
+      case 'row':
+        return wrap('<circle cx="22" cy="22" r="5"/><path d="M26 26 L42 36"/><path d="M26 32 L22 56"/><path d="M22 56 L36 56"/><path d="M42 36 L60 30"/><rect x="58" y="24" width="14" height="12" rx="2"/>');
+      default:
+        return wrap('<circle cx="40" cy="40" r="20"/>');
+    }
+  }
+
+  // ---- Render workout cards ----
+  function renderWorkouts() {
+    const grid = document.getElementById('workout-grid');
+    const colorMap = {
+      cyan: { chip: 'chip-cyan', bar: 'gradient-cyan', text: 'text-cyan-300' },
+      orange: { chip: 'chip-orange', bar: 'gradient-orange', text: 'text-orange-300' },
+      purple: { chip: 'chip-purple', bar: 'gradient-pink', text: 'text-purple-300' },
+      green: { chip: 'chip-green', bar: 'gradient-green', text: 'text-emerald-300' },
+    };
+    grid.innerHTML = WORKOUTS.map((w, i) => {
+      const c = colorMap[w.tagColor] || colorMap.cyan;
+      const prBadge = w.pr ? `<span class="chip chip-yellow !py-0.5 !text-[10px]">PR</span>` : '';
+      return `
+      <article class="card card-interactive p-4" data-id="${escapeHtml(w.id)}" role="button" tabindex="0" aria-label="${escapeHtml(w.title)} 상세 보기">
+        <div class="flex items-start justify-between">
+          <span class="chip ${c.chip}">${escapeHtml(w.tag)}</span>
+          ${prBadge}
+        </div>
+        <div class="mt-3 flex items-center gap-3">
+          <div class="grid h-14 w-14 place-items-center rounded-2xl bg-white/5 ${c.text}">${poseSvg(w.icon)}</div>
+          <div class="min-w-0">
+            <h4 class="truncate text-base font-bold tracking-tight">${escapeHtml(w.title)}</h4>
+            <div class="mt-0.5 text-xs text-slate-400">${escapeHtml(w.reps)} · ${escapeHtml(w.time)}</div>
+          </div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-lg bg-white/[0.03] px-2 py-1.5">
+            <div class="text-[9px] mono tracking-widest text-slate-500">SETS</div>
+            <div class="data-num text-sm text-slate-100">${w.sets.length}</div>
+          </div>
+          <div class="rounded-lg bg-white/[0.03] px-2 py-1.5">
+            <div class="text-[9px] mono tracking-widest text-slate-500">TIME</div>
+            <div class="data-num text-sm text-slate-100">${escapeHtml(w.time)}</div>
+          </div>
+          <div class="rounded-lg bg-white/[0.03] px-2 py-1.5">
+            <div class="text-[9px] mono tracking-widest text-slate-500">SCORE</div>
+            <div class="data-num text-sm ${c.text}">${w.score}</div>
+          </div>
+        </div>
+        <div class="mt-3 h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+          <div class="bar-fill ${c.bar}" style="width:${w.score}%"></div>
+        </div>
+        <div class="mt-3 flex items-center justify-between">
+          <span class="text-[11px] text-slate-500">탭하여 상세 보기</span>
+          <button class="rounded-full bg-cyan-500/15 px-3 py-1 text-[11px] font-semibold text-cyan-200 ring-1 ring-cyan-400/30 hover:bg-cyan-500/25" data-start="${escapeHtml(w.id)}">▶ 시작</button>
+        </div>
+      </article>`;
+    }).join('');
+
+    grid.querySelectorAll('[data-id]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('[data-start]')) return;
+        openWorkoutModal(el.dataset.id);
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openWorkoutModal(el.dataset.id); }
+      });
+    });
+    grid.querySelectorAll('[data-start]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const w = WORKOUTS.find(x => x.id === btn.dataset.start);
+        if (w) openTimer(w.title, w.tagColor);
+      });
+    });
+  }
+
+  // ---- Workout detail modal ----
+  function openWorkoutModal(id) {
+    const w = WORKOUTS.find(x => x.id === id);
+    if (!w) return;
+    const colorClass = {
+      cyan:'text-cyan-300', orange:'text-orange-300', purple:'text-purple-300', green:'text-emerald-300'
+    }[w.tagColor] || 'text-cyan-300';
+
+    const setsHtml = w.sets.map(s => `
+      <li class="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-2">
+        <span class="mono text-xs text-slate-400">SET ${s.n}</span>
+        <span class="mono text-sm ${s.pr ? 'text-orange-300' : (s.ok ? 'text-slate-100' : 'text-red-300')}">${escapeHtml(s.val)}</span>
+        <span class="text-[11px] ${s.ok ? 'text-emerald-400' : 'text-red-400'}">${s.ok ? (s.pr ? '★ PR' : '✓ OK') : '△ 흔들림'}</span>
+      </li>`).join('');
+
+    document.getElementById('workout-modal-body').innerHTML = `
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="text-[11px] mono tracking-[0.3em] text-slate-500">WORKOUT · 상세</div>
+          <h3 class="mt-1 text-2xl font-bold tracking-tight">${escapeHtml(w.title)}</h3>
+          <div class="mt-1 text-sm text-slate-400">${escapeHtml(w.tag)} · ${escapeHtml(w.reps)} · ${escapeHtml(w.time)}</div>
+        </div>
+        <button class="rounded-full bg-white/5 px-3 py-1 text-sm hover:bg-white/10" onclick="closeModal('workout-modal')" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="mt-5 grid grid-cols-3 gap-3">
+        <div class="rounded-xl bg-white/[0.04] p-3 text-center">
+          <div class="text-[10px] mono tracking-widest text-slate-500">SCORE</div>
+          <div class="data-num mt-1 text-2xl ${colorClass}">${w.score}</div>
+        </div>
+        <div class="rounded-xl bg-white/[0.04] p-3 text-center">
+          <div class="text-[10px] mono tracking-widest text-slate-500">SETS</div>
+          <div class="data-num mt-1 text-2xl">${w.sets.length}</div>
+        </div>
+        <div class="rounded-xl bg-white/[0.04] p-3 text-center">
+          <div class="text-[10px] mono tracking-widest text-slate-500">TIME</div>
+          <div class="data-num mt-1 text-2xl">${escapeHtml(w.time)}</div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="text-[11px] mono tracking-[0.3em] text-slate-500">방법</div>
+        <p class="mt-1 text-sm text-slate-300 leading-relaxed">${escapeHtml(w.desc)}</p>
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <div class="text-[11px] mono tracking-[0.3em] text-slate-500">자세 가이드</div>
+          <div class="mt-2 grid h-44 place-items-center rounded-xl bg-white/[0.03] ${colorClass}">${poseSvg(w.icon)}</div>
+        </div>
+        <div>
+          <div class="text-[11px] mono tracking-[0.3em] text-slate-500">세트 기록</div>
+          <ul class="mt-2 space-y-1.5">${setsHtml}</ul>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-wrap gap-2">
+        <button onclick="closeModal('workout-modal'); openTimer('${escapeHtml(w.title)}','${w.tagColor}')" class="flex-1 rounded-full gradient-cyan px-4 py-2.5 text-sm font-bold text-slate-900 hover:opacity-90">▶ 운동 시작</button>
+        <button onclick="closeModal('workout-modal')" class="rounded-full border border-white/10 px-4 py-2.5 text-sm text-slate-300 hover:border-white/20">나중에</button>
+      </div>
+    `;
+    openModal('workout-modal');
+  }
+
+  // ---- Timer modal ----
+  let timerInterval = null;
+  function openTimer(title, color) {
+    const colorClass = { cyan:'text-cyan-300', orange:'text-orange-300', purple:'text-purple-300', green:'text-emerald-300' }[color] || 'text-cyan-300';
+    const ringColor = { cyan:'#22d3ee', orange:'#fb923c', purple:'#a78bfa', green:'#34d399' }[color] || '#22d3ee';
+    let elapsed = 0; // seconds
+    const total = 60; // 1 min demo
+    const body = document.getElementById('timer-modal-body');
+
+    function render() {
+      const pct = Math.min(elapsed / total, 1);
+      const dash = 263.9;
+      const offset = dash * (1 - pct);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2,'0');
+      const ss = String(elapsed % 60).padStart(2,'0');
+      body.innerHTML = `
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-[11px] mono tracking-[0.3em] text-slate-500">LIVE TIMER</div>
+            <div class="mt-1 text-base font-bold">${escapeHtml(title)}</div>
+          </div>
+          <button class="rounded-full bg-white/5 px-3 py-1 text-sm hover:bg-white/10" onclick="stopTimer()" aria-label="닫기">✕</button>
+        </div>
+        <div class="mt-6 grid place-items-center">
+          <div class="relative h-52 w-52">
+            <svg viewBox="0 0 100 100" class="h-full w-full spin-slow opacity-60">
+              <circle cx="50" cy="50" r="48" fill="none" stroke="${ringColor}" stroke-width="0.4" stroke-dasharray="2 4"/>
+            </svg>
+            <svg viewBox="0 0 100 100" class="absolute inset-0 h-full w-full">
+              <circle class="ring-bg" cx="50" cy="50" r="42" stroke-width="6" fill="none"/>
+              <circle class="ring-fg" cx="50" cy="50" r="42" stroke-width="6" fill="none"
+                stroke="${ringColor}" stroke-dasharray="${dash}" stroke-dashoffset="${offset}"/>
+            </svg>
+            <div class="absolute inset-0 grid place-items-center">
+              <div class="text-center">
+                <div class="data-num text-4xl ${colorClass}">${mm}:${ss}</div>
+                <div class="text-[10px] mono tracking-widest text-slate-500">/ 01:00 GOAL</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-5 grid grid-cols-3 gap-2 text-center">
+          <div class="rounded-lg bg-white/[0.04] py-2"><div class="text-[10px] mono text-slate-500">SET</div><div class="data-num text-sm">1 / 3</div></div>
+          <div class="rounded-lg bg-white/[0.04] py-2"><div class="text-[10px] mono text-slate-500">REPS</div><div class="data-num text-sm">${Math.min(elapsed,15)}</div></div>
+          <div class="rounded-lg bg-white/[0.04] py-2"><div class="text-[10px] mono text-slate-500">BPM</div><div class="data-num text-sm">${80 + (elapsed % 8)}</div></div>
+        </div>
+        <div class="mt-5 flex gap-2">
+          <button onclick="stopTimer()" class="flex-1 rounded-full bg-white/5 px-4 py-2.5 text-sm hover:bg-white/10">일시정지</button>
+          <button onclick="finishTimer()" class="flex-1 rounded-full gradient-cyan px-4 py-2.5 text-sm font-bold text-slate-900 hover:opacity-90">완료</button>
+        </div>
+        <p class="mt-3 text-center text-[10px] text-slate-500">데모용 가짜 타이머 · 실제 측정 X</p>
+      `;
+    }
+    render();
+    openModal('timer-modal');
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      elapsed = Math.min(elapsed + 1, total);
+      render();
+      if (elapsed >= total) { clearInterval(timerInterval); timerInterval = null; }
+    }, 1000);
+  }
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    closeModal('timer-modal');
+  }
+  function finishTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    closeModal('timer-modal');
+  }
+
+  // ---- Catalog ----
+  function openCatalog() {
+    const list = document.getElementById('catalog-list');
+    list.innerHTML = WORKOUTS.map(w => `
+      <button data-id="${escapeHtml(w.id)}" class="card card-interactive flex items-center gap-3 p-3 text-left">
+        <div class="grid h-12 w-12 place-items-center rounded-xl bg-white/5 text-cyan-200">${poseSvg(w.icon)}</div>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-bold">${escapeHtml(w.title)}</div>
+          <div class="truncate text-[11px] text-slate-400">${escapeHtml(w.tag)} · ${escapeHtml(w.reps)}</div>
+        </div>
+        <span class="data-num text-sm text-cyan-300">${w.score}</span>
+      </button>`).join('');
+    list.querySelectorAll('[data-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        closeModal('catalog-modal');
+        openWorkoutModal(btn.dataset.id);
+      });
+    });
+    openModal('catalog-modal');
+  }
+
+  // ---- Modal helpers ----
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function closeModalIfBackdrop(e, id) {
+    if (e.target.id === id) closeModal(id);
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      ['workout-modal','timer-modal','catalog-modal'].forEach(closeModal);
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
+  });
+
+  // ---- Streak heatmap ----
+  function renderStreak() {
+    const grid = document.getElementById('streak-grid');
+    // Deterministic pattern: last 14 days strong, before that fading
+    const cells = [];
+    for (let i = 0; i < 50; i++) {
+      const daysAgo = 49 - i;
+      let level;
+      if (daysAgo < 14) {
+        // recent 14 = strong
+        level = ((i * 37 + 13) % 4 === 0) ? 3 : 4;
+      } else if (daysAgo < 28) {
+        const r = (i * 23 + 7) % 5;
+        level = r === 0 ? 0 : (r === 1 ? 1 : (r === 2 ? 2 : 3));
+      } else {
+        const r = (i * 17 + 3) % 5;
+        level = r < 2 ? 0 : (r === 2 ? 1 : 2);
+      }
+      const cls = level === 0 ? '' : `streak-l${level}`;
+      cells.push(`<div class="streak-cell ${cls}" title="${50 - i}일 전"></div>`);
+    }
+    grid.innerHTML = cells.join('');
+  }
+
+  // ---- Graph ----
+  const WEEK_DATA = {
+    labels: ['월','화','수','목','금','토','일'],
+    values: [38, 52, 41, 65, 58, 72, 46], // minutes
+  };
+  const MONTH_DATA = {
+    labels: ['W1','W2','W3','W4','W5'],
+    values: [42, 55, 51, 64, 58],
+  };
+  let currentRange = 'week';
+
+  function renderGraph() {
+    const data = currentRange === 'week' ? WEEK_DATA : MONTH_DATA;
+    const w = 510, h = 200, padL = 40, padR = 10, padT = 20, padB = 0;
+    const innerW = w - padL - padR;
+    const innerH = 180;
+    const maxY = 90, minY = 10;
+    const stepX = innerW / (data.values.length - 1);
+
+    const pts = data.values.map((v, i) => {
+      const x = padL + i * stepX;
+      const y = padT + (1 - (v - minY) / (maxY - minY)) * innerH;
+      return [x, y, v, data.labels[i]];
+    });
+
+    const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+    const areaPath = `${linePath} L ${pts[pts.length-1][0].toFixed(1)} ${padT + innerH} L ${pts[0][0].toFixed(1)} ${padT + innerH} Z`;
+
+    document.getElementById('graph-line').setAttribute('d', linePath);
+    document.getElementById('graph-area').setAttribute('d', areaPath);
+
+    const dotsHtml = pts.map((p, i) => `
+      <circle class="graph-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="#22d3ee" stroke="#0a0e1a" stroke-width="2" data-i="${i}"/>
+    `).join('');
+    document.getElementById('graph-dots').innerHTML = dotsHtml;
+
+    const labelsHtml = pts.map((p) => `<text x="${p[0].toFixed(1)}" y="${(padT + innerH + 15).toFixed(1)}" text-anchor="middle">${escapeHtml(p[3])}</text>`).join('');
+    document.getElementById('graph-xlabels').innerHTML = labelsHtml;
+
+    // Tooltip handlers
+    const svg = document.getElementById('graph-svg');
+    const tip = document.getElementById('graph-tooltip');
+    svg.querySelectorAll('.graph-dot').forEach(dot => {
+      dot.addEventListener('mouseenter', (e) => {
+        const i = parseInt(dot.dataset.i, 10);
+        const [, , v, label] = pts[i];
+        const rect = svg.getBoundingClientRect();
+        const cx = parseFloat(dot.getAttribute('cx'));
+        const cy = parseFloat(dot.getAttribute('cy'));
+        const scaleX = rect.width / w;
+        const scaleY = rect.height / h;
+        const tx = rect.left + window.scrollX + cx * scaleX;
+        const ty = rect.top + window.scrollY + cy * scaleY - 6;
+        tip.style.left = tx + 'px';
+        tip.style.top = ty + 'px';
+        tip.innerHTML = `<span class="mono text-cyan-300">${escapeHtml(label)}</span> · <span class="mono">${v}분</span>`;
+        tip.classList.add('show');
+      });
+      dot.addEventListener('mouseleave', () => tip.classList.remove('show'));
+    });
+  }
+
+  document.getElementById('rng-week').addEventListener('click', () => {
+    currentRange = 'week';
+    document.getElementById('rng-week').className = 'rounded-full bg-cyan-500/30 px-2.5 py-1 text-cyan-200';
+    document.getElementById('rng-month').className = 'rounded-full px-2.5 py-1 text-slate-400 hover:text-slate-200';
+    renderGraph();
+  });
+  document.getElementById('rng-month').addEventListener('click', () => {
+    currentRange = 'month';
+    document.getElementById('rng-month').className = 'rounded-full bg-cyan-500/30 px-2.5 py-1 text-cyan-200';
+    document.getElementById('rng-week').className = 'rounded-full px-2.5 py-1 text-slate-400 hover:text-slate-200';
+    renderGraph();
+  });
+
+  // ---- Bottom tabs (visual only) ----
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ---- Auto-refresh progress bars (simulate tick) ----
+  function jiggleBars() {
+    // tiny realistic jitter on the heart line vibe — refresh the daily ring slightly
+    const ring = document.getElementById('goal-ring');
+    if (!ring) return;
+    const base = 60;
+    const jitter = (Math.sin(Date.now() / 4000) * 6);
+    ring.setAttribute('stroke-dashoffset', String(base + jitter));
+  }
+  setInterval(jiggleBars, 2000);
+
+  // ---- Init ----
+  renderWorkouts();
+  renderStreak();
+  renderGraph();
+</script>
+</body>
+</html>

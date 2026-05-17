@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아크 플래시 에너지 시뮬레이터 (Arc Flash · IEEE 1584)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(251, 146, 60, 0.16), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 63, 94, 0.13), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 16% 26%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 62% 74%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 86% 18%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 34% 82%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 74% 44%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 48% 58%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 94% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 12% 62%, rgba(255,255,255,0.4), transparent);
+    background-size: 640px 640px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,146,60,0.55), rgba(244,63,94,0.45), rgba(250,204,21,0.45));
+    box-shadow: 0 30px 100px -20px rgba(251, 146, 60, 0.35), 0 0 40px rgba(244, 63, 94, 0.16);
+}
+canvas#mainCanvas {
+    display: block;
+    width: 100%;
+    height: 460px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#boundaryCanvas {
+    display: block;
+    width: 100%;
+    height: 380px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fb923c; box-shadow: 0 0 12px #fb923c;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fb923c; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(251,146,60,0.4), rgba(244,63,94,0.4), rgba(250,204,21,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fdba74, #fda4af, #fde047);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-v   { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-i   { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fecaca; }
+.chip-t   { background: linear-gradient(135deg, rgba(251,146,60,0.20), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.5); color: #fed7aa; }
+.chip-d   { background: linear-gradient(135deg, rgba(250,204,21,0.20), rgba(250,204,21,0.06)); border-color: rgba(250,204,21,0.5); color: #fde68a; }
+.chip-cfg { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.45);
+    background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(15,23,42,0.85));
+}
+.live-pill.warn {
+    border-color: rgba(251, 191, 36, 0.75);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45);
+    background: linear-gradient(135deg, rgba(251,191,36,0.14), rgba(15,23,42,0.85));
+}
+.live-pill.danger {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fdba74, #fda4af, #fde047);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(251, 146, 60, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(251,146,60,0.16), rgba(244,63,94,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fed7aa; }
+.cfg-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.28);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.cfg-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(139,92,246,0.25));
+    border-color: rgba(168, 139, 250, 0.85);
+    color: #ede9fe;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.45);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(251,146,60,0.18), rgba(244,63,94,0.18));
+    border: 1px solid rgba(251,146,60,0.45);
+    color: #fed7aa;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(251,146,60,0.32), rgba(244,63,94,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(251,146,60,0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.cat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 9999px;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+}
+.cat-0  { background: rgba(34, 197, 94, 0.18); border: 1px solid rgba(34,197,94,0.5); color: #86efac; }
+.cat-1  { background: rgba(125, 211, 252, 0.18); border: 1px solid rgba(125,211,252,0.55); color: #bae6fd; }
+.cat-2  { background: rgba(250, 204, 21, 0.18); border: 1px solid rgba(250,204,21,0.55); color: #fde68a; }
+.cat-3  { background: rgba(251, 146, 60, 0.20); border: 1px solid rgba(251,146,60,0.6); color: #fed7aa; }
+.cat-4  { background: rgba(244, 63, 94, 0.22); border: 1px solid rgba(244,63,94,0.7); color: #fecaca; }
+.cat-X  { background: rgba(168, 85, 247, 0.22); border: 1px solid rgba(168,85,247,0.7); color: #e9d5ff; }
+.gauge-bar {
+    height: 14px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #22c55e 0%, #7dd3fc 18%, #fde047 38%, #fb923c 60%, #f43f5e 85%, #a855f7 100%);
+    position: relative;
+    overflow: visible;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+}
+.gauge-marker {
+    position: absolute;
+    top: -6px;
+    width: 4px;
+    height: 26px;
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 0 12px #fff, 0 0 4px rgba(255,255,255,0.6);
+    transform: translateX(-50%);
+    transition: left 220ms ease-out;
+}
+.gauge-tick {
+    position: absolute;
+    bottom: -16px;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: #94a3b8;
+    font-family: ui-monospace, monospace;
+    white-space: nowrap;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-orange-300">
+            <span class="pulse-dot"></span>
+            ARC FLASH HAZARD ANALYSIS · IEEE 1584 · NFPA 70E · PPE Cat 1~4
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-200 via-rose-200 to-yellow-200 bg-clip-text text-transparent">
+            ⚡ 아크 플래시 에너지 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            <span class="text-orange-300 font-semibold">아크 전류 I<sub>arc</sub></span> · 단락 전류와 전압에 의해 결정되고,
+            <span class="text-rose-300 font-semibold">사고 에너지 E [cal/cm²]</span> 는 아크 시간과 작업 거리에 좌우됩니다.
+            <span class="text-yellow-300 font-semibold">PPE 등급(Cat 1~4)</span> 은 작업자가 입어야 할 방염복의 등급을 정합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-iarc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">아크 전류 I<sub>arc</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="iarcDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">kA</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-e">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">사고 에너지 E</p>
+            <p class="mt-1 text-lg font-bold"><span id="eDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">cal/cm²</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-afb">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">아크 플래시 경계 D<sub>B</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="afbDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">mm</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-cat">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">PPE 등급</p>
+            <p class="mt-1 text-lg font-bold" id="catDisp"><span class="text-emerald-300">Cat 0</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ ARC FLASH — E &gt; 40 cal/cm² · DANGEROUS · 작업 금지 (Cat X · Energized Work Permit 필요)
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+
+            <!-- 메인 캔버스 — 배전반 + 작업자 + 아크 플래시 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="mainCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">SWITCHGEAR · WORKER · ARC FLASH (★ 아크점)</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#22c55e;color:#22c55e"></span>Cat 0</span>
+                        <span class="text-sky-300"><span class="legend-dot" style="background:#7dd3fc;color:#7dd3fc"></span>Cat 1</span>
+                        <span class="text-yellow-300"><span class="legend-dot" style="background:#fde047;color:#fde047"></span>Cat 2</span>
+                        <span class="text-orange-300"><span class="legend-dot" style="background:#fb923c;color:#fb923c"></span>Cat 3</span>
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#f43f5e;color:#f43f5e"></span>Cat 4</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상 작업</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="arc">⚡ 아크 발생</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="lv-panel">저압 패널(480V)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="mv-switch">고압 배전반(13.8kV)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                </div>
+            </div>
+
+            <!-- 안전 거리 동심원 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="boundaryCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">APPROACH BOUNDARY — 안전 작업 거리 (위에서 본 평면도)</span>
+                    <span id="boundaryBadge" class="cat-badge cat-0">SAFE</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="boundaryCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 사고 에너지 게이지 -->
+            <div class="glass rounded-2xl p-5" id="gaugeCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🔥</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">사고 에너지 스케일 (NFPA 70E Table 130.7(C)(15))</span>
+                </h3>
+                <div class="mt-5 mb-2 relative">
+                    <div class="gauge-bar">
+                        <div class="gauge-marker" id="gaugeMarker" style="left: 0%"></div>
+                        <span class="gauge-tick" style="left:0%">0</span>
+                        <span class="gauge-tick" style="left:14%">1.2</span>
+                        <span class="gauge-tick" style="left:30%">4</span>
+                        <span class="gauge-tick" style="left:46%">8</span>
+                        <span class="gauge-tick" style="left:66%">25</span>
+                        <span class="gauge-tick" style="left:85%">40</span>
+                        <span class="gauge-tick" style="left:100%">100+</span>
+                    </div>
+                </div>
+                <div class="mt-8 grid grid-cols-3 md:grid-cols-6 gap-2 text-[10px]">
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-emerald-300">Cat 0</p>
+                        <p class="text-slate-400 mt-1">&lt; 1.2</p>
+                        <p class="text-slate-500">면 작업복</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-sky-300">Cat 1</p>
+                        <p class="text-slate-400 mt-1">1.2 ~ 4</p>
+                        <p class="text-slate-500">난연복 4cal</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-yellow-300">Cat 2</p>
+                        <p class="text-slate-400 mt-1">4 ~ 8</p>
+                        <p class="text-slate-500">난연복 8cal</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-orange-300">Cat 3</p>
+                        <p class="text-slate-400 mt-1">8 ~ 25</p>
+                        <p class="text-slate-500">난연복 25cal</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-rose-300">Cat 4</p>
+                        <p class="text-slate-400 mt-1">25 ~ 40</p>
+                        <p class="text-slate-500">난연복 40cal</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-violet-300">Cat X</p>
+                        <p class="text-slate-400 mt-1">&gt; 40</p>
+                        <p class="text-slate-500">작업 금지</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">아크 플래시 공식 (IEEE 1584 단순화)</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-rose-200">① 아크 전류 (저압 V&lt;1kV)</p>
+                        <div class="math-container mt-2">\(\lg I_{arc} = K + 0.662 \lg I_{bf} + 0.0966 V + \cdots\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">근사적으로 \(I_{arc} \approx 0.5 \sim 0.7 \cdot I_{bf}\) (저압)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-orange-200">② 아크 전류 (고압 V≥1kV)</p>
+                        <div class="math-container mt-2">\(\lg I_{arc} = 0.00402 + 0.983 \lg I_{bf}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">근사적으로 \(I_{arc} \approx I_{bf}\) (고압)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">③ 정규화 에너지</p>
+                        <div class="math-container mt-2">\(\lg E_n = K_1 + K_2 + 1.081 \lg I_{arc} + 0.0011 G\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">\(K_2\): 박스 −0.113 / 개방 0 · \(G\): 갭(mm)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-violet-200">④ 사고 에너지 (cal/cm²)</p>
+                        <div class="math-container mt-2">\(E = 4.184 \cdot C_f \cdot E_n \cdot \dfrac{t}{0.2} \cdot \left(\dfrac{610^x}{D^x}\right)\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">\(t\): 아크 시간(s) · \(D\): 작업 거리(mm) · \(x\): 거리 지수</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-yellow-200">⑤ 아크 플래시 경계 D<sub>B</sub></p>
+                        <div class="math-container mt-2">\(D_B = \left[\dfrac{4.184 \cdot C_f \cdot E_n}{E_B} \cdot \dfrac{t}{0.2} \cdot 610^x\right]^{1/x}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">\(E_B = 1.2\) cal/cm² (2도 화상 임계점)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-sky-200">⑥ 아크 시간 t</p>
+                        <div class="math-container mt-2">\(t = t_{trip} + t_{open}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">보호장치 동작시간 + 차단기 개극시간</p>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <p class="text-[11px] text-slate-400">
+                    <strong>핵심:</strong> 에너지 \(E\)는 <span class="text-orange-300 font-bold">아크 시간 t에 비례</span>,
+                    <span class="text-rose-300 font-bold">거리 D의 ~x승에 반비례</span>합니다 (저압 box: x≈1.473, 고압 box: x≈0.973).
+                    보호장치를 빠르게 하거나(즉시동작) 작업거리를 늘리는 것이 가장 효과적. KEC 363.2 · NFPA 70E 130.5 참조.
+                </p>
+            </div>
+
+            <!-- PPE 가이드 / 접근 경계 -->
+            <div class="glass rounded-2xl p-5" id="featureCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🛡</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">개인 보호 장구 & 접근 경계</span>
+                </h3>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-orange-300">Arc Flash Boundary</span> · E=1.2 cal/cm² 도달 거리 · 이 안에서는 PPE 필수</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-yellow-300">Limited Approach</span> · 무자격자 출입 한계 (저압 1m / 22.9kV 1.7m)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">Restricted Approach</span> · 자격자 + PPE 출입 (절연 거리 + 인체 동작)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">Prohibited Approach</span> · 직접 접촉으로 간주 (활선 작업)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-sky-300">Cat 1~4 PPE</span> · 난연복(AR/FR) · 헬멧 + 페이스쉴드 + 절연장갑 + 안전화</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">관리적 통제</span> · LOTO · 활선 작업 허가증 · 2인 1조 · 작업 전 측정</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-orange-200">변수 조절</h2>
+
+            <div class="chip-cfg chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">설비 형태</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-cfg="box">BOX (박스형)</button>
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-cfg="open">OPEN (개방)</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">박스: 폐쇄형 배전반(반사로 에너지↑) · 개방: 옥외</p>
+            </div>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시스템 전압 V</span><span id="vDisp" class="font-mono text-base">480</span></label>
+                <input type="range" id="v" min="208" max="15000" step="1" value="480" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V · 208 ~ 15000 (저압/고압 경계 = 1kV)</p>
+            </div>
+
+            <div class="chip-i chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>단락 전류 I<sub>bf</sub></span><span id="ibfDisp" class="font-mono text-base">25.0</span></label>
+                <input type="range" id="ibf" min="0.7" max="106" step="0.1" value="25" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kA · bolted fault current</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>아크 시간 t</span><span id="tDisp" class="font-mono text-base">0.20</span></label>
+                <input type="range" id="t" min="0.02" max="2" step="0.01" value="0.2" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">s · 보호장치 동작 + 차단 시간</p>
+            </div>
+
+            <div class="chip-d chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>작업 거리 D</span><span id="dDisp" class="font-mono text-base">610</span></label>
+                <input type="range" id="d" min="305" max="1830" step="5" value="610" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mm · 작업자 가슴 ↔ 아크점 (기본 610mm=24in)</p>
+            </div>
+
+            <div class="chip-cfg chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>전극 갭 G</span><span id="gDisp" class="font-mono text-base">32</span></label>
+                <input type="range" id="g" min="10" max="152" step="1" value="32" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mm · LV 32mm / MV 13.8kV 153mm</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-orange-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">에너지 \(E \propto t\) (시간 ↑ = 에너지 ↑)</p>
+                <p class="feature-row rounded-md p-2">에너지 \(E \propto 1/D^x\) (멀수록 안전)</p>
+                <p class="feature-row rounded-md p-2">박스형은 개방보다 <span class="text-rose-300 font-bold">~30% 에너지 ↑</span></p>
+                <p class="feature-row rounded-md p-2">고속 차단(&lt;0.1s)이 <span class="text-emerald-300 font-bold">최선의 대책</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const mainCv = $('mainCanvas');
+const mctx = mainCv.getContext('2d');
+const bdCv = $('boundaryCanvas');
+const bctx = bdCv.getContext('2d');
+
+const state = {
+    V: 480,        // 시스템 전압 (V)
+    Ibf: 25,       // 단락 전류 (kA)
+    t: 0.20,       // 아크 시간 (s)
+    D: 610,        // 작업 거리 (mm)
+    G: 32,         // 전극 갭 (mm)
+    cfg: 'box',    // 'box' | 'open'
+    arcMode: false, // 아크 발생 모드 여부
+
+    // 계산값
+    Iarc: 0,       // kA
+    En: 0,         // 정규화 에너지 (cal/cm²)
+    E: 0,          // 사고 에너지 (cal/cm²)
+    AFB: 0,        // 아크 플래시 경계 (mm)
+    cat: 0,        // PPE 등급 0~4, 5=X
+
+    // 시뮬용
+    t_sim: 0,
+    sparks: [],
+    debris: [],
+    flashIntensity: 0,
+};
+
+function resize() {
+    mainCv.width = mainCv.parentElement.clientWidth - 2;
+    mainCv.height = 460;
+    bdCv.width = bdCv.parentElement.clientWidth - 2;
+    bdCv.height = 380;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ IEEE 1584 (단순화) ============
+function computeArcFlash() {
+    const V = state.V, Ibf = state.Ibf, t = state.t, D = state.D, G = state.G;
+    const isLV = V < 1000;
+    // 거리 지수 x (table-based)
+    const x = isLV ? (state.cfg === 'box' ? 1.473 : 2.000)
+                   : (state.cfg === 'box' ? 0.973 : 2.000);
+
+    // ① 아크 전류 I_arc (kA)
+    let lgIarc;
+    if (isLV) {
+        // K = -0.153(open) or -0.097(box)
+        const K = state.cfg === 'box' ? -0.097 : -0.153;
+        lgIarc = K + 0.662 * Math.log10(Ibf) + 0.0966 * (V / 1000)
+                 + 0.000526 * G + 0.5588 * (V / 1000) * Math.log10(Ibf)
+                 - 0.00304 * G * Math.log10(Ibf);
+    } else {
+        lgIarc = 0.00402 + 0.983 * Math.log10(Ibf);
+    }
+    const Iarc = Math.pow(10, lgIarc);
+
+    // ② 정규화 에너지 E_n (J/cm² at 610mm, 0.2s, 사고 전류 Iarc)
+    // lg E_n = K1 + K2 + 1.081 lg(Iarc) + 0.0011 G
+    const K1 = state.cfg === 'box' ? -0.555 : -0.792;
+    const K2 = 0; // ungrounded; if grounded -0.113
+    const lgEn = K1 + K2 + 1.081 * Math.log10(Iarc) + 0.0011 * G;
+    const En = Math.pow(10, lgEn); // J/cm²
+
+    // ③ 사고 에너지 E (cal/cm²)
+    // E [J/cm²] = 4.184 * C_f * E_n * (t/0.2) * (610^x / D^x)
+    // C_f = 1.0 (V > 1kV), 1.5 (V <= 1kV)
+    const Cf = isLV ? 1.5 : 1.0;
+    const Ej = 4.184 * Cf * En * (t / 0.2) * (Math.pow(610, x) / Math.pow(Math.max(D, 1), x));
+    // J/cm² → cal/cm²  (1 cal = 4.184 J)
+    const E = Ej / 4.184;
+
+    // ④ Arc Flash Boundary (E = 1.2 cal/cm² → 5.04 J/cm²)
+    const EB = 5.04; // J/cm²
+    const AFB = Math.pow(4.184 * Cf * En * (t / 0.2) * Math.pow(610, x) / EB, 1 / x);
+
+    // ⑤ PPE Cat 결정
+    let cat;
+    if (E < 1.2) cat = 0;
+    else if (E < 4) cat = 1;
+    else if (E < 8) cat = 2;
+    else if (E < 25) cat = 3;
+    else if (E < 40) cat = 4;
+    else cat = 5; // 'X' — Dangerous, 작업 금지
+
+    state.Iarc = Iarc;
+    state.En = En;
+    state.E = E;
+    state.AFB = AFB;
+    state.cat = cat;
+}
+
+// ============ 시뮬레이션 업데이트 ============
+function updateSim() {
+    const dt = 1/60;
+    state.t_sim += dt;
+
+    if (state.arcMode) {
+        // 아크 강도 (시간 지남에 따라 약간 변동)
+        const baseFlash = 0.7 + 0.3 * Math.sin(state.t_sim * 30);
+        state.flashIntensity = Math.min(1, state.flashIntensity + dt * 6);
+
+        // 새로운 스파크 생성
+        const sparkRate = Math.min(60, 8 + state.E * 0.5);
+        for (let i = 0; i < sparkRate / 4; i++) {
+            if (state.sparks.length < 250) {
+                const arcX = mainCv.width * 0.35;
+                const arcY = mainCv.height * 0.45;
+                const ang = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6 + Math.min(8, state.E / 5);
+                state.sparks.push({
+                    x: arcX, y: arcY,
+                    vx: Math.cos(ang) * speed,
+                    vy: Math.sin(ang) * speed - 1.5,
+                    life: 0,
+                    maxLife: 30 + Math.random() * 50,
+                    color: Math.random() < 0.5 ? '#fde047' :
+                           Math.random() < 0.5 ? '#fb923c' : '#f43f5e',
+                    size: 1.4 + Math.random() * 2.2 * baseFlash,
+                });
+            }
+        }
+
+        // 파편 (큰 입자, 더 느림)
+        if (Math.random() < 0.2 && state.debris.length < 30) {
+            const arcX = mainCv.width * 0.35;
+            const arcY = mainCv.height * 0.45;
+            const ang = (Math.random() - 0.5) * Math.PI;
+            const speed = 3 + Math.random() * 5;
+            state.debris.push({
+                x: arcX, y: arcY,
+                vx: Math.cos(ang) * speed,
+                vy: Math.sin(ang) * speed - 2,
+                life: 0,
+                maxLife: 60 + Math.random() * 40,
+                rot: Math.random() * Math.PI * 2,
+                vrot: (Math.random() - 0.5) * 0.4,
+                size: 3 + Math.random() * 4,
+            });
+        }
+    } else {
+        state.flashIntensity *= 0.92;
+        if (state.flashIntensity < 0.01) state.flashIntensity = 0;
+    }
+
+    // 스파크 업데이트 (중력 + 페이드)
+    state.sparks = state.sparks.filter(s => {
+        s.life += 1;
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.18; // gravity
+        s.vx *= 0.99;
+        return s.life < s.maxLife;
+    });
+
+    // 파편 업데이트
+    state.debris = state.debris.filter(d => {
+        d.life += 1;
+        d.x += d.vx;
+        d.y += d.vy;
+        d.vy += 0.22;
+        d.rot += d.vrot;
+        return d.life < d.maxLife;
+    });
+}
+
+// ============ 메인 캔버스 — 배전반 + 작업자 + 아크 플래시 ============
+function drawMain() {
+    const W = mainCv.width, H = mainCv.height;
+    mctx.clearRect(0, 0, W, H);
+
+    // 배경 그라데이션 (아크 발생 시 약간 밝게)
+    const bg = mctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    mctx.fillStyle = bg;
+    mctx.fillRect(0, 0, W, H);
+
+    // 격자
+    mctx.save();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke(); }
+    mctx.restore();
+
+    // 헤더 라벨
+    mctx.save();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(253, 186, 116, 0.65)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    const cfgLbl = state.cfg === 'box' ? 'BOX (closed switchgear)' : 'OPEN (outdoor)';
+    mctx.fillText(`▮ ARC FLASH SCENARIO · ${cfgLbl} · V=${state.V}V · I_bf=${state.Ibf.toFixed(1)}kA`, 12, 10);
+    mctx.restore();
+
+    // 바닥선
+    mctx.save();
+    mctx.strokeStyle = 'rgba(148,163,184,0.25)';
+    mctx.lineWidth = 1.2;
+    mctx.beginPath();
+    mctx.moveTo(0, H - 30);
+    mctx.lineTo(W, H - 30);
+    mctx.stroke();
+    // 바닥 패턴
+    mctx.strokeStyle = 'rgba(148,163,184,0.08)';
+    for (let i = 0; i < W; i += 18) {
+        mctx.beginPath();
+        mctx.moveTo(i, H - 30);
+        mctx.lineTo(i - 10, H - 8);
+        mctx.stroke();
+    }
+    mctx.restore();
+
+    // 아크 플래시 발생 시 — 배경 화이트 플래시
+    if (state.flashIntensity > 0.05) {
+        const flick = 0.6 + 0.4 * Math.sin(state.t_sim * 60);
+        mctx.save();
+        mctx.fillStyle = `rgba(255, 240, 200, ${state.flashIntensity * 0.18 * flick})`;
+        mctx.fillRect(0, 0, W, H);
+        mctx.restore();
+    }
+
+    // 좌측 — 배전반 (스위치기어)
+    drawSwitchgear(W, H);
+
+    // 우측 — 작업자
+    drawWorker(W, H);
+
+    // 아크 점 (★ + 폭발 광원)
+    if (state.arcMode) {
+        drawArcExplosion(W, H);
+    }
+
+    // 파편/스파크
+    drawSparksDebris();
+
+    // 거리 라벨 (양쪽 사이)
+    const arcX = W * 0.35, arcY = H * 0.45;
+    const workerX = W * 0.72;
+    mctx.save();
+    mctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+    mctx.lineWidth = 1.4;
+    mctx.setLineDash([6, 4]);
+    mctx.beginPath();
+    mctx.moveTo(arcX + 10, arcY);
+    mctx.lineTo(workerX - 28, arcY);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    // 화살촉
+    mctx.fillStyle = 'rgba(250, 204, 21, 0.9)';
+    mctx.beginPath();
+    mctx.moveTo(workerX - 28, arcY);
+    mctx.lineTo(workerX - 36, arcY - 4);
+    mctx.lineTo(workerX - 36, arcY + 4);
+    mctx.closePath();
+    mctx.fill();
+    // 라벨
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = '#fde68a';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'bottom';
+    const distLabel = `D = ${state.D} mm`;
+    const tw = mctx.measureText(distLabel).width;
+    const midX = (arcX + workerX) / 2;
+    mctx.fillStyle = 'rgba(15,23,42,0.94)';
+    roundRect(mctx, midX - tw/2 - 8, arcY - 28, tw + 16, 20, 10);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(250,204,21,0.55)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    mctx.fillStyle = '#fde68a';
+    mctx.fillText(distLabel, midX, arcY - 12);
+    mctx.restore();
+
+    // 하단 정보 패널 — E / Cat
+    drawMainInfoPanel(W, H);
+}
+
+// === 배전반(스위치기어) 그리기 ===
+function drawSwitchgear(W, H) {
+    const sx = 40, sy = 80;
+    const sw = W * 0.30 - 40, sh = H - 30 - sy;
+
+    mctx.save();
+    // 외함 (배전반 큐비클)
+    mctx.shadowBlur = state.arcMode ? 20 : 8;
+    mctx.shadowColor = state.arcMode ? 'rgba(251,146,60,0.6)' : 'rgba(148,163,184,0.3)';
+    const g = mctx.createLinearGradient(sx, sy, sx + sw, sy + sh);
+    g.addColorStop(0, '#1f2937');
+    g.addColorStop(0.5, '#374151');
+    g.addColorStop(1, '#1f2937');
+    mctx.fillStyle = g;
+    roundRect(mctx, sx, sy, sw, sh, 8);
+    mctx.fill();
+    mctx.strokeStyle = state.arcMode ? 'rgba(251,146,60,0.85)' : 'rgba(203,213,225,0.4)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+
+    // 상부 라벨
+    mctx.fillStyle = 'rgba(15,23,42,0.85)';
+    roundRect(mctx, sx + 6, sy + 6, sw - 12, 22, 4);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(125,211,252,0.4)';
+    mctx.lineWidth = 0.8;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = '#bae6fd';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText(`SWITCHGEAR · ${state.V >= 1000 ? (state.V/1000).toFixed(1) + 'kV' : state.V + 'V'}`, sx + sw/2, sy + 17);
+    mctx.restore();
+
+    // 도어 — 열린 상태(아크 발생 시) 또는 닫힘
+    const doorOpen = state.arcMode;
+    mctx.save();
+    if (doorOpen) {
+        // 열린 도어 (좌측으로 살짝)
+        mctx.fillStyle = 'rgba(31,41,55,0.75)';
+        mctx.translate(sx, sy + 35);
+        mctx.transform(0.35, 0.05, -0.05, 1, 0, 0);
+        roundRect(mctx, -28, 0, 28, sh - 50, 3);
+        mctx.fill();
+        mctx.strokeStyle = 'rgba(251,146,60,0.6)';
+        mctx.lineWidth = 1;
+        mctx.stroke();
+    } else {
+        // 닫힌 도어 (정면)
+        mctx.fillStyle = 'rgba(55,65,81,0.7)';
+        roundRect(mctx, sx + 8, sy + 35, sw - 16, sh - 50, 4);
+        mctx.fill();
+        mctx.strokeStyle = 'rgba(203,213,225,0.3)';
+        mctx.lineWidth = 1;
+        mctx.stroke();
+        // 도어 손잡이
+        mctx.fillStyle = '#fbbf24';
+        mctx.beginPath();
+        mctx.arc(sx + sw - 16, sy + sh/2, 3, 0, Math.PI * 2);
+        mctx.fill();
+    }
+    mctx.restore();
+
+    // 내부 — 부스바 (Bus bar) — 도어가 열렸을 때만 보임
+    if (doorOpen) {
+        const ix = sx + 16, iy = sy + 50;
+        const iw = sw - 32, ih = sh - 70;
+        mctx.save();
+        mctx.fillStyle = 'rgba(7,10,24,0.85)';
+        roundRect(mctx, ix, iy, iw, ih, 4);
+        mctx.fill();
+        // 3상 부스바
+        const phases = [
+            { name: 'A', color: '#ef4444', y: iy + ih * 0.25 },
+            { name: 'B', color: '#22c55e', y: iy + ih * 0.5 },
+            { name: 'C', color: '#3b82f6', y: iy + ih * 0.75 },
+        ];
+        phases.forEach(p => {
+            mctx.shadowBlur = state.arcMode ? 12 : 4;
+            mctx.shadowColor = p.color;
+            mctx.fillStyle = p.color;
+            roundRect(mctx, ix + 6, p.y - 4, iw - 12, 8, 2);
+            mctx.fill();
+            mctx.shadowBlur = 0;
+            mctx.font = 'bold 9px ui-monospace, monospace';
+            mctx.fillStyle = '#fff';
+            mctx.textAlign = 'left'; mctx.textBaseline = 'middle';
+            mctx.fillText(p.name, ix + 10, p.y);
+        });
+        mctx.restore();
+    }
+
+    // 하부 라벨
+    mctx.save();
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(203,213,225,0.5)';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText(`GAP=${state.G}mm`, sx + sw/2, sy + sh - 12);
+    mctx.restore();
+}
+
+// === 작업자 + PPE ===
+function drawWorker(W, H) {
+    const wx = W * 0.72, wy = H - 30; // 발 위치
+    const cat = state.cat;
+
+    // PPE 색상 (Cat별)
+    const ppe = [
+        { cloth: '#374151', helmet: '#94a3b8', shield: 'rgba(125,211,252,0.0)' },   // 0 — 면 작업복
+        { cloth: '#0c4a6e', helmet: '#7dd3fc', shield: 'rgba(125,211,252,0.25)' },   // 1
+        { cloth: '#1e40af', helmet: '#fde047', shield: 'rgba(250,204,21,0.30)' },   // 2
+        { cloth: '#9a3412', helmet: '#fb923c', shield: 'rgba(251,146,60,0.32)' },   // 3
+        { cloth: '#7f1d1d', helmet: '#f43f5e', shield: 'rgba(244,63,94,0.38)' },    // 4
+        { cloth: '#581c87', helmet: '#a855f7', shield: 'rgba(168,85,247,0.42)' },   // X
+    ][cat];
+
+    mctx.save();
+
+    // 그림자
+    mctx.fillStyle = 'rgba(0,0,0,0.4)';
+    mctx.beginPath();
+    mctx.ellipse(wx, wy + 2, 26, 5, 0, 0, Math.PI * 2);
+    mctx.fill();
+
+    // 다리
+    mctx.fillStyle = ppe.cloth;
+    mctx.shadowBlur = 6;
+    mctx.shadowColor = ppe.cloth;
+    roundRect(mctx, wx - 14, wy - 80, 12, 78, 3);
+    mctx.fill();
+    roundRect(mctx, wx + 2, wy - 80, 12, 78, 3);
+    mctx.fill();
+    // 안전화
+    mctx.fillStyle = '#1f2937';
+    mctx.shadowBlur = 0;
+    roundRect(mctx, wx - 16, wy - 8, 16, 8, 2);
+    mctx.fill();
+    roundRect(mctx, wx, wy - 8, 16, 8, 2);
+    mctx.fill();
+
+    // 몸통 (난연복)
+    mctx.fillStyle = ppe.cloth;
+    mctx.shadowBlur = 10;
+    mctx.shadowColor = ppe.cloth;
+    roundRect(mctx, wx - 22, wy - 145, 44, 70, 8);
+    mctx.fill();
+    // 옷 디테일 (PPE 마크)
+    mctx.shadowBlur = 0;
+    mctx.fillStyle = 'rgba(255,255,255,0.85)';
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText(cat === 0 ? 'STD' : `AR/FR`, wx, wy - 115);
+    mctx.font = 'bold 8px ui-monospace, monospace';
+    mctx.fillText(cat === 5 ? 'X' : `Cat ${cat}`, wx, wy - 100);
+
+    // 팔
+    mctx.fillStyle = ppe.cloth;
+    mctx.shadowBlur = 6;
+    mctx.shadowColor = ppe.cloth;
+    // 좌팔 (배전반 쪽으로 뻗음)
+    mctx.save();
+    mctx.translate(wx - 22, wy - 130);
+    mctx.rotate(-Math.PI * 0.35);
+    roundRect(mctx, -8, 0, 14, 50, 6);
+    mctx.fill();
+    mctx.restore();
+    // 우팔
+    mctx.save();
+    mctx.translate(wx + 22, wy - 130);
+    mctx.rotate(Math.PI * 0.15);
+    roundRect(mctx, -6, 0, 14, 50, 6);
+    mctx.fill();
+    mctx.restore();
+
+    // 절연 장갑 (좌팔 끝)
+    mctx.shadowBlur = 0;
+    mctx.fillStyle = cat === 0 ? '#a3a3a3' : '#fde047';
+    const handX = wx - 22 - Math.cos(Math.PI * 0.85) * 50;
+    const handY = wy - 130 + Math.sin(Math.PI * 0.85) * 50;
+    mctx.beginPath();
+    mctx.arc(handX, handY, 7, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.strokeStyle = '#92400e';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    // 작업 도구 (전압계 / 절연봉 — 아크 점 쪽으로)
+    if (cat > 0 || !state.arcMode) {
+        mctx.strokeStyle = '#cbd5e1';
+        mctx.lineWidth = 2;
+        mctx.beginPath();
+        mctx.moveTo(handX, handY);
+        mctx.lineTo(handX - 30, handY - 4);
+        mctx.stroke();
+        mctx.fillStyle = '#f43f5e';
+        mctx.beginPath();
+        mctx.arc(handX - 32, handY - 4, 3, 0, Math.PI * 2);
+        mctx.fill();
+    }
+
+    // 머리 + 헬멧
+    mctx.shadowBlur = 8;
+    mctx.shadowColor = ppe.helmet;
+    mctx.fillStyle = '#fde6c8';   // 피부
+    mctx.beginPath();
+    mctx.arc(wx, wy - 160, 14, 0, Math.PI * 2);
+    mctx.fill();
+    // 헬멧 (윗부분)
+    mctx.fillStyle = ppe.helmet;
+    mctx.beginPath();
+    mctx.arc(wx, wy - 163, 16, Math.PI, 0);
+    mctx.lineTo(wx + 16, wy - 158);
+    mctx.lineTo(wx - 16, wy - 158);
+    mctx.closePath();
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    // 헬멧 챙
+    mctx.shadowBlur = 0;
+    mctx.fillStyle = ppe.helmet;
+    roundRect(mctx, wx - 20, wy - 158, 40, 4, 2);
+    mctx.fill();
+
+    // 페이스 쉴드 (Cat 1+)
+    if (cat >= 1) {
+        mctx.fillStyle = ppe.shield;
+        mctx.strokeStyle = 'rgba(125,211,252,0.6)';
+        mctx.lineWidth = 1.4;
+        mctx.beginPath();
+        mctx.arc(wx, wy - 158, 14, Math.PI * 0.05, Math.PI * 0.95);
+        mctx.fill();
+        mctx.stroke();
+    }
+
+    // Cat 라벨 (머리 위)
+    mctx.shadowBlur = 0;
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = ppe.helmet;
+    mctx.textAlign = 'center'; mctx.textBaseline = 'bottom';
+    const catTxt = cat === 5 ? 'Cat X · DANGER' : `Cat ${cat} · ${[1.2, 4, 8, 25, 40][Math.min(cat, 4)]}cal`;
+    mctx.fillText(catTxt, wx, wy - 185);
+
+    mctx.restore();
+}
+
+// === 아크 폭발 ===
+function drawArcExplosion(W, H) {
+    const ax = W * 0.35, ay = H * 0.45;
+    const intensity = state.flashIntensity;
+    const eIntensity = Math.min(2, state.E / 20);
+
+    // 거대 후광 (radial)
+    mctx.save();
+    const haloR = 40 + 60 * intensity * (1 + eIntensity * 0.5);
+    const halo = mctx.createRadialGradient(ax, ay, 0, ax, ay, haloR);
+    halo.addColorStop(0, `rgba(255, 255, 240, ${0.85 * intensity})`);
+    halo.addColorStop(0.18, `rgba(253, 224, 71, ${0.62 * intensity})`);
+    halo.addColorStop(0.42, `rgba(251, 146, 60, ${0.42 * intensity})`);
+    halo.addColorStop(0.72, `rgba(244, 63, 94, ${0.22 * intensity})`);
+    halo.addColorStop(1, `rgba(168, 85, 247, 0)`);
+    mctx.fillStyle = halo;
+    mctx.beginPath();
+    mctx.arc(ax, ay, haloR, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.restore();
+
+    // 코어 (백색 광원)
+    mctx.save();
+    const coreFlick = 0.8 + 0.2 * Math.sin(state.t_sim * 80);
+    const coreR = (8 + 8 * eIntensity) * coreFlick;
+    mctx.shadowBlur = 40;
+    mctx.shadowColor = '#fff';
+    mctx.fillStyle = '#fff';
+    mctx.beginPath();
+    mctx.arc(ax, ay, coreR, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.restore();
+
+    // 번개 빛줄기 (아크 채널)
+    mctx.save();
+    for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2 + state.t_sim * 4;
+        const len = 18 + 14 * Math.random();
+        mctx.strokeStyle = `rgba(255, 240, 200, ${0.7 * intensity})`;
+        mctx.shadowBlur = 14;
+        mctx.shadowColor = '#fde047';
+        mctx.lineWidth = 1.8;
+        mctx.lineCap = 'round';
+        mctx.beginPath();
+        mctx.moveTo(ax, ay);
+        let cx = ax, cy = ay;
+        const steps = 4;
+        for (let s = 0; s < steps; s++) {
+            const t = (s + 1) / steps;
+            const nx = ax + Math.cos(ang) * len * t + (Math.random() - 0.5) * 8;
+            const ny = ay + Math.sin(ang) * len * t + (Math.random() - 0.5) * 8;
+            mctx.lineTo(nx, ny);
+        }
+        mctx.stroke();
+    }
+    mctx.restore();
+
+    // ★ 별 마커
+    mctx.save();
+    mctx.shadowBlur = 24;
+    mctx.shadowColor = '#facc15';
+    mctx.fillStyle = '#fde047';
+    drawStar(mctx, ax, ay, 5, 10, 4);
+    mctx.fill();
+    mctx.restore();
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+    let rot = -Math.PI / 2;
+    const step = Math.PI / spikes;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerR);
+    for (let i = 0; i < spikes; i++) {
+        let x = cx + Math.cos(rot) * outerR;
+        let y = cy + Math.sin(rot) * outerR;
+        ctx.lineTo(x, y);
+        rot += step;
+        x = cx + Math.cos(rot) * innerR;
+        y = cy + Math.sin(rot) * innerR;
+        ctx.lineTo(x, y);
+        rot += step;
+    }
+    ctx.closePath();
+}
+
+// === 스파크 & 파편 ===
+function drawSparksDebris() {
+    // 스파크
+    state.sparks.forEach(s => {
+        const tlife = s.life / s.maxLife;
+        const alpha = 1 - tlife;
+        mctx.save();
+        mctx.shadowBlur = 8;
+        mctx.shadowColor = s.color;
+        mctx.fillStyle = s.color;
+        mctx.globalAlpha = alpha;
+        mctx.beginPath();
+        mctx.arc(s.x, s.y, s.size * (1 - tlife * 0.4), 0, Math.PI * 2);
+        mctx.fill();
+        mctx.restore();
+    });
+
+    // 파편 (회전하는 사각형)
+    state.debris.forEach(d => {
+        const tlife = d.life / d.maxLife;
+        const alpha = 1 - tlife * 0.6;
+        mctx.save();
+        mctx.translate(d.x, d.y);
+        mctx.rotate(d.rot);
+        mctx.shadowBlur = 5;
+        mctx.shadowColor = '#fb923c';
+        mctx.fillStyle = `rgba(190, 100, 50, ${alpha})`;
+        roundRect(mctx, -d.size / 2, -d.size / 2, d.size, d.size * 0.6, 1);
+        mctx.fill();
+        mctx.restore();
+    });
+}
+
+// === 메인 하단 정보 패널 ===
+function drawMainInfoPanel(W, H) {
+    mctx.save();
+    const boxW = 240, boxH = 78;
+    const bx = 14, by = H - boxH - 14;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(mctx, bx, by, boxW, boxH, 10);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(251, 146, 60, 0.4)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#fed7aa';
+    mctx.fillText('[ IEEE 1584 RESULT ]', bx + 10, by + 8);
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = '#fda4af';
+    mctx.fillText(`I_arc = ${state.Iarc.toFixed(2)} kA`, bx + 10, by + 26);
+    mctx.fillStyle = '#fb923c';
+    mctx.fillText(`E     = ${state.E.toFixed(2)} cal/cm²`, bx + 10, by + 42);
+    mctx.fillStyle = '#fde68a';
+    mctx.fillText(`AFB   = ${state.AFB.toFixed(0)} mm (${(state.AFB/1000).toFixed(2)} m)`, bx + 10, by + 58);
+    mctx.restore();
+
+    // 우하단 — PPE Cat 정보
+    mctx.save();
+    const boxW2 = 220, boxH2 = 78;
+    const bx2 = W - boxW2 - 14, by2 = H - boxH2 - 14;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(mctx, bx2, by2, boxW2, boxH2, 10);
+    mctx.fill();
+    const catColors = ['#22c55e', '#7dd3fc', '#fde047', '#fb923c', '#f43f5e', '#a855f7'];
+    mctx.strokeStyle = catColors[state.cat] + 'cc';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#c4b5fd';
+    mctx.fillText('[ PPE REQUIREMENT ]', bx2 + 10, by2 + 8);
+    mctx.font = 'bold 14px ui-monospace, monospace';
+    mctx.fillStyle = catColors[state.cat];
+    const catName = state.cat === 5 ? 'Cat X · 작업 금지' : `Cat ${state.cat}`;
+    mctx.fillText(catName, bx2 + 10, by2 + 28);
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = '#94a3b8';
+    const catThresh = [1.2, 4, 8, 25, 40, 100][state.cat];
+    const catThreshPrev = [0, 1.2, 4, 8, 25, 40][state.cat];
+    mctx.fillText(`${catThreshPrev} ~ ${catThresh} cal/cm² 범위`, bx2 + 10, by2 + 48);
+    mctx.fillStyle = '#cbd5e1';
+    const catGear = ['면 작업복', '4cal 난연복', '8cal 난연복', '25cal 난연복', '40cal 난연복', '활선 작업 금지'][state.cat];
+    mctx.fillText(catGear, bx2 + 10, by2 + 62);
+    mctx.restore();
+}
+
+// ============ 안전 거리 동심원 캔버스 ============
+function drawBoundary() {
+    const W = bdCv.width, H = bdCv.height;
+    bctx.clearRect(0, 0, W, H);
+
+    const bg = bctx.createRadialGradient(W * 0.5, H * 0.5, 40, W * 0.5, H * 0.5, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(28, 25, 23, 0.45)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    bctx.fillStyle = bg;
+    bctx.fillRect(0, 0, W, H);
+
+    bctx.save();
+    bctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    bctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { bctx.beginPath(); bctx.moveTo(i, 0); bctx.lineTo(i, H); bctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { bctx.beginPath(); bctx.moveTo(0, i); bctx.lineTo(W, i); bctx.stroke(); }
+    bctx.restore();
+
+    bctx.save();
+    bctx.font = 'bold 10px ui-monospace, monospace';
+    bctx.fillStyle = 'rgba(253, 186, 116, 0.6)';
+    bctx.textAlign = 'left'; bctx.textBaseline = 'top';
+    bctx.fillText('◯ APPROACH BOUNDARIES · TOP-DOWN VIEW · 배전반(★) ↔ 작업자(●)', 12, 10);
+    bctx.restore();
+
+    // 중앙 = 아크점, 가장 큰 거리 = Arc Flash Boundary (또는 최소 표시 거리)
+    const cx = W / 2 - 20;
+    const cy = H / 2 + 12;
+    const isLV = state.V < 1000;
+
+    // 접근 경계 (mm 단위)
+    // NFPA 70E / KEC 기준 (단순화)
+    let limitedApp, restrictedApp, prohibitedApp;
+    if (isLV) {
+        limitedApp = 1067;     // 3'6" (LV)
+        restrictedApp = 305;   // 12" (LV)
+        prohibitedApp = 25;    // 1" (LV)
+    } else if (state.V < 5000) {
+        limitedApp = 1524;     // 5' MV
+        restrictedApp = 660;
+        prohibitedApp = 178;
+    } else if (state.V < 15000) {
+        limitedApp = 1676;     // 5'6" (13.8kV)
+        restrictedApp = 660;
+        prohibitedApp = 178;
+    } else {
+        limitedApp = 2438;
+        restrictedApp = 813;
+        prohibitedApp = 254;
+    }
+    const afb = state.AFB;
+
+    // 표시 범위 — 가장 큰 거리 + 25% 여유
+    const maxDist = Math.max(afb, limitedApp, state.D) * 1.15;
+    const Rmax = Math.min(W, H) * 0.42;
+    const scale = Rmax / Math.max(maxDist, 1);
+
+    // 큰 원부터 그리기 — Arc Flash Boundary (가장 바깥)
+    const drawCircle = (r, fill, stroke, label, labelColor, labelOffset) => {
+        if (r < 5) return;
+        bctx.save();
+        bctx.fillStyle = fill;
+        bctx.strokeStyle = stroke;
+        bctx.lineWidth = 1.4;
+        bctx.beginPath();
+        bctx.arc(cx, cy, r, 0, Math.PI * 2);
+        bctx.fill();
+        bctx.stroke();
+        bctx.restore();
+        // 라벨
+        bctx.save();
+        bctx.font = 'bold 10px ui-monospace, monospace';
+        bctx.textAlign = 'left'; bctx.textBaseline = 'middle';
+        bctx.fillStyle = labelColor;
+        const lx = cx + Math.cos(-Math.PI/4) * r + 6;
+        const ly = cy + Math.sin(-Math.PI/4) * r - labelOffset;
+        bctx.fillText(label, lx, ly);
+        bctx.restore();
+    };
+
+    // 가장 바깥에서 안쪽으로 그리기
+    const rAFB = afb * scale;
+    const rLim = limitedApp * scale;
+    const rRes = restrictedApp * scale;
+    const rPro = prohibitedApp * scale;
+
+    drawCircle(rAFB, 'rgba(251, 146, 60, 0.08)', 'rgba(251, 146, 60, 0.55)',
+        `Arc Flash Boundary  ${afb.toFixed(0)} mm`, '#fb923c', 0);
+    drawCircle(rLim, 'rgba(250, 204, 21, 0.10)', 'rgba(250, 204, 21, 0.55)',
+        `Limited Approach  ${limitedApp} mm`, '#fde68a', 0);
+    drawCircle(rRes, 'rgba(244, 63, 94, 0.14)', 'rgba(244, 63, 94, 0.65)',
+        `Restricted  ${restrictedApp} mm`, '#fda4af', 0);
+    drawCircle(rPro, 'rgba(168, 85, 247, 0.22)', 'rgba(168, 85, 247, 0.75)',
+        `Prohibited  ${prohibitedApp} mm`, '#e9d5ff', 0);
+
+    // 중앙 아크점 (★)
+    bctx.save();
+    if (state.arcMode) {
+        const flick = 0.7 + 0.3 * Math.sin(state.t_sim * 40);
+        bctx.shadowBlur = 24 * flick;
+        bctx.shadowColor = '#facc15';
+        bctx.fillStyle = '#fde047';
+    } else {
+        bctx.shadowBlur = 10;
+        bctx.shadowColor = 'rgba(148,163,184,0.4)';
+        bctx.fillStyle = '#cbd5e1';
+    }
+    drawStar(bctx, cx, cy, 5, 10, 4);
+    bctx.fill();
+    bctx.restore();
+
+    // 작업자 (현재 D 거리)
+    const wx = cx + state.D * scale;
+    const wy = cy;
+    bctx.save();
+    const catColors = ['#22c55e', '#7dd3fc', '#fde047', '#fb923c', '#f43f5e', '#a855f7'];
+    bctx.shadowBlur = 14;
+    bctx.shadowColor = catColors[state.cat];
+    bctx.fillStyle = catColors[state.cat];
+    bctx.beginPath();
+    bctx.arc(wx, wy, 7, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.strokeStyle = '#fff';
+    bctx.lineWidth = 1.5;
+    bctx.stroke();
+    bctx.shadowBlur = 0;
+    bctx.font = 'bold 9px ui-monospace, monospace';
+    bctx.fillStyle = '#fff';
+    bctx.textAlign = 'center'; bctx.textBaseline = 'top';
+    bctx.fillText('작업자', wx, wy + 11);
+    bctx.font = '9px ui-monospace, monospace';
+    bctx.fillStyle = catColors[state.cat];
+    bctx.fillText(`D=${state.D}mm`, wx, wy + 24);
+    bctx.restore();
+
+    // 거리 라인 (중앙→작업자)
+    bctx.save();
+    bctx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
+    bctx.lineWidth = 1.2;
+    bctx.setLineDash([4, 4]);
+    bctx.beginPath();
+    bctx.moveTo(cx, cy);
+    bctx.lineTo(wx, wy);
+    bctx.stroke();
+    bctx.setLineDash([]);
+    bctx.restore();
+
+    // 작업자 위치 — 안전 판정 표시
+    bctx.save();
+    const inAFB = state.D < afb;
+    bctx.font = 'bold 11px ui-monospace, monospace';
+    bctx.textAlign = 'center'; bctx.textBaseline = 'top';
+    const statusTxt = state.D < prohibitedApp ? '⚠ 활선 접촉 영역' :
+                      state.D < restrictedApp ? '⚠ 제한 접근 (자격자+PPE)' :
+                      state.D < limitedApp ? '경계 내 (LIMITED)' :
+                      inAFB ? '⚠ 아크플래시 경계 내 (PPE 필수)' :
+                      '✓ 안전 거리 외 (Cat 0 OK)';
+    const statusColor = state.D < prohibitedApp ? '#e9d5ff' :
+                        state.D < restrictedApp ? '#fda4af' :
+                        state.D < limitedApp ? '#fde68a' :
+                        inAFB ? '#fb923c' : '#86efac';
+    bctx.fillStyle = 'rgba(15,23,42,0.92)';
+    const tw = bctx.measureText(statusTxt).width;
+    roundRect(bctx, W/2 - tw/2 - 10, H - 30, tw + 20, 22, 10);
+    bctx.fill();
+    bctx.strokeStyle = statusColor + 'cc';
+    bctx.lineWidth = 1;
+    bctx.stroke();
+    bctx.fillStyle = statusColor;
+    bctx.fillText(statusTxt, W/2, H - 26);
+    bctx.restore();
+
+    // 좌하단 — 거리 범례
+    bctx.save();
+    const lx = 14, ly = H - 105;
+    bctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+    roundRect(bctx, lx, ly, 180, 64, 8);
+    bctx.fill();
+    bctx.strokeStyle = 'rgba(251,146,60,0.4)';
+    bctx.lineWidth = 1;
+    bctx.stroke();
+    bctx.font = 'bold 9px ui-monospace, monospace';
+    bctx.fillStyle = '#fb923c';
+    bctx.textAlign = 'left'; bctx.textBaseline = 'top';
+    bctx.fillText('[ DISTANCES ]', lx + 8, ly + 6);
+    bctx.font = '9px ui-monospace, monospace';
+    bctx.fillStyle = '#fb923c';
+    bctx.fillText(`AFB   ${afb.toFixed(0)} mm`, lx + 8, ly + 20);
+    bctx.fillStyle = '#fde68a';
+    bctx.fillText(`Limit ${limitedApp} mm`, lx + 8, ly + 32);
+    bctx.fillStyle = '#fda4af';
+    bctx.fillText(`Rest. ${restrictedApp} mm`, lx + 8, ly + 44);
+    bctx.fillStyle = '#e9d5ff';
+    bctx.fillText(`Prohi ${prohibitedApp} mm`, lx + 8, ly + 56);
+    bctx.restore();
+}
+
+// ============ UI 업데이트 ============
+function formatI(a) {
+    if (!isFinite(a) || isNaN(a)) return '∞';
+    if (a < 1) return a.toFixed(2);
+    return a.toFixed(1);
+}
+
+function updateUI() {
+    $('vDisp').textContent = state.V;
+    $('ibfDisp').textContent = state.Ibf.toFixed(1);
+    $('tDisp').textContent = state.t.toFixed(2);
+    $('dDisp').textContent = state.D;
+    $('gDisp').textContent = state.G;
+
+    $('iarcDisp').textContent = formatI(state.Iarc);
+    $('eDisp').textContent = state.E.toFixed(2);
+    $('afbDisp').textContent = state.AFB.toFixed(0);
+
+    const catNames = ['Cat 0', 'Cat 1', 'Cat 2', 'Cat 3', 'Cat 4', 'Cat X'];
+    const catTextColors = ['text-emerald-300', 'text-sky-300', 'text-yellow-300',
+                            'text-orange-300', 'text-rose-300', 'text-violet-300'];
+    $('catDisp').innerHTML = `<span class="${catTextColors[state.cat]}">${catNames[state.cat]}</span>`;
+
+    // 게이지 마커 — 로그 스케일에 가깝게 분포
+    // 0 → 0%, 1.2 → 14%, 4 → 30%, 8 → 46%, 25 → 66%, 40 → 85%, 100+ → 100%
+    let pct;
+    const e = state.E;
+    if (e <= 0) pct = 0;
+    else if (e <= 1.2) pct = 14 * (e / 1.2);
+    else if (e <= 4) pct = 14 + 16 * ((e - 1.2) / (4 - 1.2));
+    else if (e <= 8) pct = 30 + 16 * ((e - 4) / (8 - 4));
+    else if (e <= 25) pct = 46 + 20 * ((e - 8) / (25 - 8));
+    else if (e <= 40) pct = 66 + 19 * ((e - 25) / (40 - 25));
+    else if (e <= 100) pct = 85 + 15 * ((e - 40) / (100 - 40));
+    else pct = 100;
+    $('gaugeMarker').style.left = Math.min(100, Math.max(0, pct)) + '%';
+
+    // pill 색
+    ['pill-iarc', 'pill-e', 'pill-afb', 'pill-cat'].forEach(id => $(id).classList.remove('flash', 'warn', 'danger'));
+    if (state.arcMode) {
+        if (state.cat >= 5) {
+            $('pill-e').classList.add('danger');
+            $('pill-cat').classList.add('danger');
+            $('pill-afb').classList.add('danger');
+        } else if (state.cat >= 3) {
+            $('pill-e').classList.add('warn');
+            $('pill-cat').classList.add('warn');
+        } else if (state.cat >= 1) {
+            $('pill-e').classList.add('flash');
+            $('pill-cat').classList.add('flash');
+        }
+        $('pill-iarc').classList.add('flash');
+        $('pill-afb').classList.add('flash');
+    }
+
+    // 알람 배너 — Cat X(>40)
+    $('alarmBanner').classList.toggle('hidden', !(state.arcMode && state.cat >= 5));
+
+    // boundary 배지
+    const bd = $('boundaryBadge');
+    bd.className = 'cat-badge';
+    const isLV = state.V < 1000;
+    const limitedApp = isLV ? 1067 : (state.V < 15000 ? 1676 : 2438);
+    const restrictedApp = isLV ? 305 : 660;
+    const prohibitedApp = isLV ? 25 : 178;
+    if (state.D < prohibitedApp) {
+        bd.classList.add('cat-X');
+        bd.textContent = 'PROHIBITED · 활선 접촉';
+    } else if (state.D < restrictedApp) {
+        bd.classList.add('cat-4');
+        bd.textContent = 'RESTRICTED · 자격자+PPE';
+    } else if (state.D < state.AFB) {
+        bd.classList.add(state.cat >= 3 ? 'cat-3' : 'cat-2');
+        bd.textContent = 'IN ARC FLASH BOUNDARY';
+    } else if (state.D < limitedApp) {
+        bd.classList.add('cat-1');
+        bd.textContent = 'LIMITED';
+    } else {
+        bd.classList.add('cat-0');
+        bd.textContent = 'SAFE · 안전 거리';
+    }
+}
+
+// ============ 이벤트 ============
+function bindControls() {
+    ['v','ibf','t','d','g'].forEach(id => {
+        $(id).addEventListener('input', () => {
+            const v = +$(id).value;
+            state[id === 'v' ? 'V' :
+                  id === 'ibf' ? 'Ibf' :
+                  id === 't' ? 't' :
+                  id === 'd' ? 'D' : 'G'] = v;
+            computeArcFlash();
+            updateUI();
+            flashCard();
+        });
+    });
+
+    document.querySelectorAll('.cfg-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.cfg-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            state.cfg = b.dataset.cfg;
+            computeArcFlash();
+            updateUI();
+            flashCard();
+        });
+    });
+
+    // 프리셋
+    document.querySelectorAll('[data-preset]').forEach(b => {
+        b.addEventListener('click', () => {
+            const p = b.dataset.preset;
+            if (p === 'normal') {
+                state.arcMode = false;
+                state.sparks = [];
+                state.debris = [];
+            } else if (p === 'arc') {
+                state.arcMode = true;
+            } else if (p === 'lv-panel') {
+                state.V = 480;  $('v').value = 480;
+                state.Ibf = 25; $('ibf').value = 25;
+                state.t = 0.2;  $('t').value = 0.2;
+                state.D = 610;  $('d').value = 610;
+                state.G = 32;   $('g').value = 32;
+                state.cfg = 'box';
+                document.querySelectorAll('.cfg-btn').forEach(x => x.classList.toggle('active', x.dataset.cfg === 'box'));
+                state.arcMode = true;
+            } else if (p === 'mv-switch') {
+                state.V = 13800; $('v').value = 13800;
+                state.Ibf = 40;  $('ibf').value = 40;
+                state.t = 0.15;  $('t').value = 0.15;
+                state.D = 914;   $('d').value = 914;
+                state.G = 153;   $('g').value = 152;
+                state.cfg = 'box';
+                document.querySelectorAll('.cfg-btn').forEach(x => x.classList.toggle('active', x.dataset.cfg === 'box'));
+                state.arcMode = true;
+            } else if (p === 'reset') {
+                state.V = 480;  $('v').value = 480;
+                state.Ibf = 25; $('ibf').value = 25;
+                state.t = 0.2;  $('t').value = 0.2;
+                state.D = 610;  $('d').value = 610;
+                state.G = 32;   $('g').value = 32;
+                state.cfg = 'box';
+                state.arcMode = false;
+                state.sparks = []; state.debris = [];
+                document.querySelectorAll('.cfg-btn').forEach(x => x.classList.toggle('active', x.dataset.cfg === 'box'));
+            }
+            // 슬라이더 라벨 동기화
+            $('vDisp').textContent = state.V;
+            $('ibfDisp').textContent = state.Ibf.toFixed(1);
+            $('tDisp').textContent = state.t.toFixed(2);
+            $('dDisp').textContent = state.D;
+            $('gDisp').textContent = state.G;
+            computeArcFlash();
+            updateUI();
+            flashCard();
+        });
+    });
+}
+
+function flashCard() {
+    if (window.gsap) {
+        gsap.fromTo('#mainCard',
+            { boxShadow: '0 0 0 0 rgba(251,146,60,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(251,146,60,0)', duration: 0.6 });
+        gsap.fromTo('#boundaryCard',
+            { boxShadow: '0 0 0 0 rgba(244,63,94,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(244,63,94,0)', duration: 0.6 });
+        gsap.fromTo('#gaugeMarker',
+            { scale: 1.4 },
+            { scale: 1, duration: 0.5, ease: 'back.out(2)' });
+    }
+}
+
+// ============ 메인 루프 ============
+function animate() {
+    updateSim();
+    drawMain();
+    drawBoundary();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    bindControls();
+    computeArcFlash();
+    updateUI();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#mainCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#boundaryCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#gaugeCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.55, ease: 'power3.out' });
+        gsap.from('#featureCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.65, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

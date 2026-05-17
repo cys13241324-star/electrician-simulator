@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크 아케이드 · 전기 학습 게임존</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #07050f;
+    --bg-panel: #0e0a1a;
+    --bg-panel-2: #181030;
+    --neon-cyan: #00fff7;
+    --neon-cyan-dim: #009994;
+    --neon-pink: #ff2bd6;
+    --neon-pink-dim: #a01788;
+    --neon-yellow: #ffe600;
+    --neon-yellow-dim: #b8a300;
+    --neon-green: #6dff5b;
+    --neon-purple: #a866ff;
+    --neon-orange: #ff8a2a;
+    --neon-red: #ff3a4a;
+    --ink-main: #e8e6ff;
+    --ink-dim: #9090b4;
+    --scan: rgba(0,255,247,0.04);
+  }
+  html, body { background: var(--bg-deep); }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink-main);
+    min-height: 100vh;
+    image-rendering: pixelated;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,43,214,0.10), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 0% 80%, rgba(0,255,247,0.08), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 100% 60%, rgba(255,230,0,0.05), transparent 60%),
+      var(--bg-deep);
+  }
+  .font-pixel { font-family: 'Press Start 2P', monospace; letter-spacing: 0.02em; line-height: 1.5; }
+  .font-vt { font-family: 'VT323', monospace; letter-spacing: 0.02em; }
+
+  /* ====== Neon Text Glow ====== */
+  .neon-cyan {
+    color: var(--neon-cyan);
+    text-shadow:
+      0 0 4px rgba(0,255,247,0.9),
+      0 0 12px rgba(0,255,247,0.6),
+      0 0 24px rgba(0,255,247,0.35);
+  }
+  .neon-pink {
+    color: var(--neon-pink);
+    text-shadow:
+      0 0 4px rgba(255,43,214,0.9),
+      0 0 12px rgba(255,43,214,0.6),
+      0 0 24px rgba(255,43,214,0.35);
+  }
+  .neon-yellow {
+    color: var(--neon-yellow);
+    text-shadow:
+      0 0 4px rgba(255,230,0,0.9),
+      0 0 12px rgba(255,230,0,0.55),
+      0 0 24px rgba(255,230,0,0.3);
+  }
+  .neon-green {
+    color: var(--neon-green);
+    text-shadow:
+      0 0 4px rgba(109,255,91,0.9),
+      0 0 12px rgba(109,255,91,0.5),
+      0 0 24px rgba(109,255,91,0.3);
+  }
+  .neon-purple {
+    color: var(--neon-purple);
+    text-shadow: 0 0 4px rgba(168,102,255,0.8), 0 0 12px rgba(168,102,255,0.5);
+  }
+  .neon-orange {
+    color: var(--neon-orange);
+    text-shadow: 0 0 4px rgba(255,138,42,0.9), 0 0 12px rgba(255,138,42,0.55);
+  }
+
+  /* ====== Scanlines & CRT ====== */
+  .scanlines {
+    position: relative;
+  }
+  .scanlines::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2px,
+      rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.18) 3px
+    );
+    border-radius: inherit;
+    z-index: 3;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 3px,
+      rgba(0,0,0,0.07) 3px,
+      rgba(0,0,0,0.07) 4px
+    );
+    z-index: 1;
+    mix-blend-mode: multiply;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    z-index: 2;
+  }
+
+  /* ====== Neon Borders ====== */
+  .neon-border-cyan {
+    border: 2px solid var(--neon-cyan);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.6),
+      inset 0 0 12px rgba(0,255,247,0.18),
+      0 0 8px rgba(0,255,247,0.6),
+      0 0 24px rgba(0,255,247,0.3);
+  }
+  .neon-border-pink {
+    border: 2px solid var(--neon-pink);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.6),
+      inset 0 0 12px rgba(255,43,214,0.18),
+      0 0 8px rgba(255,43,214,0.6),
+      0 0 24px rgba(255,43,214,0.3);
+  }
+  .neon-border-yellow {
+    border: 2px solid var(--neon-yellow);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.6),
+      inset 0 0 12px rgba(255,230,0,0.15),
+      0 0 8px rgba(255,230,0,0.5),
+      0 0 20px rgba(255,230,0,0.25);
+  }
+  .neon-border-purple {
+    border: 2px solid var(--neon-purple);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.6),
+      inset 0 0 12px rgba(168,102,255,0.15),
+      0 0 8px rgba(168,102,255,0.5);
+  }
+  .neon-border-dim {
+    border: 1.5px solid rgba(0,255,247,0.35);
+    box-shadow: inset 0 0 8px rgba(0,255,247,0.08), 0 0 4px rgba(0,255,247,0.15);
+  }
+
+  /* ====== Cabinet ====== */
+  .cabinet {
+    position: relative;
+    background: linear-gradient(180deg, #1a0f2e 0%, #0c0820 100%);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: transform 0.18s ease;
+  }
+  .cabinet:hover { transform: translateY(-4px); }
+  .cabinet:hover .cab-screen { animation: flicker 0.5s infinite; }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    35% { opacity: 0.75; }
+    50% { opacity: 1; }
+    70% { opacity: 0.82; }
+  }
+  .cab-screen {
+    position: relative;
+    background: #050010;
+    overflow: hidden;
+  }
+
+  /* ====== Buttons ====== */
+  .btn-arcade {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #ff2bd6 0%, #a01788 100%);
+    color: #fff;
+    border: 2px solid #ff8aef;
+    box-shadow:
+      inset 0 -3px 0 rgba(0,0,0,0.4),
+      inset 0 2px 0 rgba(255,255,255,0.25),
+      0 0 8px rgba(255,43,214,0.6),
+      0 0 18px rgba(255,43,214,0.25);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.18s ease;
+    letter-spacing: 0.06em;
+  }
+  .btn-arcade:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 -3px 0 rgba(0,0,0,0.4),
+      inset 0 2px 0 rgba(255,255,255,0.25),
+      0 0 12px rgba(255,43,214,0.9),
+      0 0 28px rgba(255,43,214,0.4);
+  }
+  .btn-arcade:active { transform: translateY(2px); box-shadow: inset 0 2px 6px rgba(0,0,0,0.5); }
+  .btn-arcade-cyan {
+    background: linear-gradient(180deg, #00fff7 0%, #008b87 100%);
+    border-color: #95fff8;
+    color: #001210;
+    text-shadow: none;
+    box-shadow:
+      inset 0 -3px 0 rgba(0,0,0,0.3),
+      inset 0 2px 0 rgba(255,255,255,0.3),
+      0 0 8px rgba(0,255,247,0.6),
+      0 0 18px rgba(0,255,247,0.25);
+  }
+  .btn-arcade-yellow {
+    background: linear-gradient(180deg, #ffe600 0%, #b8a300 100%);
+    border-color: #fff37a;
+    color: #2a1900;
+    text-shadow: none;
+    box-shadow:
+      inset 0 -3px 0 rgba(0,0,0,0.3),
+      inset 0 2px 0 rgba(255,255,255,0.3),
+      0 0 8px rgba(255,230,0,0.55),
+      0 0 18px rgba(255,230,0,0.2);
+  }
+
+  /* ====== Animations ====== */
+  @keyframes neonPulse {
+    0%, 100% { opacity: 1; filter: brightness(1); }
+    50% { opacity: 0.85; filter: brightness(1.15); }
+  }
+  .pulse { animation: neonPulse 1.6s ease-in-out infinite; }
+  @keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  .blink { animation: blink 1.1s steps(1) infinite; }
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+  .marquee-track { display: inline-block; white-space: nowrap; animation: marquee 30s linear infinite; }
+
+  @keyframes ticker-coin {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-3px) rotate(180deg); }
+    100% { transform: translateY(0) rotate(360deg); }
+  }
+  .coin-spin { animation: ticker-coin 1.8s linear infinite; transform-origin: center; }
+
+  @keyframes loading-bar {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+  .loading-bar { animation: loading-bar 2.2s linear forwards; }
+
+  /* ====== Modal ====== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal-card {
+    max-width: 720px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #0e0a1a 0%, #050010 100%);
+  }
+
+  /* ====== Scrollbar ====== */
+  .arcade-scroll::-webkit-scrollbar { height: 10px; width: 8px; }
+  .arcade-scroll::-webkit-scrollbar-track { background: #0a0614; }
+  .arcade-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ff2bd6, #00fff7);
+    border-radius: 4px;
+  }
+
+  /* ====== Difficulty bars ====== */
+  .diff-on { background: var(--neon-yellow); box-shadow: 0 0 6px rgba(255,230,0,0.7); }
+  .diff-off { background: #2a2440; }
+
+  /* ====== Coin counter card ====== */
+  .coin-card {
+    background:
+      repeating-linear-gradient(45deg, rgba(255,230,0,0.05) 0 6px, transparent 6px 12px),
+      linear-gradient(180deg, #1f1404 0%, #0a0700 100%);
+  }
+
+  /* ====== Tag chips ====== */
+  .chip {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 4px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+    display: inline-block;
+  }
+  .chip-cyan { background: rgba(0,255,247,0.12); color: var(--neon-cyan); border: 1px solid rgba(0,255,247,0.4); }
+  .chip-pink { background: rgba(255,43,214,0.12); color: var(--neon-pink); border: 1px solid rgba(255,43,214,0.4); }
+  .chip-yellow { background: rgba(255,230,0,0.12); color: var(--neon-yellow); border: 1px solid rgba(255,230,0,0.4); }
+  .chip-green { background: rgba(109,255,91,0.12); color: var(--neon-green); border: 1px solid rgba(109,255,91,0.4); }
+  .chip-purple { background: rgba(168,102,255,0.12); color: var(--neon-purple); border: 1px solid rgba(168,102,255,0.4); }
+
+  /* ====== Rank rows ====== */
+  .rank-row { transition: background 0.15s ease; }
+  .rank-row:hover { background: rgba(0,255,247,0.06); }
+
+  /* ====== High score table ====== */
+  .leader-bg {
+    background:
+      linear-gradient(180deg, rgba(0,255,247,0.04), transparent 30%),
+      linear-gradient(180deg, #0a0820 0%, #050010 100%);
+  }
+
+  /* ====== Hide scrollbar in carousel ====== */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ====== Pixel divider ====== */
+  .pixel-divider {
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--neon-cyan) 0 4px, transparent 4px 8px, var(--neon-pink) 8px 12px, transparent 12px 16px);
+    opacity: 0.7;
+  }
+
+  /* ====== Caret ====== */
+  .caret::after {
+    content: "_";
+    margin-left: 2px;
+    animation: blink 1.1s steps(1) infinite;
+  }
+</style>
+</head>
+<body class="min-h-screen relative">
+
+<!-- ============================== TOP MARQUEE ============================== -->
+<div class="relative z-10 border-b border-pink-700/40 bg-black/70 overflow-hidden">
+  <div class="font-pixel text-[10px] py-2 marquee-track">
+    <span class="neon-pink mx-6">▶ INSERT COIN TO PLAY</span>
+    <span class="neon-cyan mx-6">★ 신작 〈에디슨 vs 테슬라〉 출시 임박</span>
+    <span class="neon-yellow mx-6">⚡ 일일 토너먼트 19시 OPEN</span>
+    <span class="neon-green mx-6">♛ 명예의 전당 갱신 — 김합격 LV.99</span>
+    <span class="neon-pink mx-6">▶ 무한 컨티뉴 이벤트 진행 중</span>
+    <span class="neon-cyan mx-6">★ 단체전 모집 — 3상 결선 PvP</span>
+    <!-- duplicate for seamless loop -->
+    <span class="neon-pink mx-6">▶ INSERT COIN TO PLAY</span>
+    <span class="neon-cyan mx-6">★ 신작 〈에디슨 vs 테슬라〉 출시 임박</span>
+    <span class="neon-yellow mx-6">⚡ 일일 토너먼트 19시 OPEN</span>
+    <span class="neon-green mx-6">♛ 명예의 전당 갱신 — 김합격 LV.99</span>
+    <span class="neon-pink mx-6">▶ 무한 컨티뉴 이벤트 진행 중</span>
+    <span class="neon-cyan mx-6">★ 단체전 모집 — 3상 결선 PvP</span>
+  </div>
+</div>
+
+<!-- ============================== HEADER ============================== -->
+<header class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <!-- Pixel Logo -->
+      <svg viewBox="0 0 48 48" class="w-12 h-12">
+        <!-- bolt -->
+        <g shape-rendering="crispEdges">
+          <rect x="22" y="4" width="6" height="6" fill="#ffe600"/>
+          <rect x="18" y="10" width="10" height="6" fill="#ffe600"/>
+          <rect x="14" y="16" width="14" height="6" fill="#ffe600"/>
+          <rect x="20" y="22" width="14" height="6" fill="#ffe600"/>
+          <rect x="24" y="28" width="10" height="6" fill="#ffe600"/>
+          <rect x="28" y="34" width="6" height="6" fill="#ffe600"/>
+          <rect x="32" y="40" width="6" height="4" fill="#ffe600"/>
+          <!-- glow outline -->
+          <rect x="22" y="4" width="6" height="2" fill="#fff37a"/>
+          <rect x="32" y="40" width="6" height="2" fill="#fff37a"/>
+        </g>
+      </svg>
+      <div>
+        <div class="font-pixel text-[10px] neon-cyan tracking-widest">SPARK ARCADE</div>
+        <h1 class="font-pixel text-base sm:text-xl neon-pink">스파크 아케이드</h1>
+        <div class="font-vt text-base text-[var(--ink-dim)]">· 전기 학습 게임존 · EST. 19XX</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Coin counter -->
+      <div id="coinCard" class="coin-card neon-border-yellow rounded-md px-3 py-2 flex items-center gap-2">
+        <svg viewBox="0 0 16 16" class="w-5 h-5 coin-spin">
+          <circle cx="8" cy="8" r="7" fill="#ffe600" stroke="#b8a300" stroke-width="1"/>
+          <text x="8" y="11" text-anchor="middle" font-family="Press Start 2P" font-size="7" fill="#2a1900">¢</text>
+        </svg>
+        <div>
+          <div class="font-pixel text-[8px] neon-yellow leading-none">CREDITS</div>
+          <div id="coinCount" class="font-pixel text-sm neon-yellow leading-none mt-1">03</div>
+        </div>
+      </div>
+      <button id="insertCoinBtn" class="btn-arcade btn-arcade-yellow">INSERT COIN</button>
+      <button id="toggleBoardBtn" class="btn-arcade btn-arcade-cyan">HIGH SCORE</button>
+    </div>
+  </div>
+  <div class="pixel-divider mt-5"></div>
+</header>
+
+<!-- ============================== HERO ============================== -->
+<section class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+  <div class="scanlines rounded-lg neon-border-pink overflow-hidden relative">
+    <!-- Hero SVG: arcade interior -->
+    <svg viewBox="0 0 1200 480" class="w-full h-auto block" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+      <defs>
+        <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a0a26"/>
+          <stop offset="1" stop-color="#06000f"/>
+        </linearGradient>
+        <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a0830"/>
+          <stop offset="1" stop-color="#0d0420"/>
+        </linearGradient>
+        <radialGradient id="bulbGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.7"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="signGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#ff2bd6" stop-opacity="0.7"/>
+          <stop offset="1" stop-color="#ff2bd6" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="signGlow2" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#00fff7" stop-opacity="0.6"/>
+          <stop offset="1" stop-color="#00fff7" stop-opacity="0"/>
+        </radialGradient>
+        <pattern id="floorTile" width="40" height="40" patternUnits="userSpaceOnUse">
+          <rect width="40" height="40" fill="url(#floor)"/>
+          <path d="M0 40 L40 0" stroke="#ff2bd6" stroke-opacity="0.07" stroke-width="1"/>
+          <path d="M0 0 L40 40" stroke="#00fff7" stroke-opacity="0.07" stroke-width="1"/>
+        </pattern>
+      </defs>
+
+      <!-- Back wall -->
+      <rect x="0" y="0" width="1200" height="320" fill="url(#wall)"/>
+      <!-- floor -->
+      <rect x="0" y="320" width="1200" height="160" fill="url(#floorTile)"/>
+      <!-- floor perspective lines -->
+      <g stroke="#ff2bd6" stroke-opacity="0.15">
+        <line x1="0" y1="340" x2="1200" y2="340"/>
+        <line x1="0" y1="380" x2="1200" y2="380"/>
+        <line x1="0" y1="430" x2="1200" y2="430"/>
+      </g>
+
+      <!-- Big neon sign: SPARK ARCADE -->
+      <g transform="translate(380,30)">
+        <ellipse cx="220" cy="60" rx="280" ry="80" fill="url(#signGlow)"/>
+        <rect x="0" y="20" width="440" height="80" rx="6" fill="#10061f" stroke="#ff2bd6" stroke-width="3"/>
+        <text x="220" y="68" text-anchor="middle" font-family="Press Start 2P" font-size="22" fill="#ff2bd6" style="filter: drop-shadow(0 0 6px #ff2bd6);">SPARK ARCADE</text>
+        <text x="220" y="92" text-anchor="middle" font-family="VT323" font-size="18" fill="#00fff7">★ ELECTRIC GAME ZONE ★</text>
+      </g>
+
+      <!-- Side neon arrow signs -->
+      <g transform="translate(60,80)">
+        <ellipse cx="60" cy="40" rx="80" ry="40" fill="url(#signGlow2)"/>
+        <rect x="0" y="10" width="120" height="60" rx="4" fill="#10061f" stroke="#00fff7" stroke-width="2"/>
+        <text x="60" y="35" text-anchor="middle" font-family="Press Start 2P" font-size="9" fill="#00fff7">PLAY</text>
+        <text x="60" y="58" text-anchor="middle" font-family="Press Start 2P" font-size="9" fill="#ffe600">START</text>
+        <polygon points="120,40 140,20 140,60" fill="#00fff7"/>
+      </g>
+      <g transform="translate(1020,80)">
+        <ellipse cx="60" cy="40" rx="80" ry="40" fill="url(#signGlow)"/>
+        <rect x="0" y="10" width="120" height="60" rx="4" fill="#10061f" stroke="#ff2bd6" stroke-width="2"/>
+        <text x="60" y="35" text-anchor="middle" font-family="Press Start 2P" font-size="9" fill="#ff2bd6">PRIZE</text>
+        <text x="60" y="58" text-anchor="middle" font-family="Press Start 2P" font-size="9" fill="#ffe600">★ ★ ★</text>
+        <polygon points="0,40 -20,20 -20,60" fill="#ff2bd6"/>
+      </g>
+
+      <!-- Hanging bulbs -->
+      <g>
+        <g transform="translate(100,0)">
+          <line x1="0" y1="0" x2="0" y2="20" stroke="#333" stroke-width="1"/>
+          <circle cx="0" cy="24" r="6" fill="#ffe600"/>
+          <circle cx="0" cy="24" r="14" fill="url(#bulbGlow)"/>
+        </g>
+        <g transform="translate(200,0)">
+          <line x1="0" y1="0" x2="0" y2="14" stroke="#333" stroke-width="1"/>
+          <circle cx="0" cy="18" r="6" fill="#00fff7"/>
+          <circle cx="0" cy="18" r="14" fill="url(#bulbGlow)"/>
+        </g>
+        <g transform="translate(300,0)">
+          <line x1="0" y1="0" x2="0" y2="22" stroke="#333" stroke-width="1"/>
+          <circle cx="0" cy="26" r="6" fill="#ff2bd6"/>
+          <circle cx="0" cy="26" r="14" fill="url(#bulbGlow)"/>
+        </g>
+        <g transform="translate(900,0)">
+          <line x1="0" y1="0" x2="0" y2="16" stroke="#333" stroke-width="1"/>
+          <circle cx="0" cy="20" r="6" fill="#ffe600"/>
+          <circle cx="0" cy="20" r="14" fill="url(#bulbGlow)"/>
+        </g>
+        <g transform="translate(1000,0)">
+          <line x1="0" y1="0" x2="0" y2="24" stroke="#333" stroke-width="1"/>
+          <circle cx="0" cy="28" r="6" fill="#6dff5b"/>
+          <circle cx="0" cy="28" r="14" fill="url(#bulbGlow)"/>
+        </g>
+        <g transform="translate(1100,0)">
+          <line x1="0" y1="0" x2="0" y2="14" stroke="#333" stroke-width="1"/>
+          <circle cx="0" cy="18" r="6" fill="#ff2bd6"/>
+          <circle cx="0" cy="18" r="14" fill="url(#bulbGlow)"/>
+        </g>
+      </g>
+
+      <!-- Row of arcade cabinets (back) -->
+      <g transform="translate(0,180)">
+        <!-- Cabinet template repeated -->
+        <g transform="translate(40,0)">
+          <rect x="0" y="0" width="80" height="140" rx="6" fill="#180a30" stroke="#ff2bd6" stroke-width="1.5"/>
+          <rect x="8" y="14" width="64" height="38" fill="#050010" stroke="#00fff7" stroke-width="1"/>
+          <rect x="10" y="16" width="60" height="34" fill="#00fff7" opacity="0.18"/>
+          <text x="40" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="8" fill="#ffe600">PLAY</text>
+          <rect x="8" y="58" width="64" height="30" fill="#10061f" stroke="#00fff7" stroke-width="0.5"/>
+          <circle cx="22" cy="73" r="5" fill="#ff2bd6"/>
+          <circle cx="38" cy="73" r="5" fill="#ffe600"/>
+          <circle cx="54" cy="73" r="5" fill="#00fff7"/>
+          <rect x="8" y="94" width="64" height="40" fill="#0a0820"/>
+          <text x="40" y="118" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="#ff2bd6">SPARK</text>
+        </g>
+        <g transform="translate(150,0)">
+          <rect x="0" y="0" width="80" height="140" rx="6" fill="#1a0a30" stroke="#ffe600" stroke-width="1.5"/>
+          <rect x="8" y="14" width="64" height="38" fill="#050010" stroke="#ffe600" stroke-width="1"/>
+          <rect x="10" y="16" width="60" height="34" fill="#ffe600" opacity="0.15"/>
+          <text x="40" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="8" fill="#ff2bd6">OHM!</text>
+          <rect x="8" y="58" width="64" height="30" fill="#10061f"/>
+          <circle cx="22" cy="73" r="5" fill="#00fff7"/>
+          <circle cx="38" cy="73" r="5" fill="#ff2bd6"/>
+          <circle cx="54" cy="73" r="5" fill="#ffe600"/>
+          <rect x="8" y="94" width="64" height="40" fill="#0a0820"/>
+        </g>
+        <g transform="translate(260,0)">
+          <rect x="0" y="0" width="80" height="140" rx="6" fill="#180a30" stroke="#00fff7" stroke-width="1.5"/>
+          <rect x="8" y="14" width="64" height="38" fill="#050010" stroke="#ff2bd6" stroke-width="1"/>
+          <rect x="10" y="16" width="60" height="34" fill="#ff2bd6" opacity="0.18"/>
+          <text x="40" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="#ffe600">PUZZLE</text>
+          <rect x="8" y="58" width="64" height="30" fill="#10061f"/>
+          <circle cx="22" cy="73" r="5" fill="#ffe600"/>
+          <circle cx="38" cy="73" r="5" fill="#00fff7"/>
+          <circle cx="54" cy="73" r="5" fill="#ff2bd6"/>
+        </g>
+        <g transform="translate(860,0)">
+          <rect x="0" y="0" width="80" height="140" rx="6" fill="#1a0a30" stroke="#6dff5b" stroke-width="1.5"/>
+          <rect x="8" y="14" width="64" height="38" fill="#050010" stroke="#6dff5b" stroke-width="1"/>
+          <rect x="10" y="16" width="60" height="34" fill="#6dff5b" opacity="0.15"/>
+          <text x="40" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="7" fill="#ffe600">RHYTHM</text>
+          <rect x="8" y="58" width="64" height="30" fill="#10061f"/>
+          <circle cx="22" cy="73" r="5" fill="#ff2bd6"/>
+          <circle cx="38" cy="73" r="5" fill="#ffe600"/>
+          <circle cx="54" cy="73" r="5" fill="#6dff5b"/>
+        </g>
+        <g transform="translate(970,0)">
+          <rect x="0" y="0" width="80" height="140" rx="6" fill="#180a30" stroke="#a866ff" stroke-width="1.5"/>
+          <rect x="8" y="14" width="64" height="38" fill="#050010" stroke="#a866ff" stroke-width="1"/>
+          <rect x="10" y="16" width="60" height="34" fill="#a866ff" opacity="0.2"/>
+          <text x="40" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="#00fff7">FIGHT!</text>
+          <rect x="8" y="58" width="64" height="30" fill="#10061f"/>
+          <circle cx="22" cy="73" r="5" fill="#00fff7"/>
+          <circle cx="38" cy="73" r="5" fill="#ff2bd6"/>
+          <circle cx="54" cy="73" r="5" fill="#ffe600"/>
+        </g>
+        <g transform="translate(1080,0)">
+          <rect x="0" y="0" width="80" height="140" rx="6" fill="#1a0a30" stroke="#ff8a2a" stroke-width="1.5"/>
+          <rect x="8" y="14" width="64" height="38" fill="#050010" stroke="#ff8a2a" stroke-width="1"/>
+          <rect x="10" y="16" width="60" height="34" fill="#ff8a2a" opacity="0.18"/>
+          <text x="40" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="#ffe600">JUMP!</text>
+          <rect x="8" y="58" width="64" height="30" fill="#10061f"/>
+        </g>
+      </g>
+
+      <!-- Foreground silhouette: player -->
+      <g transform="translate(540,290)">
+        <rect x="14" y="0" width="14" height="8" fill="#000"/>
+        <rect x="10" y="8" width="22" height="20" fill="#000"/>
+        <rect x="6" y="28" width="30" height="40" fill="#000"/>
+        <rect x="6" y="68" width="14" height="30" fill="#000"/>
+        <rect x="22" y="68" width="14" height="30" fill="#000"/>
+      </g>
+      <g transform="translate(700,290)">
+        <rect x="14" y="0" width="14" height="8" fill="#000"/>
+        <rect x="10" y="8" width="22" height="20" fill="#000"/>
+        <rect x="6" y="28" width="30" height="40" fill="#000"/>
+        <rect x="6" y="68" width="14" height="30" fill="#000"/>
+        <rect x="22" y="68" width="14" height="30" fill="#000"/>
+      </g>
+
+      <!-- Floor reflection -->
+      <rect x="0" y="320" width="1200" height="160" fill="url(#signGlow)" opacity="0.08"/>
+    </svg>
+
+    <!-- Hero overlay text -->
+    <div class="absolute inset-0 flex flex-col justify-end p-5 sm:p-8 z-10">
+      <div class="font-pixel text-[10px] neon-yellow blink mb-2">▶ NOW PLAYING</div>
+      <h2 class="font-pixel text-lg sm:text-2xl md:text-3xl neon-cyan leading-snug">
+        전기를 게임처럼.
+      </h2>
+      <h2 class="font-pixel text-lg sm:text-2xl md:text-3xl neon-pink leading-snug mt-2">
+        합격을 하이스코어처럼.
+      </h2>
+      <p class="font-vt text-lg sm:text-xl text-[var(--ink-main)]/85 mt-3 max-w-2xl">
+        8종의 픽셀 학습 게임 · 일일 토너먼트 · 명예의 전당 — 동전 하나로 입장.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== STATS STRIP ============================== -->
+<section class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+  <div class="neon-border-cyan rounded-md p-3 bg-black/60 scanlines">
+    <div class="font-pixel text-[8px] neon-cyan">PLAYERS ONLINE</div>
+    <div class="font-pixel text-xl neon-cyan mt-2"><span id="statPlayers">1,247</span></div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">현재 접속</div>
+  </div>
+  <div class="neon-border-pink rounded-md p-3 bg-black/60 scanlines">
+    <div class="font-pixel text-[8px] neon-pink">TOTAL PLAYS</div>
+    <div class="font-pixel text-xl neon-pink mt-2">428,915</div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">누적 플레이</div>
+  </div>
+  <div class="neon-border-yellow rounded-md p-3 bg-black/60 scanlines">
+    <div class="font-pixel text-[8px] neon-yellow">HIGH SCORE</div>
+    <div class="font-pixel text-xl neon-yellow mt-2">999,999</div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">전체 최고점</div>
+  </div>
+  <div class="neon-border-purple rounded-md p-3 bg-black/60 scanlines">
+    <div class="font-pixel text-[8px] neon-purple">GAMES</div>
+    <div class="font-pixel text-xl neon-purple mt-2">08 + 2</div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">출시/예정</div>
+  </div>
+</section>
+
+<!-- ============================== GAME LINEUP ============================== -->
+<section class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-10">
+  <div class="flex items-end justify-between flex-wrap gap-2">
+    <div>
+      <div class="font-pixel text-[10px] neon-yellow">SELECT YOUR GAME</div>
+      <h3 class="font-pixel text-base sm:text-xl neon-cyan mt-1">▶ 게임 캐비닛 라인업</h3>
+    </div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">전기기능사 핵심 개념을 8개 장르로 변주</div>
+  </div>
+  <div class="pixel-divider mt-3 mb-5"></div>
+
+  <div id="cabinetGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Cards injected by JS -->
+  </div>
+</section>
+
+<!-- ============================== POPULAR CAROUSEL ============================== -->
+<section class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-12">
+  <div class="flex items-end justify-between flex-wrap gap-2">
+    <div>
+      <div class="font-pixel text-[10px] neon-pink">★ HOT THIS WEEK</div>
+      <h3 class="font-pixel text-base sm:text-xl neon-pink mt-1">▶ 인기 게임 TOP</h3>
+    </div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">← 좌우 스크롤 / 휠로 탐색 →</div>
+  </div>
+  <div class="pixel-divider mt-3 mb-5"></div>
+
+  <div id="hotCarousel" class="flex gap-4 overflow-x-auto pb-3 arcade-scroll snap-x snap-mandatory">
+    <!-- Cards injected -->
+  </div>
+</section>
+
+<!-- ============================== HALL OF FAME ============================== -->
+<section id="hallOfFame" class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-12">
+  <div class="flex items-end justify-between flex-wrap gap-2">
+    <div>
+      <div class="font-pixel text-[10px] neon-yellow">★ HALL OF FAME ★</div>
+      <h3 class="font-pixel text-base sm:text-xl neon-yellow mt-1">▶ 명예의 전당 — TOP 10</h3>
+    </div>
+    <button id="boardToggle2" class="btn-arcade btn-arcade-cyan">접기 / 펼치기</button>
+  </div>
+  <div class="pixel-divider mt-3 mb-5"></div>
+
+  <div id="boardWrap" class="leader-bg scanlines neon-border-yellow rounded-md overflow-hidden">
+    <div class="font-pixel text-[10px] neon-yellow p-3 border-b border-yellow-700/40 flex items-center justify-between bg-black/40">
+      <span>RANK · NAME · GAME · SCORE</span>
+      <span class="neon-pink blink">▶ LIVE</span>
+    </div>
+    <div class="overflow-x-auto arcade-scroll">
+      <table class="w-full font-vt text-base">
+        <thead>
+          <tr class="border-b border-yellow-700/30 text-[var(--ink-dim)]">
+            <th class="text-left p-2 px-3 w-12">#</th>
+            <th class="text-left p-2 px-3">NAME</th>
+            <th class="text-left p-2 px-3">GAME</th>
+            <th class="text-left p-2 px-3 hidden sm:table-cell">DATE</th>
+            <th class="text-right p-2 px-3">SCORE</th>
+          </tr>
+        </thead>
+        <tbody id="boardBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ROADMAP / COMING SOON ============================== -->
+<section class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-12">
+  <div class="flex items-end justify-between flex-wrap gap-2">
+    <div>
+      <div class="font-pixel text-[10px] neon-green">COMING SOON</div>
+      <h3 class="font-pixel text-base sm:text-xl neon-green mt-1">▶ 출시 예정 / 개발 중</h3>
+    </div>
+    <div class="font-vt text-base text-[var(--ink-dim)]">스파크 아케이드 신작 라인업</div>
+  </div>
+  <div class="pixel-divider mt-3 mb-5"></div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="neon-border-dim scanlines rounded-md bg-black/40 p-4">
+      <div class="flex items-center justify-between">
+        <div class="font-pixel text-[10px] neon-green">▶ 2026.06 ALPHA</div>
+        <span class="chip chip-green">RPG</span>
+      </div>
+      <h4 class="font-pixel text-sm neon-yellow mt-3">전류 헌터즈</h4>
+      <p class="font-vt text-base text-[var(--ink-main)]/85 mt-2">분기 회로 던전에서 누설 전류를 사냥하는 액션 RPG. 키르히호프 마법 스킬트리.</p>
+      <div class="font-pixel text-[8px] neon-green mt-3">PROGRESS</div>
+      <div class="h-2 mt-1 bg-[#0a0820] rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-[var(--neon-cyan)] to-[var(--neon-green)]" style="width:62%"></div>
+      </div>
+    </div>
+    <div class="neon-border-dim scanlines rounded-md bg-black/40 p-4">
+      <div class="flex items-center justify-between">
+        <div class="font-pixel text-[10px] neon-pink">▶ 2026.08 BETA</div>
+        <span class="chip chip-pink">RACING</span>
+      </div>
+      <h4 class="font-pixel text-sm neon-yellow mt-3">초고압 송전 레이스</h4>
+      <p class="font-vt text-base text-[var(--ink-main)]/85 mt-2">154kV 송전선 위에서 펼치는 가상 레이싱. 손실률이 낮을수록 빠른 머신 해금.</p>
+      <div class="font-pixel text-[8px] neon-pink mt-3">PROGRESS</div>
+      <div class="h-2 mt-1 bg-[#0a0820] rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-[var(--neon-pink)] to-[var(--neon-yellow)]" style="width:38%"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FOOTER ============================== -->
+<footer class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 mt-14 mb-10">
+  <div class="pixel-divider mb-5"></div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <div class="font-pixel text-[10px] neon-cyan">SPARK ARCADE</div>
+      <p class="font-vt text-base text-[var(--ink-main)]/85 mt-2">전기기능사 학습을 게임화한 가상 아케이드 시뮬레이션. 모든 게임/점수/플레이어는 학습 동기 부여 목적의 가공 데이터입니다.</p>
+    </div>
+    <div>
+      <div class="font-pixel text-[10px] neon-pink">OPERATING HOURS</div>
+      <ul class="font-vt text-base text-[var(--ink-main)]/85 mt-2 space-y-1">
+        <li>·  24 / 7  ALWAYS OPEN</li>
+        <li>·  CREDITS  무제한 (이벤트)</li>
+        <li>·  TOURNAMENT  매일 19:00</li>
+      </ul>
+    </div>
+    <div>
+      <div class="font-pixel text-[10px] neon-yellow">CREDITS ROLL</div>
+      <p class="font-vt text-base text-[var(--ink-main)]/85 mt-2">PIXEL ART · 가공 SVG / FONT · Press Start 2P, VT323 / FX · CSS 스캔라인 · CRT 비네팅</p>
+    </div>
+  </div>
+  <div class="mt-6 text-center">
+    <div class="font-pixel text-[10px] neon-pink caret">© 19XX SPARK ARCADE — INSERT COIN TO CONTINUE</div>
+    <div class="font-vt text-base text-[var(--ink-dim)] mt-2">— 가상 아케이드 시뮬레이션 · For Learning Purpose Only —</div>
+  </div>
+</footer>
+
+<!-- ============================== MODAL: GAME DETAIL ============================== -->
+<div id="gameModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card neon-border-pink scanlines rounded-md relative">
+    <button id="modalClose" class="absolute top-3 right-3 z-20 btn-arcade" aria-label="닫기">CLOSE ✕</button>
+    <div id="modalContent" class="p-5 sm:p-7 relative z-10"></div>
+  </div>
+</div>
+
+<!-- ============================== MODAL: LOADING ============================== -->
+<div id="loadingModal" class="modal-backdrop" role="dialog" aria-modal="true">
+  <div class="max-w-md w-full neon-border-cyan scanlines rounded-md bg-black/90 p-6 text-center relative">
+    <div class="font-pixel text-[10px] neon-yellow mb-3 blink">▶ NOW LOADING ...</div>
+    <div id="loadingTitle" class="font-pixel text-sm neon-cyan mb-5"></div>
+    <div class="h-3 bg-[#0a0820] rounded-full overflow-hidden border border-cyan-500/30">
+      <div id="loadBar" class="h-full bg-gradient-to-r from-[var(--neon-cyan)] via-[var(--neon-pink)] to-[var(--neon-yellow)] loading-bar"></div>
+    </div>
+    <div id="loadStatus" class="font-vt text-base text-[var(--ink-dim)] mt-3">동전 인식 중 ...</div>
+  </div>
+</div>
+
+<!-- ============================== TOAST ============================== -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] font-pixel text-[10px] neon-yellow bg-black/85 neon-border-yellow rounded-md px-4 py-3 hidden pointer-events-none"></div>
+
+<!-- ============================== SCRIPTS ============================== -->
+<script>
+// ============= Utilities =============
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"'`=\/]/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&#96;","=":"&#61;","/":"&#47;"
+  })[c]);
+}
+function toast(msg, color = "yellow") {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] font-pixel text-[10px] bg-black/85 rounded-md px-4 py-3 pointer-events-none neon-border-${color} neon-${color}`;
+  t.classList.remove("hidden");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add("hidden"), 2400);
+}
+
+// ============= Game data =============
+const GAMES = [
+  {
+    id: "ohm-invaders",
+    title: "옴 인베이더스",
+    en: "OHM INVADERS",
+    genre: "SHOOTER",
+    chipColor: "pink",
+    color: "#ff2bd6",
+    color2: "#00fff7",
+    diff: 2,
+    score: "342,180",
+    plays: "98,412",
+    hotPct: 92,
+    learn: "V = IR — 전압·전류·저항 변수를 폭격해 옴의 법칙 식을 완성한다.",
+    how: "하단 우주선을 좌우로 조작하며 화면 위에서 떨어지는 V/I/R 변수에 정확한 등식이 성립하도록 발사한다. 잘못된 변수를 맞히면 회로가 폭발(미스).",
+    ctrl: ["← →  이동", "SPACE  발사", "Z  특수 — 합성 저항 미사일"],
+    sprite: "ship"
+  },
+  {
+    id: "tetris-ohm",
+    title: "테트리스 옴",
+    en: "TETRIS OHM",
+    genre: "PUZZLE",
+    chipColor: "cyan",
+    color: "#00fff7",
+    color2: "#ffe600",
+    diff: 3,
+    score: "187,650",
+    plays: "76,901",
+    hotPct: 88,
+    learn: "회로 부품(저항·코일·콘덴서)을 끼워 가로 직렬·세로 병렬 회로를 완성하면 폭발.",
+    how: "테트리미노 대신 부품 블록이 떨어진다. 가로 4칸을 모두 부품으로 채우면 직렬 회로 완성 — 라인 제거. 세로 동일색은 병렬 보너스.",
+    ctrl: ["← → ↓  이동", "↑ / X  회전", "SPACE  하드 드롭"],
+    sprite: "block"
+  },
+  {
+    id: "kirchhoff-puzzle",
+    title: "키르히호프 퍼즐",
+    en: "KIRCHHOFF NODES",
+    genre: "PUZZLE",
+    chipColor: "yellow",
+    color: "#ffe600",
+    color2: "#a866ff",
+    diff: 4,
+    score: "98,420",
+    plays: "41,233",
+    hotPct: 71,
+    learn: "노드 전류합 = 0 (KCL) · 폐회로 전압합 = 0 (KVL) — 매칭 퍼즐로 직관화.",
+    how: "노드를 클릭해 들어오는 전류와 나가는 전류 합을 맞춘다. 폐회로 안의 EMF·강하 색깔을 짝지으면 라인 클리어.",
+    ctrl: ["CLICK  노드 선택", "DRAG  전류 경로", "R  보드 회전"],
+    sprite: "node"
+  },
+  {
+    id: "transformer-shooter",
+    title: "변압기 슈팅",
+    en: "TRANSFORMER",
+    genre: "ACTION",
+    chipColor: "pink",
+    color: "#ff2bd6",
+    color2: "#ffe600",
+    diff: 3,
+    score: "256,710",
+    plays: "63,008",
+    hotPct: 80,
+    learn: "권수비 a = N1/N2 = V1/V2 — 1차/2차 코일의 권수를 빠르게 맞춘다.",
+    how: "1차 전압이 표시되면 2차 출력 목표값에 맞는 권수비 카드를 골라 발사. 정확하면 변압기 코어가 빛난다. 시간 내 5문제.",
+    ctrl: ["1~4  권수비 카드", "SPACE  발사", "TAB  도움말"],
+    sprite: "coil"
+  },
+  {
+    id: "rlc-rhythm",
+    title: "RLC 리듬",
+    en: "RLC RHYTHM",
+    genre: "RHYTHM",
+    chipColor: "green",
+    color: "#6dff5b",
+    color2: "#00fff7",
+    diff: 2,
+    score: "415,330",
+    plays: "82,711",
+    hotPct: 95,
+    learn: "공진 주파수 f = 1 / (2π√(LC)) — 임피던스 최소점을 박자로.",
+    how: "L·C 값에 따라 결정되는 공진 주파수가 BPM. 노트가 라인에 닿는 순간 정확히 입력. PERFECT 콤보 시 임피던스 곡선이 빛난다.",
+    ctrl: ["D F J K  레인", "SPACE  공진 — 풀콤보 부스트", "↑↓  볼륨"],
+    sprite: "wave"
+  },
+  {
+    id: "three-phase-strike",
+    title: "3상 카운터 스트라이크",
+    en: "3-PHASE STRIKE",
+    genre: "STRATEGY",
+    chipColor: "purple",
+    color: "#a866ff",
+    color2: "#ff2bd6",
+    diff: 5,
+    score: "73,902",
+    plays: "29,118",
+    hotPct: 64,
+    learn: "Y결선/Δ결선 — 선간전압·상전압·선전류 관계를 결선으로 풀이.",
+    how: "주어진 부하 조건에 맞춰 R·S·T 단자를 Y 또는 Δ로 연결. 잘못 연결하면 모터가 진동(미션 실패). 시간 내 다중 라인 결선.",
+    ctrl: ["1 2 3  R/S/T 단자", "Y / D  결선 모드", "ENTER  통전"],
+    sprite: "delta"
+  },
+  {
+    id: "faraday-jump",
+    title: "패러데이 점프맨",
+    en: "FARADAY JUMP",
+    genre: "PLATFORM",
+    chipColor: "yellow",
+    color: "#ff8a2a",
+    color2: "#ffe600",
+    diff: 2,
+    score: "521,040",
+    plays: "115,209",
+    hotPct: 90,
+    learn: "전자기 유도 — 자속 변화가 클수록 점프력이 강해진다.",
+    how: "캐릭터가 자기장 라인을 지날 때 자속 변화 ΔΦ로 점프 게이지가 충전된다. 강한 자석 위에서 점프해 다음 발판으로.",
+    ctrl: ["← →  이동", "↑ / SPACE  점프(차지)", "X  대시"],
+    sprite: "jumper"
+  },
+  {
+    id: "edison-vs-tesla",
+    title: "에디슨 vs 테슬라",
+    en: "EDISON vs TESLA",
+    genre: "FIGHTING",
+    chipColor: "purple",
+    color: "#a866ff",
+    color2: "#00fff7",
+    diff: 4,
+    score: "612,884",
+    plays: "57,402",
+    hotPct: 97,
+    new: true,
+    learn: "DC vs AC — 직류 잽 / 교류 콤보, 송전 손실 콤보 페널티 등 전기사 양대 거장 격투.",
+    how: "에디슨(DC) 또는 테슬라(AC) 진영 선택. AC는 사인파 콤보로 누적 데미지 → 변압기 스킬로 변환. DC는 안정 데미지 + 배터리 게이지.",
+    ctrl: ["WASD  이동", "J K L  공격", "↓↘→ + K  필살기"],
+    sprite: "fighter"
+  }
+];
+
+// ============= Cabinet SVG mini =============
+// Per-game pixel sprite shown inside the cabinet screen
+function spriteSVG(game) {
+  const c1 = game.color, c2 = game.color2;
+  switch (game.sprite) {
+    case "ship":
+      return `
+        <g shape-rendering="crispEdges">
+          <!-- aliens -->
+          <g fill="${c1}">
+            <rect x="10" y="10" width="4" height="4"/><rect x="14" y="14" width="4" height="4"/><rect x="18" y="10" width="4" height="4"/>
+            <rect x="34" y="10" width="4" height="4"/><rect x="38" y="14" width="4" height="4"/><rect x="42" y="10" width="4" height="4"/>
+            <rect x="58" y="10" width="4" height="4"/><rect x="62" y="14" width="4" height="4"/><rect x="66" y="10" width="4" height="4"/>
+            <rect x="82" y="10" width="4" height="4"/><rect x="86" y="14" width="4" height="4"/><rect x="90" y="10" width="4" height="4"/>
+          </g>
+          <text x="58" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c2}">V=IR</text>
+          <!-- player ship -->
+          <g fill="${c2}">
+            <rect x="50" y="60" width="16" height="4"/>
+            <rect x="46" y="64" width="24" height="4"/>
+            <rect x="54" y="56" width="8" height="4"/>
+          </g>
+          <rect x="56" y="48" width="4" height="6" fill="${c1}"/>
+        </g>`;
+    case "block":
+      return `
+        <g shape-rendering="crispEdges">
+          <rect x="14" y="42" width="12" height="12" fill="${c1}"/>
+          <rect x="26" y="42" width="12" height="12" fill="${c2}"/>
+          <rect x="38" y="42" width="12" height="12" fill="${c1}"/>
+          <rect x="50" y="42" width="12" height="12" fill="${c2}"/>
+          <rect x="62" y="42" width="12" height="12" fill="${c1}"/>
+          <rect x="74" y="42" width="12" height="12" fill="${c2}"/>
+          <rect x="38" y="30" width="12" height="12" fill="${c2}"/>
+          <rect x="50" y="30" width="12" height="12" fill="${c1}"/>
+          <rect x="50" y="18" width="12" height="12" fill="${c1}"/>
+          <text x="58" y="14" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c2}">Ω</text>
+        </g>`;
+    case "node":
+      return `
+        <g shape-rendering="crispEdges">
+          <line x1="20" y1="40" x2="50" y2="40" stroke="${c1}" stroke-width="2"/>
+          <line x1="50" y1="40" x2="80" y2="40" stroke="${c2}" stroke-width="2"/>
+          <line x1="50" y1="40" x2="50" y2="60" stroke="${c1}" stroke-width="2"/>
+          <circle cx="50" cy="40" r="6" fill="#0a0820" stroke="${c2}" stroke-width="2"/>
+          <circle cx="20" cy="40" r="4" fill="${c1}"/>
+          <circle cx="80" cy="40" r="4" fill="${c2}"/>
+          <circle cx="50" cy="60" r="4" fill="${c1}"/>
+          <text x="58" y="20" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c2}">ΣI=0</text>
+        </g>`;
+    case "coil":
+      return `
+        <g shape-rendering="crispEdges">
+          <rect x="16" y="40" width="28" height="14" fill="none" stroke="${c1}" stroke-width="2"/>
+          <rect x="56" y="40" width="28" height="14" fill="none" stroke="${c2}" stroke-width="2"/>
+          <rect x="44" y="34" width="12" height="26" fill="${c2}" opacity="0.5"/>
+          <text x="30" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c1}">N1</text>
+          <text x="70" y="36" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c2}">N2</text>
+          <text x="50" y="18" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c1}">a=N1/N2</text>
+        </g>`;
+    case "wave":
+      return `
+        <g shape-rendering="crispEdges">
+          <path d="M10 40 Q 20 20, 30 40 T 50 40 T 70 40 T 90 40" fill="none" stroke="${c1}" stroke-width="2"/>
+          <rect x="16" y="56" width="6" height="6" fill="${c2}"/>
+          <rect x="32" y="56" width="6" height="6" fill="${c1}"/>
+          <rect x="48" y="56" width="6" height="6" fill="${c2}"/>
+          <rect x="64" y="56" width="6" height="6" fill="${c1}"/>
+          <rect x="80" y="56" width="6" height="6" fill="${c2}"/>
+          <text x="50" y="14" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c2}">RESONANCE</text>
+        </g>`;
+    case "delta":
+      return `
+        <g shape-rendering="crispEdges">
+          <polygon points="50,16 78,58 22,58" fill="none" stroke="${c1}" stroke-width="2"/>
+          <circle cx="50" cy="16" r="4" fill="${c2}"/>
+          <circle cx="22" cy="58" r="4" fill="${c1}"/>
+          <circle cx="78" cy="58" r="4" fill="${c2}"/>
+          <text x="50" y="38" text-anchor="middle" font-family="Press Start 2P" font-size="6" fill="${c2}">3φ</text>
+          <text x="14" y="62" font-family="Press Start 2P" font-size="6" fill="${c1}">R</text>
+          <text x="84" y="62" font-family="Press Start 2P" font-size="6" fill="${c2}">S</text>
+          <text x="48" y="14" font-family="Press Start 2P" font-size="6" fill="${c1}">T</text>
+        </g>`;
+    case "jumper":
+      return `
+        <g shape-rendering="crispEdges">
+          <rect x="50" y="22" width="8" height="6" fill="${c2}"/>
+          <rect x="48" y="28" width="12" height="10" fill="${c1}"/>
+          <rect x="44" y="38" width="20" height="8" fill="${c1}"/>
+          <rect x="46" y="46" width="6" height="8" fill="${c2}"/>
+          <rect x="56" y="46" width="6" height="8" fill="${c2}"/>
+          <rect x="10" y="60" width="88" height="4" fill="${c2}" opacity="0.6"/>
+          <text x="20" y="20" font-family="Press Start 2P" font-size="6" fill="${c1}">Φ↑</text>
+        </g>`;
+    case "fighter":
+      return `
+        <g shape-rendering="crispEdges">
+          <!-- Edison left -->
+          <rect x="14" y="22" width="10" height="8" fill="${c1}"/>
+          <rect x="12" y="30" width="14" height="12" fill="${c2}"/>
+          <rect x="10" y="42" width="6" height="14" fill="${c1}"/>
+          <rect x="22" y="42" width="6" height="14" fill="${c1}"/>
+          <!-- Tesla right -->
+          <rect x="74" y="22" width="10" height="8" fill="${c2}"/>
+          <rect x="72" y="30" width="14" height="12" fill="${c1}"/>
+          <rect x="70" y="42" width="6" height="14" fill="${c2}"/>
+          <rect x="82" y="42" width="6" height="14" fill="${c2}"/>
+          <text x="50" y="38" text-anchor="middle" font-family="Press Start 2P" font-size="7" fill="${c2}">VS</text>
+        </g>`;
+    default:
+      return "";
+  }
+}
+
+// ============= Render cabinets =============
+function diffBars(level) {
+  let html = "";
+  for (let i = 0; i < 5; i++) {
+    html += `<div class="w-3 h-2 rounded-sm ${i < level ? 'diff-on' : 'diff-off'}"></div>`;
+  }
+  return html;
+}
+
+function renderCabinetCard(g) {
+  const colorVar = g.chipColor;
+  const borderCls = g.chipColor === "cyan" ? "neon-border-cyan"
+                   : g.chipColor === "pink" ? "neon-border-pink"
+                   : g.chipColor === "yellow" ? "neon-border-yellow"
+                   : g.chipColor === "purple" ? "neon-border-purple"
+                   : "neon-border-cyan";
+  return `
+    <article class="cabinet ${borderCls} cursor-pointer" data-game="${g.id}" tabindex="0" role="button" aria-label="${escapeHtml(g.title)} 상세 보기">
+      <!-- marquee header -->
+      <div class="px-2 pt-2 pb-1 flex items-center justify-between border-b border-white/5 bg-black/40">
+        <span class="font-pixel text-[8px] neon-${colorVar}">${escapeHtml(g.en)}</span>
+        ${g.new ? '<span class="chip chip-yellow blink">NEW!</span>' : '<span class="chip chip-'+colorVar+'">'+escapeHtml(g.genre)+'</span>'}
+      </div>
+      <!-- screen -->
+      <div class="cab-screen scanlines mx-2 mt-2 border-2 border-white/10 rounded-sm aspect-[4/3] overflow-hidden">
+        <svg viewBox="0 0 100 75" class="w-full h-full">
+          <rect width="100" height="75" fill="#050010"/>
+          ${spriteSVG(g)}
+          <!-- HUD -->
+          <text x="4" y="8" font-family="Press Start 2P" font-size="4" fill="${g.color}">1P</text>
+          <text x="96" y="8" text-anchor="end" font-family="Press Start 2P" font-size="4" fill="${g.color2}">HI ${g.score}</text>
+        </svg>
+      </div>
+      <!-- title -->
+      <div class="px-3 pt-3">
+        <h4 class="font-pixel text-[11px] neon-${colorVar} leading-snug">${escapeHtml(g.title)}</h4>
+        <p class="font-vt text-base text-[var(--ink-main)]/85 mt-1 line-clamp-2">${escapeHtml(g.learn)}</p>
+      </div>
+      <!-- stats -->
+      <div class="px-3 pt-3 grid grid-cols-2 gap-y-1 gap-x-2 font-vt text-base">
+        <div class="text-[var(--ink-dim)]">SCORE</div><div class="text-right neon-${colorVar}">${escapeHtml(g.score)}</div>
+        <div class="text-[var(--ink-dim)]">PLAYS</div><div class="text-right text-white">${escapeHtml(g.plays)}</div>
+        <div class="text-[var(--ink-dim)]">난이도</div>
+        <div class="flex gap-1 justify-end items-center">${diffBars(g.diff)}</div>
+        <div class="text-[var(--ink-dim)]">HOT</div>
+        <div class="text-right text-white">
+          <div class="inline-block w-20 h-2 bg-[#1a1430] rounded-full overflow-hidden align-middle">
+            <div class="h-full bg-gradient-to-r from-[var(--neon-cyan)] via-[var(--neon-pink)] to-[var(--neon-yellow)]" style="width:${g.hotPct}%"></div>
+          </div>
+        </div>
+      </div>
+      <!-- footer btns -->
+      <div class="px-3 py-3 mt-2 flex items-center justify-between border-t border-white/5">
+        <button class="btn-arcade btn-arcade-cyan play-btn" data-game="${g.id}">PLAY ▶</button>
+        <button class="font-pixel text-[8px] neon-yellow hover:text-white transition" data-detail="${g.id}">▶ HOW TO</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderHotCard(g) {
+  const borderCls = g.chipColor === "cyan" ? "neon-border-cyan"
+                   : g.chipColor === "pink" ? "neon-border-pink"
+                   : g.chipColor === "yellow" ? "neon-border-yellow"
+                   : "neon-border-purple";
+  return `
+    <article class="${borderCls} cabinet snap-start shrink-0 w-56 cursor-pointer" data-game="${g.id}" role="button" tabindex="0">
+      <div class="cab-screen scanlines mx-2 mt-2 border-2 border-white/10 rounded-sm aspect-[4/3]">
+        <svg viewBox="0 0 100 75" class="w-full h-full">
+          <rect width="100" height="75" fill="#050010"/>
+          ${spriteSVG(g)}
+        </svg>
+      </div>
+      <div class="p-3">
+        <div class="font-pixel text-[8px] neon-${g.chipColor}">${escapeHtml(g.en)}</div>
+        <h5 class="font-pixel text-[10px] text-white mt-1 leading-snug">${escapeHtml(g.title)}</h5>
+        <div class="flex items-center justify-between mt-2 font-vt text-base">
+          <span class="neon-yellow">HOT ${g.hotPct}%</span>
+          <span class="text-[var(--ink-dim)]">${escapeHtml(g.plays)} plays</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+// ============= Hall of Fame =============
+const SCOREBOARD = [
+  { rank: 1, name: "ZAP_KING",   game: "에디슨 vs 테슬라",  score: 999999, date: "26.05.14" },
+  { rank: 2, name: "OHM_QUEEN",  game: "옴 인베이더스",     score: 928450, date: "26.05.13" },
+  { rank: 3, name: "VOLT_PXL",   game: "RLC 리듬",          score: 871220, date: "26.05.12" },
+  { rank: 4, name: "AMPER_42",   game: "패러데이 점프맨",   score: 815040, date: "26.05.12" },
+  { rank: 5, name: "KIRCHKID",   game: "키르히호프 퍼즐",   score: 769810, date: "26.05.11" },
+  { rank: 6, name: "RES_NOVA",   game: "변압기 슈팅",       score: 712090, date: "26.05.10" },
+  { rank: 7, name: "TESLA_TY",   game: "에디슨 vs 테슬라",  score: 688720, date: "26.05.10" },
+  { rank: 8, name: "3PHI_X",     game: "3상 카운터 스트라이크", score: 612340, date: "26.05.09" },
+  { rank: 9, name: "CAP_MAGIC",  game: "RLC 리듬",          score: 588110, date: "26.05.09" },
+  { rank:10, name: "JOULE_BOY",  game: "테트리스 옴",       score: 540220, date: "26.05.08" },
+];
+
+function rankIcon(r) {
+  if (r === 1) return '<span class="neon-yellow">★</span>';
+  if (r === 2) return '<span class="neon-cyan">★</span>';
+  if (r === 3) return '<span class="neon-pink">★</span>';
+  return '<span class="text-[var(--ink-dim)]">·</span>';
+}
+function renderBoard() {
+  const tbody = $("#boardBody");
+  tbody.innerHTML = SCOREBOARD.map(s => `
+    <tr class="rank-row border-b border-yellow-700/15">
+      <td class="p-2 px-3 font-pixel text-[10px] ${s.rank<=3?'neon-yellow':'text-[var(--ink-dim)]'}">${rankIcon(s.rank)} ${String(s.rank).padStart(2,'0')}</td>
+      <td class="p-2 px-3 font-pixel text-[10px] text-white">${escapeHtml(s.name)}</td>
+      <td class="p-2 px-3 text-white">${escapeHtml(s.game)}</td>
+      <td class="p-2 px-3 hidden sm:table-cell text-[var(--ink-dim)]">${escapeHtml(s.date)}</td>
+      <td class="p-2 px-3 text-right font-pixel text-[10px] ${s.rank<=3?'neon-yellow':'neon-cyan'}">${s.score.toLocaleString()}</td>
+    </tr>
+  `).join("");
+}
+
+// ============= Modal logic =============
+function openGameModal(id) {
+  const g = GAMES.find(x => x.id === id);
+  if (!g) return;
+  const colorVar = g.chipColor;
+  const html = `
+    <div class="flex items-center justify-between flex-wrap gap-2 pr-24">
+      <div>
+        <div class="font-pixel text-[10px] neon-${colorVar}">${escapeHtml(g.en)} · ${escapeHtml(g.genre)}</div>
+        <h3 id="modalTitle" class="font-pixel text-base sm:text-lg neon-pink mt-2">${escapeHtml(g.title)}</h3>
+      </div>
+      <div class="flex items-center gap-1">${diffBars(g.diff)}</div>
+    </div>
+    <div class="cab-screen scanlines mt-4 border-2 border-white/10 rounded-sm aspect-[16/9] overflow-hidden">
+      <svg viewBox="0 0 200 112" class="w-full h-full">
+        <rect width="200" height="112" fill="#050010"/>
+        <g transform="translate(50,18) scale(1.2)">
+          ${spriteSVG(g)}
+        </g>
+        <text x="6" y="10" font-family="Press Start 2P" font-size="5" fill="${g.color}">1P SCORE</text>
+        <text x="6" y="18" font-family="Press Start 2P" font-size="5" fill="${g.color2}">${escapeHtml(g.score)}</text>
+        <text x="194" y="10" text-anchor="end" font-family="Press Start 2P" font-size="5" fill="${g.color}">CREDIT 03</text>
+        <text x="100" y="106" text-anchor="middle" font-family="VT323" font-size="9" fill="#9090b4">— PRESS START —</text>
+      </svg>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+      <div class="neon-border-dim rounded-md p-3 bg-black/40">
+        <div class="font-pixel text-[8px] neon-cyan">SCORE</div>
+        <div class="font-pixel text-sm neon-cyan mt-2">${escapeHtml(g.score)}</div>
+      </div>
+      <div class="neon-border-dim rounded-md p-3 bg-black/40">
+        <div class="font-pixel text-[8px] neon-pink">PLAYS</div>
+        <div class="font-pixel text-sm neon-pink mt-2">${escapeHtml(g.plays)}</div>
+      </div>
+      <div class="neon-border-dim rounded-md p-3 bg-black/40">
+        <div class="font-pixel text-[8px] neon-yellow">HOT</div>
+        <div class="font-pixel text-sm neon-yellow mt-2">${g.hotPct}%</div>
+      </div>
+    </div>
+    <div class="mt-5">
+      <div class="font-pixel text-[10px] neon-yellow">▶ GAMEPLAY</div>
+      <p class="font-vt text-base text-[var(--ink-main)]/90 mt-2 leading-relaxed">${escapeHtml(g.how)}</p>
+    </div>
+    <div class="mt-5">
+      <div class="font-pixel text-[10px] neon-cyan">▶ LEARN</div>
+      <p class="font-vt text-base text-[var(--ink-main)]/90 mt-2 leading-relaxed">${escapeHtml(g.learn)}</p>
+    </div>
+    <div class="mt-5">
+      <div class="font-pixel text-[10px] neon-pink">▶ CONTROLS</div>
+      <ul class="font-vt text-base text-[var(--ink-main)]/90 mt-2 space-y-1">
+        ${g.ctrl.map(c => `<li>· ${escapeHtml(c)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="mt-6 flex flex-wrap gap-2 justify-end">
+      <button class="btn-arcade btn-arcade-yellow" data-play-modal="${g.id}">INSERT COIN ▶ PLAY</button>
+    </div>
+  `;
+  $("#modalContent").innerHTML = html;
+  $("#gameModal").classList.add("active");
+  document.body.style.overflow = "hidden";
+}
+function closeModal() {
+  $("#gameModal").classList.remove("active");
+  document.body.style.overflow = "";
+}
+
+// Loading "play" sim
+function simulatePlay(id) {
+  const g = GAMES.find(x => x.id === id);
+  if (!g) return;
+  // need coins
+  if (coins <= 0) {
+    toast("CREDIT 부족 — INSERT COIN 버튼으로 충전", "pink");
+    return;
+  }
+  // consume one
+  setCoins(coins - 1);
+  $("#loadingTitle").textContent = `▶ ${g.title}`;
+  $("#loadStatus").textContent = "동전 인식 중 ...";
+  $("#loadBar").style.animation = "none";
+  // restart animation
+  void $("#loadBar").offsetWidth;
+  $("#loadBar").style.animation = "";
+  $("#loadingModal").classList.add("active");
+
+  setTimeout(() => $("#loadStatus").textContent = "스프라이트 로딩 ...", 600);
+  setTimeout(() => $("#loadStatus").textContent = "사운드 칩 워밍업 ...", 1200);
+  setTimeout(() => $("#loadStatus").textContent = "▶ READY — 곧 출시!", 1900);
+  setTimeout(() => {
+    $("#loadingModal").classList.remove("active");
+    toast("COMING SOON — 정식 출시까지 조금만!", "cyan");
+  }, 2400);
+}
+
+// ============= Coin counter =============
+let coins = 3;
+function setCoins(n) {
+  coins = Math.max(0, Math.min(99, n));
+  $("#coinCount").textContent = String(coins).padStart(2,"0");
+}
+
+// ============= Board toggle =============
+let boardOpen = true;
+function toggleBoard() {
+  boardOpen = !boardOpen;
+  const wrap = $("#boardWrap");
+  if (boardOpen) {
+    wrap.style.maxHeight = "";
+    wrap.style.opacity = "1";
+  } else {
+    wrap.style.maxHeight = "60px";
+    wrap.style.opacity = "0.55";
+  }
+  wrap.style.transition = "max-height 0.3s ease, opacity 0.3s ease";
+  wrap.style.overflow = "hidden";
+}
+
+// ============= Init =============
+document.addEventListener("DOMContentLoaded", () => {
+  $("#cabinetGrid").innerHTML = GAMES.map(renderCabinetCard).join("");
+  $("#hotCarousel").innerHTML = [...GAMES].sort((a,b)=>b.hotPct - a.hotPct).map(renderHotCard).join("");
+  renderBoard();
+
+  // Cabinet click → detail; play btn → simulate
+  $("#cabinetGrid").addEventListener("click", e => {
+    const playBtn = e.target.closest("[data-game].play-btn, .play-btn");
+    if (playBtn && playBtn.classList.contains("play-btn")) {
+      e.stopPropagation();
+      simulatePlay(playBtn.dataset.game);
+      return;
+    }
+    const detail = e.target.closest("[data-detail]");
+    if (detail) {
+      e.stopPropagation();
+      openGameModal(detail.dataset.detail);
+      return;
+    }
+    const card = e.target.closest("[data-game]");
+    if (card) openGameModal(card.dataset.game);
+  });
+  $("#cabinetGrid").addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-game]")) {
+      e.preventDefault();
+      openGameModal(e.target.dataset.game);
+    }
+  });
+
+  $("#hotCarousel").addEventListener("click", e => {
+    const card = e.target.closest("[data-game]");
+    if (card) openGameModal(card.dataset.game);
+  });
+  $("#hotCarousel").addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-game]")) {
+      e.preventDefault();
+      openGameModal(e.target.dataset.game);
+    }
+  });
+
+  // Modal close
+  $("#modalClose").addEventListener("click", closeModal);
+  $("#gameModal").addEventListener("click", e => {
+    if (e.target.id === "gameModal") closeModal();
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      closeModal();
+      $("#loadingModal").classList.remove("active");
+    }
+  });
+  // play from modal
+  $("#modalContent").addEventListener("click", e => {
+    const b = e.target.closest("[data-play-modal]");
+    if (b) {
+      closeModal();
+      setTimeout(() => simulatePlay(b.dataset.playModal), 250);
+    }
+  });
+
+  // Coin insert
+  $("#insertCoinBtn").addEventListener("click", () => {
+    setCoins(coins + 1);
+    toast(`+1 CREDIT — CURRENT ${String(coins).padStart(2,"0")}`, "yellow");
+  });
+
+  // Board toggle (both buttons)
+  $("#toggleBoardBtn").addEventListener("click", () => {
+    document.getElementById("hallOfFame").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("#boardToggle2").addEventListener("click", toggleBoard);
+
+  // Stats live tick (cosmetic only)
+  let p = 1247;
+  setInterval(() => {
+    p += Math.floor(Math.random() * 7) - 3;
+    if (p < 1100) p = 1100;
+    if (p > 1400) p = 1400;
+    const el = $("#statPlayers");
+    if (el) el.textContent = p.toLocaleString();
+  }, 2200);
+});
+</script>
+</body>
+</html>

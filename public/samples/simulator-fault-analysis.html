@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단락 사고 분석 시뮬레이터 (Fault Analysis)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 63, 94, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(251, 146, 60, 0.12), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 18% 28%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 64% 72%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 84% 22%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 32% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 72% 42%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 46% 56%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 92% 88%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 14% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 620px 620px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,63,94,0.50), rgba(251,146,60,0.40), rgba(168,139,250,0.40));
+    box-shadow: 0 30px 100px -20px rgba(244, 63, 94, 0.32), 0 0 40px rgba(251, 146, 60, 0.14);
+}
+canvas#mainCanvas {
+    display: block;
+    width: 100%;
+    height: 440px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#phasorCanvas {
+    display: block;
+    width: 100%;
+    height: 380px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244, 63, 94, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #f43f5e; box-shadow: 0 0 12px #f43f5e;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #f43f5e; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(251,146,60,0.4), rgba(168,139,250,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #fdba74, #c4b5fd);
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-zf { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fecaca; }
+.chip-zs { background: linear-gradient(135deg, rgba(251,146,60,0.20), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.5); color: #fed7aa; }
+.chip-v  { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-mode { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.4);
+    background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(15,23,42,0.85));
+}
+.live-pill.warn {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, rgba(251,191,36,0.14), rgba(15,23,42,0.85));
+}
+.live-pill.danger {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 26px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.16), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fda4af, #fdba74, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(244, 63, 94, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(244,63,94,0.16), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 63, 94, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fecaca; }
+.fault-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(244, 63, 94, 0.28);
+    color: #fecaca;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.fault-btn.active {
+    background: linear-gradient(135deg, rgba(244,63,94,0.34), rgba(236,72,153,0.22));
+    border-color: rgba(244, 63, 94, 0.85);
+    color: #ffe4e6;
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.45);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.3);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(139,92,246,0.25));
+    border-color: rgba(168, 139, 250, 0.85);
+    color: #ede9fe;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.45);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(251,146,60,0.18));
+    border: 1px solid rgba(244,63,94,0.45);
+    color: #fecaca;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(244,63,94,0.32), rgba(251,146,60,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(244,63,94,0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.status-ok { background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34,197,94,0.5); color: #86efac; }
+.status-warn { background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251,191,36,0.5); color: #fde68a; }
+.status-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-rose-300">
+            <span class="pulse-dot"></span>
+            FAULT ANALYSIS · SYMMETRICAL & UNSYMMETRICAL · 3φ / 1LG / 2LL / 2LG
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-rose-200 via-orange-200 to-violet-200 bg-clip-text text-transparent">
+            ⚡ 단락 사고 분석 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            <span class="text-rose-300 font-semibold">3상 단락(대칭)</span> 은 \(I_f = V/Z_s\) 로 간단하지만,
+            <span class="text-orange-300 font-semibold">1선 지락 / 2선 단락 / 2선 지락(비대칭)</span> 은
+            <span class="text-violet-300 font-semibold">대칭 분석(정상·역상·영상)</span> 으로 분해해 풀이합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-if">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">사고 전류 I<sub>f</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="ifDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">A</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-i0">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">영상 전류 I<sub>0</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="i0Disp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">A</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-top">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">보호 동작 시간 t<sub>op</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="topDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-type">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">사고 종류</p>
+            <p class="mt-1 text-lg font-bold" id="typeDisp"><span class="text-rose-300">3φ 대칭</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚡ FAULT TRIP — 보호 장치 동작 (CB OPEN) · 사고 회로 차단 완료
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+
+            <!-- 메인 캔버스 — 3상 송전계통 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="mainCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">발전기 → 송전선(Z<sub>s</sub>) → 사고점(F) → 부하 · 사고점 표시 ★</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#ef4444;color:#ef4444"></span>A상</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#22c55e;color:#22c55e"></span>B상</span>
+                        <span class="text-sky-300"><span class="legend-dot" style="background:#3b82f6;color:#3b82f6"></span>C상</span>
+                        <span class="text-pink-300"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>대지(G)</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="pre">사고 전 (정상 운전)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="bolt">완전 단락 (Z_f=0)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="arc">아크 사고 (Z_f=2Ω)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                </div>
+            </div>
+
+            <!-- 페이저 캔버스 — 대칭 분해 (정상·역상·영상) -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="phasorCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">대칭 분해 페이저 — I<sub>1</sub>(정상) · I<sub>2</sub>(역상) · I<sub>0</sub>(영상)</span>
+                    <span id="symStatusBadge" class="status-badge status-ok">대칭</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="phasorCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-violet-200 bg-clip-text text-transparent">사고 전류 공식 (대칭 분석 / Sequence Networks)</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-rose-200">3상 단락 (대칭)</p>
+                        <div class="math-container mt-2">\(I_f = \dfrac{V}{Z_s + Z_f}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">정상상 회로만 사용 · I<sub>0</sub>=I<sub>2</sub>=0</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-orange-200">1선 지락 (1LG)</p>
+                        <div class="math-container mt-2">\(I_f = \dfrac{3V}{Z_1 + Z_2 + Z_0 + 3Z_f}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">I<sub>1</sub>=I<sub>2</sub>=I<sub>0</sub> · 3개 시퀀스 직렬</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">2선 단락 (LL)</p>
+                        <div class="math-container mt-2">\(I_f = \dfrac{\sqrt{3}\,V}{Z_1 + Z_2 + Z_f}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">I<sub>0</sub>=0 · 정상상·역상상만 (병렬)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-violet-200">2선 지락 (2LG)</p>
+                        <div class="math-container mt-2">\(I_f \approx \dfrac{V}{Z_1 + \dfrac{Z_2 (Z_0+3Z_f)}{Z_2+Z_0+3Z_f}}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">정상상에 역상·영상이 병렬로 연결</p>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <p class="text-[11px] text-slate-400">
+                    <strong>대칭 좌표법(Fortescue):</strong>
+                    임의의 3상 비대칭 전류 (I<sub>a</sub>, I<sub>b</sub>, I<sub>c</sub>) 는
+                    정상상(positive · 시계 ABC) · 역상상(negative · 역회전 ACB) · 영상상(zero · 동위상) 의 합으로 분해할 수 있다.
+                    각 시퀀스 회로망(Z<sub>1</sub>, Z<sub>2</sub>, Z<sub>0</sub>)을 사고 종류에 따라 직·병렬 연결해 풀이.
+                </p>
+            </div>
+
+            <!-- 사고 종류별 특성 -->
+            <div class="glass rounded-2xl p-5" id="featureCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🛡</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-violet-200 bg-clip-text text-transparent">사고 유형별 보호 시스템 (KEC / IEC)</span>
+                </h3>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">3상 단락</span> · 가장 큰 단락 전류 → 차단기 IC(차단용량) 결정 기준 (50/51)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-orange-300">1선 지락</span> · 가장 빈번 (~80%) · ZCT + GR(64/51N) · 누전 차단</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">2선 단락</span> · 사고 전류 ≈ 3φ 단락의 √3/2 ≈ 87% · 과전류 보호</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">2선 지락</span> · 비대칭 → 역상상 전류 큼 · 발전기 손상 위험</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-sky-300">동작 시간</span> · IDMT 곡선 \(t = \dfrac{0.14}{(I/I_p)^{0.02}-1}\) (IEC SI)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">선택 차단</span> · 사고점 가까운 차단기 우선 동작 · 상위 백업</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-rose-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">사고 종류</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-fault="3ph">3상 단락</button>
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-fault="1lg">1선 지락</button>
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-fault="ll">2선 단락</button>
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-fault="2lg">2선 지락</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">대칭(3ph) · 비대칭(1LG/LL/2LG)</p>
+            </div>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">시뮬 모드</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-mode="pre">사고 전</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="fault">사고 발생</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">사고 발생 시 전류 급증 + CB 동작</p>
+            </div>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>상전압 V</span><span id="vDisp" class="font-mono text-base">6350</span></label>
+                <input type="range" id="v" min="220" max="13200" step="10" value="6350" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V (상-중성 · 22.9kV → 6.35kV)</p>
+            </div>
+
+            <div class="chip-zs chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시스템 임피던스 Z<sub>s</sub></span><span id="zsDisp" class="font-mono text-base">2.0</span></label>
+                <input type="range" id="zs" min="0.1" max="20" step="0.1" value="2.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 정상상 등가 (Z<sub>1</sub>=Z<sub>2</sub>)</p>
+            </div>
+
+            <div class="chip-zs chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>영상 임피던스 Z<sub>0</sub></span><span id="z0Disp" class="font-mono text-base">6.0</span></label>
+                <input type="range" id="z0" min="0.1" max="40" step="0.1" value="6.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 일반적으로 Z<sub>0</sub> ≈ 3·Z<sub>1</sub></p>
+            </div>
+
+            <div class="chip-zf chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>사고 임피던스 Z<sub>f</sub></span><span id="zfDisp" class="font-mono text-base">0.0</span></label>
+                <input type="range" id="zf" min="0" max="20" step="0.1" value="0.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 0=완전단락(bolt) · &gt;0=아크</p>
+            </div>
+
+            <div class="chip-zs chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>보호 정정 I<sub>p</sub></span><span id="ipDisp" class="font-mono text-base">800</span></label>
+                <input type="range" id="ip" min="100" max="3000" step="50" value="800" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A · 50/51 정정값(픽업)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-rose-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">대칭 사고(3φ): 한 회로(<span class="text-rose-300 font-bold">Z<sub>1</sub></span>)로 풀이</p>
+                <p class="feature-row rounded-md p-2">비대칭 사고: <span class="text-orange-300 font-bold">Z<sub>1</sub>+Z<sub>2</sub>+Z<sub>0</sub></span> 시퀀스망 조합</p>
+                <p class="feature-row rounded-md p-2">1LG가 <span class="text-amber-300 font-bold">가장 빈번</span> · 3φ가 <span class="text-rose-300 font-bold">가장 큰 전류</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const mainCv = $('mainCanvas');
+const mctx = mainCv.getContext('2d');
+const phCv = $('phasorCanvas');
+const pctx = phCv.getContext('2d');
+
+const state = {
+    V: 6350,
+    Zs: 2.0,
+    Z0: 6.0,
+    Zf: 0.0,
+    Ip: 800,
+    fault: '3ph',     // '3ph' | '1lg' | 'll' | '2lg'
+    mode: 'pre',      // 'pre' | 'fault'
+    // 계산값
+    If: 0,            // 사고 전류 크기 (A)
+    I0: 0,            // 영상 전류
+    I1: 0,            // 정상 전류
+    I2: 0,            // 역상 전류
+    Ia: 0, Ib: 0, Ic: 0,    // 상별 사고 전류 크기
+    top: Infinity,    // 보호 동작 시간 (s)
+    // 시뮬용
+    t: 0,
+    omega: 0,
+    tripped: false,
+    tripStart: 0,
+    cbAnim: 0,        // 0 → 1 (CB open animation)
+    flashAt: -10,     // 사고 발생 순간
+};
+
+function resize() {
+    mainCv.width = mainCv.parentElement.clientWidth - 2;
+    mainCv.height = 440;
+    phCv.width = phCv.parentElement.clientWidth - 2;
+    phCv.height = 380;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 사고 전류 계산 ============
+// V = 상전압, Zs = Z1 = Z2, Z0 = 영상 임피던스, Zf = 사고 임피던스
+function computeFault() {
+    const V = state.V, Z1 = state.Zs, Z2 = state.Zs, Z0 = state.Z0, Zf = state.Zf;
+    let If = 0, I0 = 0, I1 = 0, I2 = 0;
+    let Ia = 0, Ib = 0, Ic = 0;
+
+    if (state.fault === '3ph') {
+        // 3상 대칭 단락
+        const Zsum = Z1 + Zf;
+        If = V / Math.max(Zsum, 1e-6);
+        I1 = If; I2 = 0; I0 = 0;
+        Ia = If; Ib = If; Ic = If;
+    } else if (state.fault === '1lg') {
+        // 1선 지락 (A상 지락)
+        // I_a1 = I_a2 = I_a0 = V / (Z1 + Z2 + Z0 + 3Zf)
+        const Zsum = Z1 + Z2 + Z0 + 3 * Zf;
+        const Iseq = V / Math.max(Zsum, 1e-6);
+        I1 = Iseq; I2 = Iseq; I0 = Iseq;
+        If = 3 * Iseq;       // Ia = 3 I_a1 = If (A상 지락 전류)
+        Ia = If;
+        Ib = 0; Ic = 0;
+    } else if (state.fault === 'll') {
+        // 2선 단락 (B-C 단락)
+        // I_a1 = V / (Z1 + Z2 + Zf), I_a2 = -I_a1, I_a0 = 0
+        const Zsum = Z1 + Z2 + Zf;
+        I1 = V / Math.max(Zsum, 1e-6);
+        I2 = I1; I0 = 0;
+        // Ib = -Ic = -j*sqrt(3) * I_a1, |Ib| = sqrt(3) * I_a1
+        If = Math.sqrt(3) * I1;
+        Ia = 0;
+        Ib = If; Ic = If;
+    } else if (state.fault === '2lg') {
+        // 2선 지락 (B-C 지락)
+        // Z2 와 (Z0 + 3Zf) 가 병렬 + Z1 직렬
+        const Zpar_denom = Z2 + Z0 + 3*Zf;
+        const Zpar = Zpar_denom > 1e-6 ? (Z2 * (Z0 + 3*Zf)) / Zpar_denom : 0;
+        const Zeq = Z1 + Zpar;
+        I1 = V / Math.max(Zeq, 1e-6);
+        // I_a2 = -I_a1 * (Z0+3Zf)/(Z2+Z0+3Zf)
+        const splitDen = Z2 + Z0 + 3*Zf;
+        I2 = splitDen > 1e-6 ? I1 * (Z0 + 3*Zf) / splitDen : 0;
+        I0 = splitDen > 1e-6 ? I1 * Z2 / splitDen : 0;
+        // Ib, Ic 페이저 합 — 크기는 근사적으로
+        // 합 사고 전류 (지락점으로 흘러나가는 영상 전류 3I_0)
+        If = 3 * I0;
+        // 상별 (대략): Ib ≈ Ic ≈ ~ 비대칭
+        Ia = 0;
+        // |I_b| 정확식: I_b = I_a0 + a^2 I_a1 + a I_a2; 근사 크기
+        const a = -2*Math.PI/3;
+        const Ib_re = I0 + I1 * Math.cos(2*a) + I2 * Math.cos(a);
+        const Ib_im = 0 + I1 * Math.sin(2*a) + I2 * Math.sin(a);
+        const Ic_re = I0 + I1 * Math.cos(a) + I2 * Math.cos(2*a);
+        const Ic_im = 0 + I1 * Math.sin(a) + I2 * Math.sin(2*a);
+        Ib = Math.hypot(Ib_re, Ib_im);
+        Ic = Math.hypot(Ic_re, Ic_im);
+        // 메인 사고 전류는 max(Ib, Ic) 또는 3I0 중 큰 값 표시
+        If = Math.max(Ib, Ic, 3 * I0);
+    }
+
+    state.If = If;
+    state.I0 = I0;
+    state.I1 = I1;
+    state.I2 = I2;
+    state.Ia = Ia; state.Ib = Ib; state.Ic = Ic;
+
+    // 보호 동작 시간 (IEC SI IDMT)
+    // t = 0.14 / ((I/Ip)^0.02 - 1)
+    const Mratio = If / Math.max(state.Ip, 1);
+    if (Mratio <= 1.0) {
+        state.top = Infinity;
+    } else {
+        const denom = Math.pow(Mratio, 0.02) - 1;
+        state.top = denom > 1e-6 ? Math.max(0.04, 0.14 / denom) : 0.04;
+        if (state.top > 9999) state.top = 9999;
+    }
+}
+
+// ============ 사고 모드 진행 ============
+function updateSim() {
+    const dt = 1/60;
+    state.t += dt;
+
+    if (state.mode === 'fault') {
+        // 트립 체크
+        if (!state.tripped && isFinite(state.top) && (state.t - state.flashAt) >= state.top) {
+            state.tripped = true;
+            state.tripStart = state.t;
+        }
+        if (state.tripped) {
+            state.cbAnim = Math.min(1, state.cbAnim + dt * 4);
+        } else {
+            state.cbAnim = 0;
+        }
+    } else {
+        // 사고 전 모드
+        state.tripped = false;
+        state.cbAnim = 0;
+    }
+    state.omega += 0.028;
+}
+
+// ============ 메인 캔버스 — 송전 계통 ============
+function drawMain() {
+    const W = mainCv.width, H = mainCv.height;
+    mctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = mctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    mctx.fillStyle = bg;
+    mctx.fillRect(0, 0, W, H);
+
+    // 격자
+    mctx.save();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke(); }
+    mctx.restore();
+
+    // 헤더 라벨
+    mctx.save();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(254, 202, 202, 0.65)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillText('▮ 3φ TRANSMISSION · GEN → CB(50/51) → Zs → FAULT(★) → LOAD', 12, 10);
+    mctx.restore();
+
+    // 레이아웃
+    const genX = 70;
+    const cbX = W * 0.26;
+    const faultX = W * 0.60;
+    const loadX = W - 80;
+    const rows = [
+        { name: 'A', color: '#ef4444', light: '#fca5a5', y: 100, I: state.Ia },
+        { name: 'B', color: '#22c55e', light: '#86efac', y: 165, I: state.Ib },
+        { name: 'C', color: '#3b82f6', light: '#93c5fd', y: 230, I: state.Ic },
+    ];
+    const groundY = 330;
+
+    // 발전기
+    mctx.save();
+    mctx.shadowBlur = 16;
+    mctx.shadowColor = 'rgba(125, 211, 252, 0.55)';
+    const g = mctx.createLinearGradient(genX - 28, 80, genX + 28, 260);
+    g.addColorStop(0, '#0c4a6e');
+    g.addColorStop(0.5, '#0369a1');
+    g.addColorStop(1, '#082f49');
+    mctx.fillStyle = g;
+    roundRect(mctx, genX - 28, 80, 56, 180, 12);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.restore();
+
+    mctx.save();
+    mctx.font = 'bold 12px ui-monospace, monospace';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillStyle = '#bae6fd';
+    mctx.fillText('GEN', genX, 165);
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillText('Y', genX, 185);
+    mctx.fillText(`${(state.V/1000).toFixed(2)} kV`, genX, 245);
+    mctx.restore();
+
+    // 발전기 중성점 (영상상 경로 — 1LG/2LG에서 사용)
+    mctx.save();
+    mctx.strokeStyle = 'rgba(244, 114, 182, 0.45)';
+    mctx.lineWidth = 1.4;
+    mctx.setLineDash([4, 3]);
+    mctx.beginPath();
+    mctx.moveTo(genX, 260);
+    mctx.lineTo(genX, groundY);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    // 접지 심볼
+    mctx.strokeStyle = 'rgba(244, 114, 182, 0.6)';
+    for (let k = 0; k < 3; k++) {
+        const len = 14 - k * 4;
+        mctx.beginPath();
+        mctx.moveTo(genX - len, groundY + k * 4);
+        mctx.lineTo(genX + len, groundY + k * 4);
+        mctx.stroke();
+    }
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = '#f9a8d4';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'top';
+    mctx.fillText('N (Y)', genX, groundY + 16);
+    mctx.restore();
+
+    // 차단기 (CB) — 트립 시 OPEN 표시
+    const cbOpen = state.tripped && state.cbAnim > 0.3;
+    rows.forEach(p => {
+        // 발전기 → CB → Zs(송전선) → 사고점 → 부하 — 라인
+        const lineAlpha = cbOpen ? 0.18 : (state.mode === 'fault' ? 1.0 : 0.85);
+        mctx.save();
+        mctx.shadowBlur = state.mode === 'fault' && !cbOpen ? 14 : 6;
+        mctx.shadowColor = p.color;
+        mctx.strokeStyle = `rgba(${p.color === '#ef4444' ? '252,165,165' : p.color === '#22c55e' ? '134,239,172' : '147,197,253'}, ${lineAlpha})`;
+        mctx.lineWidth = state.mode === 'fault' && !cbOpen ? 3 : 2;
+        mctx.lineCap = 'round';
+        mctx.beginPath();
+        mctx.moveTo(genX + 28, p.y);
+        mctx.lineTo(cbX - 18, p.y);
+        mctx.stroke();
+
+        // CB 이후
+        mctx.beginPath();
+        mctx.moveTo(cbX + 18, p.y);
+        mctx.lineTo(loadX - 28, p.y);
+        mctx.stroke();
+        mctx.restore();
+
+        // 단자 (발전기측)
+        mctx.save();
+        mctx.shadowBlur = 10;
+        mctx.shadowColor = p.color;
+        mctx.fillStyle = p.color;
+        mctx.beginPath();
+        mctx.arc(genX + 28, p.y, 4, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.restore();
+        mctx.save();
+        mctx.font = 'bold 10px ui-monospace, monospace';
+        mctx.fillStyle = '#fff';
+        mctx.textAlign = 'left'; mctx.textBaseline = 'middle';
+        mctx.fillText(p.name, genX + 36, p.y - 10);
+        mctx.restore();
+
+        // CB 박스 (각 상)
+        const cbY = p.y;
+        mctx.save();
+        mctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        roundRect(mctx, cbX - 18, cbY - 14, 36, 28, 5);
+        mctx.fill();
+        mctx.strokeStyle = cbOpen ? 'rgba(244,63,94,0.85)' : 'rgba(110, 231, 183, 0.65)';
+        mctx.lineWidth = 1.4;
+        mctx.stroke();
+        // 접점
+        mctx.fillStyle = 'rgba(229, 231, 235, 0.9)';
+        mctx.beginPath(); mctx.arc(cbX - 12, cbY, 2.5, 0, Math.PI * 2); mctx.fill();
+        mctx.beginPath(); mctx.arc(cbX + 12, cbY, 2.5, 0, Math.PI * 2); mctx.fill();
+        mctx.strokeStyle = cbOpen ? '#f43f5e' : '#6ee7b7';
+        mctx.lineWidth = 2.2;
+        mctx.lineCap = 'round';
+        mctx.shadowBlur = cbOpen ? 12 : 4;
+        mctx.shadowColor = cbOpen ? 'rgba(244,63,94,0.8)' : 'rgba(110,231,183,0.5)';
+        mctx.beginPath();
+        if (cbOpen) {
+            mctx.moveTo(cbX - 12, cbY);
+            mctx.lineTo(cbX + 8, cbY - 10);
+        } else {
+            mctx.moveTo(cbX - 12, cbY); mctx.lineTo(cbX + 12, cbY);
+        }
+        mctx.stroke();
+        mctx.restore();
+
+        // Zs (송전선 임피던스) — 지그재그
+        const zsx1 = cbX + 26, zsx2 = faultX - 30;
+        drawCoil(mctx, zsx1, p.y, zsx2, p.y, p.color, p.light, 8);
+
+        // 부하 (저항) — 사각 박스
+        mctx.save();
+        const lx = loadX - 28, ly = p.y - 10;
+        mctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(mctx, lx, ly, 30, 20, 4);
+        mctx.fill();
+        mctx.strokeStyle = p.light;
+        mctx.lineWidth = 1.2;
+        mctx.stroke();
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = p.light;
+        mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+        mctx.fillText('LOAD', lx + 15, p.y);
+        mctx.restore();
+
+        // 전류 라벨 (라인 위)
+        mctx.save();
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = p.light;
+        mctx.textAlign = 'left'; mctx.textBaseline = 'bottom';
+        const Ish = state.mode === 'fault' && !cbOpen ? p.I : (state.V / 50); // 정상 운전 시 가정
+        const lblTxt = `I_${p.name}=${formatA(Ish)}`;
+        mctx.fillText(lblTxt, cbX + 28, p.y - 6);
+        mctx.restore();
+
+        // 전류 흐름 점
+        if (!cbOpen) {
+            const numDots = 5;
+            const phaseOff = state.omega - (p.name === 'A' ? 0 : p.name === 'B' ? 2*Math.PI/3 : 4*Math.PI/3);
+            for (let d = 0; d < numDots; d++) {
+                const flow = ((phaseOff / (2*Math.PI)) + d / numDots) % 1;
+                const dotX = (genX + 30) + flow * (loadX - genX - 60);
+                mctx.save();
+                mctx.shadowBlur = state.mode === 'fault' ? 14 : 10;
+                mctx.shadowColor = p.color;
+                mctx.fillStyle = p.color;
+                const alpha = Math.min(1, Ish / 5000);
+                mctx.globalAlpha = state.mode === 'fault' ? (0.55 + alpha * 0.45) : 0.45;
+                mctx.beginPath();
+                mctx.arc(dotX, p.y, state.mode === 'fault' ? 3.5 : 2.6, 0, Math.PI * 2);
+                mctx.fill();
+                mctx.restore();
+            }
+        }
+    });
+
+    // CB 본체 라벨
+    mctx.save();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillStyle = cbOpen ? '#fda4af' : '#6ee7b7';
+    mctx.fillText('CB · 50/51', cbX, 70);
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = cbOpen ? '#f43f5e' : '#34d399';
+    mctx.fillText(cbOpen ? 'OPEN ⚡' : 'CLOSE', cbX, 270);
+    mctx.restore();
+
+    // ★ 사고점 (FAULT POINT) — 사고 모드일 때만 강조
+    if (state.mode === 'fault') {
+        drawFaultPoint(faultX, rows, groundY);
+    }
+
+    // 부하 라벨
+    mctx.save();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(196, 181, 253, 0.7)';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText('LOAD', loadX - 12, 70);
+    mctx.fillText('(Y)', loadX - 12, 84);
+    mctx.restore();
+
+    // 부하측 중성점
+    mctx.save();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    mctx.lineWidth = 1.2;
+    mctx.beginPath();
+    mctx.moveTo(loadX - 13, 110);
+    mctx.lineTo(loadX - 13, 230);
+    mctx.stroke();
+    mctx.restore();
+
+    // 하단 패널 — Zs / Zf / 모드 표시
+    drawInfoPanel(W, H);
+}
+
+// 사고점 시각화
+function drawFaultPoint(faultX, rows, groundY) {
+    const ya = rows[0].y, yb = rows[1].y, yc = rows[2].y;
+
+    // 사고 종류별 연결선
+    mctx.save();
+    const flashBoost = state.tripped ? 0 : (1 + 0.4 * Math.sin(state.t * 30));
+    mctx.shadowBlur = 18 * flashBoost;
+    mctx.shadowColor = '#f43f5e';
+
+    if (state.fault === '3ph') {
+        // A-B-C 짧은 연결 (3상 단락)
+        mctx.strokeStyle = '#fb7185';
+        mctx.lineWidth = 2.4;
+        mctx.lineCap = 'round';
+        mctx.beginPath();
+        mctx.moveTo(faultX, ya);
+        mctx.lineTo(faultX, yc);
+        mctx.stroke();
+        // 사고 임피던스
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = '#fb7185';
+        mctx.textAlign = 'left'; mctx.textBaseline = 'middle';
+        mctx.fillText(`Zf=${state.Zf.toFixed(1)}Ω`, faultX + 12, (ya + yc) / 2);
+    } else if (state.fault === '1lg') {
+        // A상 → 대지
+        mctx.strokeStyle = '#fb7185';
+        mctx.lineWidth = 2.4;
+        mctx.lineCap = 'round';
+        mctx.beginPath();
+        mctx.moveTo(faultX, ya);
+        mctx.lineTo(faultX, groundY);
+        mctx.stroke();
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = '#fb7185';
+        mctx.textAlign = 'left'; mctx.textBaseline = 'middle';
+        mctx.fillText(`Zf=${state.Zf.toFixed(1)}Ω`, faultX + 12, (ya + groundY) / 2 - 10);
+        // 접지 심볼
+        mctx.strokeStyle = 'rgba(244, 114, 182, 0.8)';
+        for (let k = 0; k < 3; k++) {
+            const len = 14 - k * 4;
+            mctx.beginPath();
+            mctx.moveTo(faultX - len, groundY + k * 4);
+            mctx.lineTo(faultX + len, groundY + k * 4);
+            mctx.stroke();
+        }
+    } else if (state.fault === 'll') {
+        // B-C 단락
+        mctx.strokeStyle = '#fb7185';
+        mctx.lineWidth = 2.4;
+        mctx.lineCap = 'round';
+        mctx.beginPath();
+        mctx.moveTo(faultX, yb);
+        mctx.lineTo(faultX, yc);
+        mctx.stroke();
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = '#fb7185';
+        mctx.textAlign = 'left'; mctx.textBaseline = 'middle';
+        mctx.fillText(`Zf=${state.Zf.toFixed(1)}Ω`, faultX + 12, (yb + yc) / 2);
+    } else if (state.fault === '2lg') {
+        // B, C → 대지
+        mctx.strokeStyle = '#fb7185';
+        mctx.lineWidth = 2.4;
+        mctx.lineCap = 'round';
+        mctx.beginPath();
+        mctx.moveTo(faultX, yb);
+        mctx.lineTo(faultX, yc);
+        mctx.lineTo(faultX, groundY);
+        mctx.stroke();
+        // 접지 심볼
+        mctx.strokeStyle = 'rgba(244, 114, 182, 0.8)';
+        for (let k = 0; k < 3; k++) {
+            const len = 14 - k * 4;
+            mctx.beginPath();
+            mctx.moveTo(faultX - len, groundY + k * 4);
+            mctx.lineTo(faultX + len, groundY + k * 4);
+            mctx.stroke();
+        }
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = '#fb7185';
+        mctx.textAlign = 'left'; mctx.textBaseline = 'middle';
+        mctx.fillText(`Zf=${state.Zf.toFixed(1)}Ω`, faultX + 12, (yb + groundY) / 2 - 8);
+    }
+    mctx.restore();
+
+    // ★ 별 표시 (사고점)
+    mctx.save();
+    const starY = state.fault === '3ph' ? (ya + yc) / 2 :
+                  state.fault === '1lg' ? ya :
+                  state.fault === 'll' ? (yb + yc) / 2 :
+                  yb;
+    mctx.shadowBlur = 22 * flashBoost;
+    mctx.shadowColor = '#facc15';
+    mctx.fillStyle = '#fde047';
+    drawStar(faultX, starY, 5, 12, 5);
+    mctx.fill();
+    mctx.strokeStyle = '#facc15';
+    mctx.lineWidth = 1.2;
+    mctx.stroke();
+    mctx.restore();
+
+    // 사고 전류 라벨
+    mctx.save();
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    const lbl = `I_f = ${formatA(state.If)}`;
+    const tw = mctx.measureText(lbl).width;
+    const lx = faultX - tw / 2 - 6, ly = 55;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+    roundRect(mctx, lx, ly - 10, tw + 12, 20, 10);
+    mctx.fill();
+    mctx.strokeStyle = '#f43f5e';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.fillStyle = '#fda4af';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText(lbl, faultX, ly);
+    mctx.restore();
+}
+
+function drawStar(cx, cy, spikes, outerR, innerR) {
+    let rot = -Math.PI / 2;
+    const step = Math.PI / spikes;
+    mctx.beginPath();
+    mctx.moveTo(cx, cy - outerR);
+    for (let i = 0; i < spikes; i++) {
+        let x = cx + Math.cos(rot) * outerR;
+        let y = cy + Math.sin(rot) * outerR;
+        mctx.lineTo(x, y);
+        rot += step;
+        x = cx + Math.cos(rot) * innerR;
+        y = cy + Math.sin(rot) * innerR;
+        mctx.lineTo(x, y);
+        rot += step;
+    }
+    mctx.lineTo(cx, cy - outerR);
+    mctx.closePath();
+}
+
+function drawCoil(ctx, x1, y1, x2, y2, color, light, segs) {
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = light;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let k = 0; k <= segs; k++) {
+        const tau = k / segs;
+        const px = x1 + (x2 - x1) * tau;
+        const py = y1 + (y2 - y1) * tau;
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len, ny = dx / len;
+        const wig = (k > 1 && k < segs - 1) ? (k % 2 === 0 ? 4 : -4) : 0;
+        const fx = px + nx * wig;
+        const fy = py + ny * wig;
+        if (k === 0) ctx.moveTo(fx, fy); else ctx.lineTo(fx, fy);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawInfoPanel(W, H) {
+    // 좌하단 — 시퀀스 임피던스
+    mctx.save();
+    const boxW = 220, boxH = 70;
+    const bx = 14, by = H - boxH - 14;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(mctx, bx, by, boxW, boxH, 10);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#fecaca';
+    mctx.fillText('[ 시퀀스 임피던스 ]', bx + 10, by + 8);
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = '#fed7aa';
+    mctx.fillText(`Z₁ = Z₂ = ${state.Zs.toFixed(2)} Ω (정상·역상)`, bx + 10, by + 26);
+    mctx.fillStyle = '#fbcfe8';
+    mctx.fillText(`Z₀ = ${state.Z0.toFixed(2)} Ω (영상)`, bx + 10, by + 42);
+    mctx.fillStyle = '#fca5a5';
+    mctx.fillText(`Zf = ${state.Zf.toFixed(2)} Ω (사고)`, bx + 10, by + 56);
+    mctx.restore();
+
+    // 우하단 — 사고 모드 상태
+    mctx.save();
+    const boxW2 = 220, boxH2 = 70;
+    const bx2 = W - boxW2 - 14, by2 = H - boxH2 - 14;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(mctx, bx2, by2, boxW2, boxH2, 10);
+    mctx.fill();
+    const tripped = state.tripped;
+    const modeColor = state.mode === 'pre' ? 'rgba(34,197,94,0.55)' :
+                      tripped ? 'rgba(244,63,94,0.7)' : 'rgba(251,146,60,0.7)';
+    mctx.strokeStyle = modeColor;
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#c4b5fd';
+    mctx.fillText('[ 운전 상태 ]', bx2 + 10, by2 + 8);
+    mctx.font = 'bold 12px ui-monospace, monospace';
+    mctx.fillStyle = state.mode === 'pre' ? '#86efac' : tripped ? '#fca5a5' : '#fdba74';
+    const stateTxt = state.mode === 'pre' ? '정상 운전' : tripped ? '⚡ TRIP — CB OPEN' : '⚠ 사고 진행 중';
+    mctx.fillText(stateTxt, bx2 + 10, by2 + 26);
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = '#94a3b8';
+    const ftxt = state.fault === '3ph' ? '3φ 대칭 단락' :
+                 state.fault === '1lg' ? '1선 지락 (A→G)' :
+                 state.fault === 'll' ? '2선 단락 (B-C)' :
+                 '2선 지락 (B-C→G)';
+    mctx.fillText(`사고 유형: ${ftxt}`, bx2 + 10, by2 + 48);
+    mctx.restore();
+}
+
+// ============ 페이저 캔버스 — 대칭 분해 ============
+function drawPhasor() {
+    const W = phCv.width, H = phCv.height;
+    pctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = pctx.createRadialGradient(W * 0.5, H * 0.5, 40, W * 0.5, H * 0.5, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    pctx.fillStyle = bg;
+    pctx.fillRect(0, 0, W, H);
+
+    // 격자
+    pctx.save();
+    pctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    pctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { pctx.beginPath(); pctx.moveTo(i, 0); pctx.lineTo(i, H); pctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { pctx.beginPath(); pctx.moveTo(0, i); pctx.lineTo(W, i); pctx.stroke(); }
+    pctx.restore();
+
+    pctx.save();
+    pctx.font = 'bold 10px ui-monospace, monospace';
+    pctx.fillStyle = 'rgba(254, 202, 202, 0.6)';
+    pctx.textAlign = 'left'; pctx.textBaseline = 'top';
+    pctx.fillText('◯ SYMMETRICAL COMPONENTS · I₁(positive) · I₂(negative) · I₀(zero)', 12, 10);
+    pctx.restore();
+
+    // 3개 페이저 다이어그램을 가로로 배치
+    const subW = W / 3;
+    drawSequenceDiagram(pctx, 0,         28, subW, H - 28, 'I_1 (정상상)', '#86efac', state.I1, 'positive');
+    drawSequenceDiagram(pctx, subW,      28, subW, H - 28, 'I_2 (역상상)', '#fed7aa', state.I2, 'negative');
+    drawSequenceDiagram(pctx, 2 * subW,  28, subW, H - 28, 'I_0 (영상상)', '#f9a8d4', state.I0, 'zero');
+}
+
+function drawSequenceDiagram(ctx, ox, oy, w, h, title, color, mag, type) {
+    const cx = ox + w / 2;
+    const cy = oy + h / 2 + 10;
+    const Rmax = Math.min(w * 0.34, h * 0.36);
+
+    // 외곽 박스
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    roundRect(ctx, ox + 8, oy + 8, w - 16, h - 16, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // 제목
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(title, cx, oy + 16);
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.fillText(`|I| = ${formatA(mag)}`, cx, oy + 30);
+    ctx.restore();
+
+    // 원형 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+    ctx.lineWidth = 1;
+    for (let k = 1; k <= 3; k++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, (Rmax * k) / 3, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+    ctx.beginPath();
+    ctx.moveTo(cx - Rmax - 6, cy); ctx.lineTo(cx + Rmax + 6, cy);
+    ctx.moveTo(cx, cy - Rmax - 6); ctx.lineTo(cx, cy + Rmax + 6);
+    ctx.stroke();
+    ctx.restore();
+
+    // 페이저 그리기
+    let phases;
+    if (type === 'positive') {
+        // 시계방향 ABC (각도: A=0, B=-120, C=+120, 시각화로 회전)
+        phases = [
+            { name: 'a', color: '#ef4444', light: '#fca5a5', off: 0 },
+            { name: 'b', color: '#22c55e', light: '#86efac', off: -2*Math.PI/3 },
+            { name: 'c', color: '#3b82f6', light: '#93c5fd', off:  2*Math.PI/3 },
+        ];
+    } else if (type === 'negative') {
+        // 역회전 ACB (B와 C 바뀜)
+        phases = [
+            { name: 'a', color: '#ef4444', light: '#fca5a5', off: 0 },
+            { name: 'b', color: '#22c55e', light: '#86efac', off:  2*Math.PI/3 },
+            { name: 'c', color: '#3b82f6', light: '#93c5fd', off: -2*Math.PI/3 },
+        ];
+    } else {
+        // 영상상 — 3상 모두 동위상
+        phases = [
+            { name: 'a', color: '#ef4444', light: '#fca5a5', off: 0 },
+            { name: 'b', color: '#22c55e', light: '#86efac', off: 0 },
+            { name: 'c', color: '#3b82f6', light: '#93c5fd', off: 0 },
+        ];
+    }
+
+    const rot = state.omega;
+    // 시각화 스케일: 모든 시퀀스 통틀어 가장 큰 크기 기준
+    const refMax = Math.max(state.I1, state.I2, state.I0, state.If, 1);
+    const scale = (Rmax * 0.85) / refMax;
+    const len = mag * scale;
+
+    // 영상상에선 3개 페이저가 겹치므로 살짝 오프셋 적용
+    phases.forEach((p, idx) => {
+        const ang = -Math.PI / 2 + p.off - rot;
+        let drawLen = len;
+        let lblOffset = 0;
+        // 영상상: 3 페이저 길이를 다르게 표시 (보기 좋게)
+        if (type === 'zero' && len > 1) {
+            // 살짝 펼쳐서 보이도록
+            const angSpread = (idx - 1) * 0.08;
+            const aa = ang + angSpread;
+            ctx.save();
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = p.color;
+            ctx.strokeStyle = p.light;
+            ctx.lineWidth = 2.6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            const ex = cx + Math.cos(aa) * len;
+            const ey = cy + Math.sin(aa) * len;
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            // 화살촉
+            ctx.translate(ex, ey);
+            ctx.rotate(aa);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(-8, -4); ctx.lineTo(-8, 4); ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            return;
+        }
+        if (drawLen < 0.5) return;
+
+        ctx.save();
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = p.color;
+        ctx.strokeStyle = p.light;
+        ctx.lineWidth = 2.8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        const ex = cx + Math.cos(ang) * drawLen;
+        const ey = cy + Math.sin(ang) * drawLen;
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        // 화살촉
+        ctx.translate(ex, ey);
+        ctx.rotate(ang);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-9, -5); ctx.lineTo(-9, 5); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 라벨
+        ctx.save();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        const lx = cx + Math.cos(ang) * (drawLen + 14);
+        const ly = cy + Math.sin(ang) * (drawLen + 14);
+        ctx.fillStyle = p.light;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(p.name, lx, ly);
+        ctx.restore();
+    });
+
+    // 중앙점
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#fff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 회전 방향 화살표 (정상/역상)
+    if (type !== 'zero' && mag > 0.5) {
+        ctx.save();
+        ctx.font = '10px ui-monospace, monospace';
+        ctx.fillStyle = type === 'positive' ? '#86efac' : '#fed7aa';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        const arrow = type === 'positive' ? '↻ ABC' : '↺ ACB';
+        ctx.fillText(arrow, cx, oy + h - 10);
+        ctx.restore();
+    } else if (type === 'zero' && mag > 0.5) {
+        ctx.save();
+        ctx.font = '10px ui-monospace, monospace';
+        ctx.fillStyle = '#f9a8d4';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText('동위상 (in phase)', cx, oy + h - 10);
+        ctx.restore();
+    }
+}
+
+// ============ UI 업데이트 ============
+function formatA(a) {
+    if (!isFinite(a) || isNaN(a)) return '∞';
+    if (a >= 1000) return (a / 1000).toFixed(2) + ' kA';
+    if (a >= 100) return a.toFixed(0) + ' A';
+    return a.toFixed(1) + ' A';
+}
+
+function formatT(t) {
+    if (!isFinite(t)) return '∞';
+    if (t >= 60) return (t / 60).toFixed(1) + ' 분';
+    if (t >= 1) return t.toFixed(2);
+    return t.toFixed(3);
+}
+
+function updateUI() {
+    $('vDisp').textContent = state.V;
+    $('zsDisp').textContent = state.Zs.toFixed(1);
+    $('z0Disp').textContent = state.Z0.toFixed(1);
+    $('zfDisp').textContent = state.Zf.toFixed(1);
+    $('ipDisp').textContent = state.Ip;
+
+    $('ifDisp').textContent = state.mode === 'fault' ? formatA(state.If) : '0 A';
+    $('i0Disp').textContent = state.mode === 'fault' ? formatA(state.I0) : '0 A';
+    $('topDisp').textContent = state.mode === 'fault' ? formatT(state.top) : '—';
+    const ftxt = state.fault === '3ph' ? '3φ 대칭' :
+                 state.fault === '1lg' ? '1선 지락' :
+                 state.fault === 'll' ? '2선 단락' : '2선 지락';
+    $('typeDisp').innerHTML = state.fault === '3ph' ? `<span class="text-rose-300">${ftxt}</span>` :
+                              state.fault === '1lg' ? `<span class="text-orange-300">${ftxt}</span>` :
+                              state.fault === 'll'  ? `<span class="text-amber-300">${ftxt}</span>` :
+                              `<span class="text-violet-300">${ftxt}</span>`;
+
+    // pill 색
+    ['pill-if','pill-i0','pill-top','pill-type'].forEach(id => $(id).classList.remove('flash','warn','danger'));
+    if (state.mode === 'fault') {
+        if (state.tripped) {
+            $('pill-if').classList.add('danger');
+            $('pill-top').classList.add('danger');
+            $('pill-type').classList.add('danger');
+        } else {
+            $('pill-if').classList.add('flash');
+            $('pill-top').classList.add('warn');
+            $('pill-type').classList.add('flash');
+        }
+        if (state.I0 > 1) $('pill-i0').classList.add('flash');
+    }
+
+    // 알람 배너
+    $('alarmBanner').classList.toggle('hidden', !state.tripped);
+
+    // 대칭/비대칭 배지
+    const sym = $('symStatusBadge');
+    sym.classList.remove('status-ok','status-warn','status-danger');
+    if (state.mode === 'pre') {
+        sym.classList.add('status-ok');
+        sym.textContent = '정상 운전 (대칭)';
+    } else if (state.fault === '3ph') {
+        sym.classList.add('status-ok');
+        sym.textContent = '대칭 사고 (I₁만)';
+    } else if (state.fault === 'll') {
+        sym.classList.add('status-warn');
+        sym.textContent = '비대칭 (I₁=I₂, I₀=0)';
+    } else {
+        sym.classList.add('status-danger');
+        sym.textContent = '비대칭 + 영상 (I₀≠0)';
+    }
+}
+
+// ============ 이벤트 ============
+function bindControls() {
+    ['v','zs','z0','zf','ip'].forEach(id => {
+        $(id).addEventListener('input', () => {
+            state[ id === 'v' ? 'V' :
+                   id === 'zs' ? 'Zs' :
+                   id === 'z0' ? 'Z0' :
+                   id === 'zf' ? 'Zf' : 'Ip'] = +$(id).value;
+            computeFault();
+            updateUI();
+            flashCard();
+        });
+    });
+
+    document.querySelectorAll('.fault-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.fault-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            state.fault = b.dataset.fault;
+            // 사고 종류 바뀌면 트립 리셋
+            state.tripped = false;
+            state.cbAnim = 0;
+            state.flashAt = state.t;
+            computeFault();
+            updateUI();
+            flashCard();
+        });
+    });
+
+    document.querySelectorAll('.mode-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            state.mode = b.dataset.mode;
+            state.tripped = false;
+            state.cbAnim = 0;
+            state.flashAt = state.t;  // 사고 발생 순간 기록
+            computeFault();
+            updateUI();
+            flashCard();
+        });
+    });
+
+    // 프리셋
+    document.querySelectorAll('[data-preset]').forEach(b => {
+        b.addEventListener('click', () => {
+            const p = b.dataset.preset;
+            if (p === 'pre') {
+                state.mode = 'pre';
+                document.querySelectorAll('.mode-btn').forEach(x => x.classList.toggle('active', x.dataset.mode === 'pre'));
+            } else if (p === 'bolt') {
+                state.mode = 'fault';
+                state.Zf = 0;
+                $('zf').value = 0;
+                $('zfDisp').textContent = '0.0';
+                document.querySelectorAll('.mode-btn').forEach(x => x.classList.toggle('active', x.dataset.mode === 'fault'));
+            } else if (p === 'arc') {
+                state.mode = 'fault';
+                state.Zf = 2;
+                $('zf').value = 2;
+                $('zfDisp').textContent = '2.0';
+                document.querySelectorAll('.mode-btn').forEach(x => x.classList.toggle('active', x.dataset.mode === 'fault'));
+            } else if (p === 'reset') {
+                state.mode = 'pre';
+                state.Zf = 0;
+                $('zf').value = 0;
+                $('zfDisp').textContent = '0.0';
+                document.querySelectorAll('.mode-btn').forEach(x => x.classList.toggle('active', x.dataset.mode === 'pre'));
+            }
+            state.tripped = false;
+            state.cbAnim = 0;
+            state.flashAt = state.t;
+            computeFault();
+            updateUI();
+            flashCard();
+        });
+    });
+}
+
+function flashCard() {
+    if (window.gsap) {
+        gsap.fromTo('#mainCard',
+            { boxShadow: '0 0 0 0 rgba(244,63,94,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(244,63,94,0)', duration: 0.6 });
+        gsap.fromTo('#phasorCard',
+            { boxShadow: '0 0 0 0 rgba(168,139,250,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(168,139,250,0)', duration: 0.6 });
+    }
+}
+
+// ============ 메인 루프 ============
+function animate() {
+    updateSim();
+    drawMain();
+    drawPhasor();
+    updateUI();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    bindControls();
+    computeFault();
+    updateUI();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#mainCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#phasorCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#featureCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.55, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

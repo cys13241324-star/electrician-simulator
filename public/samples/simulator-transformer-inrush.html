@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 변압기 여자 돌입 전류 (Inrush) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 114, 182, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(245, 158, 11, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(30, 20, 40, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.5), rgba(245,158,11,0.45), rgba(99,102,241,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(244, 114, 182, 0.45),
+        0 0 40px rgba(245, 158, 11, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 760px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #f472b6; box-shadow: 0 0 12px #f472b6;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #f472b6; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(245,158,11,0.4), rgba(99,102,241,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #fcd34d, #c4b5fd);
+    box-shadow: 0 0 22px rgba(252, 211, 77, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-ph { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-fr { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-kv { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.danger {
+    border-color: rgba(244, 114, 182, 0.7);
+    box-shadow: 0 0 28px rgba(244, 114, 182, 0.45);
+    animation: dangerGlow 1.0s ease-in-out infinite alternate;
+}
+@keyframes dangerGlow {
+    0% { box-shadow: 0 0 22px rgba(244,114,182,0.35) }
+    100% { box-shadow: 0 0 40px rgba(244,114,182,0.8) }
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fda4af, #fcd34d, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.action-btn {
+    background: linear-gradient(135deg, rgba(244,114,182,0.40), rgba(245,158,11,0.30));
+    border: 1px solid rgba(244, 114, 182, 0.65);
+    color: white;
+    transition: all 200ms;
+    cursor: pointer;
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 32px rgba(244, 114, 182, 0.6);
+}
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.reset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.reset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(244,114,182,0.20), rgba(245,158,11,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 114, 182, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #ffe4e6; }
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(245,158,11,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244,114,182,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(244, 114, 182, 0.4);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), transparent);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-pink-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · TRANSFORMER · INRUSH CURRENT
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-amber-200 to-indigo-200 bg-clip-text text-transparent">
+            ⚡ 변압기 여자 돌입 전류 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">무부하 변압기 투입 순간 — 코어 잔류 자속 + 투입 위상이 만드는 자속 포화. 정격의 5~12배 비대칭 돌입 전류와 2고조파 성분으로 보호계전기가 오동작하지 않도록 합니다.</p>
+    </header>
+
+    <!-- 라이브 데이터 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-peak">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">첫 사이클 피크 I</p>
+            <p class="mt-1 text-lg font-bold"><span id="peakVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-mult">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">정격 대비 배수</p>
+            <p class="mt-1 text-lg font-bold"><span id="multVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-h2">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">제2 고조파 비율</p>
+            <p class="mt-1 text-lg font-bold"><span id="h2Val" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-decay">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">감쇠 시간(τ)</p>
+            <p class="mt-1 text-lg font-bold"><span id="decayVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">위 — 변압기 + 1차 차단기 · 가운데 — 자속 포화(B-H) · 아래 — 1차 전류 파형</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button id="closeBtn" class="action-btn rounded-md px-3 py-1.5 text-xs font-bold">⚡ 차단기 투입 (Close)</button>
+                        <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">↺ 0초 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-amber-200 bg-clip-text text-transparent">돌입 전류 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-pink-200">자속 적분</p>
+                        <p class="mt-2 font-mono text-sm text-pink-100">Φ(t) = Φᵣ − Φₘ·cos(ωt + θ)·e<sup>−t/τ</sup></p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-pink-200">최악 위상 (θ=0°)</p>
+                        <p class="mt-2 font-mono text-sm text-pink-100">Φₘₐₓ ≈ 2Φₘ + Φᵣ → 포화</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-pink-200">전압 영점 투입(θ=90°)</p>
+                        <p class="mt-2 font-mono text-sm text-pink-100">Φ(t)는 정상 영역 → 돌입 거의 없음</p>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-slate-300">
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-pink-300">정격 대비</span> · 5~12배</li>
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-amber-300">제2 고조파</span> · 15~50%</li>
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-indigo-300">감쇠</span> · 수 사이클~수초</li>
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-emerald-300">보호</span> · 2고조파 억제</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-pink-200">변수 조절</h2>
+            <div class="chip-ph chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>투입 위상 θ</span><span id="phDisp" class="font-mono text-base">0</span></label>
+                <input type="range" id="ph" min="0" max="360" step="5" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">° (0°=최악, 90°=양호)</p>
+            </div>
+            <div class="chip-fr chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>잔류 자속 Φᵣ</span><span id="resDisp" class="font-mono text-base">+60</span></label>
+                <input type="range" id="res" min="-100" max="100" step="5" value="60" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">% (포화 자속 기준)</p>
+            </div>
+            <div class="chip-kv chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>변압기 용량</span><span id="kvaDisp" class="font-mono text-base">500</span></label>
+                <input type="range" id="kva" min="50" max="2000" step="50" value="500" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kVA</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="chip rounded-lg p-3" style="background: rgba(99,102,241,0.10); border-color: rgba(99,102,241,0.35);">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider text-indigo-200"><span>표시 시간 창</span><span id="winDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="win" min="4" max="30" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">사이클 (60Hz)</p>
+            </div>
+
+            <div class="rounded-lg p-3" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold mb-1">현재 상태</p>
+                <p id="modeBadge" class="font-bold text-pink-300">대기 — 차단기 투입을 누르세요</p>
+                <p class="text-[10px] text-slate-500 mt-2">전압이 영점(θ≈0°)일 때 투입하면 자속이 정상 진폭의 2배 + 잔류 자속까지 더해져 깊은 포화에 빠지고, 1차 권선에는 비대칭 돌입 전류가 흐릅니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 보조 카드 -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">📐 자속 적분 (Faraday)</h3>
+            <div class="math-container">
+                $$\Phi(t) = \Phi_r - \Phi_m\cos(\omega t + \theta)\,e^{-t/\tau}$$
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">전압 v=V<sub>m</sub>sin(ωt+θ)를 적분하면 자속은 cos 항. θ=0°에서 t=π/ω일 때 |Φ|가 최대.</p>
+        </div>
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">📐 비선형 자화 (B-H)</h3>
+            <div class="math-container">
+                $$i_{\text{exc}}(t) = f^{-1}\!\bigl(\Phi(t)\bigr)$$
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">자속이 포화점(≈1.7T)을 넘으면 자화 인덕턴스가 급감 → 같은 자속을 만들기 위해 전류가 폭증합니다.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const TF_H = 280;       // 변압기 회로 영역
+const BH_H = 200;       // B-H 곡선 영역
+const WAVE_H = 280;     // 전류 파형 영역
+const TOTAL_H = TF_H + BH_H + WAVE_H;
+
+const F = 60;                       // 계통 주파수 (Hz)
+const OMEGA = 2 * Math.PI * F;
+const PHI_SAT = 1.0;                // 정규화된 포화 자속 한계 (포화 한계 = 1.0)
+const PHI_M = 0.9;                  // 정상 자속 진폭 (포화의 90%)
+const I_RATED_MULT = 0.02;          // 정격 여자 전류 (정격의 약 2%) → 표시 기준 1.0배
+
+let state = {
+    phase: 0,           // 투입 위상 θ (rad)
+    residual: 0.6,      // 잔류 자속 (정규화, -1~+1)
+    kVA: 500,           // 용량
+    win: 10,            // 표시 사이클
+    closed: false,      // 차단기 투입 여부
+    t: 0,               // 시뮬레이션 시간 (sec)
+    samples: [],        // {t, phi, i, v}
+    peakI: 0,
+    peakIdx: 0,
+    h2Ratio: 0,
+    tauDecay: 0,
+    tick: 0,
+};
+
+let switchBox = null;
+let tfBox = null;
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    layoutTop();
+}
+window.addEventListener('resize', resize);
+
+function layoutTop() {
+    const W = canvas.width;
+    // 회로: AC → 차단기 → 변압기(1차 코일 + 코어 + 2차 무부하)
+    // 좌 AC, 중앙 차단기, 우 변압기
+    switchBox = {
+        cx: W * 0.42,
+        cy: TF_H * 0.42,
+        w: 80, h: 38
+    };
+    tfBox = {
+        x: W * 0.55,
+        y: 60,
+        w: Math.min(W * 0.38, 320),
+        h: TF_H - 110
+    };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============================================================
+// 물리 모델
+// ============================================================
+
+// 감쇠 시정수 (사이클 단위) — 용량이 클수록 길게
+function tauSec() {
+    // 50kVA → 약 4 사이클, 2000kVA → 약 20 사이클
+    const cycles = 3 + (state.kVA / 2000) * 18;
+    return cycles / F;
+}
+
+// 자속 Φ(t) [정규화: 1.0이 포화 한계]
+// Φ(t) = Φᵣ·e^(-t/τ) + Φₘ·[cos(θ) - cos(ωt + θ)·e^(-t/τ)]
+// 적분 결과: 영전압 시점부터 정현 적분 + 적분상수가 잔류와 합쳐져 오프셋 형성
+function fluxAt(t) {
+    if (!state.closed) return state.residual; // 투입 전: 잔류 자속에 머무름
+    const tau = tauSec();
+    const th = state.phase;
+    const decay = Math.exp(-t / tau);
+    // 직류 오프셋: Φᵣ + Φₘ·cos(θ) — 시간이 지나면 e^(-t/τ)로 감쇠
+    const dc = (state.residual + PHI_M * Math.cos(th)) * decay;
+    const ac = -PHI_M * Math.cos(OMEGA * t + th);
+    return dc + ac;
+}
+
+// 1차 전압 v(t) [정규화: 1.0 = 정상 피크]
+function voltageAt(t) {
+    if (!state.closed) return 0;
+    return Math.sin(OMEGA * t + state.phase);
+}
+
+// 비선형 자화: Φ → i (정규화). 포화 영역에서 급격히 증가
+// 정상영역에선 i ≈ Φ·k_lin (작은 여자전류), 포화시 i ∝ exp((|Φ|-Φ_sat)/δ)
+// 출력은 "정격전류 단위"로 환산
+function excCurrent(phi) {
+    const ap = Math.abs(phi);
+    const sign = Math.sign(phi);
+    let i;
+    if (ap < PHI_SAT) {
+        // 정상영역: 정격 여자전류는 정상 자속(0.9)에서 약 2%정도
+        i = (ap / PHI_M) * I_RATED_MULT;
+    } else {
+        // 포화영역: 급격히 증가 (지수)
+        const over = ap - PHI_SAT;
+        // over=0.1 → 약 1배, over=0.3 → 약 6배, over=0.5 → 약 12배
+        const base = I_RATED_MULT; // 정상 끝부분
+        i = base + (Math.exp(over * 12) - 1) * 0.6;
+    }
+    return sign * i;
+}
+
+// 정격 1차 전류는 표시 기준 1.0 (정규화 단위)
+// 표 시 단위: "정격 대비 배수" = |i| / 1.0
+
+// ============================================================
+// 시뮬레이션 스텝
+// ============================================================
+
+const DT = 1 / (F * 120); // 1사이클당 120 샘플
+const MAX_SAMPLES = Math.floor(F * 120 * 2); // 2초치
+
+function step() {
+    if (!state.closed) return;
+    state.t += DT;
+    const t = state.t;
+    const phi = fluxAt(t);
+    const i = excCurrent(phi);
+    const v = voltageAt(t);
+    state.samples.push({ t, phi, i, v });
+    if (state.samples.length > MAX_SAMPLES) state.samples.shift();
+
+    if (Math.abs(i) > Math.abs(state.peakI)) {
+        state.peakI = i;
+        state.peakIdx = state.samples.length - 1;
+    }
+}
+
+// 2 고조파 비율 추정 — 1사이클 윈도우 DFT
+function compute2ndHarmonic() {
+    const samples = state.samples;
+    if (samples.length < 240) return 0;
+    // 첫 2 사이클 위치 (피크 부근)
+    const winLen = 120; // 1 사이클
+    const startIdx = Math.max(0, state.peakIdx - 30);
+    if (startIdx + winLen > samples.length) return 0;
+    let a1 = 0, b1 = 0, a2 = 0, b2 = 0;
+    for (let k = 0; k < winLen; k++) {
+        const s = samples[startIdx + k];
+        const ang = (2 * Math.PI * k) / winLen;
+        a1 += s.i * Math.cos(ang);
+        b1 += s.i * Math.sin(ang);
+        a2 += s.i * Math.cos(2 * ang);
+        b2 += s.i * Math.sin(2 * ang);
+    }
+    a1 *= 2 / winLen; b1 *= 2 / winLen;
+    a2 *= 2 / winLen; b2 *= 2 / winLen;
+    const A1 = Math.hypot(a1, b1);
+    const A2 = Math.hypot(a2, b2);
+    if (A1 < 1e-6) return 0;
+    return A2 / A1;
+}
+
+// ============================================================
+// 그리기 — 위: 회로
+// ============================================================
+
+function drawCircuitBg() {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, TF_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, TF_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TF_H); ctx.stroke();
+    }
+    for (let i = 0; i < TF_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ CIRCUIT · 무부하 변압기 + 1차 차단기', 12, 10);
+
+    ctx.textAlign = 'right';
+    const m = state.closed
+        ? `⚡ INRUSH · t = ${(state.t * 1000).toFixed(1)} ms`
+        : '○ STANDBY · 차단기 OFF';
+    ctx.fillStyle = state.closed ? 'rgba(244,114,182,0.95)' : 'rgba(148,163,184,0.8)';
+    ctx.fillText(m, canvas.width - 12, 10);
+    ctx.restore();
+}
+
+function drawACSource() {
+    const x = 70, y = TF_H * 0.42;
+    ctx.save();
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = '#f472b6';
+    const g = ctx.createRadialGradient(x - 5, y - 7, 2, x, y, 32);
+    g.addColorStop(0, '#fce7f3');
+    g.addColorStop(0.55, '#ec4899');
+    g.addColorStop(1, '#831843');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, 32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    const sweepT = state.closed ? state.t : (state.tick / 60);
+    for (let dx = -16; dx <= 16; dx += 1) {
+        const dy = Math.sin((dx + sweepT * 60 * 0.5) * 0.32) * 8;
+        if (dx === -16) ctx.moveTo(x + dx, y + dy); else ctx.lineTo(x + dx, y + dy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lab = `계통 AC · 60Hz`;
+    const tw = ctx.measureText(lab).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, x - tw/2 - 6, y + 42, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#f9a8d4';
+    ctx.fillText(lab, x, y + 51);
+    ctx.restore();
+}
+
+function drawSwitch() {
+    const s = switchBox;
+    ctx.save();
+    // 박스
+    ctx.shadowBlur = state.closed ? 16 : 8;
+    ctx.shadowColor = state.closed ? '#34d399' : '#94a3b8';
+    const g = ctx.createLinearGradient(s.cx - s.w/2, s.cy - s.h/2, s.cx + s.w/2, s.cy + s.h/2);
+    if (state.closed) {
+        g.addColorStop(0, '#065f46'); g.addColorStop(0.5, '#10b981'); g.addColorStop(1, '#022c22');
+    } else {
+        g.addColorStop(0, '#334155'); g.addColorStop(0.5, '#64748b'); g.addColorStop(1, '#1e293b');
+    }
+    ctx.fillStyle = g;
+    roundRect(ctx, s.cx - s.w/2, s.cy - s.h/2, s.w, s.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 차단기 접점 표시 (닫힘/열림)
+    ctx.save();
+    ctx.strokeStyle = state.closed ? 'rgba(110, 231, 183, 0.95)' : 'rgba(244, 114, 182, 0.9)';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    const lx = s.cx - 20, rx = s.cx + 20, cy = s.cy;
+    if (state.closed) {
+        ctx.moveTo(lx, cy); ctx.lineTo(rx, cy);
+    } else {
+        ctx.moveTo(lx, cy); ctx.lineTo(s.cx - 4, cy);
+        ctx.moveTo(s.cx + 4, cy); ctx.lineTo(rx, cy);
+        // 열린 칼날
+        ctx.moveTo(s.cx - 4, cy); ctx.lineTo(s.cx + 14, cy - 12);
+    }
+    ctx.stroke();
+    // 접점 도트
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath(); ctx.arc(lx, cy, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rx, cy, 3, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lab = state.closed ? `52 · CLOSED` : `52 · OPEN`;
+    const tw = ctx.measureText(lab).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, s.cx - tw/2 - 6, s.cy - s.h/2 - 22, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = state.closed ? '#6ee7b7' : '#cbd5e1';
+    ctx.fillText(lab, s.cx, s.cy - s.h/2 - 13);
+    ctx.restore();
+}
+
+function drawCT() {
+    // 전류계 CT (차단기와 변압기 사이)
+    const x = (switchBox.cx + tfBox.x + 30) / 2;
+    const y = switchBox.cy;
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fbbf24';
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.95)';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('A', x, y);
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lab = `CT · 1차 전류`;
+    const tw = ctx.measureText(lab).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, x - tw/2 - 5, y + 18, tw + 10, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillText(lab, x, y + 26);
+    ctx.restore();
+}
+
+function drawTransformer() {
+    const t = tfBox;
+    // 코어 외곽
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.4)';
+    const gExt = ctx.createLinearGradient(t.x, t.y, t.x + t.w, t.y + t.h);
+    gExt.addColorStop(0, '#475569');
+    gExt.addColorStop(0.5, '#94a3b8');
+    gExt.addColorStop(1, '#334155');
+    ctx.fillStyle = gExt;
+    roundRect(ctx, t.x, t.y, t.w, t.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 코어 창
+    const ip = 28;
+    ctx.save();
+    const gIn = ctx.createLinearGradient(t.x + ip, t.y + ip, t.x + t.w - ip, t.y + t.h - ip);
+    gIn.addColorStop(0, '#0a0e1e');
+    gIn.addColorStop(1, '#060814');
+    ctx.fillStyle = gIn;
+    roundRect(ctx, t.x + ip, t.y + ip, t.w - ip*2, t.h - ip*2, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // 라미네이션
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let y = t.y + 6; y < t.y + t.h; y += 6) {
+        ctx.beginPath();
+        ctx.moveTo(t.x + 3, y); ctx.lineTo(t.x + t.w - 3, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 1차 코일 (좌측, 굵게 — 활성)
+    const leftCx = t.x + 14;
+    const colTop = t.y + 22;
+    const colBot = t.y + t.h - 22;
+    drawCoil(leftCx, colTop, colBot, '#3b82f6', '#60a5fa');
+
+    // 2차 코일 (우측, 무부하 — 흐릿)
+    const rightCx = t.x + t.w - 14;
+    drawCoil(rightCx, colTop, colBot, '#475569', '#94a3b8', 0.5);
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // 1차
+    {
+        const label = `1차 (활성)`;
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, leftCx - tw/2 - 6, t.y - 22, tw + 12, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#93c5fd';
+        ctx.fillText(label, leftCx, t.y - 13);
+    }
+    // 2차
+    {
+        const label = `2차 (무부하)`;
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, rightCx - tw/2 - 6, t.y - 22, tw + 12, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(label, rightCx, t.y - 13);
+    }
+    // 코어
+    {
+        const lab = `철심 (${state.kVA}kVA)`;
+        const tw = ctx.measureText(lab).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        roundRect(ctx, t.x + t.w/2 - tw/2 - 6, t.y + t.h + 6, tw + 12, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(lab, t.x + t.w/2, t.y + t.h + 15);
+    }
+
+    // 자속 표시 (포화 시 빨갛게)
+    const phi = state.closed ? fluxAt(state.t) : state.residual;
+    const ap = Math.abs(phi);
+    const satRatio = Math.min(1, Math.max(0, (ap - PHI_SAT) / 0.4));
+    const fluxColor = ap < PHI_SAT
+        ? `rgba(196, 181, 253, ${0.6 + 0.3 * (ap / PHI_SAT)})`
+        : `rgba(${244 + satRatio * 11}, ${114 - satRatio * 80}, ${182 - satRatio * 140}, 0.95)`;
+    ctx.fillStyle = fluxColor;
+    ctx.shadowBlur = 14 + satRatio * 14;
+    ctx.shadowColor = ap < PHI_SAT ? '#a78bfa' : '#f43f5e';
+    ctx.globalAlpha = 0.9;
+    ctx.font = 'bold 11px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const phiLabel = `Φ = ${phi.toFixed(2)}${ap >= PHI_SAT ? ' ⚠ 포화' : ''}`;
+    const ptw = ctx.measureText(phiLabel).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, t.x + t.w/2 - ptw/2 - 8, t.y + t.h/2 - 10, ptw + 16, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = fluxColor;
+    ctx.fillText(phiLabel, t.x + t.w/2, t.y + t.h/2);
+    ctx.restore();
+}
+
+function drawCoil(cx, yTop, yBot, baseColor, glowColor, alpha = 1.0) {
+    const turns = 12;
+    const span = yBot - yTop;
+    const step = span / turns;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = glowColor;
+    for (let i = 0; i < turns; i++) {
+        const y = yTop + (i + 0.5) * step;
+        const g = ctx.createLinearGradient(cx - 22, y, cx + 22, y);
+        g.addColorStop(0, baseColor);
+        g.addColorStop(0.5, '#ffffff');
+        g.addColorStop(1, baseColor);
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.ellipse(cx, y, 26, 5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawWires() {
+    // AC → 차단기 → CT → 변압기 1차 (위/아래 두 가닥)
+    const ACx = 70, ACy = TF_H * 0.42;
+    const s = switchBox;
+    const ctX = (s.cx + tfBox.x + 30) / 2;
+    const tfLx = tfBox.x + 14;
+    const tfTop = tfBox.y - 16;
+    const tfBot = tfBox.y + tfBox.h + 16;
+
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = state.closed ? '#fda4af' : '#67e8f9';
+    ctx.strokeStyle = state.closed ? 'rgba(253, 164, 175, 0.85)' : 'rgba(125, 211, 252, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    // 위쪽 가닥
+    ctx.beginPath();
+    ctx.moveTo(ACx, ACy - 32); ctx.lineTo(ACx, tfTop);
+    ctx.lineTo(tfLx - 4, tfTop);
+    ctx.stroke();
+    // 아래쪽 가닥
+    ctx.beginPath();
+    ctx.moveTo(ACx, ACy + 32); ctx.lineTo(ACx, tfBot);
+    ctx.lineTo(tfLx - 4, tfBot);
+    ctx.stroke();
+
+    // 차단기를 중간에 끼움 (위쪽 가닥에)
+    // 차단기 라인을 가리고 다시 그림 — 단순화: 박스 위에 그리므로 잘 보임
+    ctx.restore();
+
+    // 차단기 ↔ AC 연결선 끊김 표시 (열린 경우)
+    // 실제로는 차단기 그래픽으로 표현됨
+
+    // 흐름 입자 (closed인 경우)
+    if (state.closed) {
+        drawCurrentParticles();
+    }
+}
+
+function drawCurrentParticles() {
+    // 1차 전류 크기에 비례한 입자 흐름
+    const i = state.samples.length ? state.samples[state.samples.length - 1].i : 0;
+    const mag = Math.min(8, Math.abs(i));
+    if (mag < 0.05) return;
+    const count = Math.min(30, Math.floor(mag * 6 + 4));
+    const speed = (1 + mag * 0.5) * (i >= 0 ? 1 : -1);
+
+    const ACx = 70, ACy = TF_H * 0.42;
+    const tfLx = tfBox.x + 14;
+    const tfTop = tfBox.y - 16;
+    // 윗쪽 경로
+    const seg = [
+        { a: { x: ACx, y: ACy - 32 }, b: { x: ACx, y: tfTop } },
+        { a: { x: ACx, y: tfTop }, b: { x: tfLx - 4, y: tfTop } },
+    ];
+    let totalLen = 0;
+    seg.forEach(s => s.len = Math.hypot(s.b.x - s.a.x, s.b.y - s.a.y));
+    seg.forEach(s => { s.start = totalLen; totalLen += s.len; });
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < count; k++) {
+        const offs = ((state.tick * speed * 1.5 + k * (totalLen / count)) % totalLen + totalLen) % totalLen;
+        let pt = null;
+        for (const s of seg) {
+            if (offs <= s.start + s.len) {
+                const tt = (offs - s.start) / s.len;
+                pt = { x: s.a.x + (s.b.x - s.a.x) * tt, y: s.a.y + (s.b.y - s.a.y) * tt };
+                break;
+            }
+        }
+        if (!pt) continue;
+        const sz = 1.2 + mag * 0.4;
+        ctx.fillStyle = mag > 3 ? 'rgba(244, 114, 182, 0.95)' : 'rgba(252, 211, 77, 0.9)';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = mag > 3 ? '#f472b6' : '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, sz, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ============================================================
+// 그리기 — 가운데: B-H (자속 포화) 곡선
+// ============================================================
+
+function drawBH() {
+    const y0 = TF_H;
+    const W = canvas.width;
+    ctx.save();
+    const g = ctx.createLinearGradient(0, y0, 0, y0 + BH_H);
+    g.addColorStop(0, '#070a18');
+    g.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y0, W, BH_H);
+
+    // 구분선
+    const dg = ctx.createLinearGradient(0, y0, W, y0);
+    dg.addColorStop(0, 'transparent');
+    dg.addColorStop(0.5, 'rgba(245, 158, 11, 0.6)');
+    dg.addColorStop(1, 'transparent');
+    ctx.strokeStyle = dg; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◌ B-H · 자속 vs 자화전류 (포화 곡선)', 12, y0 + 8);
+    ctx.restore();
+
+    // 좌표계: 가운데 가로축 i (정격 배수), 세로축 Φ
+    const padX = 60, padY = 30;
+    const plotX = padX;
+    const plotW = W - padX * 2;
+    const plotY = y0 + padY;
+    const plotH = BH_H - padY * 2;
+    const cx = plotX + plotW / 2;
+    const cy = plotY + plotH / 2;
+    const iMax = 12; // 정격 12배
+    const phiMax = 1.5;
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+    ctx.lineWidth = 1;
+    for (let k = -iMax; k <= iMax; k += 2) {
+        const x = cx + (k / iMax) * (plotW / 2);
+        ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+    }
+    for (let k = -1; k <= 1; k += 0.5) {
+        const y = cy - (k / phiMax) * (plotH / 2);
+        ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+    }
+    // 축
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(plotX, cy); ctx.lineTo(plotX + plotW, cy);
+    ctx.moveTo(cx, plotY); ctx.lineTo(cx, plotY + plotH);
+    ctx.stroke();
+    // 라벨
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('i (정격 배수) →', plotX + plotW - 4, cy - 8);
+    ctx.textAlign = 'center';
+    ctx.fillText('+Φ ↑', cx + 14, plotY + 6);
+    ctx.fillText('포화 Φₛ', cx + 14, cy - (PHI_SAT / phiMax) * (plotH / 2));
+    ctx.fillText('−Φₛ', cx + 14, cy + (PHI_SAT / phiMax) * (plotH / 2));
+    // 포화 한계 라인
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.35)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const ySatU = cy - (PHI_SAT / phiMax) * (plotH / 2);
+    const ySatD = cy + (PHI_SAT / phiMax) * (plotH / 2);
+    ctx.moveTo(plotX, ySatU); ctx.lineTo(plotX + plotW, ySatU);
+    ctx.moveTo(plotX, ySatD); ctx.lineTo(plotX + plotW, ySatD);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // B-H 곡선 (이론) — i = f(Φ), 그리는 건 가로축 i, 세로축 Φ
+    ctx.save();
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#a78bfa';
+    ctx.beginPath();
+    let first = true;
+    for (let p = -1.4; p <= 1.4; p += 0.02) {
+        const ii = excCurrent(p);
+        const x = cx + (ii / iMax) * (plotW / 2);
+        const y = cy - (p / phiMax) * (plotH / 2);
+        if (first) { ctx.moveTo(x, y); first = false; }
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 현재 작동점
+    if (state.closed && state.samples.length) {
+        // 최근 몇 샘플 trail
+        const samples = state.samples;
+        const trailLen = Math.min(180, samples.length);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let k = 0; k < trailLen; k++) {
+            const s = samples[samples.length - 1 - k];
+            const x = cx + (s.i / iMax) * (plotW / 2);
+            const y = cy - (s.phi / phiMax) * (plotH / 2);
+            const a = 1 - k / trailLen;
+            ctx.fillStyle = `rgba(252, 211, 77, ${0.6 * a})`;
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        const last = samples[samples.length - 1];
+        const x = cx + (last.i / iMax) * (plotW / 2);
+        const y = cy - (last.phi / phiMax) * (plotH / 2);
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = Math.abs(last.phi) > PHI_SAT ? '#f43f5e' : '#fbbf24';
+        ctx.fillStyle = Math.abs(last.phi) > PHI_SAT ? 'rgba(244,114,182,0.95)' : 'rgba(252, 211, 77, 0.95)';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    } else {
+        // 잔류 자속 점
+        ctx.save();
+        const phi = state.residual;
+        const x = cx;
+        const y = cy - (phi / phiMax) * (plotH / 2);
+        ctx.fillStyle = 'rgba(252, 211, 77, 0.9)';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        // 라벨
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillText(`잔류 Φᵣ = ${phi.toFixed(2)}`, x + 8, y - 8);
+        ctx.restore();
+    }
+}
+
+// ============================================================
+// 그리기 — 아래: 전류 파형
+// ============================================================
+
+function drawWaveform() {
+    const y0 = TF_H + BH_H;
+    const W = canvas.width;
+    ctx.save();
+    const g = ctx.createLinearGradient(0, y0, 0, y0 + WAVE_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, y0, W, WAVE_H);
+
+    const dg = ctx.createLinearGradient(0, y0, W, y0);
+    dg.addColorStop(0, 'transparent');
+    dg.addColorStop(0.5, 'rgba(244, 114, 182, 0.6)');
+    dg.addColorStop(1, 'transparent');
+    ctx.strokeStyle = dg; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(W, y0); ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ WAVEFORM · 1차 전류 i(t) [정격 배수] · 정상 정상자화 vs 돌입', 12, y0 + 8);
+    ctx.restore();
+
+    // 좌표
+    const padX = 60, padTop = 32, padBot = 24;
+    const plotX = padX;
+    const plotW = W - padX * 2;
+    const plotY = y0 + padTop;
+    const plotH = WAVE_H - padTop - padBot;
+    const baseY = plotY + plotH * 0.55;
+    const iMax = 12; // ±12배
+    const ampScale = (plotH * 0.45) / iMax;
+
+    // 기준선
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(plotX, baseY); ctx.lineTo(plotX + plotW, baseY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 1배(정격) 마커
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.3)';
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath();
+    ctx.moveTo(plotX, baseY - 1 * ampScale); ctx.lineTo(plotX + plotW, baseY - 1 * ampScale);
+    ctx.moveTo(plotX, baseY + 1 * ampScale); ctx.lineTo(plotX + plotW, baseY + 1 * ampScale);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 시간 범위
+    const tWin = state.win / F; // sec
+    const tScale = plotW / tWin;
+
+    // 정상 정상자화 (참고 — 작은 sin파, 정격의 약 2%)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    for (let px = 0; px <= plotW; px += 2) {
+        const t = (px / plotW) * tWin;
+        const i = I_RATED_MULT * Math.sin(OMEGA * t + state.phase - Math.PI/2); // 정상 자화전류 (전압보다 90° 지연)
+        const x = plotX + px;
+        const y = baseY - i * ampScale;
+        if (px === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 돌입 전류 (실측)
+    if (state.samples.length) {
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#f472b6';
+        ctx.strokeStyle = 'rgba(244, 114, 182, 0.95)';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const samples = state.samples;
+        let started = false;
+        // 시간 0부터 tWin까지 표시 — 다 들어가지 않으면 마지막 tWin 구간
+        const tEnd = state.t;
+        const tStart = Math.max(0, tEnd - tWin);
+        const showT = Math.max(tWin, tEnd);
+        for (const s of samples) {
+            if (s.t < tStart) continue;
+            const x = plotX + ((s.t - 0) / showT) * plotW;
+            if (x > plotX + plotW) break;
+            const y = baseY - s.i * ampScale;
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // 피크 마커
+        if (Math.abs(state.peakI) > 0.3) {
+            const peak = samples[Math.min(state.peakIdx, samples.length - 1)];
+            const showT = Math.max(tWin, state.t);
+            const px = plotX + ((peak.t) / showT) * plotW;
+            const py = baseY - peak.i * ampScale;
+            if (px <= plotX + plotW) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(244, 114, 182, 0.95)';
+                ctx.shadowBlur = 14;
+                ctx.shadowColor = '#f472b6';
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = 'bold 10px ui-monospace, monospace';
+                ctx.textAlign = 'center';
+                const lab = `피크 ${peak.i.toFixed(1)}×`;
+                const tw = ctx.measureText(lab).width;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+                roundRect(ctx, px - tw/2 - 5, py - 22, tw + 10, 16, 8);
+                ctx.fill();
+                ctx.fillStyle = '#f9a8d4';
+                ctx.fillText(lab, px, py - 14);
+                ctx.restore();
+            }
+        }
+    }
+
+    // 진폭 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    for (const v of [-10, -5, -1, 0, 1, 5, 10]) {
+        const y = baseY - v * ampScale;
+        if (y >= plotY && y <= plotY + plotH) {
+            const c = v === 0 ? 'rgba(148, 163, 184, 0.6)' :
+                       Math.abs(v) === 1 ? 'rgba(110, 231, 183, 0.7)' :
+                       'rgba(148, 163, 184, 0.45)';
+            ctx.fillStyle = c;
+            ctx.fillText(`${v >= 0 ? '+' : ''}${v}×`, plotX - 6, y);
+        }
+    }
+    ctx.restore();
+
+    // 시간축 라벨
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.55)';
+    const cyc = state.win;
+    for (let c = 0; c <= cyc; c += Math.ceil(cyc / 10)) {
+        const x = plotX + (c / cyc) * plotW;
+        ctx.fillText(`${c}T`, x, plotY + plotH + 4);
+    }
+    ctx.restore();
+
+    // 범례
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const ly = y0 + 16;
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.95)';
+    ctx.fillRect(plotX + plotW - 320, ly, 14, 3);
+    ctx.fillStyle = '#f9a8d4';
+    ctx.fillText(`돌입 i(t) [측정]`, plotX + plotW - 302, ly + 1);
+
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+    ctx.fillRect(plotX + plotW - 180, ly, 14, 3);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText(`정상 정상자화 (참고)`, plotX + plotW - 162, ly + 1);
+    ctx.restore();
+}
+
+// ============================================================
+// 메인 루프
+// ============================================================
+
+function compute() {
+    state.phase = (+$('ph').value) * Math.PI / 180;
+    state.residual = (+$('res').value) / 100;
+    state.kVA = +$('kva').value;
+    state.win = +$('win').value;
+
+    $('phDisp').textContent = `${(+$('ph').value).toFixed(0)}°`;
+    $('resDisp').textContent = `${(+$('res').value) >= 0 ? '+' : ''}${(+$('res').value)}%`;
+    $('kvaDisp').textContent = `${state.kVA}`;
+    $('winDisp').textContent = `${state.win}`;
+
+    updateLive();
+}
+
+function updateLive() {
+    if (state.closed && state.samples.length > 60) {
+        const peakMult = Math.abs(state.peakI);
+        $('peakVal').textContent = `${peakMult.toFixed(1)}×`;
+        $('multVal').textContent = `${peakMult.toFixed(1)} pu`;
+        // 위험 강조
+        if (peakMult > 4) $('pill-peak').classList.add('danger');
+        else $('pill-peak').classList.remove('danger');
+        if (peakMult > 4) $('pill-mult').classList.add('danger');
+        else $('pill-mult').classList.remove('danger');
+
+        const h2 = compute2ndHarmonic();
+        state.h2Ratio = h2;
+        $('h2Val').textContent = `${(h2 * 100).toFixed(1)} %`;
+
+        state.tauDecay = tauSec();
+        $('decayVal').textContent = `${(state.tauDecay * 1000).toFixed(0)} ms`;
+    } else if (state.closed) {
+        $('peakVal').textContent = '측정 중…';
+        $('multVal').textContent = '—';
+        $('h2Val').textContent = '—';
+        $('decayVal').textContent = `${(tauSec() * 1000).toFixed(0)} ms`;
+    } else {
+        $('peakVal').textContent = '—';
+        $('multVal').textContent = '—';
+        $('h2Val').textContent = '—';
+        $('decayVal').textContent = `${(tauSec() * 1000).toFixed(0)} ms`;
+        $('pill-peak').classList.remove('danger');
+        $('pill-mult').classList.remove('danger');
+    }
+}
+
+function close() {
+    if (state.closed) return;
+    state.closed = true;
+    state.t = 0;
+    state.samples = [];
+    state.peakI = 0;
+    state.peakIdx = 0;
+    $('modeBadge').textContent = '⚡ 투입됨 — 돌입 전류 측정 중';
+    $('modeBadge').className = 'font-bold text-pink-300';
+    $('closeBtn').disabled = true;
+    $('closeBtn').textContent = '⚡ 측정 중…';
+
+    if (window.gsap) {
+        gsap.fromTo('#canvasCard',
+            { boxShadow: '0 0 0 0 rgba(244, 114, 182, 0.8)' },
+            { boxShadow: '0 0 60px 6px rgba(244, 114, 182, 0)', duration: 0.8 });
+    }
+}
+
+function reset() {
+    state.closed = false;
+    state.t = 0;
+    state.samples = [];
+    state.peakI = 0;
+    state.peakIdx = 0;
+    state.h2Ratio = 0;
+    $('modeBadge').textContent = '대기 — 차단기 투입을 누르세요';
+    $('modeBadge').className = 'font-bold text-slate-300';
+    $('closeBtn').disabled = false;
+    $('closeBtn').textContent = '⚡ 차단기 투입 (Close)';
+    $('pill-peak').classList.remove('danger');
+    $('pill-mult').classList.remove('danger');
+    updateLive();
+}
+
+['ph', 'res', 'kva', 'win'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        compute();
+        // 잔류/위상은 투입 전 잔류 상태에 직접 영향
+        if (!state.closed) {
+            // 잔류 자속만 갱신해서 B-H 점 위치가 즉시 바뀌도록
+        }
+    });
+});
+$('closeBtn').addEventListener('click', close);
+$('resetBtn').addEventListener('click', reset);
+
+function animate() {
+    state.tick++;
+    // 시뮬레이션 스텝 (한 프레임당 여러 회)
+    if (state.closed) {
+        const stepsPerFrame = 4;
+        for (let k = 0; k < stepsPerFrame; k++) step();
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCircuitBg();
+    drawWires();
+    drawACSource();
+    drawCT();
+    drawSwitch();
+    drawTransformer();
+    drawBH();
+    drawWaveform();
+
+    // 라이브 패널 주기적 갱신
+    if (state.tick % 6 === 0) updateLive();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

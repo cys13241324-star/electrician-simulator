@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>접지 방식 (TT / TN / IT) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 197, 94, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(59, 130, 246, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(59,130,246,0.40), rgba(168,139,250,0.45));
+    box-shadow: 0 30px 100px -20px rgba(34, 197, 94, 0.28), 0 0 40px rgba(59, 130, 246, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 660px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,197,94,0.4), rgba(59,130,246,0.4), rgba(168,139,250,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6ee7b7, #93c5fd, #c4b5fd);
+    box-shadow: 0 0 22px rgba(110, 231, 183, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-mode { background: linear-gradient(135deg, rgba(110,231,183,0.20), rgba(110,231,183,0.06)); border-color: rgba(110,231,183,0.5); color: #6ee7b7; }
+.chip-resp { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.chip-leak { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fda4af; }
+.chip-grade { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.55); color: #fde68a; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-pill.trip {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #6ee7b7, #93c5fd, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(94, 234, 212, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(34,197,94,0.16), rgba(59,130,246,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(94, 234, 212, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #d1fae5; }
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.mode-btn:hover { background: rgba(148, 163, 184, 0.15); }
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(34,197,94,0.30), rgba(94,234,212,0.22));
+    border-color: rgba(110, 231, 183, 0.75);
+    color: #ecfdf5;
+    box-shadow: 0 0 20px rgba(110, 231, 183, 0.45);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(59,130,246,0.18));
+    border: 1px solid rgba(34,197,94,0.45);
+    color: #6ee7b7;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(34,197,94,0.32), rgba(59,130,246,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(34,197,94,0.45);
+}
+.mode-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.mode-card.active {
+    background: linear-gradient(135deg, rgba(34,197,94,0.20), rgba(15,23,42,0.75));
+    border-color: rgba(110,231,183,0.7);
+    box-shadow: 0 0 18px rgba(110, 231, 183, 0.35);
+    transform: translateY(-2px);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.legend-swatch { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-emerald-300">
+            <span class="pulse-dot"></span>
+            KEC EARTHING SYSTEM · TT / TN-S / TN-C / TN-C-S / IT
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-200 via-sky-200 to-violet-200 bg-clip-text text-transparent">
+            접지 방식 (TT / TN / IT) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            전원 측 접지(T/I) + 노출 도전부 접지(T/N) 조합으로 분류되는 5가지 접지 방식을 비교합니다.
+            <span class="text-emerald-300 font-semibold">중성선(N) · 보호선(PE) · 결합선(PEN)</span>의 연결 방식이 곧 안전성을 결정합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">접지 방식</p>
+            <p class="mt-1 text-lg font-bold"><span id="modeDisp" class="live-num">TT</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-resp">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">차단 응답</p>
+            <p class="mt-1 text-lg font-bold"><span id="respDisp" class="live-num">RCD</span> <span class="text-xs opacity-60 font-normal">방식</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-leak">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">고장 전류 I_f</p>
+            <p class="mt-1 text-lg font-bold"><span id="leakDisp" class="live-num">0</span> <span class="text-xs opacity-60 font-normal">A</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-grade">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">안전 등급</p>
+            <p class="mt-1 text-lg font-bold" id="gradeDisp"><span class="text-emerald-300">● 안전</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ FAULT — 지락 사고 발생 · 보호장치 동작
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">SOURCE → TRANSFORMER → DISTRIBUTION → LOAD · 지락 시 보호 경로</span>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상 운전</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="fault">⚠ 지락 발생</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+                <!-- 색상 범례 -->
+                <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-400">
+                    <span><span class="legend-swatch" style="background:#fda4af"></span> L (활선)</span>
+                    <span><span class="legend-swatch" style="background:#93c5fd"></span> N (중성선)</span>
+                    <span><span class="legend-swatch" style="background:#6ee7b7"></span> PE (보호선)</span>
+                    <span><span class="legend-swatch" style="background:#fde68a"></span> PEN (결합선)</span>
+                    <span><span class="legend-swatch" style="background:#f43f5e"></span> 고장 전류 경로</span>
+                </div>
+            </div>
+
+            <!-- 접지 방식 비교 카드 -->
+            <div class="glass rounded-2xl p-5" id="modeCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🌐</span>
+                    <span class="bg-gradient-to-r from-emerald-200 to-sky-200 bg-clip-text text-transparent">KEC 접지 방식 5종 비교 (IEC 60364)</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-[11px]" id="modeGrid">
+                    <div class="mode-card rounded-lg p-3" data-mode="TT">
+                        <p class="font-bold text-emerald-300">TT</p>
+                        <p class="text-slate-300 mt-0.5">전원 측 + 부하 측 <strong>각각 별도 접지</strong></p>
+                        <p class="text-slate-500 mt-1 text-[10px]">RCD(누전차단기) 필수 · 한국 주택용 표준 · 시공 단순</p>
+                    </div>
+                    <div class="mode-card rounded-lg p-3" data-mode="TN-S">
+                        <p class="font-bold text-sky-300">TN-S</p>
+                        <p class="text-slate-300 mt-0.5">N과 PE를 <strong>전 구간 분리</strong> (5선식)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">안전성 최고 · 의료/IT 시설 · MCB로 빠른 차단</p>
+                    </div>
+                    <div class="mode-card rounded-lg p-3" data-mode="TN-C">
+                        <p class="font-bold text-amber-300">TN-C</p>
+                        <p class="text-slate-300 mt-0.5">N과 PE를 <strong>PEN으로 통합</strong> (4선식)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">구식 · 경제적 · PEN 단선 시 노출부 충전 위험</p>
+                    </div>
+                    <div class="mode-card rounded-lg p-3" data-mode="TN-C-S">
+                        <p class="font-bold text-violet-300">TN-C-S</p>
+                        <p class="text-slate-300 mt-0.5">전원~인입 PEN, 인입 이후 <strong>N·PE 분리</strong></p>
+                        <p class="text-slate-500 mt-1 text-[10px]">한국 산업/상업 표준 · 경제성 + 안전성 절충</p>
+                    </div>
+                    <div class="mode-card rounded-lg p-3 md:col-span-2" data-mode="IT">
+                        <p class="font-bold text-rose-300">IT</p>
+                        <p class="text-slate-300 mt-0.5">전원 측 <strong>비접지(또는 고저항접지)</strong> · 부하 측 접지</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">1차 지락 시 회로 유지 → 무정전 필요 환경 · 병원 수술실 · 화학 플랜트 · 절연감시장치(IMD) 필수</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-emerald-200 to-sky-200 bg-clip-text text-transparent">고장 루프 임피던스 · 접촉 전압</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$I_f = \frac{V_0}{Z_s}, \qquad U_T = I_f \cdot R_A \le 50\,\text{V (AC, 상시)}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$\text{TT: } Z_s = R_B + R_A \quad\Rightarrow\quad I_f \approx \frac{V_0}{R_B + R_A} \ \text{(수 A — RCD 차단)}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$\text{TN: } Z_s = Z_L + Z_{PE} \ \text{(저임피던스)} \quad\Rightarrow\quad I_f \gg I_n \ \text{(MCB 즉시 차단)}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">
+                    TT는 대지 저항이 경로에 끼어 I_f가 작으므로 <span class="text-emerald-300 font-semibold">RCD(누전차단)</span>가 필수.
+                    TN은 금속 도체 경로로 I_f가 크므로 <span class="text-sky-300 font-semibold">과전류 차단(MCB)</span>만으로 동작 가능.
+                    IT는 1차 지락이 폐회로를 이루지 않아 <span class="text-rose-300 font-semibold">차단 없이 운전 지속</span>, 단 2차 지락은 단락이므로 위험.
+                </p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-emerald-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">접지 방식 선택</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-mode="TT">TT</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="TN-S">TN-S</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="TN-C">TN-C</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="TN-C-S">TN-C-S</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold col-span-2" data-mode="IT">IT (비접지)</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">첫 글자 = 전원(T:접지/I:비접지), 둘째 = 노출부(T:별도/N:전원중성)</p>
+            </div>
+
+            <div class="chip-leak chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>부하 전류 I_load</span>
+                    <span id="loadVal" class="font-mono text-base">10</span>
+                </label>
+                <input type="range" id="load" min="1" max="30" step="0.5" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A · 정상 운전 전류</p>
+            </div>
+
+            <div class="chip-leak chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>지락 사고 (활선→케이스)</span>
+                    <span id="faultBtnLabel" class="font-mono text-base">OFF</span>
+                </label>
+                <button id="faultToggle" class="mt-2 mode-btn rounded-md w-full px-2 py-1.5 text-[11px] font-bold">지락 발생 토글</button>
+                <p class="text-[10px] text-slate-500 mt-1">ON 시 활선이 노출 도전부(케이스)와 접촉</p>
+            </div>
+
+            <div class="chip-grade chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>전원 측 접지 R_B</span>
+                    <span id="rbVal" class="font-mono text-base">10</span>
+                </label>
+                <input type="range" id="rb" min="2" max="50" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 변압기 중성점 접지 저항</p>
+            </div>
+
+            <div class="chip-grade chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>부하 측 접지 R_A</span>
+                    <span id="raVal" class="font-mono text-base">30</span>
+                </label>
+                <input type="range" id="ra" min="2" max="200" step="1" value="30" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 부하 측 보호 접지 저항 (TT/IT)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">정상</span> · 부하 전류가 N(또는 PEN)으로 귀환</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">지락</span> · 활선→케이스→접지 경로로 누설</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">보호</span> · 방식별 RCD 또는 MCB 동작</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const CIRCUIT_H = 460;
+const METER_H = 200;
+const TOTAL_H = CIRCUIT_H + METER_H;
+
+const V0 = 220; // 상전압
+
+const state = {
+    mode: 'TT',
+    Iload: 10,
+    Rb: 10,    // 전원 측 접지 저항
+    Ra: 30,    // 부하 측 접지 저항
+    faultOn: false,
+    tripped: false,
+    tripT: null,
+    faultStartT: null,
+    t: 0,
+    If: 0,    // 고장 전류 (A)
+    Ut: 0     // 접촉 전압 (V)
+};
+
+let comp = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildCircuit();
+}
+window.addEventListener('resize', resize);
+
+function buildCircuit() {
+    const W = canvas.width;
+    const top = 70;
+    const bot = CIRCUIT_H - 90;
+    const xfmrX = 80;          // 전원 변압기
+    const breakerX = W * 0.30; // 보호장치 (RCD/MCB)
+    const loadX = W * 0.74;    // 부하
+    const earthY = bot + 22;   // 대지 경계 라인
+
+    comp = {
+        xfmrX, breakerX, loadX,
+        yL: top + 30,            // 활선
+        yN: top + 70,            // 중성선 / PEN
+        yPE: top + 110,          // 보호선 PE (TN-S, TN-C-S 후단, IT)
+        bot, top, earthY,
+        W
+    };
+}
+
+// ========== 모드 매트릭스 ==========
+function modeConfig(mode) {
+    // hasN: 중성선 N (단상 회귀선)
+    // hasPE: 부하 측 보호선 PE 별도
+    // hasPEN: PEN 결합선
+    // sourceGround: 전원 접지 여부
+    // protection: 'RCD' | 'MCB' | 'IMD'
+    const cfg = {
+        'TT':    { hasN: true,  hasPE: false, hasPEN: false, sourceGround: true,  loadGround: true,  protection: 'RCD', desc: 'RCD 누전차단' },
+        'TN-S':  { hasN: true,  hasPE: true,  hasPEN: false, sourceGround: true,  loadGround: false, protection: 'MCB', desc: 'MCB 즉시차단' },
+        'TN-C':  { hasN: false, hasPE: false, hasPEN: true,  sourceGround: true,  loadGround: false, protection: 'MCB', desc: 'MCB 즉시차단' },
+        'TN-C-S':{ hasN: true,  hasPE: true,  hasPEN: true,  sourceGround: true,  loadGround: false, protection: 'MCB', desc: 'MCB 즉시차단', split: true },
+        'IT':    { hasN: true,  hasPE: false, hasPEN: false, sourceGround: false, loadGround: true,  protection: 'IMD', desc: 'IMD 절연감시' }
+    };
+    return cfg[mode];
+}
+
+// ========== 계산 ==========
+function computeState() {
+    state.Iload = +$('load').value;
+    state.Rb = +$('rb').value;
+    state.Ra = +$('ra').value;
+    const cfg = modeConfig(state.mode);
+
+    // 고장 전류 I_f 및 접촉 전압 U_T 계산
+    let If = 0, Ut = 0;
+    if (state.faultOn && !state.tripped) {
+        if (state.mode === 'TT') {
+            // 대지 경로: Rb + Ra
+            If = V0 / (state.Rb + state.Ra);
+            Ut = If * state.Ra;
+        } else if (state.mode === 'TN-S' || state.mode === 'TN-C' || state.mode === 'TN-C-S') {
+            // 금속 PE/PEN 경로 - 저임피던스 가정
+            const Zloop = 0.8; // 합성 임피던스 (Ω) 근사
+            If = V0 / Zloop;
+            Ut = V0 / 2; // 대략 1/2 (PE 임피던스 비율)
+        } else if (state.mode === 'IT') {
+            // 1차 지락은 폐회로 미형성 → 미소 정전용량 전류만
+            If = 0.02; // 분포 정전용량 누설 근사 (mA→A)
+            Ut = If * state.Ra; // 매우 작음
+        }
+    }
+    state.If = If;
+    state.Ut = Ut;
+
+    // 차단 판정
+    if (state.faultOn && !state.tripped) {
+        if (state.faultStartT === null) state.faultStartT = state.t;
+        const elapsed = (state.t - state.faultStartT) / 60; // s
+        // 보호장치별 차단 시간
+        let tripDelay = 0.1;
+        if (cfg.protection === 'RCD') {
+            // 30mA 차단기 가정, If >= 0.03 A 면 차단
+            if (If >= 0.03 && elapsed >= 0.05) {
+                state.tripped = true; triggerTripEffects();
+            }
+        } else if (cfg.protection === 'MCB') {
+            // 정격(예: 20A) 5배 이상이면 즉시 차단
+            if (If >= 100 && elapsed >= 0.03) {
+                state.tripped = true; triggerTripEffects();
+            }
+        } else if (cfg.protection === 'IMD') {
+            // IT 1차 지락: 차단하지 않음, 경보만
+        }
+    }
+    if (!state.faultOn) {
+        state.faultStartT = null;
+    }
+}
+
+function updateDisplays() {
+    $('loadVal').textContent = state.Iload.toFixed(1);
+    $('rbVal').textContent = state.Rb;
+    $('raVal').textContent = state.Ra;
+    $('faultBtnLabel').textContent = state.faultOn ? 'ON' : 'OFF';
+
+    $('modeDisp').textContent = state.mode;
+    const cfg = modeConfig(state.mode);
+    $('respDisp').textContent = cfg.protection;
+    $('leakDisp').textContent = state.If < 1 ? state.If.toFixed(2) : state.If.toFixed(1);
+
+    const gradeEl = $('gradeDisp');
+    const pillGrade = $('pill-grade');
+    pillGrade.classList.remove('trip');
+    if (state.tripped) {
+        gradeEl.innerHTML = '<span class="text-rose-300">⚡ 차단</span>';
+        pillGrade.classList.add('trip');
+    } else if (state.faultOn && state.mode === 'IT') {
+        gradeEl.innerHTML = '<span class="text-amber-300">▲ 1차 지락(경보)</span>';
+    } else if (state.faultOn) {
+        gradeEl.innerHTML = '<span class="text-amber-300">▲ 지락 진행</span>';
+    } else {
+        gradeEl.innerHTML = '<span class="text-emerald-300">● 안전</span>';
+    }
+
+    $('alarmBanner').classList.toggle('hidden', !(state.tripped || (state.faultOn && state.mode === 'IT')));
+    if (state.faultOn && state.mode === 'IT' && !state.tripped) {
+        $('alarmBanner').innerHTML = '▲ 1차 지락 — IT 회로 운전 지속 · IMD 절연감시장치 경보';
+    } else if (state.tripped) {
+        $('alarmBanner').innerHTML = '⚡ FAULT — 지락 사고 발생 · 보호장치 동작 (' + cfg.protection + ')';
+    }
+
+    // 모드 카드 활성화
+    document.querySelectorAll('#modeGrid .mode-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.mode === state.mode);
+    });
+
+    // 토글 버튼
+    const ftog = $('faultToggle');
+    if (state.faultOn) ftog.classList.add('active'); else ftog.classList.remove('active');
+}
+
+// ========== 그리기 헬퍼 ==========
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function drawCircuitBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, CIRCUIT_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, CIRCUIT_H);
+
+    // 미세 그리드
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CIRCUIT_H); ctx.stroke();
+    }
+    for (let i = 0; i < CIRCUIT_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.6)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ EARTHING · ' + state.mode + ' · ' + modeConfig(state.mode).desc, 12, 10);
+
+    // 대지(GND) 라인
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, comp.earthY);
+    ctx.lineTo(canvas.width, comp.earthY);
+    ctx.stroke();
+    // 해치
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    for (let x = 10; x < canvas.width; x += 16) {
+        ctx.beginPath();
+        ctx.moveTo(x, comp.earthY);
+        ctx.lineTo(x - 8, comp.earthY + 12);
+        ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillText('대지 (Earth)', 8, comp.earthY + 16);
+    ctx.restore();
+}
+
+function strokeLine(x1, y1, x2, y2, color, lw, glow, dash) {
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    if (glow) { ctx.shadowBlur = glow; ctx.shadowColor = color; }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function strokePath(points, color, lw, glow, dash) {
+    if (points.length < 2) return;
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    if (glow) { ctx.shadowBlur = glow; ctx.shadowColor = color; }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 접지 심볼 (3단 가로선)
+function drawEarthSymbol(x, y, label, color) {
+    color = color || '#94a3b8';
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    // 위에서 내려오는 짧은 선
+    ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.lineTo(x, y); ctx.stroke();
+    // 3단 가로선
+    for (let i = 0; i < 3; i++) {
+        const w = 14 - i * 4;
+        const yy = y + i * 4;
+        ctx.beginPath();
+        ctx.moveTo(x - w/2, yy); ctx.lineTo(x + w/2, yy);
+        ctx.stroke();
+    }
+    if (label) {
+        ctx.fillStyle = color;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, y + 24);
+    }
+    ctx.restore();
+}
+
+function drawTransformer() {
+    const x = comp.xfmrX, yL = comp.yL, yN = comp.yN;
+    const cfg = modeConfig(state.mode);
+
+    // 변압기 본체
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(110, 231, 183, 0.5)';
+    const g = ctx.createLinearGradient(x - 30, yL - 20, x + 30, yN + 20);
+    g.addColorStop(0, '#0c4a6e');
+    g.addColorStop(1, '#064e3b');
+    ctx.fillStyle = g;
+    roundRect(ctx, x - 30, yL - 20, 60, (yN - yL) + 40, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.65)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 2차 권선 표시 (Δ-Y의 Y 부분)
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.8)';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(x - 8 + i * 8, (yL + yN) / 2, 4, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // 단자선
+    ctx.strokeStyle = 'rgba(253, 164, 175, 0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x + 30, yL); ctx.lineTo(x + 38, yL); ctx.stroke();
+    ctx.strokeStyle = 'rgba(147, 197, 253, 0.9)';
+    ctx.beginPath(); ctx.moveTo(x + 30, yN); ctx.lineTo(x + 38, yN); ctx.stroke();
+
+    // 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#a7f3d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('변압기', x, yN + 38);
+    ctx.fillStyle = 'rgba(167, 243, 208, 0.7)';
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillText(V0 + 'V', x, yN + 50);
+    ctx.restore();
+
+    // 전원 측 접지 (TN/TT는 중성점 접지, IT는 비접지)
+    if (cfg.sourceGround) {
+        // 중성점→접지 도체
+        const gx = x;
+        const gy1 = yN + 22;
+        const gy2 = comp.earthY - 6;
+        strokeLine(x, yN, x, gy1, 'rgba(253, 230, 138, 0.9)', 2, 8);
+        strokeLine(x, gy1, gx, gy2, 'rgba(253, 230, 138, 0.9)', 2, 8);
+        drawEarthSymbol(gx, gy2, 'R_B=' + state.Rb + 'Ω', '#fde68a');
+    } else {
+        // IT 방식: 비접지 (또는 고저항 접지) — 점선 + IMD
+        const gy1 = yN + 22;
+        const gy2 = comp.earthY - 16;
+        strokeLine(x, yN, x, gy1, 'rgba(244, 63, 94, 0.5)', 1.5, 4, [4,4]);
+        strokeLine(x, gy1, x, gy2, 'rgba(244, 63, 94, 0.5)', 1.5, 4, [4,4]);
+        // IMD 박스
+        ctx.save();
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.15)';
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
+        ctx.lineWidth = 1.4;
+        roundRect(ctx, x - 18, gy2 - 4, 36, 18, 4);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fda4af';
+        ctx.font = 'bold 8px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('IMD', x, gy2 + 8);
+        ctx.restore();
+    }
+}
+
+function drawBreaker() {
+    const x = comp.breakerX;
+    const cfg = modeConfig(state.mode);
+    const yL = comp.yL, yN = comp.yN, yPE = comp.yPE;
+
+    // 보호장치 박스
+    const wires = (cfg.hasPE ? 3 : (cfg.hasPEN ? 2 : 2));
+    const bxTop = yL - 18;
+    const bxBot = (cfg.hasPE && !cfg.split ? yPE : yN) + 18;
+    const w = 80;
+    ctx.save();
+    ctx.shadowBlur = state.tripped ? 18 : 12;
+    ctx.shadowColor = state.tripped ? 'rgba(244, 63, 94, 0.7)' : 'rgba(251, 191, 36, 0.5)';
+    const g = ctx.createLinearGradient(x - w/2, bxTop, x + w/2, bxBot);
+    g.addColorStop(0, '#1f2937');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, x - w/2, bxTop, w, bxBot - bxTop, 8);
+    ctx.fill();
+    ctx.strokeStyle = state.tripped ? 'rgba(244,63,94,0.85)' : 'rgba(251,191,36,0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.tripped ? '#fda4af' : '#fde68a';
+    ctx.fillText(cfg.protection, x, bxTop - 8);
+    ctx.font = '8px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 230, 138, 0.7)';
+    ctx.fillText(cfg.desc, x, bxBot + 10);
+
+    // 상태 LED
+    const ledColor = state.tripped ? '#f43f5e' : '#34d399';
+    ctx.shadowBlur = 12; ctx.shadowColor = ledColor;
+    ctx.fillStyle = ledColor;
+    ctx.beginPath();
+    ctx.arc(x + w/2 - 8, bxTop + 8, 3.5 + Math.sin(state.t * 0.15) * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 스위치(L,N에서) - tripped 시 끊김
+    drawSwitch(x - 18, yL, state.tripped);
+    if (cfg.hasN || cfg.hasPEN) drawSwitch(x - 18, yN, state.tripped);
+}
+
+function drawSwitch(cx, cy, opened) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.9)';
+    ctx.beginPath(); ctx.arc(cx - 10, cy, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 10, cy, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = opened ? 'rgba(244, 63, 94, 0.9)' : 'rgba(110, 231, 183, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = opened ? 10 : 6;
+    ctx.shadowColor = opened ? 'rgba(244,63,94,0.8)' : 'rgba(110,231,183,0.6)';
+    ctx.beginPath();
+    if (opened) {
+        ctx.moveTo(cx - 10, cy);
+        ctx.lineTo(cx + 6, cy - 9);
+    } else {
+        ctx.moveTo(cx - 10, cy);
+        ctx.lineTo(cx + 10, cy);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawLoad() {
+    const x = comp.loadX, yL = comp.yL, yN = comp.yN, yPE = comp.yPE;
+    const cfg = modeConfig(state.mode);
+    const w = 80;
+    const bxTop = yL - 18;
+    const bxBot = (cfg.hasPE ? yPE : yN) + 18;
+
+    // 부하 케이스
+    ctx.save();
+    ctx.shadowBlur = state.faultOn ? 18 : 12;
+    ctx.shadowColor = state.faultOn ? 'rgba(244, 63, 94, 0.6)' : 'rgba(125, 211, 252, 0.5)';
+    const g = ctx.createLinearGradient(x - w/2, bxTop, x + w/2, bxBot);
+    g.addColorStop(0, state.faultOn ? '#7f1d1d' : '#155e75');
+    g.addColorStop(1, state.faultOn ? '#450a0a' : '#0c4a6e');
+    ctx.fillStyle = g;
+    roundRect(ctx, x - w/2, bxTop, w, bxBot - bxTop, 10);
+    ctx.fill();
+    ctx.strokeStyle = state.faultOn ? 'rgba(244, 63, 94, 0.85)' : 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // 부하 내부 (저항기)
+    ctx.strokeStyle = state.tripped ? 'rgba(148,163,184,0.5)' : 'rgba(186, 230, 253, 0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    const zx = x - 14, zy1 = yL + 5, zy2 = yN - 5;
+    ctx.moveTo(zx + 8, yL); ctx.lineTo(zx + 8, zy1);
+    for (let k = 0; k <= 5; k++) {
+        const ny = zy1 + ((zy2 - zy1) * k) / 5;
+        const nx = zx + 8 + (k % 2 === 0 ? -5 : 5);
+        ctx.lineTo(nx, ny);
+    }
+    ctx.lineTo(zx + 8, zy2); ctx.lineTo(zx + 8, yN);
+    ctx.stroke();
+
+    // 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.faultOn ? '#fda4af' : '#bae6fd';
+    ctx.fillText('부하/기기', x, bxBot + 14);
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.7)';
+    ctx.fillText(state.Iload.toFixed(1) + ' A', x, bxBot + 26);
+    ctx.restore();
+
+    // 부하 측 접지 (TT, IT) - 케이스 → R_A → 대지
+    if (cfg.loadGround) {
+        const gx = x + w/2 + 16;
+        const gy1 = bxBot - 8;
+        const gy2 = comp.earthY - 6;
+        // 케이스에서 위로 한 번 올라간 뒤 옆으로
+        strokeLine(x + w/2, bxBot - 8, gx, gy1, 'rgba(253, 230, 138, 0.9)', 2, 8);
+        strokeLine(gx, gy1, gx, gy2, 'rgba(253, 230, 138, 0.9)', 2, 8);
+        drawEarthSymbol(gx, gy2, 'R_A=' + state.Ra + 'Ω', '#fde68a');
+    }
+
+    // 부하 측 PE 보호선(TN-S, TN-C-S 후단) - 보호장치 PE에서 부하 케이스로
+    if (cfg.hasPE) {
+        // PE 라인은 drawDistribution()에서 그림
+    }
+}
+
+// 배선 (보호장치 → 부하)
+function drawDistribution() {
+    const cfg = modeConfig(state.mode);
+    const xfmr = comp.xfmrX + 38;
+    const brk = comp.breakerX;
+    const load = comp.loadX - 40;
+    const yL = comp.yL, yN = comp.yN, yPE = comp.yPE;
+    const tripped = state.tripped;
+
+    const lcol = tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(253, 164, 175, 0.85)';
+    const ncol = tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(147, 197, 253, 0.85)';
+    const pecol = tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(110, 231, 183, 0.85)';
+    const pencol = tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(253, 230, 138, 0.95)';
+
+    // 활선 L: 전원 → 보호장치 → 부하
+    strokeLine(xfmr, yL, brk - 30, yL, lcol, 3, 8);
+    strokeLine(brk + 18, yL, load, yL, lcol, 3, 8);
+
+    // === 모드별 N / PE / PEN 처리 ===
+    if (state.mode === 'TT') {
+        // N: 전원 → 보호장치 → 부하 (PE 없음, 부하측 별도 접지)
+        strokeLine(xfmr, yN, brk - 30, yN, ncol, 3, 8);
+        strokeLine(brk + 18, yN, load, yN, ncol, 3, 8);
+    } else if (state.mode === 'TN-S') {
+        // N과 PE 전 구간 분리
+        strokeLine(xfmr, yN, brk - 30, yN, ncol, 3, 8);
+        strokeLine(brk + 18, yN, load, yN, ncol, 3, 8);
+        // PE: 전원 접지에서 출발 → 부하 케이스
+        const peStartY = comp.earthY - 30;
+        strokePath([
+            { x: comp.xfmrX, y: peStartY },
+            { x: comp.xfmrX, y: yPE },
+            { x: brk - 30, y: yPE }
+        ], pecol, 2.6, 7);
+        strokePath([
+            { x: brk + 18, y: yPE },
+            { x: load + 10, y: yPE },
+            { x: load + 10, y: yN + 14 }  // 부하 케이스 외부로 연결
+        ], pecol, 2.6, 7);
+        // PE → 케이스 접지 표시
+        ctx.save();
+        ctx.fillStyle = '#6ee7b7';
+        ctx.font = 'bold 8px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('PE', brk + 20, yPE - 4);
+        ctx.restore();
+    } else if (state.mode === 'TN-C') {
+        // PEN 결합선 - N과 PE 통합
+        strokeLine(xfmr, yN, brk - 30, yN, pencol, 3.5, 10);
+        strokeLine(brk + 18, yN, load, yN, pencol, 3.5, 10);
+        // 부하 케이스에 PEN 직결 (라벨)
+        ctx.save();
+        ctx.fillStyle = '#fde68a';
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('PEN (N + PE 결합)', (brk + load) / 2, yN - 8);
+        ctx.restore();
+    } else if (state.mode === 'TN-C-S') {
+        // 전원~보호장치 PEN, 보호장치 이후 N과 PE 분리
+        strokeLine(xfmr, yN, brk - 30, yN, pencol, 3.5, 10);
+        // 보호장치 이후 N
+        strokeLine(brk + 18, yN, load, yN, ncol, 3, 8);
+        // PE 분기 (보호장치 출력에서 PE 도체 분기)
+        strokePath([
+            { x: brk + 18, y: yN },
+            { x: brk + 30, y: yN },
+            { x: brk + 30, y: yPE },
+            { x: load + 10, y: yPE },
+            { x: load + 10, y: yN + 14 }
+        ], pecol, 2.6, 7);
+        ctx.save();
+        ctx.fillStyle = '#fde68a';
+        ctx.font = 'bold 8px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('PEN', xfmr + 8, yN - 6);
+        ctx.fillStyle = '#6ee7b7';
+        ctx.fillText('N/PE 분리점', brk + 18, yN + (yPE - yN)/2 - 4);
+        ctx.restore();
+    } else if (state.mode === 'IT') {
+        // N: 보통 분배. PE 없음 (또는 별도). 부하 측은 자체 접지
+        strokeLine(xfmr, yN, brk - 30, yN, ncol, 3, 8);
+        strokeLine(brk + 18, yN, load, yN, ncol, 3, 8);
+    }
+
+    // ===== 지락 사고 경로 =====
+    if (state.faultOn && !state.tripped) {
+        drawFaultPath();
+    }
+}
+
+function drawFaultPath() {
+    const loadX = comp.loadX;
+    const yL = comp.yL, yN = comp.yN;
+    const cfg = modeConfig(state.mode);
+
+    // 활선에서 케이스 (지락 단락점)
+    const faultX = loadX - 6;
+    const caseY = yN + 14;
+
+    // 1) L→케이스 화살
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(244, 63, 94, 0.8)';
+    ctx.strokeStyle = 'rgba(244, 63, 94, 0.95)';
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(faultX, yL);
+    ctx.lineTo(faultX, caseY);
+    ctx.stroke();
+    ctx.restore();
+
+    // 스파크
+    const sx = faultX, sy = (yL + caseY) / 2;
+    for (let i = 0; i < 5; i++) {
+        const a = (state.t * 0.3 + i * 1.7) % (Math.PI * 2);
+        const r = 6 + (i % 2) * 4;
+        ctx.save();
+        ctx.fillStyle = `rgba(252, 211, 77, ${0.6 + Math.sin(state.t * 0.4 + i) * 0.3})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#fcd34d';
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(a) * r, sy + Math.sin(a) * r * 0.7, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // 2) 케이스 → 보호접지 → 대지 → 전원 접지로의 폐회로
+    const earthY = comp.earthY;
+    const xfmrEarthX = comp.xfmrX;
+
+    if (state.mode === 'TT') {
+        // 케이스 → R_A → 대지 → R_B → 전원접지
+        const raX = comp.loadX + 40 + 16;
+        strokePath([
+            { x: faultX, y: caseY + 4 },
+            { x: raX, y: caseY + 4 },
+            { x: raX, y: earthY }
+        ], 'rgba(244, 63, 94, 0.95)', 2.4, 14, [6, 4]);
+        // 대지 위 폐루프
+        strokePath([
+            { x: raX, y: earthY + 6 },
+            { x: xfmrEarthX, y: earthY + 6 },
+            { x: xfmrEarthX, y: earthY }
+        ], 'rgba(244, 63, 94, 0.7)', 1.8, 10, [4, 4]);
+    } else if (state.mode === 'TN-S' || state.mode === 'TN-C-S') {
+        // 케이스 → PE → 전원 (저임피던스 폐회로) — 굵게
+        const peY = comp.yPE;
+        strokePath([
+            { x: faultX, y: caseY + 4 },
+            { x: comp.loadX + 10, y: caseY + 4 },
+            { x: comp.loadX + 10, y: peY },
+            { x: comp.xfmrX + 38, y: peY },
+            { x: comp.xfmrX + 38, y: comp.yN }
+        ], 'rgba(244, 63, 94, 0.95)', 3, 14, [6, 4]);
+    } else if (state.mode === 'TN-C') {
+        // 케이스 → PEN → 전원
+        strokePath([
+            { x: faultX, y: caseY + 4 },
+            { x: comp.loadX + 10, y: caseY + 4 },
+            { x: comp.loadX + 10, y: comp.yN },
+            { x: comp.xfmrX + 38, y: comp.yN }
+        ], 'rgba(244, 63, 94, 0.95)', 3, 14, [6, 4]);
+    } else if (state.mode === 'IT') {
+        // 1차 지락: 폐회로 미형성 (점선만 표기)
+        const raX = comp.loadX + 40 + 16;
+        strokePath([
+            { x: faultX, y: caseY + 4 },
+            { x: raX, y: caseY + 4 },
+            { x: raX, y: earthY }
+        ], 'rgba(244, 63, 94, 0.6)', 1.8, 8, [2, 4]);
+        // 라벨
+        ctx.save();
+        ctx.fillStyle = '#fda4af';
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('1차 지락 — 폐회로 미형성', (faultX + raX) / 2, caseY + 16);
+        ctx.fillText('IMD만 경보 / 운전 지속', (faultX + raX) / 2, caseY + 28);
+        ctx.restore();
+    }
+
+    // 고장 전류 라벨
+    ctx.save();
+    ctx.fillStyle = '#fecaca';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    const txt = `I_f = ${state.If < 1 ? state.If.toFixed(2) : state.If.toFixed(1)} A`;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    const tw = ctx.measureText(txt).width;
+    roundRect(ctx, faultX + 10, yL - 8, tw + 14, 18, 8);
+    ctx.fill();
+    ctx.fillStyle = '#fecaca';
+    ctx.fillText(txt, faultX + 17, yL + 5);
+    ctx.restore();
+}
+
+// ============ TRIP 효과 ============
+function triggerTripEffects() {
+    if (!window.gsap) return;
+    gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+        { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+    gsap.fromTo('#pill-grade',
+        { scale: 1.12 },
+        { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+}
+
+// ============ 하단 메터 패널 ============
+function drawMeterPanel() {
+    const W = canvas.width;
+    const top0 = CIRCUIT_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + METER_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, METER_H);
+
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(94, 234, 212, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(94, 234, 212, 0.75)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ EARTHING METER · 고장 전류 I_f · 접촉 전압 U_T · 보호 응답', 12, top0 + 10);
+    ctx.restore();
+
+    drawMetrics(top0);
+}
+
+function drawMetrics(top0) {
+    const cfg = modeConfig(state.mode);
+    const W = canvas.width;
+    const padX = 60;
+    const blockW = (W - padX * 2 - 30) / 3;
+    const y = top0 + 50;
+    const blockH = METER_H - 70;
+
+    const items = [
+        {
+            title: '고장 전류 I_f',
+            value: state.If < 1 ? state.If.toFixed(2) : state.If.toFixed(1),
+            unit: 'A',
+            color: '#f43f5e', glow: 'rgba(244,63,94,0.5)',
+            sub: '루프 임피던스 = V₀ / I_f',
+            barFrac: Math.min(1, state.If / 100)
+        },
+        {
+            title: '접촉 전압 U_T',
+            value: state.Ut.toFixed(0),
+            unit: 'V',
+            color: state.Ut > 50 ? '#f43f5e' : '#fbbf24',
+            glow: state.Ut > 50 ? 'rgba(244,63,94,0.5)' : 'rgba(251,191,36,0.5)',
+            sub: '한도 50V (AC 상시) · 인체 위험',
+            barFrac: Math.min(1, state.Ut / 220),
+            limit: 50, limitMax: 220
+        },
+        {
+            title: '보호 응답',
+            value: cfg.protection,
+            unit: '',
+            color: state.tripped ? '#f43f5e' : '#6ee7b7',
+            glow: state.tripped ? 'rgba(244,63,94,0.5)' : 'rgba(110,231,183,0.5)',
+            sub: cfg.desc,
+            text: true
+        }
+    ];
+
+    items.forEach((it, i) => {
+        const x = padX + i * (blockW + 15);
+        ctx.save();
+        // 박스
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+        ctx.lineWidth = 1;
+        roundRect(ctx, x, y, blockW, blockH, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // 타이틀
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText(it.title, x + 12, y + 10);
+
+        // 값
+        ctx.font = 'bold 24px ui-monospace, monospace';
+        ctx.shadowBlur = 12; ctx.shadowColor = it.glow;
+        ctx.fillStyle = it.color;
+        ctx.fillText(it.value + ' ' + it.unit, x + 12, y + 28);
+        ctx.shadowBlur = 0;
+
+        // 서브 텍스트
+        ctx.font = '9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.7)';
+        ctx.fillText(it.sub, x + 12, y + 64);
+
+        // 바
+        if (!it.text) {
+            const barX = x + 12, barY = y + blockH - 22, barW = blockW - 24, barH = 10;
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            roundRect(ctx, barX, barY, barW, barH, 5); ctx.fill();
+            // 한계선
+            if (it.limit) {
+                const lx = barX + barW * (it.limit / it.limitMax);
+                ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
+                ctx.setLineDash([3, 3]);
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.moveTo(lx, barY - 2); ctx.lineTo(lx, barY + barH + 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            // 채움
+            const fw = barW * (it.barFrac || 0);
+            const g = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+            g.addColorStop(0, it.color);
+            g.addColorStop(1, '#fff');
+            ctx.fillStyle = g;
+            ctx.shadowBlur = 10; ctx.shadowColor = it.glow;
+            roundRect(ctx, barX, barY, fw, barH, 5); ctx.fill();
+        }
+        ctx.restore();
+    });
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    computeState();
+    updateDisplays();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCircuitBg();
+    drawTransformer();
+    drawDistribution();
+    drawBreaker();
+    drawLoad();
+    drawMeterPanel();
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+['load','rb','ra'].forEach(id => {
+    const map = { load: 'pill-leak', rb: 'pill-grade', ra: 'pill-grade' };
+    $(id).addEventListener('input', () => flashPanel(map[id]));
+});
+
+document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.mode = b.dataset.mode;
+        // 모드 변경 시 trip 리셋
+        state.tripped = false;
+        state.faultStartT = null;
+        $('alarmBanner').classList.add('hidden');
+        flashPanel('pill-mode');
+        if (window.gsap) {
+            gsap.fromTo('#canvasCard',
+                { scale: 0.98 },
+                { scale: 1, duration: 0.4, ease: 'back.out(1.5)' });
+        }
+    });
+});
+
+$('faultToggle').addEventListener('click', () => {
+    state.faultOn = !state.faultOn;
+    if (!state.faultOn) {
+        state.tripped = false;
+        state.faultStartT = null;
+        $('alarmBanner').classList.add('hidden');
+    }
+    flashPanel('pill-leak');
+});
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        if (mode === 'normal') {
+            state.faultOn = false;
+            state.tripped = false;
+            state.faultStartT = null;
+            $('alarmBanner').classList.add('hidden');
+            flashPanel('pill-grade');
+        }
+        if (mode === 'fault') {
+            state.tripped = false;
+            state.faultStartT = null;
+            state.faultOn = true;
+            flashPanel('pill-leak');
+        }
+        if (mode === 'reset') {
+            state.tripped = false;
+            state.faultStartT = null;
+            state.faultOn = false;
+            $('alarmBanner').classList.add('hidden');
+            flashPanel('pill-grade');
+        }
+    });
+});
+
+// 모드 비교 카드 클릭 → 모드 변경
+document.querySelectorAll('#modeGrid .mode-card').forEach(el => {
+    el.addEventListener('click', () => {
+        const m = el.dataset.mode;
+        const btn = document.querySelector('.mode-btn[data-mode="' + m + '"]');
+        if (btn) btn.click();
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeState();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#modeCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 렌츠 법칙 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.45), rgba(168,139,250,0.45), rgba(244,114,182,0.45));
+    box-shadow: 0 30px 100px -20px rgba(34, 211, 238, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 540px;
+    border-radius: 17px;
+    background: #050714;
+    cursor: grab;
+    touch-action: none;
+}
+canvas#main.grabbing { cursor: grabbing; }
+canvas#mini {
+    display: block;
+    width: 100%;
+    height: 140px;
+    border-radius: 12px;
+    background: #050714;
+}
+
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px;
+    border-radius: 9999px; border: 2px solid #34d399;
+    opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,211,238,0.4), rgba(168,139,250,0.4), rgba(244,63,94,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #fda4af);
+    box-shadow: 0 0 22px rgba(103, 232, 249, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-b { background: linear-gradient(135deg, rgba(168,85,247,0.20), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-n { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(34, 211, 238, 0.6);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+}
+.live-pill.zero {
+    border-color: rgba(148, 163, 184, 0.4);
+    opacity: 0.85;
+}
+.live-pill.repel {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 18px rgba(244, 114, 182, 0.25);
+}
+.live-pill.attract {
+    border-color: rgba(103, 232, 249, 0.6);
+    box-shadow: 0 0 18px rgba(103, 232, 249, 0.25);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.zero {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-text-repel {
+    background: linear-gradient(135deg, #f9a8d4, #fda4af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-text-attract {
+    background: linear-gradient(135deg, #67e8f9, #93c5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(34,211,238,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(103, 232, 249, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #cffafe; }
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(103, 232, 249, 0.4);
+}
+.mode-btn {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.mode-btn:hover, .mode-btn.active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.3), rgba(168,139,250,0.25));
+    transform: translateY(-1px);
+    border-color: rgba(34,211,238,0.6);
+    box-shadow: 0 0 22px rgba(34,211,238,0.4);
+    color: #cffafe;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(34,211,238,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.alert-zero {
+    background: linear-gradient(135deg, rgba(148,163,184,0.18), rgba(71,85,105,0.12));
+    border: 1px dashed rgba(148,163,184,0.4);
+    color: #cbd5e1;
+}
+.alert-repel {
+    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(244,63,94,0.10));
+    border: 1px solid rgba(244,114,182,0.45);
+    color: #fbcfe8;
+}
+.alert-attract {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(99,102,241,0.10));
+    border: 1px solid rgba(34,211,238,0.45);
+    color: #a5f3fc;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · LENZ'S LAW · OPPOSE THE CHANGE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-indigo-200 to-pink-200 bg-clip-text text-transparent">
+            🧲 렌츠 법칙 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">유도 전류는 항상 <span class="text-cyan-300 font-bold">자속 변화를 방해하는 방향</span>으로 흐릅니다. 자석이 접근하면 코일은 같은 극으로 밀어내고, 멀어지면 반대 극으로 끌어당깁니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-vel">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">자석 속도 v</p>
+            <p class="mt-1 text-lg font-bold"><span id="velVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">px/s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-dflux">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">자속 변화율 dΦ/dt</p>
+            <p class="mt-1 text-lg font-bold"><span id="dfluxVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">Wb/s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-cur">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">유도 전류 i</p>
+            <p class="mt-1 text-lg font-bold"><span id="curVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">mA</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-force">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">작용하는 힘 F</p>
+            <p class="mt-1 text-base font-bold"><span id="forceVal">대기 중</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">DRAG · 자석을 코일 쪽으로 움직여 보세요</span>
+                <div class="flex gap-2">
+                    <button id="modeManual" class="mode-btn active rounded-md px-3 py-1.5 text-xs font-bold">수동 드래그</button>
+                    <button id="modeAuto" class="mode-btn rounded-md px-3 py-1.5 text-xs font-bold">자동 진동</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <!-- 상태 알림 -->
+            <div id="zeroAlert" class="mt-3 rounded-lg px-3 py-2 text-xs alert-zero">
+                <span class="font-bold">정지 상태</span> · 자속 변화 없음 → 유도 전류 0 → 작용하는 힘도 없음
+            </div>
+
+            <!-- i(t) 미니 그래프 -->
+            <div class="mt-3 canvas-wrap" style="border-radius: 13px;">
+                <canvas id="mini"></canvas>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 tracking-wider">◯ INDUCED CURRENT · TIME RESPONSE — 유도 전류의 시간 변화</p>
+
+            <!-- 컨트롤 -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="chip-v chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>자석 속도 v</span><span id="vDisp" class="font-mono text-base">3</span></label>
+                    <input type="range" id="vRange" min="0" max="10" step="0.1" value="3" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">자동 모드용 · 0 = 정지</p>
+                </div>
+                <div class="chip-b chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>자속 밀도 B</span><span id="bDisp" class="font-mono text-base">1.0</span></label>
+                    <input type="range" id="bRange" min="0.2" max="2" step="0.1" value="1.0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">자석 세기 (T)</p>
+                </div>
+                <div class="chip-n chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>코일 권수 N</span><span id="nDisp" class="font-mono text-base">10</span></label>
+                    <input type="range" id="nRange" min="2" max="20" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">turns</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사이드 -->
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="text-lg">💡</span>
+                    <span class="bg-gradient-to-r from-cyan-300 to-pink-200 bg-clip-text text-transparent">렌츠 법칙 핵심 5</span>
+                </h2>
+                <ul class="mt-4 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">1. 방해의 법칙</span> · 유도 전류는 항상 <span class="text-cyan-300 font-bold">자속 변화를 방해</span>하는 방향</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">2. N극 접근</span> · 코일도 <span class="text-pink-300 font-bold">N극</span>이 마주봐 자석을 <span class="text-pink-300 font-bold">밀어냄</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">3. N극 이탈</span> · 코일은 <span class="text-cyan-300 font-bold">S극</span>으로 바뀌어 자석을 <span class="text-cyan-300 font-bold">끌어당김</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">4. 에너지 보존</span> · 외력이 한 일이 전기 에너지로 변환되는 원리</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">5. (−) 부호</span> · e = −N·dΦ/dt 의 음수가 바로 렌츠 법칙</li>
+                </ul>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-cyan-200">📐 렌츠 법칙 (수식)</h3>
+                <div class="math-container">
+                    $$e = -N\,\frac{d\Phi}{dt} \;\;[\text{V}]$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">(−) 부호 = 유도 기전력의 방향이 자속 변화를 방해함을 의미</p>
+            </div>
+
+            <div class="formula-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">⚡ 지금 이 순간</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">자석 N극 위치</span><span id="posLabel" class="font-mono text-cyan-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">코일 유도극 (자석면)</span><span id="poleLabel" class="font-mono text-pink-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">전류 방향</span><span id="dirLabel" class="font-mono text-cyan-200">—</span></div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">🎯 핵심 시나리오</h3>
+                <div class="space-y-2 text-[11px] text-slate-300">
+                    <div class="feature-row rounded-lg p-3">
+                        <span class="font-bold text-pink-300">N극이 코일로 접근</span><br>
+                        <span class="text-slate-400">→ 자속 증가 → 코일 N극(반발) → 자석을 밀어냄</span>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <span class="font-bold text-cyan-300">N극이 코일에서 이탈</span><br>
+                        <span class="text-slate-400">→ 자속 감소 → 코일 S극(인력) → 자석을 끌어당김</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const mini = $('mini');
+const mctx = mini.getContext('2d');
+
+// ============================================
+// 상태
+// ============================================
+let state = {
+    B: 1.0,
+    N: 10,
+    vSlider: 3,
+    mode: 'manual',
+    magX: 0,
+    magY: 0,
+    coilX: 0,
+    coilY: 0,
+    coilR: 70,
+    flux: 0,
+    dflux: 0,
+    emf: 0,
+    cur: 0,
+    velocity: 0,
+    prevX: 0,
+    autoT: 0,
+    dragging: false,
+    t: 0,
+    // Lenz 특유
+    inducedPoleFace: 0, // -1: S(인력), 0: 없음, +1: N(반발) — 자석을 향한 코일 면의 극
+    forceMag: 0,        // 0 ~ 1, 시각화용
+};
+
+const CUR_BUF_LEN = 200;
+const curBuf = new Array(CUR_BUF_LEN).fill(0);
+
+let circuitParticles = [];
+
+// ============================================
+// 리사이즈
+// ============================================
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 540;
+    state.coilX = canvas.width * 0.62;
+    state.coilY = canvas.height * 0.45;
+    if (state.magX === 0) {
+        state.magX = canvas.width * 0.20;
+        state.magY = state.coilY;
+        state.prevX = state.magX;
+    }
+    mini.width = mini.parentElement.clientWidth - 2;
+    mini.height = 140;
+    seedCircuitParticles();
+}
+window.addEventListener('resize', resize);
+
+// ============================================
+// 컨트롤
+// ============================================
+$('vRange').addEventListener('input', e => {
+    state.vSlider = +e.target.value;
+    $('vDisp').textContent = state.vSlider.toFixed(1);
+    flashCard();
+});
+$('bRange').addEventListener('input', e => {
+    state.B = +e.target.value;
+    $('bDisp').textContent = state.B.toFixed(1);
+    flashCard();
+});
+$('nRange').addEventListener('input', e => {
+    state.N = +e.target.value;
+    $('nDisp').textContent = state.N;
+    flashCard();
+});
+$('modeManual').addEventListener('click', () => {
+    state.mode = 'manual';
+    $('modeManual').classList.add('active');
+    $('modeAuto').classList.remove('active');
+});
+$('modeAuto').addEventListener('click', () => {
+    state.mode = 'auto';
+    state.autoT = 0;
+    $('modeAuto').classList.add('active');
+    $('modeManual').classList.remove('active');
+});
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(34,211,238,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(34,211,238,0)', duration: 0.6 });
+}
+
+// ============================================
+// 드래그
+// ============================================
+function pointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t0 = e.touches ? e.touches[0] : e;
+    return { x: t0.clientX - rect.left, y: t0.clientY - rect.top };
+}
+function tryStartDrag(e) {
+    if (state.mode !== 'manual') return;
+    const { x, y } = pointerPos(e);
+    const dx = x - state.magX, dy = y - state.magY;
+    if (Math.abs(dx) < 60 && Math.abs(dy) < 30) {
+        state.dragging = true;
+        canvas.classList.add('grabbing');
+    }
+}
+function dragMove(e) {
+    if (!state.dragging) return;
+    const { x, y } = pointerPos(e);
+    state.magX = Math.max(60, Math.min(canvas.width - 60, x));
+    state.magY = state.coilY + (y - state.coilY) * 0.3;
+    state.magY = Math.max(state.coilY - 30, Math.min(state.coilY + 30, state.magY));
+}
+function endDrag() {
+    state.dragging = false;
+    canvas.classList.remove('grabbing');
+}
+canvas.addEventListener('mousedown', tryStartDrag);
+canvas.addEventListener('mousemove', dragMove);
+window.addEventListener('mouseup', endDrag);
+canvas.addEventListener('touchstart', e => { tryStartDrag(e); }, { passive: true });
+canvas.addEventListener('touchmove', e => { dragMove(e); e.preventDefault(); }, { passive: false });
+window.addEventListener('touchend', endDrag);
+
+// ============================================
+// 물리
+// ============================================
+function computeFlux() {
+    const dx = state.coilX - state.magX;
+    const dy = state.coilY - state.magY;
+    const r = Math.hypot(dx, dy);
+    const sigma = state.coilR * 1.6;
+    const sign = Math.tanh(dx / (sigma * 0.6));
+    const envelope = Math.exp(-(dy * dy) / (2 * sigma * sigma));
+    const peak = 1 / (1 + Math.pow(r / sigma, 2));
+    return state.B * sign * envelope * peak;
+}
+
+function updatePhysics() {
+    if (state.mode === 'auto') {
+        state.autoT += 0.016;
+        const amp = canvas.width * 0.25;
+        const freq = state.vSlider * 0.15;
+        state.magX = canvas.width * 0.5 + Math.sin(state.autoT * freq) * amp;
+        state.magY = state.coilY;
+    }
+
+    const rawV = state.magX - state.prevX;
+    state.velocity = state.velocity * 0.6 + rawV * 0.4;
+    state.prevX = state.magX;
+
+    const newFlux = computeFlux();
+    state.dflux = newFlux - state.flux;
+    state.flux = newFlux;
+
+    state.emf = -state.N * state.dflux * 60;
+    state.cur = state.emf / 50;
+
+    // Lenz 특유: 코일의 자석면 극성 결정
+    // 자석 N극이 오른쪽(코일을 향함). 자석이 코일에 접근하면 코일 좌측 면이 자석을 향함.
+    // 자석이 왼쪽에 있을 때: 자석의 N극이 코일을 향함.
+    //   접근(velocity > 0, 자석<코일) → 자속 증가 → 코일 자석면도 N(반발)
+    //   이탈(velocity < 0, 자석<코일) → 자속 감소 → 코일 자석면 S(인력)
+    // 자석이 오른쪽에 있을 때: 자석의 S극이 코일을 향함.
+    //   접근(velocity < 0, 자석>코일) → 자속 부호 반대로 증가 → 코일 자석면 S(반발)
+    //   이탈(velocity > 0, 자석>코일) → 자석면 N(인력)
+    const onLeftOfCoil = state.magX < state.coilX;
+    const approaching = onLeftOfCoil ? state.velocity > 0 : state.velocity < 0;
+    const moving = Math.abs(state.velocity) > 0.25;
+
+    if (!moving) {
+        state.inducedPoleFace = 0;
+        state.forceMag = 0;
+    } else {
+        // 자석이 코일을 향하는 극 (왼쪽에 있으면 N이 코일을 향함, 오른쪽이면 S)
+        const magFacingCoil = onLeftOfCoil ? +1 : -1; // +1=N, -1=S
+        // 접근하면 같은 극(반발), 이탈하면 반대 극(인력)
+        state.inducedPoleFace = approaching ? magFacingCoil : -magFacingCoil;
+        state.forceMag = Math.min(1, Math.abs(state.cur) * 1.2);
+    }
+
+    curBuf.shift();
+    curBuf.push(state.cur);
+}
+
+// ============================================
+// 그리기 헬퍼
+// ============================================
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ LENZ · OPPOSITION FIELD VIEW', 12, 10);
+    ctx.restore();
+}
+
+function drawFluxLines() {
+    const mx = state.magX, my = state.magY;
+    const magLen = 90, magHalf = magLen / 2;
+    const Nx = mx + magHalf, Ny = my;
+    const Sx = mx - magHalf, Sy = my;
+
+    ctx.save();
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#a855f7';
+    const intensity = state.B;
+    const lineAlpha = 0.22 + intensity * 0.22;
+
+    for (let k = 0; k < 6; k++) {
+        const phase = (k / 6) * Math.PI * 2 - Math.PI / 2;
+        const amp = 50 + k * 18 + intensity * 12;
+        const cx1 = Nx + 60 + k * 8;
+        const cy1 = Ny + Math.sin(phase) * amp;
+        const cx2 = Sx - 60 - k * 8;
+        const cy2 = Sy + Math.sin(phase) * amp;
+        ctx.strokeStyle = `rgba(216, 180, 254, ${lineAlpha})`;
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(Nx, Ny);
+        ctx.bezierCurveTo(cx1, cy1, cx2, cy2, Sx, Sy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(Nx, Ny);
+        ctx.bezierCurveTo(cx1, Ny - Math.sin(phase) * amp, cx2, Sy - Math.sin(phase) * amp, Sx, Sy);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// 코일이 만드는 유도 자기장 — 렌츠 법칙의 핵심 시각화
+function drawInducedField() {
+    if (state.inducedPoleFace === 0) return;
+
+    const cx = state.coilX, cy = state.coilY;
+    const R = state.coilR;
+    const faceSign = state.inducedPoleFace; // +1=N면이 자석쪽, -1=S면이 자석쪽
+    const magOnLeft = state.magX < state.coilX;
+    // 자석쪽 = 코일의 -x(자석이 왼쪽일 때) 또는 +x(오른쪽)
+    const towardMagX = magOnLeft ? -1 : +1;
+
+    ctx.save();
+    ctx.shadowBlur = 10;
+    // 색: 반발(같은 극) = 핑크, 인력(반대 극) = 시안
+    // 접근일 때 inducedPoleFace는 magFacingCoil와 같음 → repel
+    // 자석면 극이 magFacingCoil와 같으면 repel
+    const magFacingCoil = magOnLeft ? +1 : -1;
+    const isRepel = faceSign === magFacingCoil;
+    const baseColor = isRepel ? 'rgba(244, 114, 182, ' : 'rgba(103, 232, 249, ';
+    ctx.shadowColor = isRepel ? '#f472b6' : '#22d3ee';
+
+    // 코일 양면에서 나오는 유도 자기장 곡선
+    // faceSign이 +1(N) 이면 자기장이 코일 양쪽 면에서 나와서 반대 쪽으로 들어감
+    // 자석 쪽 면 = towardMagX 방향
+    const intensity = state.forceMag;
+    const alpha = 0.35 + intensity * 0.45;
+
+    for (let k = 0; k < 5; k++) {
+        const ampY = 22 + k * 14 + intensity * 10;
+        // 자석쪽으로 나가는 곡선 (faceSign=+1 N) 또는 들어오는 곡선 (faceSign=-1 S)
+        const startX = cx + towardMagX * 8;
+        const endX = cx + towardMagX * (60 + k * 14);
+        const ctrlX = cx + towardMagX * (30 + k * 10);
+
+        ctx.strokeStyle = baseColor + alpha + ')';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(startX, cy - 4);
+        ctx.bezierCurveTo(ctrlX, cy - ampY, ctrlX, cy - ampY, endX, cy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(startX, cy + 4);
+        ctx.bezierCurveTo(ctrlX, cy + ampY, ctrlX, cy + ampY, endX, cy);
+        ctx.stroke();
+
+        // 화살표 (움직이는 점)
+        const arrowT = ((state.t * 0.025 + k * 0.18) % 1);
+        // 베지어 위의 점 (위쪽 곡선)
+        const t = arrowT;
+        const px = (1-t)*(1-t)*startX + 2*(1-t)*t*ctrlX + t*t*endX;
+        const py = (1-t)*(1-t)*(cy - 4) + 2*(1-t)*t*(cy - ampY) + t*t*cy;
+        // faceSign=+1 (N) → 자석쪽으로 나감 (start→end). faceSign=-1 (S) → 자석에서 들어옴 (end→start)
+        // 우리 t는 0→1로 start→end이므로 N일 때 그대로, S일 때 반전
+        const px2 = faceSign === +1 ? px : ((1-(1-t))*(1-(1-t))*startX + 2*(1-(1-t))*(1-t)*ctrlX + (1-t)*(1-t)*endX);
+        const py2 = faceSign === +1 ? py : ((1-(1-t))*(1-(1-t))*(cy - 4) + 2*(1-(1-t))*(1-t)*(cy - ampY) + (1-t)*(1-t)*cy);
+        ctx.fillStyle = baseColor + Math.min(1, alpha + 0.3) + ')';
+        ctx.beginPath();
+        ctx.arc(px2, py2, 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 코일 반대쪽 (자석 반대 방향) — 폐루프 완성
+    const backDir = -towardMagX;
+    for (let k = 0; k < 3; k++) {
+        const ampY = 22 + k * 16;
+        const startX = cx + backDir * 8;
+        const endX = cx + backDir * (50 + k * 14);
+        const ctrlX = cx + backDir * (28 + k * 10);
+        ctx.strokeStyle = baseColor + (alpha * 0.55) + ')';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(startX, cy - 4);
+        ctx.bezierCurveTo(ctrlX, cy - ampY, ctrlX, cy - ampY, endX, cy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(startX, cy + 4);
+        ctx.bezierCurveTo(ctrlX, cy + ampY, ctrlX, cy + ampY, endX, cy);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawMagnet() {
+    const mx = state.magX, my = state.magY;
+    const w = 90, h = 36;
+
+    ctx.save();
+    ctx.shadowBlur = state.dragging ? 36 : 20;
+    ctx.shadowColor = '#f472b6';
+    const gN = ctx.createLinearGradient(mx, my - h/2, mx, my + h/2);
+    gN.addColorStop(0, '#fda4af');
+    gN.addColorStop(0.5, '#ef4444');
+    gN.addColorStop(1, '#7f1d1d');
+    ctx.fillStyle = gN;
+    roundRect(ctx, mx, my - h/2, w/2, h, 6);
+    ctx.fill();
+
+    ctx.shadowColor = '#60a5fa';
+    const gS = ctx.createLinearGradient(mx, my - h/2, mx, my + h/2);
+    gS.addColorStop(0, '#93c5fd');
+    gS.addColorStop(0.5, '#3b82f6');
+    gS.addColorStop(1, '#1e3a8a');
+    ctx.fillStyle = gS;
+    roundRect(ctx, mx - w/2, my - h/2, w/2, h, 6);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    roundRect(ctx, mx - w/2, my - h/2, w, h, 6);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(mx, my - h/2); ctx.lineTo(mx, my + h/2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('S', mx - w/4, my);
+    ctx.fillText('N', mx + w/4, my);
+
+    // 속도 화살표
+    if (Math.abs(state.velocity) > 0.3) {
+        const dir = Math.sign(state.velocity);
+        const speed = Math.min(60, Math.abs(state.velocity) * 8 + 20);
+        const ax = mx + dir * (w/2 + 12);
+        const ay = my - h/2 - 18;
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#fbbf24';
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)';
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.95)';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ax - dir * speed, ay);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - dir * 8, ay - 5);
+        ctx.lineTo(ax - dir * 8, ay + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = dir > 0 ? 'right' : 'left';
+        ctx.fillStyle = '#fcd34d';
+        ctx.fillText('v', ax - dir * speed - 4 * dir, ay - 8);
+        ctx.restore();
+    }
+
+    // 작용하는 힘 화살표 (자석에 가해지는 힘 — 렌츠 핵심)
+    if (state.forceMag > 0.05) {
+        const magOnLeft = state.magX < state.coilX;
+        const magFacingCoil = magOnLeft ? +1 : -1;
+        const isRepel = state.inducedPoleFace === magFacingCoil;
+        // 반발이면 자석을 코일에서 멀어지는 방향 (자석 위치 기준)
+        // 인력이면 자석을 코일 쪽으로
+        let forceDir; // +1: 오른쪽, -1: 왼쪽
+        if (isRepel) forceDir = magOnLeft ? -1 : +1;
+        else forceDir = magOnLeft ? +1 : -1;
+
+        const fLen = 30 + state.forceMag * 50;
+        const fy = my + h/2 + 22;
+        const startX = mx;
+        const endX = mx + forceDir * fLen;
+
+        ctx.save();
+        const fcolor = isRepel ? '#f472b6' : '#22d3ee';
+        const ffill = isRepel ? 'rgba(244, 114, 182, 0.95)' : 'rgba(103, 232, 249, 0.95)';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = fcolor;
+        ctx.strokeStyle = ffill;
+        ctx.fillStyle = ffill;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(startX, fy);
+        ctx.lineTo(endX, fy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(endX, fy);
+        ctx.lineTo(endX - forceDir * 10, fy - 6);
+        ctx.lineTo(endX - forceDir * 10, fy + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.textAlign = forceDir > 0 ? 'left' : 'right';
+        ctx.fillStyle = fcolor;
+        ctx.fillText(isRepel ? 'F (반발)' : 'F (인력)', endX + forceDir * 6, fy - 2);
+        ctx.restore();
+    }
+}
+
+function drawCoil() {
+    const cx = state.coilX, cy = state.coilY;
+    const R = state.coilR;
+    const N = state.N;
+
+    ctx.save();
+    const intensity = Math.min(1, Math.abs(state.emf) / 50);
+    ctx.shadowBlur = 8 + intensity * 30;
+    ctx.shadowColor = `rgba(34, 211, 238, ${0.4 + intensity * 0.6})`;
+
+    const coilW = Math.min(180, N * 9);
+    const startX = cx - coilW / 2;
+    const stepX = N > 1 ? coilW / (N - 1) : 0;
+
+    for (let k = 0; k < N; k++) {
+        const tx = startX + k * stepX;
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.85)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.ellipse(tx, cy, 8, R, 0, Math.PI, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowBlur = 8 + intensity * 25;
+    ctx.shadowColor = `rgba(125, 211, 252, ${0.5 + intensity * 0.5})`;
+    for (let k = 0; k < N; k++) {
+        const tx = startX + k * stepX;
+        const grad = ctx.createLinearGradient(tx, cy - R, tx, cy + R);
+        grad.addColorStop(0, 'rgba(125, 211, 252, 0.9)');
+        grad.addColorStop(0.5, 'rgba(196, 181, 253, 0.85)');
+        grad.addColorStop(1, 'rgba(125, 211, 252, 0.9)');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(tx, cy, 8, R, 0, 0, Math.PI);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.5)';
+    ctx.lineWidth = 1.2;
+    for (let k = 0; k < N - 1; k++) {
+        const tx1 = startX + k * stepX;
+        const tx2 = startX + (k+1) * stepX;
+        ctx.beginPath();
+        ctx.moveTo(tx1, cy - R);
+        ctx.lineTo(tx2, cy - R + 3);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 코일 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const label = `N = ${N}`;
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, cx - tw/2 - 6, cy + R + 10, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#67e8f9';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx, cy + R + 19);
+    ctx.restore();
+
+    // 코일 양 면에 유도된 극 라벨 (N/S) — 렌츠의 핵심
+    if (state.inducedPoleFace !== 0) {
+        const magOnLeft = state.magX < state.coilX;
+        // 자석을 향한 코일 면의 극
+        const facePole = state.inducedPoleFace; // +1=N, -1=S
+        const backPole = -facePole;
+        // 좌측 면 / 우측 면 라벨 위치
+        const leftLabelX = cx - coilW / 2 - 20;
+        const rightLabelX = cx + coilW / 2 + 20;
+        // 자석이 왼쪽이면 자석쪽=좌측 면
+        const leftPole = magOnLeft ? facePole : backPole;
+        const rightPole = magOnLeft ? backPole : facePole;
+
+        drawCoilPoleLabel(leftLabelX, cy, leftPole === +1 ? 'N' : 'S', leftPole === +1);
+        drawCoilPoleLabel(rightLabelX, cy, rightPole === +1 ? 'N' : 'S', rightPole === +1);
+    }
+}
+
+function drawCoilPoleLabel(x, y, label, isN) {
+    ctx.save();
+    const color = isN ? '#ef4444' : '#3b82f6';
+    const bg = isN ? 'rgba(239, 68, 68, 0.25)' : 'rgba(59, 130, 246, 0.25)';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = color;
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(x, y, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y + 1);
+    // 라벨 위 작은 텍스트 "induced"
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = color;
+    ctx.fillText('induced', x, y - 22);
+    ctx.restore();
+}
+
+function drawExternalCircuit() {
+    const cx = state.coilX, cy = state.coilY;
+    const R = state.coilR;
+    const coilW = Math.min(180, state.N * 9);
+    const lx = cx - coilW / 2;
+    const rx = cx + coilW / 2;
+    const botY = canvas.height - 60;
+
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#67e8f9';
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.75)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    ctx.moveTo(lx, cy - R);
+    ctx.lineTo(lx, cy + R + 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rx, cy - R);
+    ctx.lineTo(rx, cy + R + 4);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(lx, cy + R + 4);
+    ctx.lineTo(lx, botY);
+    ctx.lineTo(rx, botY);
+    ctx.lineTo(rx, cy + R + 4);
+    ctx.stroke();
+    ctx.restore();
+
+    // 전류계
+    const ammX = (lx + rx) / 2 - 50;
+    const ammR = 22;
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#fbbf24';
+    const ag = ctx.createRadialGradient(ammX - 6, botY - 8, 2, ammX, botY, ammR);
+    ag.addColorStop(0, '#fef3c7');
+    ag.addColorStop(0.6, '#f59e0b');
+    ag.addColorStop(1, '#78350f');
+    ctx.fillStyle = ag;
+    ctx.beginPath();
+    ctx.arc(ammX, botY, ammR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('A', ammX, botY);
+    const needle = Math.atan2(state.cur, 1) * 0.7;
+    const nLen = ammR - 6;
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ammX, botY);
+    ctx.lineTo(ammX + Math.sin(needle) * nLen, botY - Math.cos(needle) * nLen);
+    ctx.stroke();
+    ctx.restore();
+
+    // 부하 R
+    const loadX = (lx + rx) / 2 + 50;
+    const lw = 60, lh = 20;
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fb923c';
+    const lg = ctx.createLinearGradient(loadX - lw/2, botY - lh/2, loadX + lw/2, botY + lh/2);
+    lg.addColorStop(0, '#fbbf24');
+    lg.addColorStop(0.5, '#f59e0b');
+    lg.addColorStop(1, '#b45309');
+    ctx.fillStyle = lg;
+    roundRect(ctx, loadX - lw/2, botY - lh/2, lw, lh, 5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const zs = loadX - lw/2 + 6, ze = loadX + lw/2 - 6;
+    for (let k = 0; k <= 6; k++) {
+        const x = zs + ((ze - zs) * k) / 6;
+        const y = botY + (k % 2 === 0 ? -5 : 5);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center';
+    ctx.fillText('R', loadX, botY + lh/2 + 12);
+    ctx.restore();
+
+    drawCircuitFlow();
+
+    // 전류 방향 화살표 (코일 위)
+    if (Math.abs(state.cur) > 0.001) {
+        const dir = Math.sign(state.cur);
+        const cax = cx;
+        const cay = cy - R - 25;
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = dir > 0 ? '#22d3ee' : '#f472b6';
+        ctx.strokeStyle = dir > 0 ? 'rgba(103, 232, 249, 0.95)' : 'rgba(244, 114, 182, 0.95)';
+        ctx.fillStyle = dir > 0 ? 'rgba(103, 232, 249, 0.95)' : 'rgba(244, 114, 182, 0.95)';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        const half = 40;
+        ctx.beginPath();
+        ctx.moveTo(cax - dir * half, cay);
+        ctx.lineTo(cax + dir * half, cay);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cax + dir * half, cay);
+        ctx.lineTo(cax + dir * (half - 8), cay - 5);
+        ctx.lineTo(cax + dir * (half - 8), cay + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = dir > 0 ? '#67e8f9' : '#f9a8d4';
+        ctx.fillText('i', cax, cay - 8);
+        ctx.restore();
+    }
+}
+
+function seedCircuitParticles() {
+    circuitParticles = [];
+    for (let i = 0; i < 36; i++) {
+        circuitParticles.push({ progress: i / 36, jit: Math.random() * 0.6 - 0.3 });
+    }
+}
+
+function buildCircuitPath() {
+    const cx = state.coilX, cy = state.coilY;
+    const R = state.coilR;
+    const coilW = Math.min(180, state.N * 9);
+    const lx = cx - coilW / 2;
+    const rx = cx + coilW / 2;
+    const botY = canvas.height - 60;
+    return [
+        { x: lx, y: cy + R + 4 },
+        { x: lx, y: botY },
+        { x: rx, y: botY },
+        { x: rx, y: cy + R + 4 },
+    ];
+}
+
+function pathPointAt(path, t) {
+    let lens = [];
+    let total = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+        const d = Math.hypot(path[i+1].x - path[i].x, path[i+1].y - path[i].y);
+        lens.push(d); total += d;
+    }
+    const target = ((t % 1) + 1) % 1 * total;
+    let acc = 0;
+    for (let i = 0; i < lens.length; i++) {
+        if (target <= acc + lens[i]) {
+            const u = (target - acc) / lens[i];
+            return {
+                x: path[i].x + (path[i+1].x - path[i].x) * u,
+                y: path[i].y + (path[i+1].y - path[i].y) * u,
+            };
+        }
+        acc += lens[i];
+    }
+    return path[path.length-1];
+}
+
+function drawCircuitFlow() {
+    const path = buildCircuitPath();
+    const speed = Math.min(0.025, Math.abs(state.cur) * 0.008 + 0.0005);
+    const dir = state.cur >= 0 ? 1 : -1;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const color = dir > 0 ? '#22d3ee' : '#f472b6';
+    const fillColor = dir > 0 ? 'rgba(103, 232, 249, 0.95)' : 'rgba(244, 114, 182, 0.95)';
+
+    if (Math.abs(state.cur) < 0.002) {
+        for (const p of circuitParticles) {
+            const pt = pathPointAt(path, p.progress);
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.3)';
+            ctx.beginPath();
+            ctx.arc(pt.x + p.jit, pt.y + p.jit, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+        return;
+    }
+
+    for (const p of circuitParticles) {
+        p.progress = (p.progress + dir * speed + 1) % 1;
+        const pt = pathPointAt(path, p.progress);
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = color;
+        ctx.fillStyle = fillColor;
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jit, pt.y + p.jit, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ============================================
+// 미니 그래프 — i(t)
+// ============================================
+function drawMiniGraph() {
+    const W = mini.width, H = mini.height;
+    mctx.save();
+    const grad = mctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    mctx.fillStyle = grad;
+    mctx.fillRect(0, 0, W, H);
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 30) {
+        mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke();
+    }
+    for (let i = 0; i < H; i += 28) {
+        mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke();
+    }
+    mctx.strokeStyle = 'rgba(168, 139, 250, 0.4)';
+    mctx.setLineDash([4, 4]);
+    mctx.beginPath();
+    mctx.moveTo(0, H/2); mctx.lineTo(W, H/2);
+    mctx.stroke();
+    mctx.setLineDash([]);
+
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(103, 232, 249, 0.7)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillText('◯ INDUCED CURRENT i(t)', 8, 6);
+
+    let maxAbs = 0.1;
+    for (const v of curBuf) if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
+    maxAbs = Math.max(maxAbs, 0.1);
+
+    mctx.save();
+    mctx.shadowBlur = 10;
+    mctx.shadowColor = '#22d3ee';
+    const lineGrad = mctx.createLinearGradient(0, 0, W, 0);
+    lineGrad.addColorStop(0, 'rgba(125, 211, 252, 0.9)');
+    lineGrad.addColorStop(0.5, 'rgba(196, 181, 253, 0.95)');
+    lineGrad.addColorStop(1, 'rgba(244, 114, 182, 0.9)');
+    mctx.strokeStyle = lineGrad;
+    mctx.lineWidth = 2;
+    mctx.lineCap = 'round';
+    mctx.beginPath();
+    for (let i = 0; i < curBuf.length; i++) {
+        const x = (i / (curBuf.length - 1)) * W;
+        const y = H/2 - (curBuf[i] / maxAbs) * (H/2 - 14);
+        if (i === 0) mctx.moveTo(x, y); else mctx.lineTo(x, y);
+    }
+    mctx.stroke();
+    mctx.restore();
+
+    mctx.save();
+    const lastV = curBuf[curBuf.length - 1];
+    const lastY = H/2 - (lastV / maxAbs) * (H/2 - 14);
+    mctx.shadowBlur = 14;
+    mctx.shadowColor = '#22d3ee';
+    mctx.fillStyle = 'rgba(103, 232, 249, 0.95)';
+    mctx.beginPath();
+    mctx.arc(W - 4, lastY, 4, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.restore();
+
+    mctx.restore();
+}
+
+// ============================================
+// 라이브 패널 갱신
+// ============================================
+function updateLivePanel() {
+    const velPxS = state.velocity * 60;
+    const dfluxWbS = state.dflux * 60 * 0.1;
+    $('velVal').textContent = velPxS.toFixed(1);
+    $('dfluxVal').textContent = dfluxWbS.toFixed(3);
+    $('curVal').textContent = (state.cur * 1000).toFixed(1);
+
+    const isZero = Math.abs(state.cur) < 0.001;
+    const forceEl = $('forceVal');
+    const pillForce = $('pill-force');
+    pillForce.classList.remove('repel', 'attract', 'zero');
+
+    if (isZero || state.inducedPoleFace === 0) {
+        forceEl.textContent = '대기 중';
+        forceEl.className = 'live-num zero';
+        pillForce.classList.add('zero');
+    } else {
+        const magOnLeft = state.magX < state.coilX;
+        const magFacingCoil = magOnLeft ? +1 : -1;
+        const isRepel = state.inducedPoleFace === magFacingCoil;
+        if (isRepel) {
+            forceEl.textContent = '반발 (밀어냄)';
+            forceEl.className = 'live-text-repel';
+            pillForce.classList.add('repel');
+        } else {
+            forceEl.textContent = '인력 (끌어당김)';
+            forceEl.className = 'live-text-attract';
+            pillForce.classList.add('attract');
+        }
+    }
+
+    ['pill-vel','pill-dflux','pill-cur'].forEach(id => {
+        const el = $(id);
+        el.classList.toggle('zero', isZero);
+        const num = el.querySelector('.live-num');
+        if (num) num.classList.toggle('zero', isZero);
+    });
+
+    // 알림
+    const alert = $('zeroAlert');
+    if (isZero) {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-zero';
+        alert.innerHTML = '<span class="font-bold">정지 상태</span> · 자속 변화 없음 → 유도 전류 0 → 작용하는 힘도 없음';
+    } else {
+        const magOnLeft = state.magX < state.coilX;
+        const magFacingCoil = magOnLeft ? +1 : -1;
+        const isRepel = state.inducedPoleFace === magFacingCoil;
+        const magFaceName = magOnLeft ? 'N극' : 'S극';
+        const coilFaceName = state.inducedPoleFace === +1 ? 'N극' : 'S극';
+        if (isRepel) {
+            alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-repel';
+            alert.innerHTML = `<span class="font-bold">반발 작용 중</span> · 자석 ${magFaceName} 접근 → 코일 ${coilFaceName} 유도 → 자석을 <span class="font-bold">밀어내는</span> 힘 발생`;
+        } else {
+            alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-attract';
+            alert.innerHTML = `<span class="font-bold">인력 작용 중</span> · 자석 ${magFaceName} 이탈 → 코일 ${coilFaceName} 유도 → 자석을 <span class="font-bold">끌어당기는</span> 힘 발생`;
+        }
+    }
+
+    $('posLabel').textContent = `${Math.round(state.magX - state.coilX)} px`;
+    if (state.inducedPoleFace === 0) {
+        $('poleLabel').textContent = '—';
+    } else {
+        $('poleLabel').textContent = state.inducedPoleFace === +1 ? 'N극 (빨강)' : 'S극 (파랑)';
+    }
+    if (Math.abs(state.cur) < 0.002) $('dirLabel').textContent = '—';
+    else $('dirLabel').textContent = state.cur > 0 ? '→ (시계방향)' : '← (반시계)';
+}
+
+// ============================================
+// 메인 루프
+// ============================================
+function animate() {
+    state.t++;
+    updatePhysics();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawFluxLines();
+    drawInducedField();
+    drawCoil();
+    drawMagnet();
+    drawExternalCircuit();
+
+    drawMiniGraph();
+    updateLivePanel();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    seedCircuitParticles();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

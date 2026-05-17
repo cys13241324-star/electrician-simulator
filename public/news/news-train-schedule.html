@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARK STATION · 스파크 역 — 전기기능사 운행 정보</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#05070a;
+    --bg-1:#0a0e14;
+    --bg-2:#11161f;
+    --bg-3:#1a2230;
+    --panel:#0d1219;
+    --line:#1f2937;
+    --line-strong:#374151;
+    --ink:#e5e7eb;
+    --ink-mute:#94a3b8;
+    --ink-dim:#64748b;
+    --led-amber:#fbbf24;
+    --led-amber-glow:#f59e0b;
+    --led-green:#22c55e;
+    --led-green-glow:#16a34a;
+    --led-red:#ef4444;
+    --led-red-glow:#dc2626;
+    --led-blue:#38bdf8;
+    --led-dim:#374151;
+    --rail:#475569;
+    --rail-line:#fbbf24;
+  }
+  html,body{background:var(--bg-0);}
+  body{
+    font-family:'Noto Sans KR',sans-serif;
+    color:var(--ink);
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 1200px 600px at 50% 0%, rgba(251,191,36,.05), transparent 60%),
+      radial-gradient(ellipse 800px 400px at 20% 80%, rgba(34,197,94,.03), transparent 60%),
+      linear-gradient(180deg, #05070a 0%, #0a0e14 100%);
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .bebas{font-family:'Bebas Neue','Noto Sans KR',sans-serif;letter-spacing:.06em;}
+
+  /* LED Display base */
+  .led-board{
+    background:
+      radial-gradient(ellipse at 50% 50%, #0a0a0a 0%, #050505 100%);
+    border:1px solid #1a1a1a;
+    box-shadow:
+      inset 0 0 80px rgba(0,0,0,.9),
+      inset 0 0 0 2px #0a0a0a,
+      inset 0 0 0 3px #1f1f1f,
+      0 0 40px rgba(251,191,36,.05);
+    position:relative;
+    overflow:hidden;
+  }
+  .led-board::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,.4) 1px, transparent 1px);
+    background-size:3px 3px;
+    pointer-events:none;
+    z-index:2;
+  }
+  .led-board::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg, rgba(255,255,255,.02) 0%, transparent 50%, rgba(0,0,0,.3) 100%);
+    pointer-events:none;
+    z-index:3;
+  }
+  .led-amber{color:#fde68a;text-shadow:0 0 4px #fbbf24, 0 0 8px #f59e0b, 0 0 12px rgba(245,158,11,.4);}
+  .led-green{color:#bbf7d0;text-shadow:0 0 4px #22c55e, 0 0 8px #16a34a, 0 0 12px rgba(22,163,74,.4);}
+  .led-red{color:#fecaca;text-shadow:0 0 4px #ef4444, 0 0 8px #dc2626, 0 0 12px rgba(220,38,38,.4);}
+  .led-blue{color:#bae6fd;text-shadow:0 0 4px #38bdf8, 0 0 8px #0284c7, 0 0 12px rgba(2,132,199,.4);}
+  .led-white{color:#f1f5f9;text-shadow:0 0 4px #cbd5e1, 0 0 8px rgba(203,213,225,.4);}
+  .led-dim{color:#475569;}
+
+  /* Panel */
+  .panel{
+    background:linear-gradient(180deg, #11161f 0%, #0a0e14 100%);
+    border:1px solid var(--line);
+    border-radius:6px;
+  }
+  .panel-flat{
+    background:#0d1219;
+    border:1px solid var(--line);
+  }
+
+  /* Scanline */
+  .scanline{
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(
+      180deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.15) 3px
+    );
+    pointer-events:none;
+    z-index:4;
+  }
+
+  /* Flip-card row hover */
+  .schedule-row{
+    transition:background .2s, transform .2s;
+    cursor:pointer;
+    border-bottom:1px dashed #1f2937;
+  }
+  .schedule-row:hover{
+    background:rgba(251,191,36,.06);
+  }
+  .schedule-row.active{
+    background:rgba(251,191,36,.1);
+  }
+
+  /* Marquee */
+  @keyframes marquee{
+    0%{transform:translateX(100%);}
+    100%{transform:translateX(-100%);}
+  }
+  .marquee-track{
+    animation:marquee 35s linear infinite;
+    display:inline-block;
+    white-space:nowrap;
+  }
+  @keyframes blink{
+    0%,49%{opacity:1;}
+    50%,100%{opacity:.25;}
+  }
+  .blink{animation:blink 1s steps(1) infinite;}
+
+  /* Ticket */
+  .ticket{
+    background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color:#0f172a;
+    border-radius:12px;
+    position:relative;
+    box-shadow:
+      0 20px 40px -10px rgba(0,0,0,.5),
+      0 0 0 1px rgba(0,0,0,.2);
+  }
+  .ticket-stub{
+    background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  }
+  .perf-line{
+    position:absolute;
+    top:0;bottom:0;
+    width:2px;
+    background-image:linear-gradient(180deg, #0f172a 0%, #0f172a 50%, transparent 50%);
+    background-size:2px 10px;
+    background-repeat:repeat-y;
+  }
+  .perf-line::before,.perf-line::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--bg-0);
+    transform:translateX(-50%);
+  }
+  .perf-line::before{top:-9px;}
+  .perf-line::after{bottom:-9px;}
+
+  /* QR placeholder */
+  .qr-code{
+    background-image:
+      linear-gradient(90deg, #0f172a 50%, transparent 50%),
+      linear-gradient(0deg, #0f172a 50%, transparent 50%);
+    background-size:8px 8px, 8px 8px;
+    background-position:0 0, 4px 4px;
+    background-color:#fef3c7;
+  }
+  .barcode{
+    background:repeating-linear-gradient(
+      90deg,
+      #0f172a 0px, #0f172a 2px,
+      transparent 2px, transparent 4px,
+      #0f172a 4px, #0f172a 5px,
+      transparent 5px, transparent 7px,
+      #0f172a 7px, #0f172a 10px,
+      transparent 10px, transparent 12px
+    );
+  }
+
+  /* Map */
+  .station-dot{
+    fill:#11161f;
+    stroke:#fbbf24;
+    stroke-width:2.5;
+    cursor:pointer;
+    transition:all .3s;
+  }
+  .station-dot:hover{
+    fill:#fbbf24;
+    stroke:#fde68a;
+    filter:drop-shadow(0 0 8px #fbbf24);
+  }
+  .station-dot.active{
+    fill:#22c55e;
+    stroke:#bbf7d0;
+    filter:drop-shadow(0 0 12px #22c55e);
+  }
+  .station-dot.terminal{
+    fill:#ef4444;
+    stroke:#fecaca;
+  }
+  .station-label{
+    fill:#cbd5e1;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:13px;
+    font-weight:700;
+    pointer-events:none;
+  }
+  .station-sub{
+    fill:#64748b;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    pointer-events:none;
+  }
+
+  /* Lost item card */
+  .lost-card{
+    background:linear-gradient(180deg, #11161f 0%, #0a0e14 100%);
+    border:1px solid var(--line);
+    border-left:3px solid #fbbf24;
+    border-radius:4px;
+    transition:all .2s;
+  }
+  .lost-card:hover{
+    border-left-color:#22c55e;
+    transform:translateX(2px);
+  }
+  .pin-tape{
+    position:absolute;
+    top:-6px;left:50%;
+    transform:translateX(-50%) rotate(-3deg);
+    width:48px;height:14px;
+    background:rgba(251,191,36,.4);
+    border:1px dashed rgba(251,191,36,.6);
+  }
+
+  /* Modal */
+  .modal-bg{
+    background:rgba(0,0,0,.85);
+    backdrop-filter:blur(4px);
+  }
+
+  /* Status badges */
+  .badge-ontime{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.4);}
+  .badge-delayed{background:rgba(251,191,36,.15);color:#fde68a;border:1px solid rgba(251,191,36,.4);}
+  .badge-canceled{background:rgba(239,68,68,.15);color:#fecaca;border:1px solid rgba(239,68,68,.4);}
+  .badge-boarding{background:rgba(56,189,248,.15);color:#bae6fd;border:1px solid rgba(56,189,248,.4);}
+
+  /* Platform sign */
+  .platform-sign{
+    background:#fbbf24;
+    color:#0a0e14;
+    font-weight:900;
+    border-radius:4px;
+    box-shadow:inset 0 -2px 0 rgba(0,0,0,.2), 0 0 12px rgba(251,191,36,.3);
+  }
+
+  /* Departure board pixel font feel */
+  .pixel-num{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    letter-spacing:.04em;
+  }
+
+  /* Hover lift */
+  .lift{transition:transform .2s, box-shadow .2s;}
+  .lift:hover{transform:translateY(-2px);}
+
+  /* Section header */
+  .section-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:4px 12px;
+    background:rgba(251,191,36,.1);
+    border:1px solid rgba(251,191,36,.3);
+    border-radius:2px;
+    color:#fde68a;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+
+  /* Scrollbar (webkit) */
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track{background:#0a0e14;}
+  ::-webkit-scrollbar-thumb{background:#1f2937;border-radius:4px;}
+  ::-webkit-scrollbar-thumb:hover{background:#374151;}
+
+  /* Print */
+  @media print{
+    body{background:#fff;color:#000;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== TOP ANNOUNCEMENT BAR ========== -->
+<div class="w-full border-b border-amber-900/40" style="background:#0a0a0a;">
+  <div class="max-w-[1400px] mx-auto px-4 py-2 flex items-center gap-4">
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="w-2 h-2 rounded-full bg-amber-400 blink"></div>
+      <span class="mono text-[11px] led-amber">LIVE</span>
+    </div>
+    <div class="flex-1 overflow-hidden">
+      <div class="marquee-track mono text-[12px] led-amber">
+        ◆ 옴라인 1편 9번 플랫폼 정시 출발 안내 &nbsp;&nbsp; ◆ 패러데이 익스프레스 47편 자유석 매진 임박 &nbsp;&nbsp; ◆ 변압기 통근선 102편 5분 지연 운행 &nbsp;&nbsp; ◆ 3상 직행 5호 RLC역 환승 안내 &nbsp;&nbsp; ◆ 임펄스 야간열차 안전벨트 점검 후 출발 &nbsp;&nbsp; ◆ 합격역 도착 시 분실물 사무실 1층 방문 바람 &nbsp;&nbsp; ◆ 본 시간표는 가상의 학습 시뮬레이션입니다
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== HEADER ========== -->
+<header class="w-full border-b border-gray-800" style="background:linear-gradient(180deg, #0d1219 0%, #05070a 100%);">
+  <div class="max-w-[1400px] mx-auto px-6 py-5">
+    <div class="flex items-end justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-5">
+        <!-- Station Logo -->
+        <div class="relative">
+          <div class="w-16 h-16 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);box-shadow:0 0 20px rgba(251,191,36,.4);">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <path d="M8 28 L8 12 L20 12 L20 20 L32 20 L32 28 Z" fill="#0a0e14"/>
+              <circle cx="14" cy="30" r="3" fill="#0a0e14"/>
+              <circle cx="26" cy="30" r="3" fill="#0a0e14"/>
+              <path d="M20 8 L22 12 L18 12 Z" fill="#0a0e14"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-3 mb-1">
+            <span class="section-tag">STATION CODE · SPK-01</span>
+            <span class="mono text-[11px] led-green">● OPEN</span>
+          </div>
+          <h1 class="bebas text-5xl md:text-6xl font-bold leading-none">
+            <span class="led-amber">SPARK</span>
+            <span class="text-gray-100">STATION</span>
+          </h1>
+          <p class="mono text-sm text-gray-400 mt-1">스파크 역 · 운행 정보 안내소 · 전기기능사 학습 노선</p>
+        </div>
+      </div>
+
+      <!-- Current time -->
+      <div class="led-board px-6 py-3 rounded">
+        <div class="relative z-10">
+          <div class="mono text-[10px] led-dim mb-1">CURRENT TIME · 현재 시각</div>
+          <div class="flex items-baseline gap-2">
+            <span id="clock-time" class="bebas text-4xl led-amber">--:--:--</span>
+            <span id="clock-date" class="mono text-xs led-green">----.--.--</span>
+          </div>
+        </div>
+        <div class="scanline"></div>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+      <div class="md:col-span-4">
+        <label class="mono text-[10px] text-gray-500 block mb-1">출발역 · FROM</label>
+        <input id="search-from" type="text" placeholder="옴역 / 패러데이역 / …"
+          class="w-full bg-black/60 border border-gray-700 rounded px-3 py-2 mono text-sm text-amber-200 placeholder-gray-600 focus:outline-none focus:border-amber-500"/>
+      </div>
+      <div class="md:col-span-1 flex justify-center pb-2">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+          <path d="M5 12h14M13 5l7 7-7 7"/>
+        </svg>
+      </div>
+      <div class="md:col-span-4">
+        <label class="mono text-[10px] text-gray-500 block mb-1">도착역 · TO</label>
+        <input id="search-to" type="text" placeholder="합격역 / 안전역 / …"
+          class="w-full bg-black/60 border border-gray-700 rounded px-3 py-2 mono text-sm text-amber-200 placeholder-gray-600 focus:outline-none focus:border-amber-500"/>
+      </div>
+      <div class="md:col-span-3">
+        <button id="btn-search" class="w-full bg-amber-400 hover:bg-amber-300 text-black font-bold py-2 rounded mono text-sm transition">
+          ▶ 시간표 검색
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== MAIN ========== -->
+<main class="max-w-[1400px] mx-auto px-6 py-8 space-y-10">
+
+  <!-- ===== LED DEPARTURE BOARD ===== -->
+  <section>
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <span class="section-tag">▼ DEPARTURES 출발 안내</span>
+        <span class="mono text-xs text-gray-500">12편 운행 중 · 자동 갱신 60초</span>
+      </div>
+      <div class="flex items-center gap-2 mono text-[11px]">
+        <span class="badge-ontime px-2 py-0.5 rounded">정시</span>
+        <span class="badge-delayed px-2 py-0.5 rounded">지연</span>
+        <span class="badge-canceled px-2 py-0.5 rounded">운휴</span>
+        <span class="badge-boarding px-2 py-0.5 rounded">승차중</span>
+      </div>
+    </div>
+
+    <!-- Big LED Board -->
+    <div class="led-board rounded-lg p-4 md:p-6 relative">
+      <div class="scanline"></div>
+      <div class="relative z-10">
+        <!-- Header row -->
+        <div class="grid grid-cols-12 gap-2 pb-3 mb-3 border-b border-amber-900/40 mono text-[10px] led-dim uppercase">
+          <div class="col-span-1">시각</div>
+          <div class="col-span-2">열차</div>
+          <div class="col-span-3">행선지</div>
+          <div class="col-span-2">경유</div>
+          <div class="col-span-1 text-center">홈</div>
+          <div class="col-span-2">상태</div>
+          <div class="col-span-1 text-right">예약</div>
+        </div>
+
+        <!-- Schedule rows (populated by JS) -->
+        <div id="schedule-list"></div>
+      </div>
+    </div>
+
+    <!-- Big SVG board (1200x260) -->
+    <div class="mt-4 led-board rounded-lg overflow-hidden relative">
+      <div class="scanline"></div>
+      <svg viewBox="0 0 1200 260" class="w-full block relative z-10" preserveAspectRatio="xMidYMid meet">
+        <!-- Top strip -->
+        <rect x="0" y="0" width="1200" height="40" fill="#0a0a0a"/>
+        <text x="20" y="26" fill="#fbbf24" font-family="JetBrains Mono" font-size="14" font-weight="700" style="filter:drop-shadow(0 0 4px #fbbf24);">▶ NEXT DEPARTURE · 다음 출발 열차</text>
+        <text x="1180" y="26" fill="#22c55e" font-family="JetBrains Mono" font-size="14" font-weight="700" text-anchor="end" style="filter:drop-shadow(0 0 4px #22c55e);" id="svg-clock">--:--</text>
+
+        <!-- Train block 1 -->
+        <g transform="translate(20,55)">
+          <text fill="#fde68a" font-family="Bebas Neue" font-size="56" style="filter:drop-shadow(0 0 6px #fbbf24);">09:30</text>
+          <text x="170" y="0" fill="#bbf7d0" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #22c55e);">OHM-1</text>
+          <text x="170" y="22" fill="#f1f5f9" font-family="Noto Sans KR" font-size="20" font-weight="700">옴라인 1편</text>
+          <text x="170" y="42" fill="#cbd5e1" font-family="Noto Sans KR" font-size="13">옴역 → 키르히호프역</text>
+          <rect x="350" y="-6" width="44" height="44" fill="#fbbf24" rx="4"/>
+          <text x="372" y="26" fill="#0a0e14" font-family="Bebas Neue" font-size="32" font-weight="900" text-anchor="middle">9</text>
+          <text x="410" y="20" fill="#86efac" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #22c55e);">● ONTIME</text>
+        </g>
+
+        <!-- Train block 2 -->
+        <g transform="translate(620,55)">
+          <text fill="#fde68a" font-family="Bebas Neue" font-size="56" style="filter:drop-shadow(0 0 6px #fbbf24);">10:15</text>
+          <text x="170" y="0" fill="#bbf7d0" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #22c55e);">FRDY-47</text>
+          <text x="170" y="22" fill="#f1f5f9" font-family="Noto Sans KR" font-size="20" font-weight="700">패러데이 익스프레스 47</text>
+          <text x="170" y="42" fill="#cbd5e1" font-family="Noto Sans KR" font-size="13">패러데이역 → 테슬라역</text>
+          <rect x="380" y="-6" width="44" height="44" fill="#fbbf24" rx="4"/>
+          <text x="402" y="26" fill="#0a0e14" font-family="Bebas Neue" font-size="32" font-weight="900" text-anchor="middle">3</text>
+          <text x="442" y="20" fill="#fde68a" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #fbbf24);">▲ +05 DELAY</text>
+        </g>
+
+        <!-- Divider -->
+        <line x1="20" y1="115" x2="1180" y2="115" stroke="#1f2937" stroke-dasharray="4 4"/>
+
+        <!-- Train block 3 -->
+        <g transform="translate(20,140)">
+          <text fill="#fde68a" font-family="Bebas Neue" font-size="56" style="filter:drop-shadow(0 0 6px #fbbf24);">10:25</text>
+          <text x="170" y="0" fill="#bae6fd" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #38bdf8);">TR-102</text>
+          <text x="170" y="22" fill="#f1f5f9" font-family="Noto Sans KR" font-size="20" font-weight="700">변압기 통근선 102</text>
+          <text x="170" y="42" fill="#cbd5e1" font-family="Noto Sans KR" font-size="13">변압기역 → 합격역</text>
+          <rect x="350" y="-6" width="44" height="44" fill="#fbbf24" rx="4"/>
+          <text x="372" y="26" fill="#0a0e14" font-family="Bebas Neue" font-size="32" font-weight="900" text-anchor="middle">5</text>
+          <text x="410" y="20" fill="#bae6fd" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #38bdf8);">◆ BOARDING</text>
+        </g>
+
+        <!-- Train block 4 -->
+        <g transform="translate(620,140)">
+          <text fill="#fde68a" font-family="Bebas Neue" font-size="56" style="filter:drop-shadow(0 0 6px #fbbf24);">11:00</text>
+          <text x="170" y="0" fill="#bbf7d0" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #22c55e);">3PH-5</text>
+          <text x="170" y="22" fill="#f1f5f9" font-family="Noto Sans KR" font-size="20" font-weight="700">3상 직행 5호</text>
+          <text x="170" y="42" fill="#cbd5e1" font-family="Noto Sans KR" font-size="13">RLC역 → 안전역</text>
+          <rect x="380" y="-6" width="44" height="44" fill="#fbbf24" rx="4"/>
+          <text x="402" y="26" fill="#0a0e14" font-family="Bebas Neue" font-size="32" font-weight="900" text-anchor="middle">7</text>
+          <text x="442" y="20" fill="#86efac" font-family="JetBrains Mono" font-size="13" font-weight="700" style="filter:drop-shadow(0 0 3px #22c55e);">● ONTIME</text>
+        </g>
+
+        <!-- Bottom strip -->
+        <rect x="0" y="220" width="1200" height="40" fill="#0a0a0a"/>
+        <text x="20" y="246" fill="#94a3b8" font-family="JetBrains Mono" font-size="12">PLATFORM 1-12 · 환승 안내 R-LINE @ RLC 역</text>
+        <text x="1180" y="246" fill="#fbbf24" font-family="JetBrains Mono" font-size="12" font-weight="700" text-anchor="end" style="filter:drop-shadow(0 0 3px #fbbf24);">SPK-LINE · 전기기능사 학습 노선</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ===== ROUTE MAP ===== -->
+  <section>
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <span class="section-tag">▼ ROUTE MAP 노선도</span>
+        <span class="mono text-xs text-gray-500">스파크 본선 · 7개 역</span>
+      </div>
+      <div class="flex items-center gap-3 mono text-[11px] text-gray-500">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> 정거장</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> 환승역</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span> 종점</span>
+      </div>
+    </div>
+
+    <div class="panel rounded-lg p-4 md:p-6">
+      <svg viewBox="0 0 1200 280" class="w-full block" preserveAspectRatio="xMidYMid meet">
+        <!-- Rail track -->
+        <line x1="80" y1="140" x2="1120" y2="140" stroke="#fbbf24" stroke-width="6" stroke-linecap="round"/>
+        <line x1="80" y1="140" x2="1120" y2="140" stroke="#0a0e14" stroke-width="2" stroke-dasharray="12 8"/>
+
+        <!-- Transfer line going up at RLC -->
+        <path d="M 720 140 Q 720 80 820 80 L 1080 80" stroke="#38bdf8" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="0"/>
+        <text x="950" y="70" fill="#bae6fd" font-family="JetBrains Mono" font-size="11" font-weight="700" text-anchor="middle">R-LINE · 회로 분기선</text>
+
+        <!-- Stations -->
+        <g id="map-stations">
+          <!-- 옴역 -->
+          <g data-station="ohm" class="map-node">
+            <circle cx="80" cy="140" r="14" class="station-dot terminal"/>
+            <text x="80" y="180" text-anchor="middle" class="station-label">옴역</text>
+            <text x="80" y="196" text-anchor="middle" class="station-sub">OHM · 01</text>
+            <text x="80" y="108" text-anchor="middle" class="station-sub">시점</text>
+          </g>
+          <!-- 키르히호프 -->
+          <g data-station="kirchhoff" class="map-node">
+            <circle cx="240" cy="140" r="12" class="station-dot"/>
+            <text x="240" y="180" text-anchor="middle" class="station-label">키르히호프역</text>
+            <text x="240" y="196" text-anchor="middle" class="station-sub">KCF · 02</text>
+          </g>
+          <!-- 패러데이 -->
+          <g data-station="faraday" class="map-node">
+            <circle cx="400" cy="140" r="12" class="station-dot"/>
+            <text x="400" y="180" text-anchor="middle" class="station-label">패러데이역</text>
+            <text x="400" y="196" text-anchor="middle" class="station-sub">FRDY · 03</text>
+          </g>
+          <!-- 변압기 -->
+          <g data-station="transformer" class="map-node">
+            <circle cx="560" cy="140" r="12" class="station-dot"/>
+            <text x="560" y="180" text-anchor="middle" class="station-label">변압기역</text>
+            <text x="560" y="196" text-anchor="middle" class="station-sub">TR · 04</text>
+          </g>
+          <!-- RLC -->
+          <g data-station="rlc" class="map-node">
+            <circle cx="720" cy="140" r="16" class="station-dot"/>
+            <circle cx="720" cy="140" r="6" fill="#38bdf8"/>
+            <text x="720" y="180" text-anchor="middle" class="station-label" style="fill:#bae6fd;">RLC역 ◆ 환승</text>
+            <text x="720" y="196" text-anchor="middle" class="station-sub">RLC · 05</text>
+          </g>
+          <!-- 3상 -->
+          <g data-station="3phase" class="map-node">
+            <circle cx="880" cy="140" r="12" class="station-dot"/>
+            <text x="880" y="180" text-anchor="middle" class="station-label">3상역</text>
+            <text x="880" y="196" text-anchor="middle" class="station-sub">3PH · 06</text>
+          </g>
+          <!-- 안전 -->
+          <g data-station="safety" class="map-node">
+            <circle cx="1000" cy="140" r="12" class="station-dot"/>
+            <text x="1000" y="180" text-anchor="middle" class="station-label">안전역</text>
+            <text x="1000" y="196" text-anchor="middle" class="station-sub">SFTY · 07</text>
+          </g>
+          <!-- 합격 -->
+          <g data-station="pass" class="map-node">
+            <circle cx="1120" cy="140" r="14" class="station-dot terminal"/>
+            <text x="1120" y="180" text-anchor="middle" class="station-label">합격역</text>
+            <text x="1120" y="196" text-anchor="middle" class="station-sub">PASS · 08</text>
+            <text x="1120" y="108" text-anchor="middle" class="station-sub">종점</text>
+          </g>
+          <!-- Branch terminal -->
+          <g data-station="impulse" class="map-node">
+            <circle cx="1080" cy="80" r="12" class="station-dot" style="stroke:#38bdf8;"/>
+            <text x="1080" y="60" text-anchor="middle" class="station-label" style="fill:#bae6fd;">임펄스역</text>
+            <text x="1080" y="46" text-anchor="middle" class="station-sub">IMP · R-01</text>
+          </g>
+        </g>
+
+        <!-- Distance markers -->
+        <g font-family="JetBrains Mono" font-size="9" fill="#475569">
+          <text x="160" y="135" text-anchor="middle">2.4km</text>
+          <text x="320" y="135" text-anchor="middle">3.1km</text>
+          <text x="480" y="135" text-anchor="middle">2.8km</text>
+          <text x="640" y="135" text-anchor="middle">3.5km</text>
+          <text x="800" y="135" text-anchor="middle">2.9km</text>
+          <text x="940" y="135" text-anchor="middle">2.2km</text>
+          <text x="1060" y="135" text-anchor="middle">2.7km</text>
+        </g>
+
+        <!-- Train icon moving along track -->
+        <g id="moving-train">
+          <rect x="-30" y="125" width="40" height="20" rx="3" fill="#22c55e" filter="drop-shadow(0 0 6px #22c55e)"/>
+          <circle cx="-22" cy="148" r="3" fill="#0a0e14"/>
+          <circle cx="2" cy="148" r="3" fill="#0a0e14"/>
+          <text x="-10" y="140" fill="#0a0e14" font-family="JetBrains Mono" font-size="9" font-weight="900" text-anchor="middle">SPK</text>
+        </g>
+      </svg>
+
+      <!-- Station detail (revealed on click) -->
+      <div id="station-detail" class="hidden mt-4 panel-flat rounded p-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span id="detail-code" class="mono text-xs text-amber-400">---</span>
+              <span class="mono text-xs text-gray-500">·</span>
+              <span id="detail-type" class="mono text-xs text-green-400">일반역</span>
+            </div>
+            <h3 id="detail-name" class="bebas text-3xl text-gray-100">--</h3>
+            <p id="detail-desc" class="text-sm text-gray-400 mt-1">--</p>
+          </div>
+          <div class="text-right">
+            <div class="mono text-[10px] text-gray-500 mb-1">학습 단원</div>
+            <div id="detail-unit" class="mono text-sm text-amber-300">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TICKET & MAP DETAILS ===== -->
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Ticket -->
+    <div class="lg:col-span-7">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="section-tag">▼ BOARDING TICKET 승차권</span>
+        <span class="mono text-xs text-gray-500">샘플 발권 · 옴역 → 합격역</span>
+      </div>
+
+      <div class="ticket overflow-hidden relative">
+        <div class="grid grid-cols-12 gap-0">
+          <!-- Main stub -->
+          <div class="col-span-9 p-6 relative">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="mono text-[10px] text-amber-700">SPK · ONE-WAY TICKET · 편도 승차권</div>
+                <div class="bebas text-2xl text-slate-900 mt-1">SPARK STATION</div>
+              </div>
+              <div class="text-right">
+                <div class="mono text-[10px] text-amber-700">SERIAL · 일련번호</div>
+                <div class="mono text-sm font-bold text-slate-900">SPK-2026-0517-04129</div>
+              </div>
+            </div>
+
+            <!-- Route -->
+            <div class="flex items-center justify-between my-5 gap-4">
+              <div class="text-center">
+                <div class="bebas text-5xl text-slate-900 leading-none">09:30</div>
+                <div class="mono text-xs text-amber-700 mt-1">옴역 · OHM</div>
+                <div class="mono text-[10px] text-slate-600">PLATFORM 9</div>
+              </div>
+
+              <div class="flex-1 px-2 relative">
+                <div class="h-0.5 bg-slate-900 relative">
+                  <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-amber-300 px-2">
+                    <svg width="32" height="14" viewBox="0 0 32 14" fill="#0f172a">
+                      <rect x="2" y="2" width="24" height="8" rx="2"/>
+                      <circle cx="8" cy="13" r="1.5"/>
+                      <circle cx="20" cy="13" r="1.5"/>
+                      <rect x="26" y="5" width="6" height="2"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="text-center mt-3 mono text-[10px] text-slate-600">2시간 35분 · 8개 정거장</div>
+              </div>
+
+              <div class="text-center">
+                <div class="bebas text-5xl text-slate-900 leading-none">12:05</div>
+                <div class="mono text-xs text-amber-700 mt-1">합격역 · PASS</div>
+                <div class="mono text-[10px] text-slate-600">PLATFORM 2</div>
+              </div>
+            </div>
+
+            <!-- Passenger info grid -->
+            <div class="grid grid-cols-4 gap-3 pt-4 border-t border-dashed border-slate-900/30">
+              <div>
+                <div class="mono text-[9px] text-amber-700">승객 · PASSENGER</div>
+                <div class="mono text-sm font-bold text-slate-900">수험생 K</div>
+              </div>
+              <div>
+                <div class="mono text-[9px] text-amber-700">열차 · TRAIN</div>
+                <div class="mono text-sm font-bold text-slate-900">OHM-1</div>
+              </div>
+              <div>
+                <div class="mono text-[9px] text-amber-700">호차 · CAR</div>
+                <div class="mono text-sm font-bold text-slate-900">3호차</div>
+              </div>
+              <div>
+                <div class="mono text-[9px] text-amber-700">좌석 · SEAT</div>
+                <div class="mono text-sm font-bold text-slate-900">12-A 창측</div>
+              </div>
+            </div>
+
+            <!-- Barcode -->
+            <div class="mt-4">
+              <div class="barcode h-12 w-full"></div>
+              <div class="mono text-[10px] text-slate-700 text-center mt-1 tracking-widest">SPK 04129 0930 OHM PASS A12</div>
+            </div>
+          </div>
+
+          <!-- Perforation -->
+          <div class="col-span-3 ticket-stub p-4 relative">
+            <div class="perf-line"></div>
+            <div class="flex flex-col items-center justify-between h-full">
+              <div class="text-center">
+                <div class="mono text-[9px] text-slate-900">STUB · 부본</div>
+                <div class="bebas text-xl text-slate-900 mt-1">OHM→PASS</div>
+              </div>
+              <div class="qr-code w-20 h-20 rounded"></div>
+              <div class="text-center">
+                <div class="mono text-[9px] text-slate-900">요금 · FARE</div>
+                <div class="bebas text-2xl text-slate-900">₩ 24,800</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 flex gap-2 flex-wrap">
+        <button id="btn-download-ticket" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-amber-300 mono text-xs rounded border border-gray-700">
+          ▼ 승차권 다운로드 (TXT)
+        </button>
+        <button id="btn-reserve" class="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-black mono text-xs font-bold rounded">
+          ◆ 좌석 예약 모달 열기
+        </button>
+        <button class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 mono text-xs rounded border border-gray-700">
+          ⟳ 환불 안내
+        </button>
+      </div>
+    </div>
+
+    <!-- Fare & transfer info -->
+    <div class="lg:col-span-5 space-y-4">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="section-tag">▼ FARE 매표 안내</span>
+        </div>
+        <div class="panel rounded-lg overflow-hidden">
+          <table class="w-full mono text-sm">
+            <thead>
+              <tr class="bg-black/60 led-amber text-[11px] uppercase">
+                <th class="px-4 py-2 text-left">구간</th>
+                <th class="px-4 py-2 text-right">일반</th>
+                <th class="px-4 py-2 text-right">학생</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-300">
+              <tr class="border-t border-gray-800">
+                <td class="px-4 py-2">옴 → 키르히호프</td>
+                <td class="px-4 py-2 text-right text-amber-200">₩ 3,200</td>
+                <td class="px-4 py-2 text-right text-green-300">₩ 2,400</td>
+              </tr>
+              <tr class="border-t border-gray-800">
+                <td class="px-4 py-2">옴 → 패러데이</td>
+                <td class="px-4 py-2 text-right text-amber-200">₩ 6,800</td>
+                <td class="px-4 py-2 text-right text-green-300">₩ 5,100</td>
+              </tr>
+              <tr class="border-t border-gray-800">
+                <td class="px-4 py-2">옴 → 변압기</td>
+                <td class="px-4 py-2 text-right text-amber-200">₩ 10,400</td>
+                <td class="px-4 py-2 text-right text-green-300">₩ 7,800</td>
+              </tr>
+              <tr class="border-t border-gray-800">
+                <td class="px-4 py-2">옴 → RLC (환승)</td>
+                <td class="px-4 py-2 text-right text-amber-200">₩ 14,600</td>
+                <td class="px-4 py-2 text-right text-green-300">₩ 10,950</td>
+              </tr>
+              <tr class="border-t border-gray-800">
+                <td class="px-4 py-2">옴 → 안전</td>
+                <td class="px-4 py-2 text-right text-amber-200">₩ 21,800</td>
+                <td class="px-4 py-2 text-right text-green-300">₩ 16,350</td>
+              </tr>
+              <tr class="border-t border-gray-800 bg-amber-950/20">
+                <td class="px-4 py-2 font-bold">옴 → 합격 (전구간)</td>
+                <td class="px-4 py-2 text-right text-amber-200 font-bold">₩ 24,800</td>
+                <td class="px-4 py-2 text-right text-green-300 font-bold">₩ 18,600</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="px-4 py-3 bg-black/40 mono text-[11px] text-gray-400 border-t border-gray-800">
+            ◆ 학생 할인 25% · ◆ 왕복 12% · ◆ 합격역 도착 시 환불 0%
+          </div>
+        </div>
+      </div>
+
+      <!-- Transfer guide -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="section-tag">▼ TRANSFER 환승 안내</span>
+        </div>
+        <div class="panel rounded-lg p-4 space-y-3">
+          <div class="flex items-start gap-3 pb-3 border-b border-gray-800">
+            <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background:#38bdf8;">
+              <span class="bebas text-xl text-slate-900">R</span>
+            </div>
+            <div>
+              <div class="mono text-xs text-blue-300">RLC역 5번 출구 · R-LINE</div>
+              <div class="text-sm text-gray-200 font-bold">회로 분기선 → 임펄스역</div>
+              <div class="mono text-[11px] text-gray-500 mt-1">평균 환승 4분 · 야간 시간대 6분</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 pb-3 border-b border-gray-800">
+            <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background:#22c55e;">
+              <span class="bebas text-xl text-slate-900">3</span>
+            </div>
+            <div>
+              <div class="mono text-xs text-green-300">3상역 1번 출구 · 3PH-LINE</div>
+              <div class="text-sm text-gray-200 font-bold">3상 직행 → 안전역 급행</div>
+              <div class="mono text-[11px] text-gray-500 mt-1">평균 환승 2분 · 동일 플랫폼</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background:#fbbf24;">
+              <span class="bebas text-xl text-slate-900">P</span>
+            </div>
+            <div>
+              <div class="mono text-xs text-amber-300">합격역 종점 · 시험장 셔틀</div>
+              <div class="text-sm text-gray-200 font-bold">합격역 1번 출구 → 실기 시험장</div>
+              <div class="mono text-[11px] text-gray-500 mt-1">셔틀 12분 간격 · 무료 운행</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LOST AND FOUND ===== -->
+  <section>
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <span class="section-tag">▼ LOST &amp; FOUND 분실물 게시판</span>
+        <span class="mono text-xs text-gray-500">스파크 역 분실물 사무실 · 24시 운영</span>
+      </div>
+      <div class="mono text-[11px] text-gray-500">총 6건 등록 · 회수율 73%</div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Lost 1 -->
+      <div class="lost-card p-4 relative">
+        <div class="pin-tape"></div>
+        <div class="flex items-start justify-between mb-2">
+          <span class="mono text-[10px] text-amber-300">LF-0517-001</span>
+          <span class="mono text-[10px] text-gray-500">옴역 09:45</span>
+        </div>
+        <h4 class="font-bold text-gray-100">전기기능사 필기 요약 노트</h4>
+        <p class="text-sm text-gray-400 mt-1">표지 검정색, 형광펜 메모 다수, 1챕터 옴의 법칙 부분 손때.</p>
+        <div class="mt-3 flex items-center justify-between mono text-[11px]">
+          <span class="text-green-400">● 보관중 · 7일</span>
+          <span class="text-gray-500">9번 플랫폼 의자</span>
+        </div>
+      </div>
+
+      <!-- Lost 2 -->
+      <div class="lost-card p-4 relative">
+        <div class="pin-tape"></div>
+        <div class="flex items-start justify-between mb-2">
+          <span class="mono text-[10px] text-amber-300">LF-0517-002</span>
+          <span class="mono text-[10px] text-gray-500">RLC역 11:20</span>
+        </div>
+        <h4 class="font-bold text-gray-100">디지털 멀티미터 (소형)</h4>
+        <p class="text-sm text-gray-400 mt-1">노란색 외장, 적색 프로브 1개 결품, 배터리 잔량 38%.</p>
+        <div class="mt-3 flex items-center justify-between mono text-[11px]">
+          <span class="text-green-400">● 보관중 · 3일</span>
+          <span class="text-gray-500">환승 통로 B</span>
+        </div>
+      </div>
+
+      <!-- Lost 3 -->
+      <div class="lost-card p-4 relative">
+        <div class="pin-tape"></div>
+        <div class="flex items-start justify-between mb-2">
+          <span class="mono text-[10px] text-amber-300">LF-0517-003</span>
+          <span class="mono text-[10px] text-gray-500">합격역 14:10</span>
+        </div>
+        <h4 class="font-bold text-gray-100">절연 장갑 한 켤레</h4>
+        <p class="text-sm text-gray-400 mt-1">22kV급 황색, 우측 손목 안쪽에 "K" 이니셜 매직.</p>
+        <div class="mt-3 flex items-center justify-between mono text-[11px]">
+          <span class="text-amber-300">▲ 회수 예정</span>
+          <span class="text-gray-500">2번 출구 사무실</span>
+        </div>
+      </div>
+
+      <!-- Lost 4 -->
+      <div class="lost-card p-4 relative">
+        <div class="pin-tape"></div>
+        <div class="flex items-start justify-between mb-2">
+          <span class="mono text-[10px] text-amber-300">LF-0517-004</span>
+          <span class="mono text-[10px] text-gray-500">패러데이역 16:30</span>
+        </div>
+        <h4 class="font-bold text-gray-100">회로 시뮬레이터 라이선스 카드</h4>
+        <p class="text-sm text-gray-400 mt-1">파란색 PVC, 뒷면 QR 인쇄, 유효기간 2026.12.</p>
+        <div class="mt-3 flex items-center justify-between mono text-[11px]">
+          <span class="text-green-400">● 보관중 · 1일</span>
+          <span class="text-gray-500">대합실 4번 의자</span>
+        </div>
+      </div>
+
+      <!-- Lost 5 -->
+      <div class="lost-card p-4 relative">
+        <div class="pin-tape"></div>
+        <div class="flex items-start justify-between mb-2">
+          <span class="mono text-[10px] text-amber-300">LF-0517-005</span>
+          <span class="mono text-[10px] text-gray-500">변압기역 08:15</span>
+        </div>
+        <h4 class="font-bold text-gray-100">실기 키트 — 전선 결선 세트</h4>
+        <p class="text-sm text-gray-400 mt-1">투명 케이스, 단자 6종, 압착 펜치 1점 포함.</p>
+        <div class="mt-3 flex items-center justify-between mono text-[11px]">
+          <span class="text-red-400">● 보관 만료 임박</span>
+          <span class="text-gray-500">매표소 좌측</span>
+        </div>
+      </div>
+
+      <!-- Lost 6 -->
+      <div class="lost-card p-4 relative">
+        <div class="pin-tape"></div>
+        <div class="flex items-start justify-between mb-2">
+          <span class="mono text-[10px] text-amber-300">LF-0517-006</span>
+          <span class="mono text-[10px] text-gray-500">3상역 19:55</span>
+        </div>
+        <h4 class="font-bold text-gray-100">합격 부적 (수공예)</h4>
+        <p class="text-sm text-gray-400 mt-1">붉은 끈, 작은 회로 기판 펜던트, "PASS" 음각.</p>
+        <div class="mt-3 flex items-center justify-between mono text-[11px]">
+          <span class="text-green-400">● 보관중 · 9일</span>
+          <span class="text-gray-500">개찰구 옆 부스</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== FOOTER ========== -->
+<footer class="border-t border-gray-800 mt-12" style="background:#05070a;">
+  <div class="max-w-[1400px] mx-auto px-6 py-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <div class="md:col-span-2">
+        <div class="bebas text-2xl led-amber mb-2">SPARK STATION</div>
+        <p class="mono text-xs text-gray-500 leading-relaxed">
+          본 페이지는 전기기능사 학습을 위한 가상의 기차역·운행 시뮬레이션입니다.
+          실재하는 KTX · SRT · 새마을호 · 무궁화호 · 코레일 · SR · 한국철도공사 등
+          국내 모든 철도 운영사 및 차량과는 무관하며, 모든 역명 · 열차명 · 시간표 · 요금은 가공입니다.
+        </p>
+      </div>
+      <div>
+        <div class="mono text-[11px] led-green mb-2">RUNTIME INFO</div>
+        <ul class="mono text-xs text-gray-400 space-y-1">
+          <li>버전 · v2026.05.B</li>
+          <li>노선 · SPK-Line</li>
+          <li>역 · 7 + 환승역 1</li>
+          <li>일일 운행 · 12편 + α</li>
+        </ul>
+      </div>
+      <div>
+        <div class="mono text-[11px] led-green mb-2">CONTACT</div>
+        <ul class="mono text-xs text-gray-400 space-y-1">
+          <li>분실물 · LOST-FOUND</li>
+          <li>매표 · TICKET-DESK</li>
+          <li>안내 · INFO-BOOTH</li>
+          <li>학습 문의 · STUDY-LINE</li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-900 pt-4 flex items-center justify-between flex-wrap gap-2 mono text-[10px] text-gray-600">
+      <span>© SPARK STATION · 가상 기차 시뮬레이션 · 학습 목적</span>
+      <span>SPK · STATION · CODE · SPK-01 · LINE · SPK-MAIN</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ========== MODAL ========== -->
+<div id="modal" class="fixed inset-0 modal-bg hidden items-center justify-center z-50 p-4">
+  <div class="panel rounded-lg max-w-2xl w-full overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800" style="background:#11161f;">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400 blink"></span>
+        <span class="mono text-xs led-amber">TRAIN DETAIL · 열차 상세</span>
+      </div>
+      <button id="modal-close" class="text-gray-500 hover:text-gray-200 text-2xl leading-none">×</button>
+    </div>
+    <div id="modal-body" class="p-6 space-y-4">
+      <!-- populated -->
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ===== Escape HTML =====
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ===== Data =====
+  var TRAINS = [
+    {time:'09:30', code:'OHM-1',   name:'옴라인 1편',           from:'옴역',       to:'키르히호프역', via:'직행',       plat:9,  status:'ontime',   delay:0, color:'amber', seats:'42/64', fare:'3,200'},
+    {time:'09:55', code:'KCF-12',  name:'키르히호프 12편',      from:'키르히호프역', to:'패러데이역',   via:'전구간',     plat:4,  status:'ontime',   delay:0, color:'amber', seats:'30/64', fare:'4,600'},
+    {time:'10:15', code:'FRDY-47', name:'패러데이 익스프레스 47', from:'패러데이역', to:'테슬라역',     via:'합격 직통',  plat:3,  status:'delayed',  delay:5, color:'amber', seats:'18/48', fare:'8,400'},
+    {time:'10:25', code:'TR-102',  name:'변압기 통근선 102',     from:'변압기역',   to:'합격역',       via:'각역정차',   plat:5,  status:'boarding', delay:0, color:'blue',  seats:'08/72', fare:'7,200'},
+    {time:'10:48', code:'IMP-9',   name:'임펄스 야간선 9편',     from:'임펄스역',   to:'RLC역',        via:'분기선',     plat:2,  status:'ontime',   delay:0, color:'amber', seats:'52/64', fare:'5,800'},
+    {time:'11:00', code:'3PH-5',   name:'3상 직행 5호',          from:'RLC역',     to:'안전역',       via:'직행',       plat:7,  status:'ontime',   delay:0, color:'amber', seats:'24/48', fare:'9,300'},
+    {time:'11:22', code:'CAP-31',  name:'커패시터 통근 31편',    from:'RLC역',     to:'3상역',        via:'각역정차',   plat:1,  status:'ontime',   delay:0, color:'amber', seats:'46/72', fare:'3,800'},
+    {time:'11:40', code:'IND-17',  name:'인덕터 급행 17편',      from:'RLC역',     to:'안전역',       via:'급행',       plat:8,  status:'canceled', delay:0, color:'red',   seats:'--/--', fare:'9,300'},
+    {time:'12:05', code:'SFTY-22', name:'안전등급 22편',         from:'안전역',     to:'합격역',       via:'직통',       plat:6,  status:'ontime',   delay:0, color:'amber', seats:'12/48', fare:'4,200'},
+    {time:'12:30', code:'TSL-3',   name:'테슬라 특급 3호',       from:'패러데이역', to:'안전역',       via:'2개역',     plat:11, status:'ontime',   delay:0, color:'amber', seats:'33/48', fare:'12,400'},
+    {time:'13:00', code:'PWR-77',  name:'전력 직통 77편',        from:'옴역',       to:'합격역',       via:'전구간',    plat:10, status:'delayed',  delay:12, color:'amber',seats:'06/72', fare:'24,800'},
+    {time:'13:25', code:'OHM-8',   name:'옴라인 8편',           from:'옴역',       to:'변압기역',     via:'각역정차',   plat:9,  status:'ontime',   delay:0, color:'amber', seats:'58/64', fare:'10,400'}
+  ];
+
+  var STATIONS = {
+    ohm:        {code:'OHM',  name:'옴역',        type:'시점',   unit:'1단원 · 옴의 법칙',         desc:'전압 = 전류 × 저항. 직류 회로의 출발점이며 모든 학습이 시작되는 시점역.'},
+    kirchhoff:  {code:'KCF',  name:'키르히호프역',type:'일반',   unit:'2단원 · 키르히호프 법칙',   desc:'전류·전압 법칙. 폐회로 해석의 필수 환승 정거장.'},
+    faraday:    {code:'FRDY', name:'패러데이역', type:'일반',   unit:'3단원 · 전자기 유도',        desc:'유도 기전력. 교류 발전의 원리가 시작되는 정거장.'},
+    transformer:{code:'TR',   name:'변압기역',   type:'일반',   unit:'4단원 · 변압기',             desc:'권수비·전압비. 상용 전력 전송에 필수적인 통근 정거장.'},
+    rlc:        {code:'RLC',  name:'RLC역',     type:'환승',   unit:'5단원 · RLC 회로',           desc:'저항·인덕터·커패시터 합성. R-LINE 분기선과 환승 가능.'},
+    '3phase':   {code:'3PH',  name:'3상역',      type:'일반',   unit:'6단원 · 3상 교류',           desc:'3상 결선 Y·Δ. 산업용 전력의 표준 정거장.'},
+    safety:     {code:'SFTY', name:'안전역',     type:'일반',   unit:'7단원 · 안전 관리',          desc:'접지·누전·감전 방지. 실기 시험 직전 마지막 점검 정거장.'},
+    pass:       {code:'PASS', name:'합격역',     type:'종점',   unit:'8단원 · 종합 모의고사',      desc:'모든 학습 노선의 종착역. CBT 모의고사 완료 시 도달.'},
+    impulse:    {code:'IMP',  name:'임펄스역',   type:'분기 종점', unit:'심화 · 과도현상', desc:'R-LINE 분기선의 종점. 과도응답·서지 보호 심화 학습.'}
+  };
+
+  // ===== Clock =====
+  function updateClock(){
+    var d = new Date();
+    var hh = String(d.getHours()).padStart(2,'0');
+    var mm = String(d.getMinutes()).padStart(2,'0');
+    var ss = String(d.getSeconds()).padStart(2,'0');
+    var yy = d.getFullYear();
+    var mo = String(d.getMonth()+1).padStart(2,'0');
+    var dd = String(d.getDate()).padStart(2,'0');
+    var ct = document.getElementById('clock-time');
+    var cd = document.getElementById('clock-date');
+    var sc = document.getElementById('svg-clock');
+    if(ct) ct.textContent = hh+':'+mm+':'+ss;
+    if(cd) cd.textContent = yy+'.'+mo+'.'+dd;
+    if(sc) sc.textContent = hh+':'+mm;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ===== Status helpers =====
+  function statusBadge(s, delay){
+    if(s === 'ontime')   return '<span class="badge-ontime mono text-[11px] px-2 py-0.5 rounded">● 정시</span>';
+    if(s === 'delayed')  return '<span class="badge-delayed mono text-[11px] px-2 py-0.5 rounded">▲ +'+delay+'분</span>';
+    if(s === 'canceled') return '<span class="badge-canceled mono text-[11px] px-2 py-0.5 rounded">✕ 운휴</span>';
+    if(s === 'boarding') return '<span class="badge-boarding mono text-[11px] px-2 py-0.5 rounded blink">◆ 승차중</span>';
+    return '';
+  }
+
+  function ledColor(c){
+    if(c === 'amber') return 'led-amber';
+    if(c === 'blue')  return 'led-blue';
+    if(c === 'red')   return 'led-red';
+    if(c === 'green') return 'led-green';
+    return 'led-white';
+  }
+
+  // ===== Render schedule =====
+  function renderSchedule(filter){
+    var list = TRAINS;
+    if(filter){
+      var f = (filter.from||'').trim();
+      var t = (filter.to||'').trim();
+      list = TRAINS.filter(function(tr){
+        var okF = !f || tr.from.indexOf(f) >= 0;
+        var okT = !t || tr.to.indexOf(t)   >= 0;
+        return okF && okT;
+      });
+    }
+    var html = '';
+    if(list.length === 0){
+      html = '<div class="py-8 text-center mono text-sm text-gray-500">◇ 검색 결과 없음 · 다른 역명을 입력해 보세요</div>';
+    } else {
+      list.forEach(function(t, i){
+        html +=
+          '<div class="schedule-row grid grid-cols-12 gap-2 items-center py-2.5 mono text-sm" data-idx="'+i+'">'+
+            '<div class="col-span-1 bebas text-2xl '+ledColor(t.color)+'">'+esc(t.time)+'</div>'+
+            '<div class="col-span-2"><div class="led-green text-[11px]">'+esc(t.code)+'</div><div class="text-gray-300 text-xs">'+esc(t.name)+'</div></div>'+
+            '<div class="col-span-3 text-gray-200">'+esc(t.from)+' <span class="text-gray-600">→</span> '+esc(t.to)+'</div>'+
+            '<div class="col-span-2 text-gray-500 text-xs">'+esc(t.via)+'</div>'+
+            '<div class="col-span-1 text-center"><span class="platform-sign inline-block px-2 py-0.5 bebas text-lg">'+esc(String(t.plat))+'</span></div>'+
+            '<div class="col-span-2">'+statusBadge(t.status, t.delay)+'</div>'+
+            '<div class="col-span-1 text-right"><span class="led-amber text-xs">'+esc(t.seats)+'</span></div>'+
+          '</div>';
+      });
+    }
+    var el = document.getElementById('schedule-list');
+    if(el) el.innerHTML = html;
+    bindRows();
+  }
+
+  function bindRows(){
+    document.querySelectorAll('.schedule-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var idx = parseInt(row.getAttribute('data-idx'), 10);
+        openTrainModal(TRAINS[idx]);
+      });
+    });
+  }
+
+  // ===== Modal =====
+  function openTrainModal(t){
+    if(!t) return;
+    var body = document.getElementById('modal-body');
+    var statusKr = ({ontime:'정시 운행', delayed:'지연 운행', canceled:'운휴', boarding:'승차중'})[t.status] || '-';
+    body.innerHTML =
+      '<div class="flex items-start justify-between gap-4">'+
+        '<div>'+
+          '<div class="mono text-xs led-green mb-1">'+esc(t.code)+' · PLATFORM '+esc(String(t.plat))+'</div>'+
+          '<h3 class="bebas text-3xl text-gray-100">'+esc(t.name)+'</h3>'+
+          '<p class="mono text-sm text-gray-400 mt-1">'+esc(t.from)+' <span class="text-gray-600">→</span> '+esc(t.to)+' · '+esc(t.via)+'</p>'+
+        '</div>'+
+        '<div class="text-right">'+
+          '<div class="bebas text-5xl led-amber leading-none">'+esc(t.time)+'</div>'+
+          '<div class="mt-1">'+statusBadge(t.status, t.delay)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-gray-800">'+
+        '<div><div class="mono text-[10px] text-gray-500">상태</div><div class="mono text-sm text-amber-200">'+esc(statusKr)+'</div></div>'+
+        '<div><div class="mono text-[10px] text-gray-500">좌석</div><div class="mono text-sm text-amber-200">'+esc(t.seats)+'</div></div>'+
+        '<div><div class="mono text-[10px] text-gray-500">요금</div><div class="mono text-sm text-amber-200">₩ '+esc(t.fare)+'</div></div>'+
+        '<div><div class="mono text-[10px] text-gray-500">플랫폼</div><div class="mono text-sm text-amber-200">'+esc(String(t.plat))+'번</div></div>'+
+      '</div>'+
+      '<div class="panel-flat rounded p-3 mono text-[11px] text-gray-400 leading-relaxed">'+
+        '◆ 본 열차는 가상 학습 시뮬레이션 차량입니다.<br>'+
+        '◆ 좌석 예약은 발권 시 자동 배정되며, 실제 결제는 발생하지 않습니다.<br>'+
+        '◆ 환승 정보는 RLC역 · 3상역 · 합격역 셔틀에서 안내됩니다.'+
+      '</div>'+
+      '<div class="flex gap-2">'+
+        '<button id="modal-reserve" class="flex-1 bg-amber-400 hover:bg-amber-300 text-black mono text-sm font-bold py-2 rounded">◆ 가짜 예약 발권</button>'+
+        '<button id="modal-cancel" class="px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 mono text-sm rounded border border-gray-700">닫기</button>'+
+      '</div>';
+    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('flex');
+    var rv = document.getElementById('modal-reserve');
+    var cn = document.getElementById('modal-cancel');
+    if(rv) rv.addEventListener('click', function(){
+      rv.textContent = '✓ 예약 완료 · 좌석 자동 배정';
+      rv.classList.remove('bg-amber-400','hover:bg-amber-300');
+      rv.classList.add('bg-green-500');
+    });
+    if(cn) cn.addEventListener('click', closeModal);
+  }
+
+  function closeModal(){
+    var m = document.getElementById('modal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+  }
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', function(e){
+    if(e.target.id === 'modal') closeModal();
+  });
+
+  // ===== Search =====
+  document.getElementById('btn-search').addEventListener('click', function(){
+    var from = document.getElementById('search-from').value;
+    var to   = document.getElementById('search-to').value;
+    renderSchedule({from:from, to:to});
+  });
+  ['search-from','search-to'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){
+      if(e.key === 'Enter') document.getElementById('btn-search').click();
+    });
+  });
+
+  // ===== Map interaction =====
+  document.querySelectorAll('.map-node').forEach(function(node){
+    node.addEventListener('click', function(){
+      document.querySelectorAll('.station-dot').forEach(function(d){ d.classList.remove('active'); });
+      var dot = node.querySelector('.station-dot');
+      if(dot) dot.classList.add('active');
+      var key = node.getAttribute('data-station');
+      var s = STATIONS[key];
+      if(!s) return;
+      document.getElementById('detail-code').textContent = s.code + ' · STATION';
+      document.getElementById('detail-type').textContent = s.type;
+      document.getElementById('detail-name').textContent = s.name;
+      document.getElementById('detail-desc').textContent = s.desc;
+      document.getElementById('detail-unit').textContent = s.unit;
+      document.getElementById('station-detail').classList.remove('hidden');
+    });
+  });
+
+  // ===== Ticket download =====
+  document.getElementById('btn-download-ticket').addEventListener('click', function(){
+    var txt =
+      '═══════════════════════════════════════\n'+
+      '   SPARK STATION · ONE-WAY TICKET\n'+
+      '═══════════════════════════════════════\n'+
+      ' SERIAL    : SPK-2026-0517-04129\n'+
+      ' PASSENGER : 수험생 K\n'+
+      ' TRAIN     : OHM-1 · 옴라인 1편\n'+
+      ' FROM      : 옴역 (OHM)   09:30  PLATFORM 9\n'+
+      ' TO        : 합격역 (PASS) 12:05  PLATFORM 2\n'+
+      ' CAR/SEAT  : 3호차 · 12-A (창측)\n'+
+      ' FARE      : ₩ 24,800\n'+
+      ' DURATION  : 2시간 35분 · 8개 정거장\n'+
+      '---------------------------------------\n'+
+      ' ◆ 본 승차권은 가상 학습 시뮬레이션입니다.\n'+
+      ' ◆ 실재 KTX/SRT/코레일 등과 무관합니다.\n'+
+      '═══════════════════════════════════════\n';
+    var blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'SPK-ticket-04129.txt';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ===== Reserve button =====
+  document.getElementById('btn-reserve').addEventListener('click', function(){
+    openTrainModal(TRAINS[0]);
+  });
+
+  // ===== Moving train animation =====
+  (function(){
+    var train = document.getElementById('moving-train');
+    if(!train) return;
+    var pos = 80;
+    var dir = 1;
+    setInterval(function(){
+      pos += dir * 6;
+      if(pos > 1100){ dir = -1; }
+      if(pos < 80){ dir = 1; }
+      train.setAttribute('transform','translate('+pos+',0)');
+    }, 80);
+  })();
+
+  // ===== Auto-refresh schedule (simulate minute updates) =====
+  setInterval(function(){
+    // randomize one row's status to simulate live updates
+    var i = Math.floor(Math.random() * TRAINS.length);
+    var pool = ['ontime','ontime','ontime','delayed','boarding'];
+    var pick = pool[Math.floor(Math.random()*pool.length)];
+    if(pick === 'delayed'){ TRAINS[i].status = 'delayed'; TRAINS[i].delay = 2 + Math.floor(Math.random()*15); }
+    else { TRAINS[i].status = pick; TRAINS[i].delay = 0; }
+    renderSchedule();
+  }, 60000);
+
+  // Initial render
+  renderSchedule();
+})();
+</script>
+</body>
+</html>

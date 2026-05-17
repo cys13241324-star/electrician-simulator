@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK GRAND HOTEL · 룸서비스 메뉴 — 전기기능사 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Serif+KR:wght@300;400;500;600;700;900&display=swap" />
+<style>
+  :root {
+    --navy-900: #0a1530;
+    --navy-800: #0f1d3f;
+    --navy-700: #16284f;
+    --navy-600: #1f3567;
+    --navy-500: #2a4282;
+    --gold-300: #f3d98a;
+    --gold-400: #e6c46a;
+    --gold-500: #d4af4e;
+    --gold-600: #b8932f;
+    --gold-700: #8c6e1c;
+    --cream: #f6efde;
+    --paper: #ede2c4;
+    --ink: #1a1408;
+    --muted: #6b5e44;
+    --line: rgba(212,175,78,0.32);
+  }
+  html, body {
+    font-family: 'Noto Serif KR', 'Cormorant Garamond', serif;
+    background:
+      radial-gradient(circle at 10% 0%, #16284f 0%, transparent 45%),
+      radial-gradient(circle at 95% 100%, #1f3567 0%, transparent 50%),
+      linear-gradient(180deg, #0a1530 0%, #050a1c 100%);
+    color: var(--cream);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .serif-display { font-family: 'Playfair Display', 'Noto Serif KR', serif; }
+  .serif-body { font-family: 'Cormorant Garamond', 'Noto Serif KR', serif; }
+  .han-serif { font-family: 'Noto Serif KR', serif; }
+
+  /* 골드 텍스처 */
+  .gold-text {
+    background: linear-gradient(180deg, #f6e3a3 0%, #d4af4e 50%, #b8932f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gold-line {
+    background: linear-gradient(90deg, transparent 0%, rgba(212,175,78,0.65) 20%, rgba(243,217,138,0.95) 50%, rgba(212,175,78,0.65) 80%, transparent 100%);
+    height: 1px;
+  }
+  .gold-line-thick {
+    background: linear-gradient(90deg, transparent 0%, rgba(212,175,78,0.45) 15%, rgba(243,217,138,0.85) 50%, rgba(212,175,78,0.45) 85%, transparent 100%);
+    height: 2px;
+  }
+
+  /* TV 패널 */
+  .tv-stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 28px 16px 80px;
+    position: relative;
+  }
+  .tv-stage::before {
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(212,175,78,0.08), transparent 55%),
+      radial-gradient(circle at 50% 100%, rgba(212,175,78,0.06), transparent 55%);
+    pointer-events:none;
+  }
+
+  .tv-frame {
+    width: 100%;
+    max-width: 1180px;
+    background: linear-gradient(180deg, #1c1408 0%, #0e0a04 100%);
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow:
+      0 40px 100px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(212,175,78,0.18),
+      inset 0 0 0 1px rgba(212,175,78,0.10);
+    position: relative;
+  }
+  .tv-screen {
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--navy-900) 0%, var(--navy-800) 100%);
+    position: relative;
+    border: 1px solid rgba(212,175,78,0.22);
+  }
+  .tv-frame::after {
+    content:"SPARK GRAND HOTEL";
+    position:absolute;
+    bottom: -22px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Playfair Display', serif;
+    font-size: 9px;
+    letter-spacing: 0.6em;
+    color: rgba(212,175,78,0.45);
+  }
+
+  /* 상단 상태바 */
+  .status-bar {
+    background: linear-gradient(180deg, rgba(10,21,48,0.95), rgba(15,29,63,0.85));
+    border-bottom: 1px solid rgba(212,175,78,0.22);
+  }
+
+  /* 카드 — 종이 메뉴 */
+  .menu-card {
+    background:
+      linear-gradient(180deg, rgba(246,239,222,0.04) 0%, rgba(246,239,222,0.02) 100%);
+    border: 1px solid rgba(212,175,78,0.22);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .menu-card:hover {
+    border-color: rgba(243,217,138,0.6);
+    background: linear-gradient(180deg, rgba(246,239,222,0.08) 0%, rgba(246,239,222,0.03) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(243,217,138,0.18);
+  }
+  .menu-card::before {
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, transparent, rgba(243,217,138,0.4), transparent);
+    opacity:0;
+    transition: opacity 0.3s;
+  }
+  .menu-card:hover::before { opacity:1; }
+
+  /* 카테고리 탭 */
+  .cat-tab {
+    background: transparent;
+    color: rgba(246,239,222,0.55);
+    border-bottom: 2px solid transparent;
+    padding: 12px 18px;
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    white-space: nowrap;
+  }
+  .cat-tab:hover { color: var(--gold-300); }
+  .cat-tab.active {
+    color: var(--gold-300);
+    border-bottom-color: var(--gold-500);
+  }
+
+  /* 버튼 */
+  .gold-btn {
+    background: linear-gradient(180deg, #f3d98a 0%, #d4af4e 50%, #b8932f 100%);
+    color: var(--navy-900);
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 1px solid rgba(140,110,28,0.6);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: all 0.2s;
+  }
+  .gold-btn:hover {
+    background: linear-gradient(180deg, #fbe9b3 0%, #e6c46a 50%, #d4af4e 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .ghost-btn {
+    background: transparent;
+    color: var(--gold-300);
+    border: 1px solid rgba(212,175,78,0.45);
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.15em;
+    transition: all 0.2s;
+  }
+  .ghost-btn:hover {
+    border-color: var(--gold-300);
+    background: rgba(212,175,78,0.08);
+  }
+
+  /* 모달 */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display:flex; align-items:center; justify-content:center;
+    padding: 20px;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity:1; pointer-events:auto; }
+  .modal-card {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(212,175,78,0.12), transparent 60%),
+      linear-gradient(180deg, var(--navy-800) 0%, var(--navy-900) 100%);
+    border: 1px solid rgba(212,175,78,0.4);
+    border-radius: 10px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+  }
+  .modal-overlay.open .modal-card { transform: translateY(0); }
+
+  /* 장바구니 슬라이드 */
+  .cart-drawer {
+    position: fixed;
+    top: 0; right: 0;
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    background: linear-gradient(180deg, var(--navy-800) 0%, var(--navy-900) 100%);
+    border-left: 1px solid rgba(212,175,78,0.35);
+    z-index: 95;
+    transform: translateX(100%);
+    transition: transform 0.35s ease;
+    display:flex;
+    flex-direction:column;
+    box-shadow: -20px 0 60px rgba(0,0,0,0.5);
+  }
+  .cart-drawer.open { transform: translateX(0); }
+
+  /* 슬라이더 */
+  input[type="range"].gold-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--gold-500) 0%, var(--gold-500) var(--val, 50%), rgba(246,239,222,0.18) var(--val, 50%), rgba(246,239,222,0.18) 100%);
+    border-radius: 4px;
+    outline: none;
+  }
+  input[type="range"].gold-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: linear-gradient(180deg, #f3d98a, #b8932f);
+    border-radius: 50%;
+    border: 1px solid rgba(140,110,28,0.7);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  input[type="range"].gold-range::-moz-range-thumb {
+    width: 16px; height: 16px;
+    background: linear-gradient(180deg, #f3d98a, #b8932f);
+    border-radius: 50%;
+    border: 1px solid rgba(140,110,28,0.7);
+    cursor: pointer;
+  }
+
+  /* 토글 */
+  .toggle {
+    width: 40px; height: 22px;
+    background: rgba(246,239,222,0.18);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.25s;
+    border: 1px solid rgba(212,175,78,0.25);
+  }
+  .toggle::after {
+    content:"";
+    position:absolute;
+    width: 16px; height: 16px;
+    background: linear-gradient(180deg, #f6efde, #d4af4e);
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .toggle.on {
+    background: linear-gradient(90deg, var(--gold-600), var(--gold-400));
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* 별 평점 */
+  .star { color: var(--gold-400); }
+
+  /* 야경 SVG 깜빡임 */
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+  }
+  .twinkle { animation: twinkle 2.4s infinite ease-in-out; }
+  .twinkle.delay-1 { animation-delay: 0.5s; }
+  .twinkle.delay-2 { animation-delay: 1s; }
+  .twinkle.delay-3 { animation-delay: 1.5s; }
+
+  /* 토스트 */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(40px);
+    background: linear-gradient(180deg, #f3d98a 0%, #b8932f 100%);
+    color: var(--navy-900);
+    padding: 12px 28px;
+    border-radius: 999px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.35s;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+    pointer-events:none;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: rgba(10,21,48,0.5); }
+  ::-webkit-scrollbar-thumb { background: rgba(212,175,78,0.35); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(212,175,78,0.55); }
+
+  /* 메뉴 그리드 — 카테고리 페이드 */
+  .menu-section { display: none; }
+  .menu-section.active { display: grid; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn {
+    from { opacity:0; transform: translateY(8px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  .bullet-dot {
+    width: 4px; height: 4px;
+    background: var(--gold-500);
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 8px;
+    vertical-align: middle;
+  }
+
+  /* 환경 슬라이더 패널 */
+  .room-panel {
+    background:
+      linear-gradient(180deg, rgba(15,29,63,0.85), rgba(10,21,48,0.92));
+    border: 1px solid rgba(212,175,78,0.22);
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- TV 무대 -->
+<div class="tv-stage">
+
+  <div class="tv-frame">
+    <div class="tv-screen">
+
+      <!-- ============ 상태바 ============ -->
+      <div class="status-bar px-6 py-3 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-5 serif-body" style="color:var(--gold-300); letter-spacing:0.2em;">
+          <span class="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+            ROOM 1208
+          </span>
+          <span>·</span>
+          <span id="status-date">2026년 5월 15일 (금)</span>
+          <span>·</span>
+          <span class="flex items-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            맑음 22°C
+          </span>
+        </div>
+        <div class="flex items-center gap-4 serif-body" style="color:var(--gold-300); letter-spacing:0.2em;">
+          <span id="status-time">21:08</span>
+          <span>·</span>
+          <span>WI-FI: SPARK_PREMIUM</span>
+          <span>·</span>
+          <span class="flex items-center gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 8h12l-1 12H7L6 8zM9 5a3 3 0 016 0v3H9V5z"/></svg>
+            <span id="cart-badge">0</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- ============ 헤더 — 호텔 브랜드 ============ -->
+      <header class="px-8 pt-10 pb-6 text-center relative">
+        <!-- 별 장식 -->
+        <div class="flex justify-center gap-2 mb-3" style="color:var(--gold-400);">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+        </div>
+
+        <!-- 호텔 로고 SVG -->
+        <div class="flex justify-center mb-4">
+          <svg width="72" height="72" viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="40" r="38" stroke="url(#g1)" stroke-width="1"/>
+            <circle cx="40" cy="40" r="32" stroke="url(#g1)" stroke-width="0.5"/>
+            <path d="M40 14 L46 32 L64 34 L50 46 L54 64 L40 54 L26 64 L30 46 L16 34 L34 32 Z" fill="url(#g1)" opacity="0.9"/>
+            <circle cx="40" cy="40" r="5" fill="#0a1530"/>
+            <defs>
+              <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f3d98a"/>
+                <stop offset="50%" stop-color="#d4af4e"/>
+                <stop offset="100%" stop-color="#8c6e1c"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        <p class="serif-body text-xs tracking-[0.5em] mb-3" style="color:var(--gold-400);">— EST. 2026 · SEOUL —</p>
+        <h1 class="serif-display text-5xl md:text-6xl gold-text font-bold tracking-wider mb-2">SPARK GRAND HOTEL</h1>
+        <p class="han-serif text-lg mb-4" style="color:var(--cream); opacity:0.85; letter-spacing:0.3em;">스파크 그랜드 호텔</p>
+
+        <div class="gold-line-thick mx-auto mb-4" style="max-width: 320px;"></div>
+
+        <p class="serif-body italic text-base md:text-lg" style="color:var(--cream); opacity:0.75;">
+          "Where Electricity Meets Elegance"
+        </p>
+        <p class="han-serif text-sm mt-1" style="color:var(--gold-300); opacity:0.7;">전기와 우아함이 만나는 곳</p>
+
+        <!-- 환영 인사 -->
+        <div class="mt-8 max-w-2xl mx-auto px-6 py-5" style="border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+          <p class="serif-body text-xs tracking-[0.4em] mb-2" style="color:var(--gold-400);">— WELCOME —</p>
+          <p class="han-serif text-sm leading-relaxed" style="color:var(--cream); opacity:0.85;">
+            친애하는 <span class="gold-text font-semibold">김전기</span> 님,<br/>
+            스파크 그랜드 호텔 1208호에 머무시는 동안<br/>
+            언제든 24시간 룸서비스를 이용해 주십시오.<br/>
+            합격을 향한 여정에 작은 위로가 되기를 바랍니다.
+          </p>
+          <p class="serif-body italic text-sm mt-3" style="color:var(--gold-300);">— Concierge, J. Edison</p>
+        </div>
+      </header>
+
+      <!-- ============ 객실 환경 조절 패널 ============ -->
+      <section class="px-6 md:px-10 py-6">
+        <div class="text-center mb-5">
+          <p class="serif-body text-xs tracking-[0.4em]" style="color:var(--gold-400);">— ROOM AMBIENCE —</p>
+          <h2 class="serif-display text-2xl gold-text font-semibold mt-1">객실 환경</h2>
+        </div>
+
+        <div class="room-panel p-6 grid md:grid-cols-3 gap-6">
+          <!-- 조명 -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--gold-300);">LIGHTING · 조명</span>
+              <span class="serif-display text-sm gold-text" id="light-val">60%</span>
+            </div>
+            <input type="range" min="0" max="100" value="60" class="gold-range" id="slider-light" style="--val:60%;" />
+            <div class="flex justify-between text-xs mt-2" style="color:var(--cream); opacity:0.6;">
+              <span>OFF</span><span>샹들리에 전체</span>
+            </div>
+          </div>
+          <!-- 온도 -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--gold-300);">CLIMATE · 온도</span>
+              <span class="serif-display text-sm gold-text" id="temp-val">22°C</span>
+            </div>
+            <input type="range" min="18" max="28" value="22" class="gold-range" id="slider-temp" style="--val:40%;" />
+            <div class="flex justify-between text-xs mt-2" style="color:var(--cream); opacity:0.6;">
+              <span>18°C</span><span>28°C</span>
+            </div>
+          </div>
+          <!-- 커튼 -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--gold-300);">DRAPES · 커튼</span>
+              <span class="serif-display text-sm gold-text" id="curtain-val">30%</span>
+            </div>
+            <input type="range" min="0" max="100" value="30" class="gold-range" id="slider-curtain" style="--val:30%;" />
+            <div class="flex justify-between text-xs mt-2" style="color:var(--cream); opacity:0.6;">
+              <span>닫힘</span><span>완전 개방</span>
+            </div>
+          </div>
+
+          <!-- 토글들 -->
+          <div class="flex items-center justify-between md:col-span-3 mt-2 pt-4" style="border-top:1px solid var(--line);">
+            <div class="flex items-center gap-3">
+              <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--gold-300);">DO NOT DISTURB</span>
+              <div class="toggle on" data-toggle></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--gold-300);">TURNDOWN SERVICE</span>
+              <div class="toggle" data-toggle></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--gold-300);">NIGHT MODE</span>
+              <div class="toggle" data-toggle></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 창문 — 야경 SVG ============ -->
+      <section class="px-6 md:px-10 py-4">
+        <div class="text-center mb-4">
+          <p class="serif-body text-xs tracking-[0.4em]" style="color:var(--gold-400);">— THE VIEW FROM 1208 —</p>
+          <h2 class="serif-display text-2xl gold-text font-semibold mt-1">객실 전망</h2>
+        </div>
+        <div class="rounded-lg overflow-hidden" style="border:1px solid var(--line); box-shadow: inset 0 0 60px rgba(0,0,0,0.5);">
+          <svg viewBox="0 0 800 280" class="w-full block" style="background: linear-gradient(180deg, #050a1c 0%, #0f1d3f 60%, #1f3567 100%);">
+            <!-- 달 -->
+            <circle cx="660" cy="55" r="22" fill="#f3d98a" opacity="0.95"/>
+            <circle cx="660" cy="55" r="32" fill="#f3d98a" opacity="0.12"/>
+            <circle cx="654" cy="50" r="3" fill="#d4af4e" opacity="0.4"/>
+            <circle cx="668" cy="60" r="2" fill="#d4af4e" opacity="0.4"/>
+            <!-- 별 -->
+            <circle cx="100" cy="40" r="1" fill="#fff" class="twinkle"/>
+            <circle cx="200" cy="25" r="1.2" fill="#fff" class="twinkle delay-1"/>
+            <circle cx="320" cy="50" r="0.8" fill="#fff" class="twinkle delay-2"/>
+            <circle cx="480" cy="30" r="1" fill="#fff" class="twinkle delay-3"/>
+            <circle cx="540" cy="60" r="1.2" fill="#fff" class="twinkle"/>
+            <circle cx="720" cy="35" r="0.8" fill="#fff" class="twinkle delay-2"/>
+            <circle cx="60" cy="70" r="0.8" fill="#fff" class="twinkle delay-1"/>
+            <circle cx="380" cy="20" r="1" fill="#fff" class="twinkle delay-3"/>
+            <!-- 도시 빌딩들 -->
+            <g>
+              <rect x="20" y="160" width="50" height="120" fill="#0a1530"/>
+              <rect x="80" y="130" width="60" height="150" fill="#0e1838"/>
+              <rect x="150" y="170" width="40" height="110" fill="#0a1530"/>
+              <rect x="200" y="100" width="80" height="180" fill="#10204a"/>
+              <rect x="290" y="140" width="55" height="140" fill="#0a1530"/>
+              <rect x="355" y="120" width="70" height="160" fill="#0e1838"/>
+              <rect x="435" y="155" width="45" height="125" fill="#0a1530"/>
+              <rect x="490" y="90" width="90" height="190" fill="#10204a"/>
+              <rect x="590" y="150" width="50" height="130" fill="#0a1530"/>
+              <rect x="650" y="130" width="65" height="150" fill="#0e1838"/>
+              <rect x="725" y="170" width="55" height="110" fill="#0a1530"/>
+            </g>
+            <!-- 창문 불빛 -->
+            <g fill="#f3d98a">
+              <rect x="28" y="180" width="4" height="6" opacity="0.8"/>
+              <rect x="40" y="200" width="4" height="6" opacity="0.6"/>
+              <rect x="55" y="220" width="4" height="6" opacity="0.9"/>
+              <rect x="92" y="150" width="5" height="7" opacity="0.7"/>
+              <rect x="108" y="170" width="5" height="7" opacity="0.5"/>
+              <rect x="120" y="200" width="5" height="7" opacity="0.85"/>
+              <rect x="160" y="190" width="4" height="6" opacity="0.6"/>
+              <rect x="175" y="210" width="4" height="6" opacity="0.8"/>
+              <rect x="215" y="130" width="6" height="8" opacity="0.9"/>
+              <rect x="232" y="155" width="6" height="8" opacity="0.7"/>
+              <rect x="250" y="180" width="6" height="8" opacity="0.85"/>
+              <rect x="265" y="210" width="6" height="8" opacity="0.55"/>
+              <rect x="300" y="160" width="5" height="7" opacity="0.8"/>
+              <rect x="315" y="195" width="5" height="7" opacity="0.7"/>
+              <rect x="332" y="220" width="5" height="7" opacity="0.6"/>
+              <rect x="370" y="140" width="5" height="7" opacity="0.85"/>
+              <rect x="388" y="170" width="5" height="7" opacity="0.6"/>
+              <rect x="405" y="200" width="5" height="7" opacity="0.8"/>
+              <rect x="445" y="170" width="4" height="6" opacity="0.7"/>
+              <rect x="460" y="200" width="4" height="6" opacity="0.85"/>
+              <rect x="505" y="110" width="7" height="9" opacity="0.9"/>
+              <rect x="525" y="140" width="7" height="9" opacity="0.7"/>
+              <rect x="548" y="170" width="7" height="9" opacity="0.85"/>
+              <rect x="565" y="210" width="7" height="9" opacity="0.6"/>
+              <rect x="600" y="165" width="5" height="7" opacity="0.75"/>
+              <rect x="618" y="200" width="5" height="7" opacity="0.85"/>
+              <rect x="660" y="150" width="6" height="8" opacity="0.8"/>
+              <rect x="680" y="180" width="6" height="8" opacity="0.65"/>
+              <rect x="698" y="215" width="6" height="8" opacity="0.85"/>
+              <rect x="735" y="190" width="5" height="7" opacity="0.7"/>
+              <rect x="755" y="220" width="5" height="7" opacity="0.85"/>
+            </g>
+            <!-- 강물 반사 -->
+            <rect x="0" y="265" width="800" height="15" fill="#0a1530" opacity="0.6"/>
+            <path d="M0 270 Q200 268 400 270 T800 270" stroke="#d4af4e" stroke-width="0.5" fill="none" opacity="0.3"/>
+            <!-- 창문 프레임 -->
+            <line x1="400" y1="0" x2="400" y2="280" stroke="#1a1408" stroke-width="3" opacity="0.8"/>
+            <line x1="0" y1="140" x2="800" y2="140" stroke="#1a1408" stroke-width="2" opacity="0.5"/>
+          </svg>
+        </div>
+        <p class="text-center serif-body italic text-xs mt-3" style="color:var(--gold-300); opacity:0.7;">
+          남산 방향 · 한강 야경 · 32층 객실에서 바라보는 서울의 밤
+        </p>
+      </section>
+
+      <!-- ============ 메뉴 섹션 ============ -->
+      <section class="px-6 md:px-10 py-10">
+        <div class="text-center mb-6">
+          <p class="serif-body text-xs tracking-[0.5em]" style="color:var(--gold-400);">— IN-ROOM DINING —</p>
+          <h2 class="serif-display text-4xl gold-text font-bold mt-2">룸서비스 메뉴</h2>
+          <p class="han-serif text-sm mt-2" style="color:var(--cream); opacity:0.75; letter-spacing:0.2em;">24시간 객실 다이닝 · ROOM 1208</p>
+          <div class="gold-line mx-auto mt-4" style="max-width:240px;"></div>
+        </div>
+
+        <!-- 카테고리 탭 -->
+        <div class="flex justify-start md:justify-center gap-1 overflow-x-auto border-b mb-8" style="border-color: var(--line);">
+          <button class="cat-tab active" data-cat="breakfast">조식 · Breakfast</button>
+          <button class="cat-tab" data-cat="lunch">런치 · Lunch</button>
+          <button class="cat-tab" data-cat="dinner">디너 · Dinner</button>
+          <button class="cat-tab" data-cat="dessert">디저트 · Desserts</button>
+          <button class="cat-tab" data-cat="wine">와인 · Wines</button>
+          <button class="cat-tab" data-cat="special">특별 · Specials</button>
+        </div>
+
+        <!-- 메뉴 카드 그리드 — 동적 렌더 -->
+        <div id="menu-container"></div>
+
+      </section>
+
+      <!-- ============ 객실 안내 ============ -->
+      <section class="px-6 md:px-10 py-10" style="background: linear-gradient(180deg, rgba(15,29,63,0.5), transparent);">
+        <div class="text-center mb-6">
+          <p class="serif-body text-xs tracking-[0.5em]" style="color:var(--gold-400);">— GUEST SERVICES —</p>
+          <h2 class="serif-display text-3xl gold-text font-bold mt-2">객실 안내</h2>
+        </div>
+
+        <div class="grid md:grid-cols-4 gap-5">
+          <div class="text-center p-5 rounded" style="border:1px solid var(--line); background: rgba(15,29,63,0.4);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.4" class="mx-auto mb-3"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M7 6V4a2 2 0 012-2h6a2 2 0 012 2v2"/><circle cx="12" cy="13" r="1.5"/></svg>
+            <h3 class="serif-display text-lg gold-text font-semibold mb-1">미니바</h3>
+            <p class="han-serif text-xs mb-2" style="color:var(--cream); opacity:0.75;">샴페인·위스키·간식</p>
+            <p class="serif-body text-xs" style="color:var(--gold-300); letter-spacing:0.15em;">24H · COMPLIMENTARY 일부</p>
+          </div>
+          <div class="text-center p-5 rounded" style="border:1px solid var(--line); background: rgba(15,29,63,0.4);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.4" class="mx-auto mb-3"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>
+            <h3 class="serif-display text-lg gold-text font-semibold mb-1">세탁</h3>
+            <p class="han-serif text-xs mb-2" style="color:var(--cream); opacity:0.75;">드라이클리닝·다림질</p>
+            <p class="serif-body text-xs" style="color:var(--gold-300); letter-spacing:0.15em;">PICKUP 09:00 · 익일 12:00</p>
+          </div>
+          <div class="text-center p-5 rounded" style="border:1px solid var(--line); background: rgba(15,29,63,0.4);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.4" class="mx-auto mb-3"><path d="M3 21V10l9-7 9 7v11"/><path d="M9 21v-6h6v6"/><circle cx="12" cy="13" r="1.5"/></svg>
+            <h3 class="serif-display text-lg gold-text font-semibold mb-1">턴다운</h3>
+            <p class="han-serif text-xs mb-2" style="color:var(--cream); opacity:0.75;">취침 준비·초콜릿</p>
+            <p class="serif-body text-xs" style="color:var(--gold-300); letter-spacing:0.15em;">19:00 ~ 21:00 · 무료</p>
+          </div>
+          <div class="text-center p-5 rounded" style="border:1px solid var(--line); background: rgba(15,29,63,0.4);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.4" class="mx-auto mb-3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <h3 class="serif-display text-lg gold-text font-semibold mb-1">체크아웃</h3>
+            <p class="han-serif text-xs mb-2" style="color:var(--cream); opacity:0.75;">레이트 체크아웃 가능</p>
+            <p class="serif-body text-xs" style="color:var(--gold-300); letter-spacing:0.15em;">12:00 · 14:00까지 연장</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 호텔 시설 ============ -->
+      <section class="px-6 md:px-10 py-10">
+        <div class="text-center mb-6">
+          <p class="serif-body text-xs tracking-[0.5em]" style="color:var(--gold-400);">— HOTEL FACILITIES —</p>
+          <h2 class="serif-display text-3xl gold-text font-bold mt-2">호텔 시설</h2>
+          <p class="han-serif text-sm mt-2" style="color:var(--cream); opacity:0.7;">투숙객 전용 · 객실 키로 입장</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div class="menu-card p-5 text-center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.3" class="mx-auto mb-3"><path d="M2 12s2-3 10-3 10 3 10 3"/><path d="M2 16s2-3 10-3 10 3 10 3"/><path d="M2 20s2-3 10-3 10 3 10 3"/></svg>
+            <h4 class="serif-display gold-text font-semibold">SKY POOL</h4>
+            <p class="han-serif text-xs mt-1" style="color:var(--cream); opacity:0.7;">루프탑 수영장</p>
+            <p class="serif-body text-xs mt-1" style="color:var(--gold-300);">35F · 06:00–22:00</p>
+          </div>
+          <div class="menu-card p-5 text-center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.3" class="mx-auto mb-3"><rect x="2" y="10" width="2" height="4"/><rect x="20" y="10" width="2" height="4"/><rect x="6" y="8" width="2" height="8"/><rect x="16" y="8" width="2" height="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <h4 class="serif-display gold-text font-semibold">FITNESS</h4>
+            <p class="han-serif text-xs mt-1" style="color:var(--cream); opacity:0.7;">최신 운동기구</p>
+            <p class="serif-body text-xs mt-1" style="color:var(--gold-300);">B1F · 24H</p>
+          </div>
+          <div class="menu-card p-5 text-center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.3" class="mx-auto mb-3"><path d="M12 2C8 6 6 9 6 13a6 6 0 1012 0c0-4-2-7-6-11z"/></svg>
+            <h4 class="serif-display gold-text font-semibold">SPA</h4>
+            <p class="han-serif text-xs mt-1" style="color:var(--cream); opacity:0.7;">아로마·마사지·사우나</p>
+            <p class="serif-body text-xs mt-1" style="color:var(--gold-300);">3F · 10:00–22:00</p>
+          </div>
+          <div class="menu-card p-5 text-center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.3" class="mx-auto mb-3"><rect x="3" y="4" width="18" height="14" rx="1"/><line x1="3" y1="8" x2="21" y2="8"/><rect x="6" y="12" width="5" height="3"/><rect x="13" y="12" width="5" height="3"/></svg>
+            <h4 class="serif-display gold-text font-semibold">BUSINESS</h4>
+            <p class="han-serif text-xs mt-1" style="color:var(--cream); opacity:0.7;">회의실·프린트</p>
+            <p class="serif-body text-xs mt-1" style="color:var(--gold-300);">2F · 24H</p>
+          </div>
+          <div class="menu-card p-5 text-center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#f3d98a" stroke-width="1.3" class="mx-auto mb-3"><path d="M6 3v6a6 6 0 0012 0V3"/><line x1="6" y1="21" x2="18" y2="21"/><line x1="12" y1="15" x2="12" y2="21"/></svg>
+            <h4 class="serif-display gold-text font-semibold">LOUNGE</h4>
+            <p class="han-serif text-xs mt-1" style="color:var(--cream); opacity:0.7;">이그제큐티브 라운지</p>
+            <p class="serif-body text-xs mt-1" style="color:var(--gold-300);">36F · 06:00–24:00</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 푸터 ============ -->
+      <footer class="px-6 md:px-10 py-10 text-center" style="border-top:1px solid var(--line); background: linear-gradient(180deg, transparent, rgba(5,10,28,0.6));">
+        <!-- 별 -->
+        <div class="flex justify-center gap-2 mb-4" style="color:var(--gold-400);">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+        </div>
+        <h3 class="serif-display text-2xl gold-text font-bold tracking-wider">SPARK GRAND HOTEL</h3>
+        <p class="han-serif text-xs mt-2" style="color:var(--cream); opacity:0.6; letter-spacing:0.3em;">스파크 그랜드 호텔 · 가상 럭셔리 호텔</p>
+        <div class="gold-line mx-auto my-5" style="max-width:200px;"></div>
+        <p class="serif-body text-xs" style="color:var(--gold-300); opacity:0.7; letter-spacing:0.2em;">
+          전기기능사 합격을 응원하는 가상 호텔 시뮬레이션입니다.
+        </p>
+        <p class="serif-body text-xs mt-1" style="color:var(--cream); opacity:0.5; letter-spacing:0.15em;">
+          This is a fictional hotel experience. All menu items are imaginary.
+        </p>
+        <p class="serif-body italic text-xs mt-6" style="color:var(--gold-400); opacity:0.55;">
+          © 2026 SPARK GRAND HOTEL · A Fictional Hospitality Simulation
+        </p>
+      </footer>
+
+    </div><!-- /tv-screen -->
+  </div><!-- /tv-frame -->
+</div><!-- /tv-stage -->
+
+<!-- ============ 플로팅 카트 버튼 ============ -->
+<button id="open-cart" class="fixed bottom-6 right-6 z-50 gold-btn px-6 py-4 rounded-full flex items-center gap-3 text-sm font-semibold">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1 12H7L6 8zM9 5a3 3 0 016 0v3H9V5z"/></svg>
+  <span>주문서 (<span id="cart-count">0</span>)</span>
+</button>
+
+<!-- ============ 모달 — 메뉴 상세 ============ -->
+<div id="detail-modal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div id="detail-content" class="p-8"></div>
+  </div>
+</div>
+
+<!-- ============ 모달 — 주문 확인 ============ -->
+<div id="order-modal" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal-card" style="max-width:520px;">
+    <div class="p-10 text-center">
+      <div class="flex justify-center mb-4">
+        <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+          <circle cx="30" cy="30" r="28" stroke="url(#g2)" stroke-width="1"/>
+          <path d="M18 30 L26 38 L42 22" stroke="url(#g2)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f3d98a"/>
+              <stop offset="100%" stop-color="#b8932f"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <p class="serif-body text-xs tracking-[0.4em] mb-2" style="color:var(--gold-400);">— ORDER CONFIRMED —</p>
+      <h2 class="serif-display text-3xl gold-text font-bold mb-3">주문이 접수되었습니다</h2>
+      <p class="han-serif text-sm mb-1" style="color:var(--cream); opacity:0.85;">ROOM 1208 · 김전기 님</p>
+      <p class="han-serif text-sm" style="color:var(--cream); opacity:0.7;">
+        예상 도착 시간 <span class="gold-text font-semibold" id="order-eta">25</span>분
+      </p>
+      <div class="gold-line mx-auto my-5" style="max-width:200px;"></div>
+      <p class="serif-body italic text-sm" style="color:var(--gold-300);">
+        "Allow our team to prepare your selection with utmost care."
+      </p>
+      <p class="han-serif text-xs mt-2" style="color:var(--cream); opacity:0.6;">정성껏 준비해 모시겠습니다.</p>
+
+      <div class="mt-6 text-left p-4 rounded" style="background: rgba(10,21,48,0.5); border:1px solid var(--line);">
+        <p class="serif-body text-xs tracking-[0.2em] mb-3" style="color:var(--gold-400);">ORDER SUMMARY</p>
+        <div id="order-summary" class="space-y-2"></div>
+        <div class="gold-line my-3"></div>
+        <div class="flex justify-between serif-display gold-text">
+          <span>TOTAL</span>
+          <span id="order-total">₩0</span>
+        </div>
+      </div>
+
+      <button class="gold-btn px-8 py-3 mt-6 rounded text-sm" onclick="closeOrderModal()">확인 · CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 카트 드로어 ============ -->
+<div id="cart-drawer" class="cart-drawer">
+  <div class="px-6 py-5 flex items-center justify-between" style="border-bottom:1px solid var(--line);">
+    <div>
+      <p class="serif-body text-xs tracking-[0.4em]" style="color:var(--gold-400);">— ROOM 1208 —</p>
+      <h3 class="serif-display text-2xl gold-text font-bold">주문서</h3>
+    </div>
+    <button id="close-cart" class="ghost-btn px-3 py-1 rounded text-xs">닫기 ✕</button>
+  </div>
+  <div id="cart-items" class="flex-1 overflow-y-auto px-6 py-5"></div>
+  <div class="px-6 py-5" style="border-top:1px solid var(--line); background: rgba(10,21,48,0.6);">
+    <div class="flex justify-between mb-2">
+      <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--cream); opacity:0.75;">SUBTOTAL</span>
+      <span class="serif-display gold-text" id="cart-subtotal">₩0</span>
+    </div>
+    <div class="flex justify-between mb-2">
+      <span class="serif-body tracking-[0.2em] text-sm" style="color:var(--cream); opacity:0.75;">SERVICE 10%</span>
+      <span class="serif-display gold-text" id="cart-service">₩0</span>
+    </div>
+    <div class="gold-line my-3"></div>
+    <div class="flex justify-between mb-4">
+      <span class="serif-display gold-text text-lg">TOTAL · 합계</span>
+      <span class="serif-display gold-text text-lg font-bold" id="cart-total">₩0</span>
+    </div>
+    <button id="send-order" class="gold-btn w-full py-4 rounded font-bold tracking-widest">방으로 보내기 · SEND TO ROOM</button>
+  </div>
+</div>
+
+<!-- ============ 토스트 ============ -->
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+
+// ============ 메뉴 데이터 ============
+const MENU = {
+  breakfast: [
+    {
+      id:'b1', name:'옴의 법칙 에그 베네딕트', en:'Ohm\'s Law Eggs Benedict',
+      price: 38000,
+      desc:'V=IR의 황금비로 완성한 수란과 홀란데이즈 소스, 캐나다 베이컨, 잉글리시 머핀.',
+      ingredients:['유기농 달걀','캐나다 베이컨','홀란데이즈 소스','잉글리시 머핀','쪽파'],
+      allergy:['달걀','글루텐','우유'],
+      options:['플레인','스모크 연어','아보카도'],
+      kcal: 620,
+      icon:'egg'
+    },
+    {
+      id:'b2', name:'직류 그래놀라 볼', en:'DC Granola Bowl',
+      price: 24000,
+      desc:'안정적인 직류처럼 일정한 단맛. 그릭 요거트와 베리, 메이플 시럽 드리즐.',
+      ingredients:['수제 그래놀라','그릭 요거트','블루베리','라즈베리','메이플 시럽','아몬드'],
+      allergy:['견과류','우유','글루텐'],
+      options:['플레인','꿀 추가','베리 더블'],
+      kcal: 480,
+      icon:'bowl'
+    },
+    {
+      id:'b3', name:'트러플 회로 오믈렛', en:'Truffle Circuit Omelette',
+      price: 42000,
+      desc:'페리고르 블랙 트러플을 회로처럼 정교하게 얹은 3알 오믈렛.',
+      ingredients:['달걀 3알','블랙 트러플','그뤼에르 치즈','크렘 프레슈','차이브'],
+      allergy:['달걀','우유'],
+      options:['트러플 추가','버섯 추가','햄 추가'],
+      kcal: 580,
+      icon:'omelette'
+    },
+    {
+      id:'b4', name:'프렌치 토스트 페이저', en:'French Toast Phasor',
+      price: 28000,
+      desc:'위상이 완벽히 맞는 두꺼운 브리오슈, 바닐라 빈 커스터드와 메이플.',
+      ingredients:['브리오슈','바닐라 빈','계피','메이플 시럽','버터','딸기'],
+      allergy:['달걀','우유','글루텐'],
+      options:['클래식','초콜릿','베리'],
+      kcal: 560,
+      icon:'toast'
+    },
+    {
+      id:'b5', name:'스파크 시저 샐러드', en:'Spark Caesar Salad',
+      price: 26000,
+      desc:'아침을 가볍게 시작하는 로메인과 파마산, 앤초비 드레싱.',
+      ingredients:['로메인','파마산','크루통','앤초비','레몬'],
+      allergy:['생선','우유','글루텐'],
+      options:['그릴드 치킨','새우','연어'],
+      kcal: 380,
+      icon:'salad'
+    }
+  ],
+  lunch: [
+    {
+      id:'l1', name:'3상 결선 파스타', en:'Three-Phase Pasta',
+      price: 36000,
+      desc:'세 가지 면(링귀니·페투치네·푸실리)이 균형 잡힌 별모양 결선처럼 조화롭게.',
+      ingredients:['수제 파스타 3종','샤프란','새우','관자','조개'],
+      allergy:['갑각류','조개','글루텐'],
+      options:['크림','토마토','오일'],
+      kcal: 680,
+      icon:'pasta'
+    },
+    {
+      id:'l2', name:'안전 수칙 샐러드', en:'Safety Code Salad',
+      price: 24000,
+      desc:'KEC 기준처럼 엄선된 유기농 채소 7종, 발사믹 글레이즈.',
+      ingredients:['유기농 잎채소 7종','석류','호두','염소 치즈','발사믹'],
+      allergy:['견과류','우유'],
+      options:['닭가슴살','연어','두부'],
+      kcal: 340,
+      icon:'salad'
+    },
+    {
+      id:'l3', name:'키르히호프 리조또', en:'Kirchhoff Risotto',
+      price: 38000,
+      desc:'들어간 모든 풍미가 빠짐없이 보존되는 전류 법칙처럼, 사프란과 포르치니의 완전 균형.',
+      ingredients:['카르나롤리 쌀','사프란','포르치니 버섯','파르미지아노','화이트 와인'],
+      allergy:['우유'],
+      options:['포르치니','새우','관자'],
+      kcal: 620,
+      icon:'risotto'
+    },
+    {
+      id:'l4', name:'RLC 카르파초', en:'RLC Carpaccio',
+      price: 44000,
+      desc:'얇게 저민 비프 카르파초에 R·L·C 세 가지 소스 페어링.',
+      ingredients:['한우 안심','루꼴라','파마산','케이퍼','트러플 오일'],
+      allergy:['우유'],
+      options:['비프','연어','참치'],
+      kcal: 420,
+      icon:'carpaccio'
+    },
+    {
+      id:'l5', name:'정류기 클럽 샌드위치', en:'Rectifier Club Sandwich',
+      price: 28000,
+      desc:'네 층으로 쌓아 올린 클럽 샌드위치. 한 방향으로만 베어 무는 정류 방식 권장.',
+      ingredients:['통밀빵','칠면조','베이컨','체다','달걀'],
+      allergy:['달걀','우유','글루텐'],
+      options:['클래식','BLT','베지'],
+      kcal: 720,
+      icon:'sandwich'
+    },
+    {
+      id:'l6', name:'주파수 비빔밥', en:'Frequency Bibimbap',
+      price: 32000,
+      desc:'60Hz의 안정적인 진동처럼 다섯 가지 색 나물의 조화.',
+      ingredients:['유기농 쌀','시금치','당근','콩나물','버섯','달걀'],
+      allergy:['달걀','대두'],
+      options:['소고기','해물','채식'],
+      kcal: 580,
+      icon:'bibimbap'
+    }
+  ],
+  dinner: [
+    {
+      id:'d1', name:'변압기 스테이크', en:'Transformer Tenderloin',
+      price: 88000,
+      desc:'1차/2차 코일처럼 정교하게 마블링된 토마호크. 미디엄 레어 권장.',
+      ingredients:['1+ 등급 한우 토마호크 400g','로즈마리 버터','구운 야채','그레이비'],
+      allergy:['우유'],
+      options:['미디엄 레어','미디엄','웰던'],
+      kcal: 920,
+      icon:'steak'
+    },
+    {
+      id:'d2', name:'고압선 랍스터', en:'High-Voltage Lobster Thermidor',
+      price: 96000,
+      desc:'22.9kV의 강렬함처럼 진한 풍미의 랍스터 테르미도르.',
+      ingredients:['랍스터 600g','코냑','그뤼에르','디종 머스타드','크림'],
+      allergy:['갑각류','우유','글루텐'],
+      options:['클래식','오마르','뉴버그'],
+      kcal: 780,
+      icon:'lobster'
+    },
+    {
+      id:'d3', name:'접지 가지 라자냐', en:'Grounded Eggplant Lasagna',
+      price: 38000,
+      desc:'대지처럼 든든하게 받쳐주는 채식 라자냐. 베지테리언 추천.',
+      ingredients:['가지','리코타','모차렐라','토마토 소스','바질'],
+      allergy:['우유','글루텐'],
+      options:['클래식','파마산 추가','글루텐프리'],
+      kcal: 540,
+      icon:'lasagna'
+    },
+    {
+      id:'d4', name:'단락회로 오리 콩피', en:'Short-Circuit Duck Confit',
+      price: 64000,
+      desc:'급격하게 응축된 풍미, 12시간 저온 조리한 오리 다리 콩피.',
+      ingredients:['오리 다리','오리 기름','마늘','타임','체리 소스'],
+      allergy:['없음'],
+      options:['클래식','오렌지','체리'],
+      kcal: 720,
+      icon:'duck'
+    },
+    {
+      id:'d5', name:'역률 농어 그릴', en:'Power Factor Sea Bass',
+      price: 58000,
+      desc:'역률 0.95 이상의 효율적인 영양 흡수, 지중해식 농어 그릴.',
+      ingredients:['농어 한 마리','레몬','케이퍼','올리브','펜넬'],
+      allergy:['생선'],
+      options:['그릴','오븐','파피요트'],
+      kcal: 460,
+      icon:'fish'
+    }
+  ],
+  dessert: [
+    {
+      id:'ds1', name:'합격 티라미수', en:'Pass-the-Exam Tiramisù',
+      price: 18000,
+      desc:'마스카르포네 구름 위에 코코아 가루로 그린 "合格" 두 글자.',
+      ingredients:['마스카르포네','레이디핑거','에스프레소','코코아','마살라'],
+      allergy:['달걀','우유','글루텐'],
+      options:['클래식','말차','초콜릿'],
+      kcal: 420,
+      icon:'cake'
+    },
+    {
+      id:'ds2', name:'커패시터 크렘 브륄레', en:'Capacitor Crème Brûlée',
+      price: 16000,
+      desc:'전하를 모아 두는 커패시터처럼 표면에 단단한 캐러멜 층.',
+      ingredients:['크림','달걀 노른자','바닐라 빈','설탕'],
+      allergy:['달걀','우유'],
+      options:['바닐라','말차','초콜릿'],
+      kcal: 380,
+      icon:'creme'
+    },
+    {
+      id:'ds3', name:'코일 마카롱 6종 세트', en:'Coil Macaron Tasting',
+      price: 22000,
+      desc:'1차 코일부터 6차 코일까지, 색깔별 인덕턴스 마카롱.',
+      ingredients:['아몬드 가루','달걀 흰자','설탕','버터크림 6종'],
+      allergy:['견과류','달걀','우유'],
+      options:['6종 세트','3종 세트','단품'],
+      kcal: 480,
+      icon:'macaron'
+    },
+    {
+      id:'ds4', name:'다이오드 초콜릿 폰던', en:'Diode Chocolate Fondant',
+      price: 19000,
+      desc:'한쪽으로만 흐르는 초콜릿 용암, 따뜻한 폰던과 차가운 아이스크림.',
+      ingredients:['다크 초콜릿 70%','버터','달걀','바닐라 아이스크림'],
+      allergy:['달걀','우유','글루텐'],
+      options:['다크','밀크','솔티드 캐러멜'],
+      kcal: 560,
+      icon:'fondant'
+    },
+    {
+      id:'ds5', name:'전압 셔벗 4종', en:'Voltage Sherbet Quartet',
+      price: 15000,
+      desc:'1V부터 380V까지, 강도가 다른 4가지 셔벗.',
+      ingredients:['레몬','베리','패션후르츠','복숭아'],
+      allergy:['없음'],
+      options:['4종','2종','단품'],
+      kcal: 220,
+      icon:'sherbet'
+    }
+  ],
+  wine: [
+    {
+      id:'w1', name:'공명 와인 — 샤토 레조넌스 2018', en:'Resonance Cabernet 2018',
+      price: 180000,
+      desc:'고유 주파수가 입안에서 공명하는 보르도 카베르네 소비뇽.',
+      ingredients:['카베르네 소비뇽 80%','메를로 20%'],
+      allergy:['아황산염'],
+      options:['글라스','보틀','하프'],
+      kcal: 0,
+      icon:'wine',
+      isWine:true
+    },
+    {
+      id:'w2', name:'전류 샴페인 — 브뤼 임피던스', en:'Brut Impédance NV',
+      price: 220000,
+      desc:'미세한 기포가 전류처럼 흐르는 프랑스산 샴페인.',
+      ingredients:['샤르도네','피노 누아','피노 뫼니에'],
+      allergy:['아황산염'],
+      options:['보틀','매그넘'],
+      kcal: 0,
+      icon:'champagne',
+      isWine:true
+    },
+    {
+      id:'w3', name:'트랜스 보르도 — 그랑 크뤼 2015', en:'Trans-Bordeaux Grand Cru 2015',
+      price: 380000,
+      desc:'변압기처럼 풍미가 변모하는 메를로 주체 보르도.',
+      ingredients:['메를로 70%','카베르네 프랑 30%'],
+      allergy:['아황산염'],
+      options:['보틀'],
+      kcal: 0,
+      icon:'wine',
+      isWine:true
+    },
+    {
+      id:'w4', name:'옴 화이트 — 부르고뉴 샤르도네', en:'Ohm Chardonnay 2020',
+      price: 140000,
+      desc:'저항이 거의 없이 부드럽게 흐르는 부르고뉴 화이트.',
+      ingredients:['샤르도네 100%'],
+      allergy:['아황산염'],
+      options:['글라스','보틀'],
+      kcal: 0,
+      icon:'wine',
+      isWine:true
+    },
+    {
+      id:'w5', name:'페어링 코스 — 4잔', en:'Sommelier Pairing 4-Glass',
+      price: 120000,
+      desc:'소믈리에가 추천하는 4가지 잔 페어링. 코스 디너 동반 추천.',
+      ingredients:['화이트 1','로제 1','레드 2'],
+      allergy:['아황산염'],
+      options:['4잔','6잔'],
+      kcal: 0,
+      icon:'wine',
+      isWine:true
+    }
+  ],
+  special: [
+    {
+      id:'s1', name:'합격 기원 풀코스', en:'Pass-the-Exam Tasting Menu',
+      price: 220000,
+      desc:'전기기능사 합격을 기원하는 7코스. 아뮤즈부터 디저트까지.',
+      ingredients:['7코스','와인 페어링 별도','셰프 인사'],
+      allergy:['문의'],
+      options:['7코스','5코스','3코스'],
+      kcal: 1200,
+      icon:'course'
+    },
+    {
+      id:'s2', name:'심야 야식 세트', en:'Late-Night Energy Boost',
+      price: 48000,
+      desc:'시험 전날 늦은 밤, 두뇌에 전력을 공급하는 세트.',
+      ingredients:['연어 포케','수프','다크 초콜릿','허브 티'],
+      allergy:['생선','우유'],
+      options:['스탠다드','업그레이드'],
+      kcal: 580,
+      icon:'night'
+    },
+    {
+      id:'s3', name:'기념일 케이크 + 샴페인', en:'Celebration Cake & Bubbles',
+      price: 88000,
+      desc:'생일·합격·기념일을 위한 특별 케이크와 샴페인 한 병.',
+      ingredients:['홀케이크','샴페인 하프','초'],
+      allergy:['달걀','우유','글루텐'],
+      options:['초콜릿','딸기','말차'],
+      kcal: 980,
+      icon:'cake'
+    },
+    {
+      id:'s4', name:'비건 헬시 박스', en:'Vegan Wellness Box',
+      price: 36000,
+      desc:'완전 식물성 재료로 구성된 컨디션 회복 세트.',
+      ingredients:['포케 볼','콜드프레스 주스','넛 믹스'],
+      allergy:['견과류'],
+      options:['일반','글루텐프리'],
+      kcal: 420,
+      icon:'vegan'
+    }
+  ]
+};
+
+// ============ SVG 아이콘 — 메뉴별 ============
+function menuIcon(type) {
+  const palette = {
+    cream:'#f6efde', gold:'#d4af4e', goldLight:'#f3d98a', dark:'#0a1530', brown:'#8c6e1c', green:'#7ba05b', red:'#c44a4a', purple:'#7d4b8e'
+  };
+  const icons = {
+    egg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="32" ry="38" fill="${palette.cream}"/><ellipse cx="50" cy="55" rx="14" ry="12" fill="${palette.goldLight}"/><circle cx="50" cy="55" r="7" fill="${palette.gold}"/><ellipse cx="46" cy="52" rx="2" ry="3" fill="#f6efde" opacity="0.6"/></svg>`,
+    bowl: `<svg viewBox="0 0 100 100"><path d="M20 50 Q50 95 80 50 Z" fill="${palette.gold}"/><circle cx="35" cy="48" r="4" fill="${palette.purple}"/><circle cx="50" cy="46" r="4" fill="${palette.red}"/><circle cx="65" cy="48" r="4" fill="${palette.purple}"/><circle cx="42" cy="55" r="3" fill="${palette.cream}"/><circle cx="58" cy="55" r="3" fill="${palette.cream}"/></svg>`,
+    omelette: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="36" ry="22" fill="${palette.goldLight}"/><ellipse cx="50" cy="56" rx="32" ry="18" fill="${palette.gold}"/><circle cx="38" cy="52" r="3" fill="${palette.dark}"/><circle cx="50" cy="48" r="3" fill="${palette.dark}"/><circle cx="62" cy="52" r="3" fill="${palette.dark}"/><path d="M35 60 Q50 64 65 60" stroke="${palette.brown}" stroke-width="1.5" fill="none"/></svg>`,
+    toast: `<svg viewBox="0 0 100 100"><rect x="22" y="30" width="56" height="50" rx="6" fill="${palette.goldLight}"/><rect x="26" y="34" width="48" height="42" rx="4" fill="${palette.gold}"/><circle cx="50" cy="40" r="6" fill="${palette.cream}"/><path d="M35 60 Q50 65 65 60" stroke="${palette.brown}" stroke-width="2" fill="none"/></svg>`,
+    salad: `<svg viewBox="0 0 100 100"><path d="M15 55 Q50 95 85 55 Z" fill="${palette.cream}"/><circle cx="35" cy="50" r="8" fill="${palette.green}"/><circle cx="50" cy="45" r="7" fill="${palette.green}"/><circle cx="65" cy="50" r="8" fill="${palette.green}"/><circle cx="42" cy="58" r="4" fill="${palette.red}"/><circle cx="58" cy="58" r="4" fill="${palette.red}"/><circle cx="50" cy="62" r="3" fill="${palette.gold}"/></svg>`,
+    pasta: `<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="32" fill="${palette.cream}"/><path d="M25 50 Q40 35 55 50 T80 50 M22 55 Q40 40 60 55 T82 55 M25 60 Q40 45 60 60 T80 60 M28 65 Q45 50 65 65 M30 70 Q50 55 70 70" stroke="${palette.gold}" stroke-width="2" fill="none"/><circle cx="40" cy="55" r="3" fill="${palette.red}"/><circle cx="60" cy="60" r="3" fill="${palette.red}"/></svg>`,
+    risotto: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="34" ry="20" fill="${palette.cream}"/><ellipse cx="50" cy="56" rx="30" ry="16" fill="${palette.goldLight}"/><circle cx="40" cy="52" r="2" fill="${palette.gold}"/><circle cx="50" cy="50" r="2" fill="${palette.gold}"/><circle cx="60" cy="52" r="2" fill="${palette.gold}"/><circle cx="45" cy="58" r="2" fill="${palette.gold}"/><circle cx="55" cy="60" r="2" fill="${palette.gold}"/><circle cx="50" cy="55" r="5" fill="${palette.brown}"/></svg>`,
+    carpaccio: `<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="34" fill="${palette.cream}"/><path d="M30 55 Q50 40 70 55 Q50 65 30 55" fill="${palette.red}" opacity="0.8"/><circle cx="40" cy="50" r="3" fill="${palette.green}"/><circle cx="55" cy="50" r="3" fill="${palette.green}"/><circle cx="48" cy="62" r="2" fill="${palette.gold}"/></svg>`,
+    sandwich: `<svg viewBox="0 0 100 100"><rect x="20" y="35" width="60" height="50" rx="6" fill="${palette.goldLight}"/><rect x="20" y="45" width="60" height="6" fill="${palette.green}"/><rect x="20" y="55" width="60" height="6" fill="${palette.red}"/><rect x="20" y="65" width="60" height="6" fill="${palette.cream}"/><rect x="20" y="75" width="60" height="6" fill="${palette.brown}"/></svg>`,
+    bibimbap: `<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="36" fill="${palette.dark}"/><circle cx="50" cy="55" r="33" fill="${palette.cream}"/><path d="M50 25 L50 55 L80 55 A30 30 0 0 0 50 25" fill="${palette.green}"/><path d="M50 25 L50 55 L20 55 A30 30 0 0 1 50 25" fill="${palette.gold}"/><path d="M50 55 L50 85 L80 55 A30 30 0 0 1 50 85" fill="${palette.red}"/><path d="M50 55 L50 85 L20 55 A30 30 0 0 0 50 85" fill="${palette.purple}"/><circle cx="50" cy="55" r="7" fill="${palette.goldLight}"/></svg>`,
+    steak: `<svg viewBox="0 0 100 100"><path d="M20 50 Q25 30 50 30 T82 50 Q85 70 60 80 T20 70 Z" fill="${palette.brown}"/><path d="M28 52 Q30 38 50 38 T78 52 Q80 65 60 73 T28 65 Z" fill="${palette.red}" opacity="0.8"/><path d="M35 50 L65 55 M40 60 L70 60 M35 68 L62 65" stroke="${palette.dark}" stroke-width="1" opacity="0.5"/></svg>`,
+    lobster: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="30" ry="18" fill="${palette.red}"/><ellipse cx="50" cy="55" rx="26" ry="14" fill="${palette.cream}"/><ellipse cx="30" cy="55" rx="10" ry="6" fill="${palette.red}"/><ellipse cx="70" cy="55" rx="10" ry="6" fill="${palette.red}"/><path d="M20 50 L12 42 M20 60 L12 68 M80 50 L88 42 M80 60 L88 68" stroke="${palette.red}" stroke-width="3" stroke-linecap="round"/></svg>`,
+    lasagna: `<svg viewBox="0 0 100 100"><rect x="20" y="40" width="60" height="40" rx="3" fill="${palette.cream}"/><rect x="20" y="45" width="60" height="5" fill="${palette.red}"/><rect x="20" y="55" width="60" height="5" fill="${palette.goldLight}"/><rect x="20" y="65" width="60" height="5" fill="${palette.red}"/><rect x="20" y="75" width="60" height="5" fill="${palette.goldLight}"/><path d="M30 38 Q35 32 40 38" stroke="${palette.green}" stroke-width="2" fill="none"/></svg>`,
+    duck: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="60" rx="30" ry="20" fill="${palette.brown}"/><ellipse cx="50" cy="58" rx="26" ry="16" fill="${palette.gold}"/><circle cx="40" cy="55" r="3" fill="${palette.dark}"/><path d="M38 65 Q50 70 62 65" stroke="${palette.dark}" stroke-width="1.5" fill="none"/><circle cx="65" cy="50" r="4" fill="${palette.red}"/></svg>`,
+    fish: `<svg viewBox="0 0 100 100"><ellipse cx="48" cy="55" rx="28" ry="14" fill="${palette.cream}"/><path d="M76 55 L88 45 L88 65 Z" fill="${palette.cream}"/><circle cx="32" cy="52" r="3" fill="${palette.dark}"/><path d="M30 55 Q45 58 60 55" stroke="${palette.gold}" stroke-width="1" fill="none"/><path d="M40 50 Q55 50 65 52" stroke="${palette.gold}" stroke-width="1" fill="none"/><path d="M45 60 Q55 60 65 58" stroke="${palette.gold}" stroke-width="1" fill="none"/></svg>`,
+    cake: `<svg viewBox="0 0 100 100"><rect x="25" y="40" width="50" height="40" rx="3" fill="${palette.brown}"/><rect x="25" y="55" width="50" height="3" fill="${palette.cream}"/><rect x="25" y="68" width="50" height="3" fill="${palette.cream}"/><path d="M30 40 Q35 30 40 40 Q45 30 50 40 Q55 30 60 40 Q65 30 70 40" fill="${palette.red}"/><rect x="48" y="20" width="2" height="20" fill="${palette.cream}"/><circle cx="49" cy="18" r="3" fill="${palette.gold}"/></svg>`,
+    creme: `<svg viewBox="0 0 100 100"><path d="M25 50 L75 50 L70 80 L30 80 Z" fill="${palette.cream}"/><rect x="22" y="45" width="56" height="8" rx="2" fill="${palette.gold}"/><circle cx="35" cy="50" r="1.5" fill="${palette.brown}"/><circle cx="50" cy="49" r="1.5" fill="${palette.brown}"/><circle cx="65" cy="50" r="1.5" fill="${palette.brown}"/></svg>`,
+    macaron: `<svg viewBox="0 0 100 100"><ellipse cx="30" cy="55" rx="14" ry="8" fill="${palette.red}"/><rect x="20" y="55" width="20" height="6" fill="${palette.cream}"/><ellipse cx="30" cy="61" rx="14" ry="6" fill="${palette.red}"/><ellipse cx="50" cy="55" rx="14" ry="8" fill="${palette.gold}"/><rect x="40" y="55" width="20" height="6" fill="${palette.cream}"/><ellipse cx="50" cy="61" rx="14" ry="6" fill="${palette.gold}"/><ellipse cx="70" cy="55" rx="14" ry="8" fill="${palette.green}"/><rect x="60" y="55" width="20" height="6" fill="${palette.cream}"/><ellipse cx="70" cy="61" rx="14" ry="6" fill="${palette.green}"/></svg>`,
+    fondant: `<svg viewBox="0 0 100 100"><circle cx="50" cy="58" r="26" fill="${palette.brown}"/><circle cx="50" cy="56" r="20" fill="${palette.dark}"/><circle cx="50" cy="55" r="10" fill="#5a2a1a"/><path d="M44 50 Q50 45 56 50" stroke="${palette.goldLight}" stroke-width="2" fill="none"/></svg>`,
+    sherbet: `<svg viewBox="0 0 100 100"><circle cx="25" cy="60" r="11" fill="${palette.goldLight}"/><circle cx="42" cy="58" r="11" fill="${palette.red}"/><circle cx="58" cy="58" r="11" fill="${palette.gold}"/><circle cx="75" cy="60" r="11" fill="${palette.purple}"/><rect x="14" y="65" width="72" height="14" rx="3" fill="${palette.cream}"/></svg>`,
+    wine: `<svg viewBox="0 0 100 100"><path d="M38 25 L62 25 L60 45 Q60 60 50 60 Q40 60 40 45 Z" fill="${palette.red}" opacity="0.85"/><rect x="48" y="60" width="4" height="20" fill="${palette.cream}"/><ellipse cx="50" cy="82" rx="14" ry="3" fill="${palette.cream}"/><path d="M38 25 L62 25" stroke="${palette.cream}" stroke-width="1.5"/></svg>`,
+    champagne: `<svg viewBox="0 0 100 100"><path d="M40 20 L60 20 L58 55 Q58 65 50 65 Q42 65 42 55 Z" fill="${palette.goldLight}" opacity="0.8"/><circle cx="46" cy="40" r="1.5" fill="${palette.cream}"/><circle cx="52" cy="48" r="1.5" fill="${palette.cream}"/><circle cx="48" cy="52" r="1" fill="${palette.cream}"/><rect x="48" y="65" width="4" height="15" fill="${palette.cream}"/><ellipse cx="50" cy="82" rx="12" ry="3" fill="${palette.cream}"/></svg>`,
+    course: `<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="34" fill="${palette.cream}"/><circle cx="50" cy="55" r="28" fill="none" stroke="${palette.gold}" stroke-width="1"/><circle cx="50" cy="55" r="16" fill="${palette.goldLight}"/><path d="M50 39 L52 53 L66 55 L52 57 L50 71 L48 57 L34 55 L48 53 Z" fill="${palette.gold}"/></svg>`,
+    night: `<svg viewBox="0 0 100 100"><path d="M30 55 Q30 35 50 35 Q65 35 70 50 Q85 50 85 65 Q85 80 70 80 L30 80 Q15 80 15 67 Q15 55 30 55" fill="${palette.dark}"/><circle cx="40" cy="45" r="2" fill="${palette.goldLight}"/><circle cx="55" cy="40" r="2" fill="${palette.goldLight}"/><circle cx="68" cy="48" r="1.5" fill="${palette.goldLight}"/><path d="M30 70 Q35 60 45 65 Q55 70 65 65 Q72 60 80 68" stroke="${palette.goldLight}" stroke-width="1.5" fill="none"/></svg>`,
+    vegan: `<svg viewBox="0 0 100 100"><path d="M20 60 Q50 90 80 60 Z" fill="${palette.cream}"/><circle cx="35" cy="55" r="6" fill="${palette.green}"/><circle cx="48" cy="50" r="7" fill="${palette.green}"/><circle cx="62" cy="55" r="6" fill="${palette.green}"/><circle cx="42" cy="62" r="4" fill="${palette.red}"/><circle cx="58" cy="62" r="4" fill="${palette.red}"/><path d="M40 38 Q45 30 50 38 Q55 30 60 38" stroke="${palette.green}" stroke-width="2" fill="none"/></svg>`
+  };
+  return icons[type] || icons.bowl;
+}
+
+// ============ DOM 헬퍼 & escape ============
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+function esc(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmt(n){ return '₩' + n.toLocaleString('ko-KR'); }
+
+// ============ 상태 ============
+const state = {
+  cat: 'breakfast',
+  cart: [] // { id, name, price, qty, option }
+};
+
+// ============ 메뉴 렌더 ============
+function renderMenu(){
+  const wrap = $('#menu-container');
+  wrap.innerHTML = '';
+  Object.keys(MENU).forEach(cat => {
+    const grid = document.createElement('div');
+    grid.className = 'menu-section grid md:grid-cols-2 lg:grid-cols-3 gap-5' + (cat === state.cat ? ' active' : '');
+    grid.dataset.cat = cat;
+    MENU[cat].forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'menu-card p-5';
+      card.innerHTML = `
+        <div class="flex items-start gap-4">
+          <div style="width:84px; height:84px; flex-shrink:0; background: linear-gradient(180deg, rgba(212,175,78,0.12), rgba(212,175,78,0.04)); border:1px solid var(--line); border-radius:6px; padding:6px;">
+            ${menuIcon(m.icon)}
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="serif-display gold-text font-semibold text-lg leading-tight">${esc(m.name)}</h4>
+            <p class="serif-body italic text-xs mt-1" style="color:var(--cream); opacity:0.7;">${esc(m.en)}</p>
+            <p class="han-serif text-xs mt-2 leading-relaxed" style="color:var(--cream); opacity:0.75;">${esc(m.desc.length > 60 ? m.desc.substring(0, 60) + '…' : m.desc)}</p>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-4 pt-3" style="border-top:1px dashed var(--line);">
+          <span class="serif-display text-xl font-bold gold-text">${fmt(m.price)}</span>
+          <div class="flex gap-2">
+            <span class="serif-body text-xs px-2 py-1 rounded" style="background: rgba(212,175,78,0.12); color:var(--gold-300); letter-spacing:0.15em;">${m.kcal > 0 ? m.kcal + ' KCAL' : 'WINE'}</span>
+          </div>
+        </div>
+      `;
+      card.addEventListener('click', () => openDetail(m));
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+  });
+}
+
+// ============ 카테고리 탭 ============
+function setCategory(cat){
+  state.cat = cat;
+  $$('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  $$('.menu-section').forEach(s => s.classList.toggle('active', s.dataset.cat === cat));
+}
+$$('.cat-tab').forEach(t => t.addEventListener('click', () => setCategory(t.dataset.cat)));
+
+// ============ 상세 모달 ============
+function openDetail(m){
+  const modal = $('#detail-modal');
+  const opts = m.options.map((o,i) => `<button class="ghost-btn px-3 py-1.5 text-xs rounded option-pill ${i===0?'is-selected':''}" data-opt="${esc(o)}">${esc(o)}</button>`).join('');
+  $('#detail-content').innerHTML = `
+    <div class="text-center mb-4">
+      <p class="serif-body text-xs tracking-[0.4em]" style="color:var(--gold-400);">— SIGNATURE —</p>
+      <h2 class="serif-display text-3xl gold-text font-bold mt-2">${esc(m.name)}</h2>
+      <p class="serif-body italic text-sm mt-1" style="color:var(--cream); opacity:0.7;">${esc(m.en)}</p>
+    </div>
+
+    <div class="flex justify-center mb-5">
+      <div style="width:180px; height:180px; background: linear-gradient(180deg, rgba(212,175,78,0.15), rgba(212,175,78,0.05)); border:1px solid var(--line); border-radius:10px; padding:14px;">
+        ${menuIcon(m.icon)}
+      </div>
+    </div>
+
+    <div class="gold-line my-4"></div>
+
+    <p class="han-serif text-base leading-relaxed text-center mb-5" style="color:var(--cream); opacity:0.9;">${esc(m.desc)}</p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-5">
+      <div>
+        <p class="serif-body text-xs tracking-[0.3em] mb-2" style="color:var(--gold-400);">— INGREDIENTS · 재료 —</p>
+        <ul class="han-serif text-sm space-y-1" style="color:var(--cream); opacity:0.85;">
+          ${m.ingredients.map(i => `<li class="flex items-start gap-2"><span class="bullet-dot" style="margin-top:8px;"></span><span>${esc(i)}</span></li>`).join('')}
+        </ul>
+      </div>
+      <div>
+        <p class="serif-body text-xs tracking-[0.3em] mb-2" style="color:var(--gold-400);">— ALLERGENS · 알레르기 —</p>
+        <div class="flex flex-wrap gap-2">
+          ${m.allergy.map(a => `<span class="serif-body text-xs px-3 py-1 rounded" style="background:rgba(196,74,74,0.15); border:1px solid rgba(196,74,74,0.4); color:#f6d4d4;">⚠ ${esc(a)}</span>`).join('')}
+        </div>
+        ${m.kcal > 0 ? `
+        <p class="serif-body text-xs tracking-[0.3em] mt-4 mb-2" style="color:var(--gold-400);">— CALORIES —</p>
+        <p class="serif-display text-2xl gold-text font-bold">${m.kcal} kcal</p>
+        ` : ''}
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <p class="serif-body text-xs tracking-[0.3em] mb-2" style="color:var(--gold-400);">— OPTIONS · 옵션 —</p>
+      <div class="flex flex-wrap gap-2" id="option-row">${opts}</div>
+    </div>
+
+    <div class="flex items-center justify-between p-4 rounded" style="background: rgba(10,21,48,0.6); border:1px solid var(--line);">
+      <div>
+        <p class="serif-body text-xs tracking-[0.2em]" style="color:var(--gold-400);">PRICE</p>
+        <p class="serif-display text-3xl gold-text font-bold">${fmt(m.price)}</p>
+      </div>
+      <div class="flex gap-3">
+        <button class="ghost-btn px-5 py-3 rounded text-sm" onclick="closeDetail()">취소</button>
+        <button class="gold-btn px-6 py-3 rounded text-sm font-bold" id="add-to-cart-btn">주문서에 담기</button>
+      </div>
+    </div>
+  `;
+
+  // 옵션 선택
+  let selectedOpt = m.options[0];
+  $$('#option-row .option-pill').forEach(b => {
+    b.addEventListener('click', () => {
+      $$('#option-row .option-pill').forEach(x => {
+        x.classList.remove('is-selected');
+        x.style.background = 'transparent';
+        x.style.borderColor = 'rgba(212,175,78,0.45)';
+        x.style.color = 'var(--gold-300)';
+      });
+      b.classList.add('is-selected');
+      b.style.background = 'rgba(212,175,78,0.2)';
+      b.style.borderColor = 'var(--gold-300)';
+      b.style.color = 'var(--cream)';
+      selectedOpt = b.dataset.opt;
+    });
+  });
+  // 첫 옵션 선택 표시
+  const first = $('#option-row .option-pill');
+  if (first) {
+    first.style.background = 'rgba(212,175,78,0.2)';
+    first.style.borderColor = 'var(--gold-300)';
+    first.style.color = 'var(--cream)';
+  }
+
+  $('#add-to-cart-btn').addEventListener('click', () => {
+    addToCart(m, selectedOpt);
+    closeDetail();
+    showToast(`${m.name} 추가됨`);
+  });
+
+  modal.classList.add('open');
+}
+function closeDetail(){ $('#detail-modal').classList.remove('open'); }
+$('#detail-modal').addEventListener('click', e => { if (e.target.id === 'detail-modal') closeDetail(); });
+
+// ============ 카트 ============
+function addToCart(m, opt){
+  const key = m.id + '|' + opt;
+  const ex = state.cart.find(c => c.key === key);
+  if (ex) ex.qty++;
+  else state.cart.push({ key, id:m.id, name:m.name, price:m.price, qty:1, option:opt });
+  renderCart();
+}
+function removeFromCart(key){
+  state.cart = state.cart.filter(c => c.key !== key);
+  renderCart();
+}
+function changeQty(key, delta){
+  const it = state.cart.find(c => c.key === key);
+  if (!it) return;
+  it.qty += delta;
+  if (it.qty <= 0) removeFromCart(key);
+  else renderCart();
+}
+function renderCart(){
+  const wrap = $('#cart-items');
+  if (state.cart.length === 0) {
+    wrap.innerHTML = `
+      <div class="text-center py-16">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#d4af4e" stroke-width="1" opacity="0.4" class="mx-auto mb-4"><path d="M6 8h12l-1 12H7L6 8zM9 5a3 3 0 016 0v3H9V5z"/></svg>
+        <p class="serif-body italic text-sm" style="color:var(--cream); opacity:0.6;">주문서가 비어있습니다</p>
+        <p class="han-serif text-xs mt-1" style="color:var(--cream); opacity:0.45;">메뉴를 선택해 주십시오</p>
+      </div>
+    `;
+  } else {
+    wrap.innerHTML = state.cart.map(c => `
+      <div class="flex items-start gap-3 py-4" style="border-bottom:1px solid var(--line);">
+        <div style="width:50px; height:50px; flex-shrink:0; background: rgba(212,175,78,0.1); border:1px solid var(--line); border-radius:4px; padding:4px;">
+          ${menuIcon(MENU[Object.keys(MENU).find(k => MENU[k].some(m => m.id === c.id))].find(m => m.id === c.id).icon)}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="serif-display gold-text text-sm font-semibold leading-tight">${esc(c.name)}</p>
+          <p class="serif-body italic text-xs mt-0.5" style="color:var(--cream); opacity:0.6;">${esc(c.option)}</p>
+          <div class="flex items-center justify-between mt-2">
+            <div class="flex items-center gap-2">
+              <button class="ghost-btn w-6 h-6 rounded text-sm flex items-center justify-center" data-qty="-" data-key="${esc(c.key)}">−</button>
+              <span class="serif-display gold-text w-6 text-center">${c.qty}</span>
+              <button class="ghost-btn w-6 h-6 rounded text-sm flex items-center justify-center" data-qty="+" data-key="${esc(c.key)}">+</button>
+            </div>
+            <span class="serif-display gold-text text-sm font-semibold">${fmt(c.price * c.qty)}</span>
+          </div>
+        </div>
+        <button class="ghost-btn px-2 py-1 rounded text-xs" data-remove="${esc(c.key)}">✕</button>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('[data-qty]').forEach(b => {
+      b.addEventListener('click', () => changeQty(b.dataset.key, b.dataset.qty === '+' ? 1 : -1));
+    });
+    wrap.querySelectorAll('[data-remove]').forEach(b => {
+      b.addEventListener('click', () => removeFromCart(b.dataset.remove));
+    });
+  }
+  const subtotal = state.cart.reduce((s,c) => s + c.price * c.qty, 0);
+  const service = Math.round(subtotal * 0.1);
+  $('#cart-subtotal').textContent = fmt(subtotal);
+  $('#cart-service').textContent = fmt(service);
+  $('#cart-total').textContent = fmt(subtotal + service);
+  const count = state.cart.reduce((s,c) => s + c.qty, 0);
+  $('#cart-count').textContent = count;
+  $('#cart-badge').textContent = count;
+}
+
+$('#open-cart').addEventListener('click', () => $('#cart-drawer').classList.add('open'));
+$('#close-cart').addEventListener('click', () => $('#cart-drawer').classList.remove('open'));
+
+// ============ 주문 보내기 ============
+$('#send-order').addEventListener('click', () => {
+  if (state.cart.length === 0) {
+    showToast('메뉴를 선택해 주십시오');
+    return;
+  }
+  const subtotal = state.cart.reduce((s,c) => s + c.price * c.qty, 0);
+  const service = Math.round(subtotal * 0.1);
+  const total = subtotal + service;
+  const eta = 18 + Math.floor(Math.random() * 18);
+
+  $('#order-eta').textContent = eta;
+  $('#order-summary').innerHTML = state.cart.map(c => `
+    <div class="flex justify-between han-serif text-xs">
+      <span style="color:var(--cream); opacity:0.85;">${esc(c.name)} × ${c.qty}</span>
+      <span style="color:var(--gold-300);">${fmt(c.price * c.qty)}</span>
+    </div>
+  `).join('') + `
+    <div class="flex justify-between han-serif text-xs mt-2 pt-2" style="border-top:1px dashed var(--line);">
+      <span style="color:var(--cream); opacity:0.65;">서비스 차지 (10%)</span>
+      <span style="color:var(--gold-300);">${fmt(service)}</span>
+    </div>
+  `;
+  $('#order-total').textContent = fmt(total);
+
+  $('#cart-drawer').classList.remove('open');
+  $('#order-modal').classList.add('open');
+
+  // 주문 후 카트 비움
+  state.cart = [];
+  renderCart();
+});
+function closeOrderModal(){ $('#order-modal').classList.remove('open'); }
+$('#order-modal').addEventListener('click', e => { if (e.target.id === 'order-modal') closeOrderModal(); });
+
+// ============ 환경 슬라이더 ============
+function bindSlider(id, valId, suffix, fn){
+  const sl = $('#'+id);
+  if (!sl) return;
+  sl.addEventListener('input', () => {
+    const v = sl.value;
+    const min = +sl.min;
+    const max = +sl.max;
+    const pct = ((v - min) / (max - min)) * 100;
+    sl.style.setProperty('--val', pct + '%');
+    if (fn) fn(v); else $('#'+valId).textContent = v + suffix;
+  });
+}
+bindSlider('slider-light', 'light-val', '%');
+bindSlider('slider-temp', 'temp-val', '°C');
+bindSlider('slider-curtain', 'curtain-val', '%');
+
+// ============ 토글 ============
+$$('[data-toggle]').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+// ============ 토스트 ============
+let toastTimer;
+function showToast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============ 시계 ============
+function tick(){
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  const time = $('#status-time');
+  if (time) time.textContent = `${hh}:${mm}`;
+}
+tick();
+setInterval(tick, 30000);
+
+// ============ ESC 키 ============
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDetail();
+    closeOrderModal();
+    $('#cart-drawer').classList.remove('open');
+  }
+});
+
+// ============ 초기화 ============
+renderMenu();
+renderCart();
+</script>
+
+</body>
+</html>

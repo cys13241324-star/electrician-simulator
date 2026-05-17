@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부하 시 탭 전환기 (OLTC) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 700px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(59,130,246,0.4), rgba(168,139,250,0.4), rgba(16,185,129,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #6ee7b7);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-r { background: linear-gradient(135deg, rgba(245,158,11,0.20), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-t { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.live-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.15); }
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.tap-btn {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+    font-variant-numeric: tabular-nums;
+}
+.tap-btn:hover {
+    border-color: rgba(196, 181, 253, 0.6);
+    color: #e5e7eb;
+    transform: translateY(-1px);
+}
+.tap-btn.active {
+    background: linear-gradient(135deg, rgba(34,211,238,0.35), rgba(99,102,241,0.35));
+    border-color: rgba(34,211,238,0.8);
+    color: #e0f2fe;
+    box-shadow: 0 0 22px rgba(34,211,238,0.45);
+}
+.tap-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+.mode-btn {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.mode-btn:hover { border-color: rgba(196, 181, 253, 0.6); color: #e5e7eb; }
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.35), rgba(168,139,250,0.35));
+    border-color: rgba(244,114,182,0.8);
+    color: #fce7f3;
+    box-shadow: 0 0 22px rgba(244,114,182,0.45);
+}
+.status-good { color: #6ee7b7; }
+.status-warn { color: #fcd34d; }
+.status-bad  { color: #fca5a5; }
+.deviation-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+}
+.deviation-fill {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    background: linear-gradient(90deg, #6ee7b7, #34d399);
+    transition: all 220ms ease;
+}
+.step-card {
+    background: linear-gradient(135deg, rgba(15,23,42,0.7), rgba(2,6,23,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    transition: all 280ms ease;
+}
+.step-card.active {
+    border-color: rgba(34,211,238,0.8);
+    box-shadow: 0 0 22px rgba(34,211,238,0.35);
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(15,23,42,0.7));
+}
+.step-card.done {
+    border-color: rgba(110,231,183,0.5);
+    background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(15,23,42,0.7));
+}
+.avr-toggle {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.avr-toggle.on {
+    background: linear-gradient(135deg, rgba(16,185,129,0.4), rgba(34,211,238,0.4));
+    border-color: rgba(16,185,129,0.8);
+    color: #d1fae5;
+    box-shadow: 0 0 22px rgba(16,185,129,0.45);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · ON-LOAD TAP CHANGER · OLTC
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            부하 시 탭 전환기 (OLTC) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">부하 운전 중에도 탭을 끊김없이 전환하는 OLTC. <b class="text-cyan-200">선택 스위치 (Selector)</b> + <b class="text-pink-200">전환 스위치 (Diverter)</b>의 5단계 전환 시퀀스. AVR 자동 모드로 V₂ 정격(220V) 유지.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">탭 위치</p>
+            <p class="mt-1 text-lg font-bold"><span id="tapVal" class="live-num">3 (0%)</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">2차 전압 V₂</p>
+            <p class="mt-1 text-lg font-bold"><span id="v2Val" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">부하 전류 I₂</p>
+            <p class="mt-1 text-lg font-bold"><span id="i2Val" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">AVR 상태</p>
+            <p class="mt-1 text-lg font-bold"><span id="avrVal" class="live-num">OFF</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">변압기 + OLTC 메커니즘 (Selector + Diverter + 전이저항)</span>
+                    <span id="seqBadge" class="text-[10px] tracking-widest font-bold text-cyan-200">IDLE</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 5단계 시퀀스 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🔄</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">OLTC 5단계 전환 시퀀스</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-5 gap-2 text-[11px]">
+                    <div id="stepCard0" class="step-card rounded-md px-2 py-3">
+                        <div class="text-[9px] text-slate-400 tracking-wider">STEP ①</div>
+                        <div class="mt-1 font-bold text-slate-200">선택기 이동</div>
+                        <div class="text-[10px] text-slate-500 mt-1">다음 탭 선택 (무전류 단자)</div>
+                    </div>
+                    <div id="stepCard1" class="step-card rounded-md px-2 py-3">
+                        <div class="text-[9px] text-slate-400 tracking-wider">STEP ②</div>
+                        <div class="mt-1 font-bold text-slate-200">다이버터 점프</div>
+                        <div class="text-[10px] text-slate-500 mt-1">전환 스위치 분리</div>
+                    </div>
+                    <div id="stepCard2" class="step-card rounded-md px-2 py-3">
+                        <div class="text-[9px] text-slate-400 tracking-wider">STEP ③</div>
+                        <div class="mt-1 font-bold text-slate-200">전이저항 통과</div>
+                        <div class="text-[10px] text-slate-500 mt-1">단락전류 제한</div>
+                    </div>
+                    <div id="stepCard3" class="step-card rounded-md px-2 py-3">
+                        <div class="text-[9px] text-slate-400 tracking-wider">STEP ④</div>
+                        <div class="mt-1 font-bold text-slate-200">새 탭 접속</div>
+                        <div class="text-[10px] text-slate-500 mt-1">다이버터 도착</div>
+                    </div>
+                    <div id="stepCard4" class="step-card rounded-md px-2 py-3">
+                        <div class="text-[9px] text-slate-400 tracking-wider">STEP ⑤</div>
+                        <div class="mt-1 font-bold text-slate-200">전환 완료</div>
+                        <div class="text-[10px] text-slate-500 mt-1">정상 운전 복귀</div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-3" id="seqNote">대기 중 — 다른 탭 버튼을 누르면 5단계 시퀀스가 자동 실행됩니다.</p>
+            </div>
+
+            <!-- 탭 선택 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🔘</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">탭 위치 (Tap Position)</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-5 gap-2">
+                    <button class="tap-btn rounded-md px-2 py-3 text-xs font-bold" data-tap="1">
+                        <div class="text-[10px] text-slate-400">TAP 1</div>
+                        <div class="text-base mt-1">−5%</div>
+                    </button>
+                    <button class="tap-btn rounded-md px-2 py-3 text-xs font-bold" data-tap="2">
+                        <div class="text-[10px] text-slate-400">TAP 2</div>
+                        <div class="text-base mt-1">−2.5%</div>
+                    </button>
+                    <button class="tap-btn active rounded-md px-2 py-3 text-xs font-bold" data-tap="3">
+                        <div class="text-[10px] text-slate-400">TAP 3</div>
+                        <div class="text-base mt-1">0%</div>
+                    </button>
+                    <button class="tap-btn rounded-md px-2 py-3 text-xs font-bold" data-tap="4">
+                        <div class="text-[10px] text-slate-400">TAP 4</div>
+                        <div class="text-base mt-1">+2.5%</div>
+                    </button>
+                    <button class="tap-btn rounded-md px-2 py-3 text-xs font-bold" data-tap="5">
+                        <div class="text-[10px] text-slate-400">TAP 5</div>
+                        <div class="text-base mt-1">+5%</div>
+                    </button>
+                </div>
+
+                <div class="mt-5">
+                    <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">절연 매질</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="mode-btn active rounded-md px-3 py-2 text-xs font-bold" data-medium="OIL">오일 절연 (Oil)</button>
+                        <button class="mode-btn rounded-md px-3 py-2 text-xs font-bold" data-medium="GAS">가스 절연 (SF₆/진공)</button>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2" id="mediumNote">오일 절연: 광유에 침지. 전호 소호 + 절연. 가스 분해물 발생 → 주기 점검 필요.</p>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">OLTC 동작 원리</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">탭 권수</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$N_1' = N_1\,(1 + k)$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">2차 전압</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$V_2 = V_1 \cdot \dfrac{N_2}{N_1'}$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">전이저항</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$I_{circ} = \dfrac{\Delta V}{2 R_T}$</p>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-3">전이저항 $R_T$는 인접 탭 사이 단락회로 전류 $I_{circ}$를 제한합니다. 다이버터가 가운데를 통과하는 순간 양쪽 탭이 잠시 동시 연결되며, 두 탭 사이 전압차 $\Delta V$를 $2R_T$가 분담합니다.</p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>1차 전압 V₁ (변동)</span><span id="v1Disp" class="font-mono text-base">230</span></label>
+                <input type="range" id="v1" min="180" max="280" step="1" value="230" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V (정격 220 ±5%)</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 R</span><span id="rDisp" class="font-mono text-base">22</span></label>
+                <input type="range" id="r" min="2" max="100" step="1" value="22" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+
+            <div class="chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider text-emerald-200"><span>전이저항 R<sub>T</sub></span><span id="rtDisp" class="font-mono text-base">5</span></label>
+                <input type="range" id="rt" min="1" max="20" step="1" value="5" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω (단락전류 제한)</p>
+            </div>
+
+            <button id="avrBtn" class="avr-toggle w-full rounded-lg px-3 py-3 text-xs font-bold tracking-wider">
+                AVR · 자동 전압 조정 OFF
+            </button>
+            <p class="text-[10px] text-slate-500 -mt-2">ON 시 V₁ 변동에 따라 자동으로 탭 선택 → V₂를 220V±2.5%로 유지</p>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="text-[11px] font-bold tracking-wider">2차 정격 편차</label>
+                <div class="deviation-bar mt-2">
+                    <div id="devFill" class="deviation-fill" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] mt-1 text-slate-400">
+                    <span>−10%</span><span id="devTxt" class="font-mono">0.0%</span><span>+10%</span>
+                </div>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 space-y-1.5 text-[11px]">
+                <p class="text-slate-300"><span class="text-blue-300 font-bold">1차</span> · V₁=<span id="d_v1" class="font-mono">—</span> · N₁'=<span id="d_n1" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-emerald-300 font-bold">2차</span> · V₂=<span id="d_v2" class="font-mono">—</span> · I₂=<span id="d_i2" class="font-mono">—</span></p>
+                <p class="text-slate-300">출력 P = <span id="d_p" class="font-mono">—</span></p>
+                <p class="text-slate-300">전환중 I<sub>circ</sub> = <span id="d_ic" class="font-mono">0</span></p>
+                <p class="text-slate-400 text-[10px] pt-1 border-t border-white/5">상태: <span id="statusLabel" class="font-bold">정상</span></p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed">
+                <p class="text-pink-200 font-bold mb-1">💡 OLTC vs NLTC</p>
+                <p id="learnNote" class="text-slate-300">OLTC는 부하를 차단하지 않고 탭을 바꿉니다. 다이버터가 가운데로 점프할 때 양 탭이 전이저항으로 잠시 연결돼 단락전류를 막아주며, 이로 인해 전호(아크)도 소호되어 접점이 안전합니다. 송전용 대형 변압기에 표준입니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const TOTAL_H = 700;
+const V2_RATED = 220;
+const N1_BASE  = 200;
+const N2_BASE  = 200;
+const TAP_PCT  = [-0.05, -0.025, 0, 0.025, 0.05];
+const TAP_LABEL = ['−5%', '−2.5%', '0%', '+2.5%', '+5%'];
+
+// 시퀀스 단계 (0: idle, 1~5: 단계)
+const SEQ_NAMES = ['IDLE', 'SELECTOR MOVE', 'DIVERTER OPEN', 'TRANSITION (R_T)', 'DIVERTER CLOSE', 'COMPLETE'];
+
+let state = {
+    V1: 230,
+    R: 22,
+    RT: 5,
+    tap: 3,           // 현재 정착 탭
+    targetTap: 3,     // 선택기가 이동 중인 목표 탭
+    nextTap: 3,       // 다이버터가 전환할 대상 (선택기 도착 후)
+    avr: false,
+    medium: 'OIL',
+    t: 0,
+    // 시퀀스
+    seqStep: 0,       // 0=idle, 1~5
+    seqPhase: 0,      // 단계 내 보간 0..1
+    selectorY: null,  // 선택기 핸들 현재 y
+    diverterPos: 0,   // -1(현재탭) .. +1(다음탭), 0=가운데
+    showCirculating: false,  // 전이저항을 통한 전이전류 표시
+};
+
+let layout = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    computeLayout();
+    seedFluxParticles();
+}
+window.addEventListener('resize', resize);
+
+function computeLayout() {
+    const W = canvas.width;
+    const H = TOTAL_H;
+    // 변압기 코어 (왼쪽 절반)
+    const coreW = Math.min(W * 0.28, 320);
+    const coreH = Math.min(H * 0.50, 340);
+    const cx = W * 0.30;
+    const cy = H * 0.48;
+    layout.core = {
+        x: cx - coreW / 2,
+        y: cy - coreH / 2,
+        w: coreW, h: coreH,
+        cx, cy
+    };
+    const innerPad = 28;
+    layout.core.innerX = layout.core.x + innerPad;
+    layout.core.innerY = layout.core.y + innerPad;
+    layout.core.innerW = coreW - innerPad * 2;
+    layout.core.innerH = coreH - innerPad * 2;
+
+    const colTop = layout.core.y + 22;
+    const colBot = layout.core.y + layout.core.h - 22;
+    layout.coilL = { cx: layout.core.x + 16, yTop: colTop, yBot: colBot };
+    layout.coilR = { cx: layout.core.x + layout.core.w - 16, yTop: colTop, yBot: colBot };
+
+    // OLTC 메커니즘 영역 (오른쪽)
+    const oltcX = layout.core.x + layout.core.w + 80;
+    const oltcY = layout.core.y;
+    const oltcW = Math.max(W * 0.36, 280);
+    const oltcH = layout.core.h;
+    layout.oltc = { x: oltcX, y: oltcY, w: oltcW, h: oltcH };
+
+    // 탭 5개의 y좌표 (OLTC 박스 내부 좌측)
+    const segH = (oltcH - 60) / 5;
+    layout.taps = [];
+    const tapX = oltcX + 28;
+    for (let i = 0; i < 5; i++) {
+        // TAP1 → 아래, TAP5 → 위
+        const y = (oltcY + 30) + segH * (4 - i) + segH / 2;
+        layout.taps.push({ y, x: tapX, idx: i + 1 });
+    }
+    // 선택기 (Selector) 가이드 x — 탭 단자 바로 오른쪽
+    layout.selector = { x: tapX + 56, yTop: oltcY + 24, yBot: oltcY + oltcH - 24 };
+    // 다이버터 위치: 선택기 오른쪽으로 떨어진 트랙
+    layout.diverter = {
+        x: tapX + 120,
+        yA: 0, yB: 0,   // 두 컨택의 y (현재 탭, 목표 탭)
+        ymid: 0
+    };
+    // 전이저항 위치
+    layout.rt = { x: tapX + 180, y: oltcY + oltcH / 2 };
+    // 부하 (가장 오른쪽)
+    layout.load = { x: oltcX + oltcW + 36, y: oltcY + oltcH / 2 };
+    // AC 입력 (코어 왼쪽)
+    layout.ac = { x: layout.core.x - 70, y: cy };
+
+    // V2 게이지
+    layout.gauge = { cx: W - 80, cy: 96, r: 56 };
+}
+
+// ===== 자속 입자 =====
+let fluxParticles = [];
+let coreLoopLen = 0;
+let coreLoopSegs = [];
+function buildCoreLoop() {
+    const r = layout.core;
+    const off = 12;
+    const pts = [
+        { x: r.x + off, y: r.y + off },
+        { x: r.x + r.w - off, y: r.y + off },
+        { x: r.x + r.w - off, y: r.y + r.h - off },
+        { x: r.x + off, y: r.y + r.h - off },
+        { x: r.x + off, y: r.y + off },
+    ];
+    coreLoopLen = 0;
+    coreLoopSegs = [];
+    for (let k = 0; k < pts.length - 1; k++) {
+        const a = pts[k], b = pts[k + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        coreLoopSegs.push({ a, b, len, start: coreLoopLen });
+        coreLoopLen += len;
+    }
+}
+function coreLoopPointAt(progress) {
+    let p = ((progress % coreLoopLen) + coreLoopLen) % coreLoopLen;
+    for (const s of coreLoopSegs) {
+        if (p <= s.start + s.len) {
+            const t = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
+        }
+    }
+    return coreLoopSegs[0].a;
+}
+function seedFluxParticles() {
+    buildCoreLoop();
+    fluxParticles = [];
+    const count = 26;
+    for (let i = 0; i < count; i++) {
+        fluxParticles.push({ progress: (i / count) * coreLoopLen, size: 1.4 + Math.random() * 1.0 });
+    }
+}
+
+// ===== 유틸 =====
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function badgeText(text, x, y, color, font = 'bold 11px ui-monospace, monospace', bg = 'rgba(15, 23, 42, 0.92)') {
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = bg;
+    roundRect(ctx, x - tw / 2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+function drawBg() {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, TOTAL_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TOTAL_H); ctx.stroke();
+    }
+    for (let i = 0; i < TOTAL_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ OLTC · ON-LOAD TAP CHANGER · SELECTOR + DIVERTER', 12, 10);
+    ctx.restore();
+}
+
+function drawCore() {
+    const r = layout.core;
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.4)';
+    const gExt = ctx.createLinearGradient(r.x, r.y, r.x + r.w, r.y + r.h);
+    gExt.addColorStop(0, '#475569');
+    gExt.addColorStop(0.5, '#94a3b8');
+    gExt.addColorStop(1, '#334155');
+    ctx.fillStyle = gExt;
+    roundRect(ctx, r.x, r.y, r.w, r.h, 10);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    const gIn = ctx.createLinearGradient(r.innerX, r.innerY, r.innerX + r.innerW, r.innerY + r.innerH);
+    gIn.addColorStop(0, '#0a0e1e');
+    gIn.addColorStop(1, '#060814');
+    ctx.fillStyle = gIn;
+    roundRect(ctx, r.innerX, r.innerY, r.innerW, r.innerH, 6);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let y = r.y + 6; y < r.y + r.h; y += 6) {
+        ctx.beginPath(); ctx.moveTo(r.x + 3, y); ctx.lineTo(r.x + r.w - 3, y); ctx.stroke();
+    }
+    ctx.restore();
+    badgeText('변압기 본체', r.x + r.w / 2, r.y + r.h + 16, '#94a3b8', 'bold 10px ui-monospace, monospace');
+}
+
+function drawPrimaryCoil() {
+    const c = layout.coilL;
+    const span = c.yBot - c.yTop;
+    const k = TAP_PCT[state.tap - 1];
+    const baseTurns = 16;
+    const turns = Math.round(baseTurns * (1 + k));
+    const step = span / Math.max(turns, 6);
+
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#60a5fa';
+    for (let i = 0; i < turns; i++) {
+        const y = c.yTop + (i + 0.5) * step;
+        const g = ctx.createLinearGradient(c.cx - 20, y, c.cx + 20, y);
+        g.addColorStop(0, '#3b82f6');
+        g.addColorStop(0.5, '#ffffff');
+        g.addColorStop(1, '#3b82f6');
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.ellipse(c.cx, y, 20, 4.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+    const r = layout.core;
+    const N1p = Math.round(N1_BASE * (1 + k));
+    badgeText(`N₁' = ${N1p}회`, c.cx, r.y - 14, '#93c5fd');
+}
+
+function drawSecondaryCoil() {
+    const c = layout.coilR;
+    const span = c.yBot - c.yTop;
+    const turns = 16;
+    const step = span / turns;
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#34d399';
+    for (let i = 0; i < turns; i++) {
+        const y = c.yTop + (i + 0.5) * step;
+        const g = ctx.createLinearGradient(c.cx - 20, y, c.cx + 20, y);
+        g.addColorStop(0, '#10b981');
+        g.addColorStop(0.5, '#ffffff');
+        g.addColorStop(1, '#10b981');
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.ellipse(c.cx, y, 20, 4.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+    const r = layout.core;
+    badgeText(`N₂ = ${N2_BASE}회`, c.cx, r.y - 14, '#6ee7b7');
+}
+
+// ===== OLTC 박스 =====
+function drawOltcEnclosure() {
+    const o = layout.oltc;
+    ctx.save();
+    // 외곽 — 절연 매질에 따라 색 변화
+    const isGas = state.medium === 'GAS';
+    const baseColA = isGas ? 'rgba(34,211,238,0.10)' : 'rgba(245,158,11,0.10)';
+    const baseColB = isGas ? 'rgba(15,23,42,0.85)'  : 'rgba(15,23,42,0.85)';
+    const gExt = ctx.createLinearGradient(o.x, o.y, o.x + o.w, o.y + o.h);
+    gExt.addColorStop(0, baseColA);
+    gExt.addColorStop(1, baseColB);
+    ctx.fillStyle = gExt;
+    roundRect(ctx, o.x, o.y, o.w, o.h, 14);
+    ctx.fill();
+    ctx.strokeStyle = isGas ? 'rgba(34,211,238,0.55)' : 'rgba(245,158,11,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 라벨
+    ctx.fillStyle = isGas ? '#67e8f9' : '#fcd34d';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(isGas ? '◆ OLTC · SF₆/VACUUM 절연' : '◆ OLTC · OIL 절연', o.x + 14, o.y + 10);
+
+    // 절연 매질 시각화: 가스면 옅은 점들, 오일이면 옅은 물결
+    if (isGas) {
+        ctx.fillStyle = 'rgba(103, 232, 249, 0.10)';
+        for (let i = 0; i < 30; i++) {
+            const x = o.x + 20 + Math.sin(state.t * 0.01 + i) * 6 + ((i * 37) % (o.w - 40));
+            const y = o.y + 30 + ((i * 53) % (o.h - 50));
+            ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2); ctx.fill();
+        }
+    } else {
+        ctx.strokeStyle = 'rgba(252, 211, 77, 0.08)';
+        ctx.lineWidth = 1;
+        for (let yy = o.y + 30; yy < o.y + o.h - 8; yy += 14) {
+            ctx.beginPath();
+            for (let xx = o.x + 10; xx <= o.x + o.w - 10; xx += 4) {
+                const dy = Math.sin((xx + state.t * 0.5) * 0.04) * 1.5;
+                if (xx === o.x + 10) ctx.moveTo(xx, yy + dy);
+                else ctx.lineTo(xx, yy + dy);
+            }
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawTapTerminals() {
+    // 탭 단자 5개 + 권선 분기점 → OLTC 박스로 와이어
+    const r = layout.core;
+    const coilCx = layout.coilL.cx;
+    const colTop = layout.coilL.yTop;
+    const colBot = layout.coilL.yBot;
+    const span = colBot - colTop;
+    const segH = span / 6;
+
+    ctx.save();
+    for (let i = 0; i < 5; i++) {
+        const tapNum = i + 1;
+        const yCoil = colBot - segH * (i + 1);  // 코일 분기점 (TAP1 아래)
+        const t = layout.taps[i];
+        const active = tapNum === state.tap;
+        const isTarget = tapNum === state.targetTap;
+        const isNext = tapNum === state.nextTap;
+
+        // 코일에서 OLTC 박스로 가는 와이어 (각 탭마다)
+        ctx.strokeStyle = active ? 'rgba(34,211,238,0.85)' :
+                          isNext ? 'rgba(244,114,182,0.65)' :
+                          'rgba(148,163,184,0.30)';
+        ctx.lineWidth = active ? 2 : 1.2;
+        ctx.shadowBlur = active ? 10 : 0;
+        ctx.shadowColor = '#22d3ee';
+        ctx.beginPath();
+        ctx.moveTo(coilCx, yCoil);
+        // 위로 살짝 가서 가로로
+        ctx.lineTo(coilCx + 10, yCoil);
+        ctx.lineTo(coilCx + 10, t.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.stroke();
+
+        // 탭 단자 (큰 점)
+        ctx.shadowBlur = active ? 14 : (isNext ? 10 : 0);
+        ctx.shadowColor = active ? '#22d3ee' : '#f472b6';
+        ctx.fillStyle = active ? '#22d3ee' : (isNext ? '#f472b6' : 'rgba(148,163,184,0.6)');
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, active ? 5 : (isNext ? 4 : 3), 0, Math.PI * 2);
+        ctx.fill();
+
+        // 탭 라벨
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = active ? '#67e8f9' : (isNext ? '#fbcfe8' : '#64748b');
+        ctx.fillText(`T${tapNum} ${TAP_LABEL[i]}`, t.x - 8, t.y);
+    }
+    ctx.restore();
+}
+
+// ===== 선택기 (Selector) =====
+function drawSelector() {
+    const s = layout.selector;
+    // 선택기는 항상 'targetTap' 위치로 부드럽게 이동
+    const targetY = layout.taps[state.targetTap - 1].y;
+    if (state.selectorY === null) state.selectorY = targetY;
+    state.selectorY += (targetY - state.selectorY) * 0.18;
+
+    ctx.save();
+    // 가이드 (수직 라인)
+    ctx.strokeStyle = 'rgba(148,163,184,0.20)';
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.yTop);
+    ctx.lineTo(s.x, s.yBot);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 선택기 → 활성 탭 단자 와이어
+    const tx = layout.taps[0].x;
+    ctx.strokeStyle = 'rgba(34,211,238,0.85)';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#22d3ee';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(s.x, state.selectorY);
+    ctx.lineTo(tx, state.selectorY);
+    ctx.stroke();
+
+    // 선택기 핸들 (구체)
+    const gH = ctx.createRadialGradient(s.x - 3, state.selectorY - 3, 2, s.x, state.selectorY, 12);
+    gH.addColorStop(0, '#cffafe');
+    gH.addColorStop(0.6, '#22d3ee');
+    gH.addColorStop(1, '#0e7490');
+    ctx.fillStyle = gH;
+    ctx.beginPath();
+    ctx.arc(s.x, state.selectorY, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.stroke();
+
+    // 라벨
+    badgeText('SELECTOR (선택 스위치)', s.x + 30, s.yTop - 14, '#67e8f9', 'bold 10px ui-monospace, monospace');
+    ctx.restore();
+}
+
+// ===== 다이버터 (Diverter) =====
+function drawDiverter() {
+    const d = layout.diverter;
+    const s = layout.selector;
+    // 다이버터 두 컨택: A=현재 탭(고정), B=목표 탭(선택기 따라 이동)
+    const yA = layout.taps[state.tap - 1].y;        // 현재
+    const yB = state.selectorY;                      // 선택기와 동기 (다음 탭 후보)
+    const ymid = (yA + yB) / 2;
+    d.yA = yA; d.yB = yB; d.ymid = ymid;
+
+    // 다이버터 트랙 (수직 라인)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244,114,182,0.20)';
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(d.x, Math.min(yA, yB) - 14);
+    ctx.lineTo(d.x, Math.max(yA, yB) + 14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 컨택 A (현재 탭측) — 와이어: 선택기에서 분기되어 다이버터 컨택 A로
+    // 단, 다이버터 컨택 A는 '현재 탭'을 가리킴 — 현재 탭 단자에서 직접 라인
+    const tx = layout.taps[0].x;
+    ctx.strokeStyle = 'rgba(244,114,182,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(tx + 28, yA);  // 탭 A에서
+    ctx.lineTo(d.x, yA);
+    ctx.stroke();
+
+    // 컨택 B (다음 탭측 — 선택기 위치)
+    ctx.strokeStyle = 'rgba(244,114,182,0.65)';
+    ctx.beginPath();
+    ctx.moveTo(s.x + 10, yB);
+    ctx.lineTo(d.x, yB);
+    ctx.stroke();
+
+    // 컨택 A, B 점
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#f472b6';
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath(); ctx.arc(d.x, yA, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(d.x, yB, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 다이버터 암 (현재 위치: pos -1 → A, +1 → B, 0 → 가운데)
+    // 시퀀스에 따라 위치 결정
+    let armY = yA;  // 기본: A에 접속
+    let armState = 'A';
+    if (state.seqStep === 0 || state.seqStep === 5) {
+        // 정상 상태: 현재 탭(=A)에 안착
+        armY = yA;
+        armState = 'A';
+    } else if (state.seqStep === 2) {
+        // OPEN: A에서 분리되어 가운데로 이동
+        armY = yA + (ymid - yA) * state.seqPhase;
+        armState = state.seqPhase > 0.5 ? 'MID' : 'A';
+    } else if (state.seqStep === 3) {
+        // TRANSITION: 가운데 (전이저항 통과중)
+        armY = ymid;
+        armState = 'MID';
+    } else if (state.seqStep === 4) {
+        // CLOSE: 가운데에서 B로 이동
+        armY = ymid + (yB - ymid) * state.seqPhase;
+        armState = state.seqPhase > 0.5 ? 'B' : 'MID';
+    } else if (state.seqStep === 1) {
+        // SELECTOR MOVE: 다이버터는 그대로 A
+        armY = yA;
+        armState = 'A';
+    }
+
+    // 다이버터 암 그리기 (회전 막대)
+    ctx.save();
+    ctx.strokeStyle = armState === 'MID' ? 'rgba(252,211,77,0.9)' : 'rgba(244,114,182,0.95)';
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = armState === 'MID' ? '#fbbf24' : '#f472b6';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(d.x + 22, ymid);     // 회전 축 위치
+    ctx.lineTo(d.x, armY);          // 컨택 끝
+    ctx.stroke();
+
+    // 회전 축
+    ctx.fillStyle = '#9ca3af';
+    ctx.beginPath(); ctx.arc(d.x + 22, ymid, 4, 0, Math.PI * 2); ctx.fill();
+    // 컨택 끝 표시
+    const tipCol = armState === 'MID' ? '#fcd34d' : '#fce7f3';
+    ctx.fillStyle = tipCol;
+    ctx.beginPath(); ctx.arc(d.x, armY, 5, 0, Math.PI * 2); ctx.fill();
+
+    // OPEN/CLOSE 중 아크 효과
+    if ((state.seqStep === 2 || state.seqStep === 4) && Math.random() > 0.4) {
+        ctx.strokeStyle = 'rgba(252,211,77,0.95)';
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        const fromY = state.seqStep === 2 ? yA : yB;
+        ctx.beginPath();
+        ctx.moveTo(d.x, fromY);
+        // 지그재그 아크
+        let yy = fromY;
+        const steps = 4;
+        for (let i = 1; i <= steps; i++) {
+            yy = fromY + (armY - fromY) * (i / steps);
+            const jitter = (Math.random() - 0.5) * 6;
+            ctx.lineTo(d.x + jitter, yy);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 라벨
+    badgeText('DIVERTER (전환 스위치)', d.x + 30, layout.oltc.y + layout.oltc.h - 14, '#f9a8d4', 'bold 10px ui-monospace, monospace');
+    ctx.restore();
+}
+
+// ===== 전이저항 =====
+function drawTransitionResistor() {
+    const rt = layout.rt;
+    const d = layout.diverter;
+    // 전이저항: 다이버터 회전 축 → 부하측 출력 단자로 가는 경로
+    // 가운데 통과 중일 때만 활성화 강조
+    const active = state.seqStep === 3 || (state.seqStep === 2 && state.seqPhase > 0.7) || (state.seqStep === 4 && state.seqPhase < 0.3);
+
+    ctx.save();
+    // 박스
+    ctx.shadowBlur = active ? 16 : 6;
+    ctx.shadowColor = active ? '#fbbf24' : 'rgba(148,163,184,0.4)';
+    const g = ctx.createLinearGradient(rt.x - 22, rt.y - 14, rt.x + 22, rt.y + 14);
+    if (active) {
+        g.addColorStop(0, '#fbbf24'); g.addColorStop(0.5, '#f59e0b'); g.addColorStop(1, '#b45309');
+    } else {
+        g.addColorStop(0, '#475569'); g.addColorStop(0.5, '#64748b'); g.addColorStop(1, '#334155');
+    }
+    ctx.fillStyle = g;
+    roundRect(ctx, rt.x - 22, rt.y - 14, 44, 28, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // 지그재그
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    const zs = rt.x - 14, ze = rt.x + 14;
+    for (let k = 0; k <= 5; k++) {
+        const x = zs + ((ze - zs) * k) / 5;
+        const y = rt.y + (k % 2 === 0 ? -4 : 4);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = active ? '#fcd34d' : '#94a3b8';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`R_T=${state.RT}Ω`, rt.x, rt.y + 24);
+    ctx.restore();
+
+    // 전이저항 연결선: 다이버터 회전 축 → 전이저항 → 부하 와이어
+    ctx.save();
+    ctx.strokeStyle = active ? 'rgba(252,211,77,0.85)' : 'rgba(148,163,184,0.35)';
+    ctx.lineWidth = active ? 2.5 : 1.5;
+    ctx.shadowBlur = active ? 12 : 0;
+    ctx.shadowColor = '#fbbf24';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(d.x + 22, d.ymid);
+    ctx.lineTo(rt.x - 22, rt.y);
+    ctx.stroke();
+    // 전이저항 → 부하측
+    const ld = layout.load;
+    ctx.beginPath();
+    ctx.moveTo(rt.x + 22, rt.y);
+    ctx.lineTo(ld.x - 28, ld.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 가운데 통과 중 순환 전류 흐름 표시
+    if (active) {
+        const tt = (state.t * 0.04) % 1;
+        for (let i = 0; i < 4; i++) {
+            const ph = ((tt + i * 0.25) % 1);
+            // 전이저항 양쪽으로 점이 흐름
+            const x = (rt.x - 22) + ph * 44;
+            ctx.save();
+            ctx.fillStyle = 'rgba(252,211,77,0.95)';
+            ctx.shadowBlur = 8; ctx.shadowColor = '#fbbf24';
+            ctx.beginPath(); ctx.arc(x, rt.y, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+    }
+}
+
+// ===== AC 입력 =====
+function drawACInput() {
+    const ac = layout.ac;
+    const r = layout.core;
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#f472b6';
+    const g = ctx.createRadialGradient(ac.x - 4, ac.y - 5, 2, ac.x, ac.y, 24);
+    g.addColorStop(0, '#fce7f3');
+    g.addColorStop(0.55, '#ec4899');
+    g.addColorStop(1, '#831843');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(ac.x, ac.y, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.stroke();
+    // sin
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    for (let dx = -12; dx <= 12; dx += 1) {
+        const dy = Math.sin((dx + state.t * 4) * 0.28) * 5.5;
+        if (dx === -12) ctx.moveTo(ac.x + dx, ac.y + dy); else ctx.lineTo(ac.x + dx, ac.y + dy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 연결선: AC 위/아래 → 1차 권선 위/아래
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#67e8f9';
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    const colCx = layout.coilL.cx;
+    // 위 와이어 (AC 상단 → 코일 상단)
+    ctx.beginPath();
+    ctx.moveTo(ac.x, ac.y - 24);
+    ctx.lineTo(ac.x, r.y - 20);
+    ctx.lineTo(colCx, r.y - 20);
+    ctx.lineTo(colCx, layout.coilL.yTop - 4);
+    ctx.stroke();
+    // 아래 와이어 (AC 하단 → 코일 하단)
+    ctx.beginPath();
+    ctx.moveTo(ac.x, ac.y + 24);
+    ctx.lineTo(ac.x, r.y + r.h + 20);
+    ctx.lineTo(colCx, r.y + r.h + 20);
+    ctx.lineTo(colCx, layout.coilL.yBot + 4);
+    ctx.stroke();
+    ctx.restore();
+
+    badgeText(`V₁ = ${state.V1.toFixed(0)} V`, ac.x, ac.y + 42, '#f9a8d4');
+}
+
+// ===== 부하 =====
+function drawLoad() {
+    const ld = layout.load;
+    const r = layout.core;
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#fbbf24';
+    const gR = ctx.createLinearGradient(ld.x - 22, ld.y - 14, ld.x + 22, ld.y + 14);
+    gR.addColorStop(0, '#fbbf24');
+    gR.addColorStop(0.5, '#f59e0b');
+    gR.addColorStop(1, '#b45309');
+    ctx.fillStyle = gR;
+    roundRect(ctx, ld.x - 22, ld.y - 14, 44, 28, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // zig-zag
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    const zs = ld.x - 14, ze = ld.x + 14;
+    for (let k = 0; k <= 6; k++) {
+        const x = zs + ((ze - zs) * k) / 6;
+        const y = ld.y + (k % 2 === 0 ? -4 : 4);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 부하 → 2차 코일 위/아래 와이어
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#6ee7b7';
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.75)';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    const rightCx = layout.coilR.cx;
+    // 2차 코일 위 → 부하 위 (OLTC 박스를 우회) — 직접 가지 않고 박스 위쪽으로 우회
+    const o = layout.oltc;
+    ctx.beginPath();
+    ctx.moveTo(rightCx, layout.coilR.yTop - 4);
+    ctx.lineTo(rightCx, o.y - 16);
+    ctx.lineTo(ld.x, o.y - 16);
+    ctx.lineTo(ld.x, ld.y - 14);
+    ctx.stroke();
+    // 2차 코일 아래 → 부하 아래 (박스 아래로 우회)
+    ctx.beginPath();
+    ctx.moveTo(rightCx, layout.coilR.yBot + 4);
+    ctx.lineTo(rightCx, o.y + o.h + 16);
+    ctx.lineTo(ld.x, o.y + o.h + 16);
+    ctx.lineTo(ld.x, ld.y + 14);
+    ctx.stroke();
+    ctx.restore();
+
+    badgeText(`R = ${state.R} Ω`, ld.x, ld.y + 32, '#fcd34d');
+    badgeText(`V₂ = ${state.V2.toFixed(1)} V`, ld.x, ld.y - 32, '#6ee7b7');
+}
+
+// ===== 자속 =====
+function drawFluxFlow() {
+    const speed = 0.6 + (state.V1 / 220) * 2.2;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of fluxParticles) {
+        p.progress = (p.progress + speed) % coreLoopLen;
+        const pt = coreLoopPointAt(p.progress);
+        ctx.fillStyle = 'rgba(168, 139, 250, 0.9)';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#a78bfa';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    const r = layout.core;
+    badgeText('Φ 자속', r.x + r.w / 2, r.y + r.h / 2, '#c4b5fd', 'bold 11px serif');
+}
+
+// ===== V2 게이지 =====
+function drawV2Gauge() {
+    const g = layout.gauge;
+    const dev = (state.V2 - V2_RATED) / V2_RATED;
+    const devClamp = Math.max(-0.1, Math.min(0.1, dev));
+    const angle = (devClamp / 0.1) * (135 * Math.PI / 180);
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(168, 139, 250, 0.4)';
+    ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r, 0, Math.PI * 2);
+    ctx.stroke();
+    const startA = -Math.PI * 3 / 4 - Math.PI / 2;
+    const endA   =  Math.PI * 3 / 4 - Math.PI / 2;
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r - 8, startA, endA);
+    ctx.stroke();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.75)';
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r - 8, -Math.PI / 2 - (25 * Math.PI / 180), -Math.PI / 2 + (25 * Math.PI / 180));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r - 8, -Math.PI / 2 - (67.5 * Math.PI / 180), -Math.PI / 2 - (25 * Math.PI / 180));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r - 8, -Math.PI / 2 + (25 * Math.PI / 180), -Math.PI / 2 + (67.5 * Math.PI / 180));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(252, 165, 165, 0.7)';
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r - 8, startA, -Math.PI / 2 - (67.5 * Math.PI / 180));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r - 8, -Math.PI / 2 + (67.5 * Math.PI / 180), endA);
+    ctx.stroke();
+
+    const nx = g.cx + Math.sin(angle) * (g.r - 14);
+    const ny = g.cy - Math.cos(angle) * (g.r - 14);
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fce7f3';
+    ctx.strokeStyle = '#f9a8d4';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(g.cx, g.cy);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#f9a8d4';
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('V₂ vs 220V', g.cx, g.cy + g.r + 12);
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillText(`${(dev * 100).toFixed(1)}%`, g.cx, g.cy - 12);
+    ctx.restore();
+}
+
+// ===== 시퀀스 진행 =====
+const SEQ_DURATIONS = [0, 60, 28, 50, 28, 30];  // 프레임 수 (각 단계)
+let seqFrameCnt = 0;
+
+function startSequence(targetTap) {
+    if (state.seqStep !== 0 && state.seqStep !== 5) return false;
+    if (targetTap === state.tap) return false;
+    state.nextTap = targetTap;
+    state.targetTap = targetTap;  // 선택기는 즉시 이동 시작
+    state.seqStep = 1;
+    state.seqPhase = 0;
+    seqFrameCnt = 0;
+    updateStepUI();
+    return true;
+}
+
+function advanceSequence() {
+    if (state.seqStep === 0) return;
+    seqFrameCnt++;
+    const dur = SEQ_DURATIONS[state.seqStep];
+    state.seqPhase = Math.min(1, seqFrameCnt / dur);
+
+    if (seqFrameCnt >= dur) {
+        // 다음 단계로
+        state.seqStep++;
+        state.seqPhase = 0;
+        seqFrameCnt = 0;
+        // 단계 4 종료 후: 실제 'tap'을 갱신 (다이버터가 B에 도착)
+        if (state.seqStep === 5) {
+            state.tap = state.nextTap;
+            compute();
+        }
+        if (state.seqStep > 5) {
+            // 시퀀스 종료
+            state.seqStep = 0;
+            state.seqPhase = 0;
+            // AVR 자동: 시퀀스 종료 후 추가 보정 필요 시 다시 트리거
+            if (state.avr) compute();
+        }
+        updateStepUI();
+    }
+}
+
+function updateStepUI() {
+    for (let i = 0; i < 5; i++) {
+        const card = $(`stepCard${i}`);
+        card.classList.remove('active', 'done');
+        if (state.seqStep === 0) continue;
+        if (state.seqStep - 1 === i) card.classList.add('active');
+        else if (state.seqStep - 1 > i) card.classList.add('done');
+    }
+    const badge = $('seqBadge');
+    badge.textContent = state.seqStep === 0 ? 'IDLE' : `STEP ${state.seqStep} · ${SEQ_NAMES[state.seqStep]}`;
+    const note = $('seqNote');
+    if (state.seqStep === 0) {
+        note.textContent = '대기 중 — 다른 탭 버튼을 누르면 5단계 시퀀스가 자동 실행됩니다.';
+    } else if (state.seqStep === 1) {
+        note.textContent = '① 선택기 이동 — 무전류 단자에서 다음 탭 위치로 사전 선택. (전류 흐름 무영향)';
+    } else if (state.seqStep === 2) {
+        note.textContent = '② 다이버터 분리 — 현재 탭에서 전환 스위치가 떨어지며 아크 발생 직전.';
+    } else if (state.seqStep === 3) {
+        note.textContent = '③ 전이저항 통과 — 양 탭이 R_T로 연결되어 단락전류 제한. 부하 전류는 지속 공급.';
+    } else if (state.seqStep === 4) {
+        note.textContent = '④ 새 탭 접속 — 다이버터가 다음 탭에 도착, 전이저항 분리.';
+    } else if (state.seqStep === 5) {
+        note.textContent = '⑤ 전환 완료 — 새 탭으로 안정 운전 복귀.';
+    }
+    // 다이버터 시각화에 따라 전이저항 활성화 — d_ic 표시 갱신은 compute()에서
+}
+
+// ===== 계산 =====
+function compute() {
+    state.V1 = +$('v1').value;
+    state.R  = +$('r').value;
+    state.RT = +$('rt').value;
+
+    // AVR 자동
+    if (state.avr && (state.seqStep === 0 || state.seqStep === 5)) {
+        // V₂가 정격 범위 밖이면 다음 탭 선택
+        const dev = (state.V1 / N1_BASE) / (N2_BASE / N1_BASE) - V2_RATED;  // (state.V1 / 1) - V2_RATED with current ratio
+        // 현재 탭의 V2 추정
+        const curK = TAP_PCT[state.tap - 1];
+        const curV2 = state.V1 / (1 + curK);
+        const curDev = (curV2 - V2_RATED) / V2_RATED;
+        if (curDev > 0.025 && state.tap < 5) {
+            // 너무 높음 → 탭 올려 N1↑ → V2↓
+            startSequence(state.tap + 1);
+        } else if (curDev < -0.025 && state.tap > 1) {
+            startSequence(state.tap - 1);
+        }
+    }
+
+    const k = TAP_PCT[state.tap - 1];
+    const N1p = N1_BASE * (1 + k);
+    state.a = N1p / N2_BASE;
+    state.V2 = state.V1 / state.a;
+    state.I2 = state.V2 / state.R;
+    state.I1 = state.I2 / state.a;
+    state.P  = state.V2 * state.I2;
+
+    // 전환중 순환전류 추정 (전이저항 통과 단계)
+    let icirc = 0;
+    if (state.seqStep === 3) {
+        // 인접 탭의 권수비 차에 의한 ΔV
+        const targetK = TAP_PCT[state.nextTap - 1];
+        const targetN1p = N1_BASE * (1 + targetK);
+        const v2target = state.V1 / (targetN1p / N2_BASE);
+        const dV = Math.abs(state.V2 - v2target);
+        icirc = dV / (2 * state.RT);
+    }
+    state.icirc = icirc;
+
+    // UI
+    $('v1Disp').textContent = state.V1.toFixed(0);
+    $('rDisp').textContent  = state.R;
+    $('rtDisp').textContent = state.RT;
+
+    $('tapVal').textContent = `${state.tap} (${TAP_LABEL[state.tap - 1]})`;
+    $('v2Val').textContent = `${state.V2.toFixed(1)} V`;
+    $('i2Val').textContent = `${state.I2.toFixed(2)} A`;
+    $('avrVal').textContent = state.avr ? 'ON · AUTO' : 'OFF · MANUAL';
+
+    $('d_v1').textContent = `${state.V1.toFixed(0)} V`;
+    $('d_n1').textContent = `${Math.round(N1p)} 회`;
+    $('d_v2').textContent = `${state.V2.toFixed(1)} V`;
+    $('d_i2').textContent = `${state.I2.toFixed(2)} A`;
+    $('d_p').textContent  = `${state.P.toFixed(1)} W`;
+    $('d_ic').textContent = icirc > 0 ? `${icirc.toFixed(2)} A` : '0 A';
+
+    // 편차 바
+    const dev = (state.V2 - V2_RATED) / V2_RATED;
+    const devPct = dev * 100;
+    $('devTxt').textContent = `${devPct >= 0 ? '+' : ''}${devPct.toFixed(1)}%`;
+    const devClamp = Math.max(-0.1, Math.min(0.1, dev));
+    const halfW = Math.abs(devClamp) / 0.1 * 50;
+    const fill = $('devFill');
+    if (devClamp >= 0) {
+        fill.style.left = '50%';
+        fill.style.right = 'auto';
+        fill.style.width = `${halfW}%`;
+        fill.style.background = Math.abs(devPct) <= 2.5
+            ? 'linear-gradient(90deg, #6ee7b7, #34d399)'
+            : Math.abs(devPct) <= 5
+            ? 'linear-gradient(90deg, #fcd34d, #f59e0b)'
+            : 'linear-gradient(90deg, #fca5a5, #ef4444)';
+    } else {
+        fill.style.right = '50%';
+        fill.style.left = 'auto';
+        fill.style.width = `${halfW}%`;
+        fill.style.background = Math.abs(devPct) <= 2.5
+            ? 'linear-gradient(270deg, #6ee7b7, #34d399)'
+            : Math.abs(devPct) <= 5
+            ? 'linear-gradient(270deg, #fcd34d, #f59e0b)'
+            : 'linear-gradient(270deg, #fca5a5, #ef4444)';
+    }
+
+    // 상태
+    const sl = $('statusLabel');
+    if (Math.abs(devPct) <= 2.5) {
+        sl.textContent = '정상 (±2.5% 이내)';
+        sl.className = 'font-bold status-good';
+    } else if (Math.abs(devPct) <= 5) {
+        sl.textContent = '주의 (±5% 이내)';
+        sl.className = 'font-bold status-warn';
+    } else {
+        sl.textContent = '불량 (±5% 초과 — 탭 조정 필요)';
+        sl.className = 'font-bold status-bad';
+    }
+
+    // 탭 버튼 활성화 표시
+    document.querySelectorAll('[data-tap]').forEach(b => {
+        b.classList.toggle('active', +b.dataset.tap === state.tap);
+    });
+}
+
+// ===== 애니메이션 =====
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(34, 211, 238, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(34, 211, 238, 0)', duration: 0.6 });
+}
+
+// ===== 이벤트 =====
+['v1', 'r', 'rt'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); });
+});
+
+document.querySelectorAll('[data-tap]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (state.avr) return;  // AVR 자동 모드 시 수동 차단
+        const t = +btn.dataset.tap;
+        if (t === state.tap) return;
+        if (startSequence(t)) flashCard();
+    });
+});
+
+document.querySelectorAll('[data-medium]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const m = btn.dataset.medium;
+        state.medium = m;
+        document.querySelectorAll('[data-medium]').forEach(b => b.classList.toggle('active', b.dataset.medium === m));
+        $('mediumNote').textContent = m === 'OIL'
+            ? '오일 절연: 광유에 침지. 전호 소호 + 절연. 가스 분해물 발생 → 주기 점검 필요.'
+            : '가스 절연 (SF₆/진공): 절연 강도 우수, 분해물 적음. 진공 다이버터는 무유지·고수명.';
+    });
+});
+
+$('avrBtn').addEventListener('click', () => {
+    state.avr = !state.avr;
+    $('avrBtn').classList.toggle('on', state.avr);
+    $('avrBtn').textContent = state.avr ? 'AVR · 자동 전압 조정 ON' : 'AVR · 자동 전압 조정 OFF';
+    compute();
+    flashCard();
+});
+
+// ===== 메인 루프 =====
+function animate() {
+    state.t++;
+    advanceSequence();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBg();
+    drawOltcEnclosure();
+    drawCore();
+    drawACInput();
+    drawPrimaryCoil();
+    drawSecondaryCoil();
+    drawFluxFlow();
+    drawTapTerminals();
+    drawSelector();
+    drawDiverter();
+    drawTransitionResistor();
+    drawLoad();
+    drawV2Gauge();
+
+    // 실시간 순환전류 표시 갱신 (시퀀스 단계 3에서)
+    if (state.seqStep === 3) {
+        // 매 프레임 갱신
+        const targetK = TAP_PCT[state.nextTap - 1];
+        const targetN1p = N1_BASE * (1 + targetK);
+        const v2target = state.V1 / (targetN1p / N2_BASE);
+        const dV = Math.abs(state.V2 - v2target);
+        const icirc = dV / (2 * state.RT);
+        $('d_ic').textContent = `${icirc.toFixed(2)} A`;
+    } else if (state.seqStep === 0) {
+        $('d_ic').textContent = '0 A';
+    }
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    updateStepUI();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

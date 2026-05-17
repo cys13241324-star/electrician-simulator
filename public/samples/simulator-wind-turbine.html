@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>풍력 발전 시뮬레이터 (Wind Turbine · Betz · Cp-λ Curve)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(56, 189, 248, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(110, 231, 183, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(56,189,248,0.45), rgba(110,231,183,0.40), rgba(244,114,182,0.40));
+    box-shadow: 0 30px 100px -20px rgba(56, 189, 248, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 540px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#curveCanvas {
+    display: block;
+    width: 100%;
+    height: 380px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #38bdf8; box-shadow: 0 0 12px #38bdf8;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #38bdf8; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(56,189,248,0.4), rgba(110,231,183,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #bae6fd, #a7f3d0, #fbcfe8);
+    box-shadow: 0 0 22px rgba(125, 211, 252, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(56,189,248,0.06)); border-color: rgba(56,189,248,0.5); color: #7dd3fc; }
+.chip-p { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-r { background: linear-gradient(135deg, rgba(110,231,183,0.22), rgba(110,231,183,0.06)); border-color: rgba(110,231,183,0.5); color: #6ee7b7; }
+.live-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.15); transition: border-color 220ms, box-shadow 220ms; }
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #bae6fd, #a7f3d0, #fbcfe8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(56,189,248,0.18), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(125,211,252,0.35);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+    font-variant-numeric: tabular-nums;
+}
+.preset-btn:hover {
+    border-color: rgba(125, 211, 252, 0.6);
+    color: #bae6fd;
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.3);
+}
+.preset-btn.active {
+    background: linear-gradient(135deg, rgba(56,189,248,0.35), rgba(110,231,183,0.30));
+    border-color: rgba(56,189,248,0.8);
+    color: #bae6fd;
+    box-shadow: 0 0 22px rgba(56,189,248,0.45);
+}
+.yaw-toggle {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.yaw-toggle.on {
+    background: linear-gradient(135deg, rgba(110,231,183,0.30), rgba(56,189,248,0.30));
+    border-color: rgba(110,231,183,0.7);
+    color: #d1fae5;
+    box-shadow: 0 0 22px rgba(110,231,183,0.45);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.status-good { color: #6ee7b7; }
+.status-warn { color: #fcd34d; }
+.status-bad  { color: #fca5a5; }
+.eff-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+}
+.eff-fill {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, #6ee7b7, #34d399, #38bdf8);
+    transition: width 220ms ease;
+}
+.zone-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+}
+.zone-cutin  { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
+.zone-partial{ background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.45); }
+.zone-rated  { background: rgba(110, 231, 183, 0.22); color: #6ee7b7; border: 1px solid rgba(110, 231, 183, 0.5); }
+.zone-cutout { background: rgba(248, 113, 113, 0.22); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-sky-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · WIND TURBINE · BETZ LIMIT · Cp-λ CURVE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-sky-300 via-emerald-200 to-pink-200 bg-clip-text text-transparent">
+            🌬️ 풍력 발전 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">풍속 v에 따른 출력 $P=\tfrac12\rho A v^3 C_p$. 끝속도비(TSR) λ=ωR/v 와 피치각 θ 로 출력계수 $C_p$ 를 최대화 (Betz 한계 0.593).</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">풍속 v</p>
+            <p class="mt-1 text-lg font-bold"><span id="vVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">회전속도 N</p>
+            <p class="mt-1 text-lg font-bold"><span id="rpmVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">출력계수 C_p</p>
+            <p class="mt-1 text-lg font-bold"><span id="cpVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">출력 P</p>
+            <p class="mt-1 text-lg font-bold"><span id="pVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스: 풍력 터빈 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">3엽 블레이드 · 너셀 (기어박스/발전기) · 타워 · 요잉 제어</span>
+                    <span id="zoneBadge" class="zone-pill zone-partial">PARTIAL LOAD</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- Cp-λ 곡선 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="curveCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">C_p–λ 곡선 (피치 θ별) · Betz 한계 · 현재 동작점</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-sky-300"><span class="legend-dot" style="background:#7dd3fc;color:#7dd3fc"></span>현재 θ</span>
+                        <span class="text-slate-300"><span class="legend-dot" style="background:#94a3b8;color:#94a3b8"></span>다른 θ</span>
+                        <span class="text-amber-300"><span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>Betz 0.593</span>
+                        <span class="text-pink-300"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>동작점</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="curveCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-sky-300 to-pink-200 bg-clip-text text-transparent">풍력 발전 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">출력 (Bernoulli)</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$P = \tfrac12 \rho A v^3 C_p$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">끝속도비 (TSR)</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$\lambda = \dfrac{\omega R}{v}$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">Betz 한계</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$C_{p,\max} = \tfrac{16}{27} \approx 0.593$</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-sky-200">변수 조절</h2>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>풍속 v (Wind Speed)</span><span id="vDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="v" min="0" max="30" step="0.5" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">m/s (컷인 3 · 정격 12 · 컷아웃 25)</p>
+            </div>
+
+            <div class="chip-p chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>피치각 θ (Pitch)</span><span id="thDisp" class="font-mono text-base">0</span></label>
+                <input type="range" id="th" min="-5" max="25" step="0.5" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">° (정격 이상에서 θ↑ → C_p↓)</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>발전기 부하 (전기 토크)</span><span id="rDisp" class="font-mono text-base">1.0</span></label>
+                <input type="range" id="r" min="0.3" max="2.5" step="0.05" value="1.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">상대 부하 (1.0 = 정합 · ↑→ ω↓ · ↓→ ω↑)</p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3">
+                <p class="text-[10px] uppercase tracking-widest text-indigo-200 mb-2 font-bold">요잉 제어 (Yaw)</p>
+                <button id="yawBtn" class="yaw-toggle on rounded-md w-full px-3 py-2 text-xs font-bold">YAW · ON (자동 정렬)</button>
+                <p class="text-[10px] text-slate-400 mt-2" id="yawNote">ON: 너셀이 풍향으로 자동 회전 → 입사각 0°.</p>
+                <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+                    <span>요잉 오차 γ</span>
+                    <span id="yawErrDisp" class="font-mono">0°</span>
+                </div>
+            </div>
+
+            <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">바람 프리셋</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="preset-btn rounded-md px-2 py-2 text-xs font-bold" data-preset="calm">🍃 미풍</button>
+                    <button class="preset-btn active rounded-md px-2 py-2 text-xs font-bold" data-preset="nominal">🌬️ 정격</button>
+                    <button class="preset-btn rounded-md px-2 py-2 text-xs font-bold" data-preset="storm">🌪️ 폭풍</button>
+                </div>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 space-y-1.5 text-[11px]">
+                <p class="text-slate-300"><span class="text-sky-300 font-bold">로터</span> · ω=<span id="d_w" class="font-mono">—</span> · TSR λ=<span id="d_lam" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-pink-300 font-bold">C_p</span> · 현재=<span id="d_cp" class="font-mono">—</span> / 최적=<span id="d_cpmax" class="font-mono">—</span></p>
+                <p class="text-slate-300">출력 P=<span id="d_p" class="font-mono">—</span> / 정격=<span id="d_prated" class="font-mono">—</span></p>
+                <div class="mt-2">
+                    <p class="text-[10px] text-slate-400">발전 효율 η = C_p / 0.593</p>
+                    <div class="eff-bar mt-1.5"><div id="effFill" class="eff-fill" style="width:0%"></div></div>
+                </div>
+                <p class="text-slate-400 text-[10px] pt-1 border-t border-white/5">상태: <span id="statusLabel" class="font-bold">대기 중</span></p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed">
+                <p class="text-sky-200 font-bold mb-1">💡 학습 포인트</p>
+                <p id="learnNote" class="text-slate-300">P ∝ v³ — 풍속 2배 시 출력은 8배. 정격(12 m/s) 이상에서는 피치각을 키워 C_p를 의도적으로 낮춰 출력을 정격에 묶음. 컷아웃(25 m/s) 초과 시 안전을 위해 정지.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const curveCanvas = $('curveCanvas');
+const cctx = curveCanvas.getContext('2d');
+
+const TOTAL_H = 540;
+const CURVE_H = 380;
+
+// ===== 풍력 터빈 정격 =====
+const RHO = 1.225;          // 공기 밀도 kg/m³
+const R_BLADE = 45;         // 블레이드 반지름 m (직경 90 m, ~2 MW급)
+const A_SWEPT = Math.PI * R_BLADE * R_BLADE;
+const V_CUT_IN = 3;         // m/s
+const V_RATED = 12;         // m/s
+const V_CUT_OUT = 25;       // m/s
+const P_RATED = 2.0e6;      // W (2 MW)
+const CP_BETZ = 16 / 27;    // 0.5926...
+const GEAR_RATIO = 90;      // 기어박스 (저속축 → 고속축)
+
+// Cp(λ, θ) 모델 — 일반화된 Heier 형태
+// 1/Λ = 1/(λ + 0.08θ) - 0.035/(θ^3 + 1)
+// Cp = 0.5176 (116/Λ - 0.4 θ - 5) e^(-21/Λ) + 0.0068 λ
+function cpModel(lam, theta) {
+    if (lam <= 0) return 0;
+    const inv = 1 / (lam + 0.08 * theta) - 0.035 / (theta * theta * theta + 1);
+    if (inv <= 0) return 0;
+    const Lambda = 1 / inv;
+    let cp = 0.5176 * (116 / Lambda - 0.4 * theta - 5) * Math.exp(-21 / Lambda) + 0.0068 * lam;
+    if (cp < 0) cp = 0;
+    if (cp > CP_BETZ) cp = CP_BETZ;
+    return cp;
+}
+
+let state = {
+    v: 10,
+    theta: 0,
+    load: 1.0,         // 발전기 전기 토크 (상대치)
+    yawOn: true,
+    yawErr: 0,         // 요잉 오차 (deg) — OFF일 때 사용자 유도
+    yawErrTarget: 0,
+    // 로터 동특성
+    omega: 1.5,        // rad/s (저속축)
+    bladeAngle: 0,
+    cloudX: [0.15, 0.55, 0.82],
+    t: 0
+};
+
+let layout = {};
+let curveLayout = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    curveCanvas.width = curveCanvas.parentElement.clientWidth - 2;
+    curveCanvas.height = CURVE_H;
+    computeLayout();
+    computeCurveLayout();
+}
+window.addEventListener('resize', resize);
+
+function computeLayout() {
+    const W = canvas.width;
+    const H = TOTAL_H;
+    // 지면 라인
+    layout.ground = H * 0.86;
+    // 터빈 (중앙)
+    const towerH = H * 0.58;
+    const hubCx = W * 0.55;
+    const hubCy = layout.ground - towerH;
+    const rotorR = Math.min(W * 0.18, H * 0.28);
+    layout.tower = {
+        topCx: hubCx,
+        topY: hubCy + 4,
+        botY: layout.ground,
+        topW: 14,
+        botW: 36
+    };
+    layout.hub = { cx: hubCx, cy: hubCy, r: 18 };
+    layout.rotor = { cx: hubCx, cy: hubCy, R: rotorR };
+    layout.nacelle = { cx: hubCx + 22, cy: hubCy, w: 70, h: 36 };
+    // 풍속 화살표 영역 (왼쪽)
+    layout.wind = { x0: 20, x1: W * 0.32, y0: H * 0.18, y1: H * 0.72 };
+    // 풍속 게이지 (오른쪽 상단)
+    layout.gauge = { cx: W - 80, cy: 80, r: 50 };
+}
+
+function computeCurveLayout() {
+    const W = curveCanvas.width;
+    const H = CURVE_H;
+    curveLayout = {
+        x0: 60,
+        y0: H - 50,
+        x1: W - 60,
+        y1: 30,
+        get plotW() { return this.x1 - this.x0; },
+        get plotH() { return this.y0 - this.y1; }
+    };
+}
+
+// ===== 물리 계산 =====
+function computeAero() {
+    // 풍속이 컷인 미만이면 정지
+    const v = state.v;
+    if (v < V_CUT_IN) {
+        state.omega = Math.max(0, state.omega * 0.96);
+        return { lam: 0, cp: 0, P: 0, P_mech: 0, zone: 'cutin' };
+    }
+    if (v > V_CUT_OUT) {
+        state.omega = Math.max(0, state.omega * 0.94);
+        return { lam: 0, cp: 0, P: 0, P_mech: 0, zone: 'cutout' };
+    }
+
+    // 요잉 오차에 의한 코사인 손실 (cos³)
+    const yawRad = (state.yawErr * Math.PI) / 180;
+    const yawLoss = Math.pow(Math.max(0, Math.cos(yawRad)), 3);
+    const v_eff = v * Math.pow(yawLoss, 1 / 3); // P ∝ v_eff^3 가 yawLoss 만큼 감소되도록
+
+    // 현재 ω에서의 λ
+    const lam = (state.omega * R_BLADE) / Math.max(v_eff, 0.1);
+    let cp = cpModel(lam, state.theta);
+
+    // 기계 출력 (블레이드가 추출한 동력)
+    const P_avail = 0.5 * RHO * A_SWEPT * Math.pow(v_eff, 3);
+    let P_mech = P_avail * cp;
+    // 정격 제한 (피치 안 한 경우에도 발전기 자체가 정격에서 클램프)
+    if (P_mech > P_RATED * 1.3) P_mech = P_RATED * 1.3;
+
+    // 발전기 부하 토크 (간단 모델): T_load ∝ load * ω
+    // 풍력 토크 T_wind = P_mech / ω
+    // 정상상태: T_wind = T_load → ω 조정
+    // 시뮬은 동적: dω/dt = (T_wind - T_load) / J
+    const J = 5e5;   // 환산 관성 (저속축 기준)
+    const T_wind = state.omega > 0.05 ? P_mech / state.omega : P_mech * 2;
+    const T_load = state.load * 3.5e4 * state.omega;  // 부하 비례 + 마찰
+    const dOmega = (T_wind - T_load) / J;
+    // dt를 매 프레임 ~16ms = 0.016s. 한 프레임당 약간만 변하도록 스케일.
+    state.omega = Math.max(0, state.omega + dOmega * 1.2);
+    // 컷인 미만이면 ω도 0으로 풀다운, 컷아웃 초과면 브레이크
+    if (state.omega < 0.05) state.omega = 0;
+    // 상한 (안전)
+    if (state.omega > 6) state.omega = 6;
+
+    // 정격 이상 풍속에서는 출력을 정격에 클램프
+    let P = P_mech;
+    if (P > P_RATED) P = P_RATED;
+
+    // zone 판정
+    let zone;
+    if (v < V_CUT_IN) zone = 'cutin';
+    else if (v < V_RATED) zone = 'partial';
+    else if (v <= V_CUT_OUT) zone = 'rated';
+    else zone = 'cutout';
+
+    return { lam, cp, P, P_mech, zone };
+}
+
+// ===== 그리기 유틸 =====
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function badgeText(ctx, text, x, y, color, font = 'bold 11px ui-monospace, monospace', bg = 'rgba(15, 23, 42, 0.92)') {
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = bg;
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// ===== 메인 캔버스 =====
+function drawBg() {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
+    g.addColorStop(0, '#0a1024');
+    g.addColorStop(0.6, '#0d1430');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, TOTAL_H);
+    // 지평선 (언덕)
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
+    ctx.beginPath();
+    ctx.moveTo(0, layout.ground);
+    ctx.bezierCurveTo(canvas.width * 0.25, layout.ground - 24, canvas.width * 0.55, layout.ground + 6, canvas.width, layout.ground - 14);
+    ctx.lineTo(canvas.width, TOTAL_H);
+    ctx.lineTo(0, TOTAL_H);
+    ctx.closePath();
+    ctx.fill();
+    // 지면 그라데이션
+    const gG = ctx.createLinearGradient(0, layout.ground - 10, 0, TOTAL_H);
+    gG.addColorStop(0, 'rgba(15, 23, 42, 0)');
+    gG.addColorStop(1, 'rgba(15, 23, 42, 0.8)');
+    ctx.fillStyle = gG;
+    ctx.fillRect(0, layout.ground - 10, canvas.width, TOTAL_H);
+
+    // 그리드
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TOTAL_H); ctx.stroke();
+    }
+    for (let i = 0; i < TOTAL_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`▮ WIND · v=${state.v.toFixed(1)} m/s · θ=${state.theta.toFixed(1)}° · YAW ${state.yawOn ? 'ON' : 'OFF'} · γ=${state.yawErr.toFixed(1)}°`, 12, 10);
+    ctx.restore();
+}
+
+function drawClouds() {
+    const intensity = Math.min(1, state.v / V_RATED);
+    const speed = 0.0007 * Math.max(state.v, 0.5);
+    ctx.save();
+    for (let i = 0; i < state.cloudX.length; i++) {
+        state.cloudX[i] += speed;
+        if (state.cloudX[i] > 1.1) state.cloudX[i] = -0.1;
+        const cx = state.cloudX[i] * canvas.width;
+        const cy = (0.10 + 0.06 * i) * TOTAL_H;
+        ctx.fillStyle = `rgba(148, 163, 184, ${0.15 + 0.10 * intensity})`;
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = 'rgba(148, 163, 184, 0.25)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+        ctx.arc(cx + 22, cy + 4, 22, 0, Math.PI * 2);
+        ctx.arc(cx + 48, cy, 16, 0, Math.PI * 2);
+        ctx.arc(cx + 18, cy - 10, 14, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawWindArrows() {
+    const w = layout.wind;
+    const intensity = Math.min(1, state.v / V_CUT_OUT);
+    if (state.v < 0.5) return;
+    ctx.save();
+    const rows = 7;
+    for (let i = 0; i < rows; i++) {
+        const y = w.y0 + (w.y1 - w.y0) * (i / (rows - 1));
+        const phase = (state.t * 0.012 * Math.max(state.v, 1) + i * 0.37) % 1;
+        const len = 40 + 70 * intensity;
+        const x = w.x0 + (w.x1 - w.x0 - len) * phase;
+        const alpha = 0.25 + 0.55 * intensity * Math.sin(phase * Math.PI);
+        ctx.strokeStyle = `rgba(125, 211, 252, ${alpha})`;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + len, y);
+        ctx.stroke();
+        // 화살촉
+        ctx.beginPath();
+        ctx.moveTo(x + len, y);
+        ctx.lineTo(x + len - 7, y - 4);
+        ctx.moveTo(x + len, y);
+        ctx.lineTo(x + len - 7, y + 4);
+        ctx.stroke();
+    }
+    // 라벨
+    badgeText(ctx, `WIND → ${state.v.toFixed(1)} m/s`, (w.x0 + w.x1) / 2, w.y0 - 10, '#7dd3fc');
+    ctx.restore();
+}
+
+function drawWindGauge() {
+    const g = layout.gauge;
+    ctx.save();
+    // 외곽
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(125, 211, 252, 0.45)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, g.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.55)';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 눈금 (0 ~ 30 m/s, 좌측 -135° ~ 우측 +135°)
+    const start = -Math.PI * 0.75;
+    const end   =  Math.PI * 0.75;
+    for (let i = 0; i <= 6; i++) {
+        const ang = start + ((end - start) * i) / 6;
+        const r1 = g.r - 4, r2 = g.r - 14;
+        ctx.strokeStyle = 'rgba(203, 213, 225, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(g.cx + Math.cos(ang) * r1, g.cy + Math.sin(ang) * r1);
+        ctx.lineTo(g.cx + Math.cos(ang) * r2, g.cy + Math.sin(ang) * r2);
+        ctx.stroke();
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const lbl = String((30 / 6) * i);
+        ctx.fillText(lbl, g.cx + Math.cos(ang) * (r2 - 10), g.cy + Math.sin(ang) * (r2 - 10));
+    }
+    // 컷인/정격/컷아웃 영역
+    const zones = [
+        { from: 0,            to: V_CUT_IN,     color: 'rgba(148, 163, 184, 0.25)' },
+        { from: V_CUT_IN,     to: V_RATED,      color: 'rgba(56, 189, 248, 0.30)' },
+        { from: V_RATED,      to: V_CUT_OUT,    color: 'rgba(110, 231, 183, 0.30)' },
+        { from: V_CUT_OUT,    to: 30,           color: 'rgba(248, 113, 113, 0.30)' },
+    ];
+    for (const z of zones) {
+        const a0 = start + ((end - start) * z.from) / 30;
+        const a1 = start + ((end - start) * z.to) / 30;
+        ctx.strokeStyle = z.color;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(g.cx, g.cy, g.r - 22, a0, a1);
+        ctx.stroke();
+    }
+    // 바늘
+    const vc = Math.min(30, Math.max(0, state.v));
+    const angV = start + ((end - start) * vc) / 30;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#7dd3fc';
+    ctx.strokeStyle = '#bae6fd';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(g.cx, g.cy);
+    ctx.lineTo(g.cx + Math.cos(angV) * (g.r - 16), g.cy + Math.sin(angV) * (g.r - 16));
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#7dd3fc';
+    ctx.beginPath();
+    ctx.arc(g.cx, g.cy, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // 라벨
+    ctx.fillStyle = '#bae6fd';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${state.v.toFixed(1)} m/s`, g.cx, g.cy + g.r - 8);
+    ctx.restore();
+}
+
+function drawTower() {
+    const t = layout.tower;
+    ctx.save();
+    // 그림자
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    // 타워는 사다리꼴 (위가 좁고 아래가 넓음)
+    const gT = ctx.createLinearGradient(t.topCx - t.botW/2, 0, t.topCx + t.botW/2, 0);
+    gT.addColorStop(0, '#475569');
+    gT.addColorStop(0.5, '#cbd5e1');
+    gT.addColorStop(1, '#334155');
+    ctx.fillStyle = gT;
+    ctx.beginPath();
+    ctx.moveTo(t.topCx - t.topW/2, t.topY);
+    ctx.lineTo(t.topCx + t.topW/2, t.topY);
+    ctx.lineTo(t.topCx + t.botW/2, t.botY);
+    ctx.lineTo(t.topCx - t.botW/2, t.botY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // 타워 라인
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(t.topCx, t.topY);
+    ctx.lineTo(t.topCx, t.botY);
+    ctx.stroke();
+    // 베이스
+    ctx.fillStyle = '#1e293b';
+    roundRect(ctx, t.topCx - t.botW/2 - 8, t.botY - 4, t.botW + 16, 10, 3);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawNacelle() {
+    const n = layout.nacelle;
+    const hub = layout.hub;
+    ctx.save();
+    // 너셀 본체 (요잉 오차만큼 회전)
+    ctx.translate(hub.cx, hub.cy);
+    const yawRad = (state.yawErr * Math.PI) / 180;
+    ctx.rotate(yawRad);
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(125, 211, 252, 0.35)';
+    const gN = ctx.createLinearGradient(0, -n.h/2, 0, n.h/2);
+    gN.addColorStop(0, '#cbd5e1');
+    gN.addColorStop(0.5, '#94a3b8');
+    gN.addColorStop(1, '#475569');
+    ctx.fillStyle = gN;
+    // 후방 (허브 뒤쪽으로 연장)
+    roundRect(ctx, 6, -n.h/2, n.w, n.h, 12);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 너셀 내부 SVG-스타일 (기어박스/발전기)
+    // 기어박스 (저속 큰 톱니바퀴 + 고속 작은 톱니바퀴)
+    drawGear(ctx, 22, 0, 8, 12, state.bladeAngle, '#fbbf24');           // 저속 기어
+    drawGear(ctx, 42, 0, 5, 8, -state.bladeAngle * GEAR_RATIO * 0.3, '#fde68a');   // 고속 기어
+    // 발전기 (코일/원통)
+    ctx.fillStyle = '#10b981';
+    ctx.shadowBlur = state.omega > 0.1 ? 12 : 0;
+    ctx.shadowColor = '#34d399';
+    roundRect(ctx, 54, -8, 18, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const xC = 56 + i * 4;
+        ctx.moveTo(xC, -8);
+        ctx.lineTo(xC, 8);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // 발전기 라벨 (G)
+    ctx.fillStyle = '#d1fae5';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('G', 63, 0);
+
+    ctx.restore();
+
+    // 너셀 라벨 (회전 좌표계 밖)
+    badgeText(ctx, `너셀 (기어박스·G)`, hub.cx + n.w/2 + 12, hub.cy - n.h/2 - 14, '#cbd5e1', 'bold 10px ui-monospace, monospace');
+}
+
+function drawGear(ctx, x, y, innerR, outerR, ang, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
+    const teeth = 10;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    for (let i = 0; i < teeth * 2; i++) {
+        const r = (i % 2 === 0) ? outerR : outerR - 2;
+        const a = (i / (teeth * 2)) * Math.PI * 2;
+        const xT = Math.cos(a) * r;
+        const yT = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(xT, yT); else ctx.lineTo(xT, yT);
+    }
+    ctx.closePath();
+    ctx.fill();
+    // 중앙 구멍
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(0, 0, innerR * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawBlades() {
+    const r = layout.rotor;
+    ctx.save();
+    ctx.translate(r.cx, r.cy);
+    const yawRad = (state.yawErr * Math.PI) / 180;
+    ctx.rotate(yawRad);
+
+    // 3엽 블레이드
+    for (let i = 0; i < 3; i++) {
+        ctx.save();
+        const a = state.bladeAngle + (i * Math.PI * 2) / 3;
+        ctx.rotate(a);
+        // 블레이드 그림자
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = 'rgba(125, 211, 252, 0.45)';
+        // 블레이드 본체 (테이퍼)
+        const gB = ctx.createLinearGradient(0, -r.R, 0, 0);
+        gB.addColorStop(0, '#e2e8f0');
+        gB.addColorStop(0.5, '#cbd5e1');
+        gB.addColorStop(1, '#94a3b8');
+        ctx.fillStyle = gB;
+        ctx.beginPath();
+        ctx.moveTo(-4, 0);
+        ctx.quadraticCurveTo(-9, -r.R * 0.45, -4, -r.R);
+        ctx.quadraticCurveTo(0, -r.R - 4, 4, -r.R);
+        ctx.quadraticCurveTo(9, -r.R * 0.45, 4, 0);
+        ctx.closePath();
+        ctx.fill();
+        // 피치각 표시 (블레이드 끝 마커)
+        if (Math.abs(state.theta) > 0.5) {
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = state.theta > 0 ? 'rgba(244, 114, 182, 0.85)' : 'rgba(110, 231, 183, 0.85)';
+            ctx.beginPath();
+            ctx.arc(0, -r.R + 6, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // 블레이드 라인
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -r.R + 4);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 허브
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#fbbf24';
+    const gH = ctx.createRadialGradient(-3, -3, 2, 0, 0, layout.hub.r);
+    gH.addColorStop(0, '#fef3c7');
+    gH.addColorStop(0.6, '#fbbf24');
+    gH.addColorStop(1, '#b45309');
+    ctx.fillStyle = gH;
+    ctx.beginPath();
+    ctx.arc(0, 0, layout.hub.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // 허브 중심 점
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // 블레이드 잔상 / 회전 잔영 (고속 회전 시)
+    if (state.omega > 1.5) {
+        ctx.save();
+        ctx.translate(r.cx, r.cy);
+        ctx.globalAlpha = Math.min(0.18, (state.omega - 1.5) * 0.06);
+        ctx.fillStyle = 'rgba(125, 211, 252, 0.4)';
+        ctx.beginPath();
+        ctx.arc(0, 0, r.R, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // 라벨 (반지름)
+    badgeText(ctx, `R = ${R_BLADE} m`, r.cx, r.cy + r.R + 18, '#bae6fd');
+}
+
+function drawTransmissionLine() {
+    // 너셀 → 지면 (케이블) → 외부 (라인 끝에 송전탑 아이콘)
+    const hub = layout.hub;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.65)';
+    ctx.lineWidth = 1.6;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#fbbf24';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(hub.cx + 4, hub.cy + 8);
+    ctx.lineTo(hub.cx + 4, layout.ground - 6);
+    ctx.lineTo(canvas.width - 30, layout.ground - 6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+    // 끝 송전 아이콘
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(canvas.width - 30, layout.ground - 6, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    badgeText(ctx, '계통', canvas.width - 38, layout.ground - 24, '#fcd34d', 'bold 9px ui-monospace, monospace');
+}
+
+// ===== Cp-λ 곡선 =====
+function drawCurveBg() {
+    cctx.save();
+    const g = cctx.createLinearGradient(0, 0, 0, CURVE_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    cctx.fillStyle = g;
+    cctx.fillRect(0, 0, curveCanvas.width, CURVE_H);
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+    cctx.lineWidth = 1;
+    const L = curveLayout;
+    for (let i = 0; i <= 10; i++) {
+        const x = L.x0 + (L.plotW * i) / 10;
+        cctx.beginPath(); cctx.moveTo(x, L.y1); cctx.lineTo(x, L.y0); cctx.stroke();
+    }
+    for (let i = 0; i <= 8; i++) {
+        const y = L.y1 + (L.plotH * i) / 8;
+        cctx.beginPath(); cctx.moveTo(L.x0, y); cctx.lineTo(L.x1, y); cctx.stroke();
+    }
+    cctx.restore();
+}
+
+function drawCurveAxes(LamMax, CpMax) {
+    const L = curveLayout;
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+    cctx.lineWidth = 1.5;
+    cctx.beginPath();
+    cctx.moveTo(L.x0, L.y1 - 6);
+    cctx.lineTo(L.x0, L.y0);
+    cctx.lineTo(L.x1, L.y0);
+    cctx.stroke();
+
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.fillStyle = '#94a3b8';
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'top';
+    for (let i = 0; i <= 5; i++) {
+        const lam = (LamMax * i) / 5;
+        const x = L.x0 + (L.plotW * i) / 5;
+        cctx.fillText(lam.toFixed(1), x, L.y0 + 6);
+    }
+    cctx.fillText('λ = ωR / v', (L.x0 + L.x1) / 2, L.y0 + 24);
+
+    cctx.textAlign = 'right';
+    cctx.textBaseline = 'middle';
+    cctx.fillStyle = '#94a3b8';
+    for (let i = 0; i <= 5; i++) {
+        const cp = (CpMax * i) / 5;
+        const y = L.y0 - (L.plotH * i) / 5;
+        cctx.fillText(cp.toFixed(2), L.x0 - 6, y);
+    }
+    cctx.save();
+    cctx.translate(L.x0 - 42, (L.y0 + L.y1) / 2);
+    cctx.rotate(-Math.PI / 2);
+    cctx.textAlign = 'center';
+    cctx.fillText('C_p', 0, 0);
+    cctx.restore();
+    cctx.restore();
+}
+
+function drawCpCurves(currentLam, currentCp) {
+    const L = curveLayout;
+    const LamMax = 14;
+    const CpMax = 0.65;
+    const X = lam => L.x0 + (lam / LamMax) * L.plotW;
+    const Y = cp => L.y0 - (cp / CpMax) * L.plotH;
+
+    drawCurveBg();
+    drawCurveAxes(LamMax, CpMax);
+
+    // Betz 한계 가로선
+    cctx.save();
+    cctx.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+    cctx.setLineDash([6, 4]);
+    cctx.lineWidth = 1.6;
+    cctx.beginPath();
+    cctx.moveTo(L.x0, Y(CP_BETZ));
+    cctx.lineTo(L.x1, Y(CP_BETZ));
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.fillStyle = '#fbbf24';
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.textAlign = 'right';
+    cctx.fillText(`Betz 한계 C_p = 0.593`, L.x1 - 8, Y(CP_BETZ) - 6);
+    cctx.restore();
+
+    // 다른 피치각 곡선 (회색)
+    const others = [-2, 5, 10, 15, 20];
+    for (const th of others) {
+        if (Math.abs(th - state.theta) < 0.6) continue;
+        cctx.save();
+        cctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        cctx.lineWidth = 1.2;
+        cctx.beginPath();
+        let first = true;
+        for (let i = 0; i <= 100; i++) {
+            const lam = (LamMax * i) / 100;
+            const cp = cpModel(lam, th);
+            const x = X(lam), y = Y(cp);
+            if (first) { cctx.moveTo(x, y); first = false; } else cctx.lineTo(x, y);
+        }
+        cctx.stroke();
+        // 라벨
+        const peakIdx = findCpPeak(th, LamMax);
+        cctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        cctx.font = '9px ui-monospace, monospace';
+        cctx.textAlign = 'left';
+        cctx.fillText(`θ=${th}°`, X(peakIdx.lam) + 4, Y(peakIdx.cp) - 2);
+        cctx.restore();
+    }
+
+    // 현재 피치각 곡선 (강조)
+    cctx.save();
+    cctx.shadowBlur = 14;
+    cctx.shadowColor = 'rgba(56, 189, 248, 0.6)';
+    cctx.strokeStyle = 'rgba(125, 211, 252, 0.95)';
+    cctx.lineWidth = 2.6;
+    cctx.beginPath();
+    let first = true;
+    for (let i = 0; i <= 140; i++) {
+        const lam = (LamMax * i) / 140;
+        const cp = cpModel(lam, state.theta);
+        const x = X(lam), y = Y(cp);
+        if (first) { cctx.moveTo(x, y); first = false; } else cctx.lineTo(x, y);
+    }
+    cctx.stroke();
+    cctx.shadowBlur = 0;
+    // 피크 마커
+    const peak = findCpPeak(state.theta, LamMax);
+    cctx.fillStyle = '#bae6fd';
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.textAlign = 'left';
+    cctx.fillText(`θ=${state.theta.toFixed(1)}° · peak λ=${peak.lam.toFixed(2)} · C_p=${peak.cp.toFixed(3)}`, X(peak.lam) + 6, Y(peak.cp) - 8);
+    cctx.beginPath();
+    cctx.arc(X(peak.lam), Y(peak.cp), 4, 0, Math.PI * 2);
+    cctx.fill();
+    cctx.restore();
+
+    // 현재 동작점
+    if (currentLam > 0 && currentLam <= LamMax) {
+        cctx.save();
+        cctx.shadowBlur = 16;
+        cctx.shadowColor = '#f472b6';
+        cctx.fillStyle = '#f9a8d4';
+        cctx.beginPath();
+        cctx.arc(X(currentLam), Y(currentCp), 6, 0, Math.PI * 2);
+        cctx.fill();
+        cctx.shadowBlur = 0;
+        cctx.strokeStyle = 'rgba(244, 114, 182, 0.55)';
+        cctx.setLineDash([3, 3]);
+        cctx.lineWidth = 1.2;
+        cctx.beginPath();
+        cctx.moveTo(X(currentLam), L.y0);
+        cctx.lineTo(X(currentLam), Y(currentCp));
+        cctx.moveTo(L.x0, Y(currentCp));
+        cctx.lineTo(X(currentLam), Y(currentCp));
+        cctx.stroke();
+        cctx.setLineDash([]);
+        cctx.font = 'bold 10px ui-monospace, monospace';
+        cctx.fillStyle = '#f472b6';
+        cctx.textAlign = 'center';
+        cctx.fillText(`λ=${currentLam.toFixed(2)} · C_p=${currentCp.toFixed(3)}`, X(currentLam), L.y0 + 18);
+        cctx.restore();
+    }
+}
+
+function findCpPeak(theta, LamMax) {
+    let best = { lam: 0, cp: 0 };
+    for (let i = 0; i <= 140; i++) {
+        const lam = (LamMax * i) / 140;
+        const cp = cpModel(lam, theta);
+        if (cp > best.cp) best = { lam, cp };
+    }
+    return best;
+}
+
+// ===== 메인 갱신 =====
+let lastAero = { lam: 0, cp: 0, P: 0, P_mech: 0, zone: 'partial' };
+
+function compute() {
+    state.v = +$('v').value;
+    state.theta = +$('th').value;
+    state.load = +$('r').value;
+
+    $('vDisp').textContent = state.v.toFixed(1);
+    $('thDisp').textContent = state.theta.toFixed(1);
+    $('rDisp').textContent = state.load.toFixed(2);
+
+    // 요잉 오차 목표
+    if (state.yawOn) {
+        state.yawErrTarget = 0;
+    }
+    // 부드럽게 수렴
+    state.yawErr += (state.yawErrTarget - state.yawErr) * 0.08;
+    if (Math.abs(state.yawErr) < 0.01) state.yawErr = 0;
+    $('yawErrDisp').textContent = `${state.yawErr.toFixed(1)}°`;
+
+    const aero = computeAero();
+    lastAero = aero;
+
+    // 회전속도 표시 (저속축 RPM)
+    const rpm = (state.omega * 60) / (2 * Math.PI);
+    const peak = findCpPeak(state.theta, 14);
+
+    // 라이브 4칩
+    $('vVal').textContent = `${state.v.toFixed(1)} m/s`;
+    $('rpmVal').textContent = `${rpm.toFixed(1)} RPM`;
+    $('cpVal').textContent = aero.cp.toFixed(3);
+    $('pVal').textContent = aero.P >= 1e6 ? `${(aero.P / 1e6).toFixed(2)} MW` : `${(aero.P / 1e3).toFixed(1)} kW`;
+
+    // 디테일
+    $('d_w').textContent = `${state.omega.toFixed(2)} rad/s`;
+    $('d_lam').textContent = aero.lam.toFixed(2);
+    $('d_cp').textContent = aero.cp.toFixed(3);
+    $('d_cpmax').textContent = peak.cp.toFixed(3);
+    $('d_p').textContent = aero.P >= 1e6 ? `${(aero.P / 1e6).toFixed(2)} MW` : `${(aero.P / 1e3).toFixed(1)} kW`;
+    $('d_prated').textContent = `${(P_RATED / 1e6).toFixed(1)} MW`;
+
+    // 효율 바 (C_p / Betz)
+    const eff = (aero.cp / CP_BETZ) * 100;
+    $('effFill').style.width = `${Math.min(100, Math.max(0, eff))}%`;
+
+    // 영역 배지
+    const z = $('zoneBadge');
+    z.classList.remove('zone-cutin', 'zone-partial', 'zone-rated', 'zone-cutout');
+    if (aero.zone === 'cutin') { z.classList.add('zone-cutin'); z.textContent = `CUT-IN · v < ${V_CUT_IN}`; }
+    else if (aero.zone === 'partial') { z.classList.add('zone-partial'); z.textContent = 'PARTIAL LOAD · C_p 최대화'; }
+    else if (aero.zone === 'rated') { z.classList.add('zone-rated'); z.textContent = `RATED · P = ${(P_RATED/1e6).toFixed(1)} MW 클램프`; }
+    else { z.classList.add('zone-cutout'); z.textContent = `CUT-OUT · v > ${V_CUT_OUT} (정지)`; }
+
+    // 상태 라벨
+    const sl = $('statusLabel');
+    if (aero.zone === 'cutin') {
+        sl.textContent = '컷인 미만 — 발전 정지';
+        sl.className = 'font-bold status-bad';
+    } else if (aero.zone === 'cutout') {
+        sl.textContent = '컷아웃 초과 — 비상 정지';
+        sl.className = 'font-bold status-bad';
+    } else if (aero.zone === 'rated') {
+        sl.textContent = '정격 운전 (피치 제어로 출력 제한)';
+        sl.className = 'font-bold status-good';
+    } else {
+        if (eff >= 90) {
+            sl.textContent = `최적 추종 (η = ${eff.toFixed(0)}%)`;
+            sl.className = 'font-bold status-good';
+        } else if (eff >= 60) {
+            sl.textContent = `부분 부하 운전 (η = ${eff.toFixed(0)}%)`;
+            sl.className = 'font-bold status-warn';
+        } else {
+            sl.textContent = `λ 부정합 (η = ${eff.toFixed(0)}%)`;
+            sl.className = 'font-bold status-bad';
+        }
+    }
+}
+
+// ===== 애니메이션 =====
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(125, 211, 252, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(125, 211, 252, 0)', duration: 0.6 });
+}
+
+// ===== 이벤트 =====
+['v', 'th', 'r'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        compute();
+        flashCard();
+    });
+});
+
+$('yawBtn').addEventListener('click', () => {
+    state.yawOn = !state.yawOn;
+    $('yawBtn').classList.toggle('on', state.yawOn);
+    $('yawBtn').textContent = state.yawOn ? 'YAW · ON (자동 정렬)' : 'YAW · OFF (수동 — 오차 25°)';
+    $('yawNote').textContent = state.yawOn
+        ? 'ON: 너셀이 풍향으로 자동 회전 → 입사각 0°.'
+        : 'OFF: 풍향이 어긋나면 유효 풍속이 cos γ 만큼 감소 (P ∝ cos³γ).';
+    state.yawErrTarget = state.yawOn ? 0 : 25;
+    $('learnNote').textContent = state.yawOn
+        ? 'P ∝ v³ — 풍속 2배 시 출력은 8배. 정격 이상에서는 피치각을 키워 C_p를 의도적으로 낮춰 출력을 정격에 묶음. 컷아웃 초과 시 안전 정지.'
+        : '요잉 오차 γ가 있으면 회전면에 수직으로 들어오는 유효 풍속이 v·cos γ로 감소 → 출력은 약 cos³γ 비율로 줄어듦. 25° 어긋남 시 약 26% 손실.';
+    compute();
+    flashCard();
+});
+
+const presets = {
+    calm:    { v: 5,  th: 0,  r: 0.8 },
+    nominal: { v: 12, th: 0,  r: 1.0 },
+    storm:   { v: 22, th: 18, r: 1.4 }
+};
+document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const k = btn.dataset.preset;
+        const p = presets[k];
+        $('v').value = p.v;
+        $('th').value = p.th;
+        $('r').value = p.r;
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('active', b === btn));
+        compute();
+        flashCard();
+    });
+});
+
+// ===== 메인 루프 =====
+function animate() {
+    state.t++;
+    // 블레이드 각도 갱신 (ω rad/s * dt)
+    state.bladeAngle += state.omega * 0.016;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawClouds();
+    drawWindArrows();
+    drawTower();
+    drawBlades();
+    drawNacelle();
+    drawTransmissionLine();
+    drawWindGauge();
+
+    // Cp-λ 곡선
+    cctx.clearRect(0, 0, curveCanvas.width, CURVE_H);
+    drawCpCurves(lastAero.lam, lastAero.cp);
+
+    // 매 프레임 물리 계산 (ω 동특성)
+    if (state.t % 2 === 0) compute();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#curveCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

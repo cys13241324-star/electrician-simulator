@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마이크로그리드 (Microgrid) 시뮬레이터 · 계통연계 / 자립운전 · PV · 풍력 · ESS · 디젤</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 197, 94, 0.10), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(34,211,238,0.45), rgba(244,114,182,0.40));
+    box-shadow: 0 30px 100px -20px rgba(34, 211, 238, 0.35);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 600px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#freqCanvas {
+    display: block;
+    width: 100%;
+    height: 280px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #67e8f9; box-shadow: 0 0 12px #67e8f9;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #67e8f9; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,211,238,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #86efac, #67e8f9, #f9a8d4);
+    box-shadow: 0 0 22px rgba(103, 232, 249, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-pv   { background: linear-gradient(135deg, rgba(252,211,77,0.22), rgba(252,211,77,0.06));  border-color: rgba(252,211,77,0.5);  color: #fde68a; }
+.chip-wind { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-load { background: linear-gradient(135deg, rgba(165,180,252,0.22),rgba(165,180,252,0.06));border-color: rgba(165,180,252,0.5);color: #a5b4fc; }
+.chip-ess  { background: linear-gradient(135deg, rgba(34,197,94,0.22),  rgba(34,197,94,0.06));  border-color: rgba(34,197,94,0.5);  color: #86efac; }
+.chip-grid { background: linear-gradient(135deg, rgba(244,114,182,0.22),rgba(244,114,182,0.06));border-color: rgba(244,114,182,0.5);color: #f9a8d4; }
+.chip-mode { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.ok    { border-color: rgba(110, 231, 183, 0.7); box-shadow: 0 0 24px rgba(110, 231, 183, 0.45); }
+.live-pill.warn  { border-color: rgba(245, 158, 11, 0.7);  box-shadow: 0 0 22px rgba(245, 158, 11, 0.45); }
+.live-pill.danger{ border-color: rgba(244, 63, 94, 0.7);   box-shadow: 0 0 22px rgba(244, 63, 94, 0.45); }
+.live-pill.island{ border-color: rgba(168, 85, 247, 0.7);  box-shadow: 0 0 24px rgba(168, 85, 247, 0.45); }
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #86efac, #67e8f9, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(34,211,238,0.16), rgba(34,197,94,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(103, 232, 249, 0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(103, 232, 249, 0.4);
+}
+.preset-btn {
+    background: rgba(34, 211, 238, 0.16);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(34, 211, 238, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.4);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    font-size: 11px;
+}
+.mode-btn:hover {
+    border-color: rgba(103, 232, 249, 0.5);
+    color: #fff;
+}
+.mode-btn.active.tied {
+    background: linear-gradient(135deg, rgba(244,114,182,0.4), rgba(168,85,247,0.4));
+    border-color: rgba(244, 114, 182, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(244, 114, 182, 0.5);
+}
+.mode-btn.active.island {
+    background: linear-gradient(135deg, rgba(168,85,247,0.4), rgba(34,211,238,0.4));
+    border-color: rgba(196, 181, 253, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.5);
+}
+.mode-btn.active.auto {
+    background: linear-gradient(135deg, rgba(34,197,94,0.4), rgba(34,211,238,0.4));
+    border-color: rgba(110, 231, 183, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.5);
+}
+.toggle-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #cbd5e1;
+    transition: all 200ms;
+    font-size: 11px;
+}
+.toggle-btn.on {
+    background: linear-gradient(135deg, rgba(34,197,94,0.35), rgba(110,231,183,0.20));
+    border-color: rgba(110, 231, 183, 0.85);
+    color: #d1fae5;
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.45);
+}
+.toggle-btn.off {
+    background: linear-gradient(135deg, rgba(244,63,94,0.35), rgba(248,113,113,0.20));
+    border-color: rgba(248, 113, 113, 0.85);
+    color: #fecaca;
+    box-shadow: 0 0 16px rgba(244, 63, 94, 0.45);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.5), transparent);
+}
+.state-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.state-standby { background: rgba(148,163,184,0.18); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.45); }
+.state-sync    { background: rgba(252,211,77,0.18);  color: #fde68a; border: 1px solid rgba(252,211,77,0.45); }
+.state-island  { background: rgba(168,85,247,0.18);  color: #c4b5fd; border: 1px solid rgba(168,85,247,0.45); }
+.state-return  { background: rgba(34,211,238,0.18);  color: #67e8f9; border: 1px solid rgba(34,211,238,0.45); }
+.state-tied    { background: rgba(244,114,182,0.18); color: #f9a8d4; border: 1px solid rgba(244,114,182,0.45); }
+.tag {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.tag-pcc  { background: rgba(244, 114, 182, 0.22); color: #f9a8d4; border: 1px solid rgba(244, 114, 182, 0.5); }
+.tag-iso  { background: rgba(168, 85, 247, 0.22);  color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.5); }
+.tag-vsg  { background: rgba(34, 211, 238, 0.22);  color: #67e8f9; border: 1px solid rgba(34, 211, 238, 0.5); }
+.tag-droop{ background: rgba(252, 211, 77, 0.22);  color: #fde68a; border: 1px solid rgba(252, 211, 77, 0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · MICROGRID · GRID-TIED / ISLANDED · PV · WIND · ESS · DIESEL
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-300 via-cyan-200 to-pink-200 bg-clip-text text-transparent">
+            🏘 마이크로그리드 (Microgrid) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">분산 전원(<span class="text-amber-300 font-semibold">PV</span> · <span class="text-cyan-300 font-semibold">풍력</span> · <span class="text-emerald-300 font-semibold">ESS</span> · <span class="text-rose-300 font-semibold">디젤</span>)이 <span class="text-pink-300 font-semibold">PCC</span>(공통연계점)에서 그리드와 연결됩니다. <span class="text-purple-300 font-semibold">계통연계(Grid-tied)</span> ↔ <span class="text-purple-300 font-semibold">자립운전(Islanded)</span> 전환 (대기·동기화·자립·복귀)을 학습합니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-sr">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">자급률 (Self-Sufficiency)</p>
+            <p class="mt-1 text-lg font-bold"><span id="srVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-load">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">부하 전력 P_load</p>
+            <p class="mt-1 text-lg font-bold"><span id="loadVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-grid">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">그리드 전력 P_grid</p>
+            <p class="mt-1 text-lg font-bold"><span id="gridVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">운영 상태</p>
+            <p class="mt-1 text-lg font-bold"><span id="modeVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">PCC · 분산자원 · 부하 — 차단기 OPEN/CLOSE 애니메이션</span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnRun"   class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">▶ 운영 시작</button>
+                        <button id="btnPause" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⏸ 일시 정지</button>
+                        <button id="btnReset" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⟲ 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 주파수 / 전력 추이 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">주파수 f · 발전·부하 전력 추이</span>
+                    <div class="flex items-center gap-2">
+                        <span class="state-badge state-standby">대기</span>
+                        <span class="state-badge state-sync">동기화</span>
+                        <span class="state-badge state-island">자립</span>
+                        <span class="state-badge state-return">복귀</span>
+                        <span class="state-badge state-tied">연계</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(34,211,238,0.4), rgba(168,85,247,0.4), rgba(244,114,182,0.4));">
+                    <canvas id="freqCanvas"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">계통연계 시 그리드가 주파수·전압을 결정 → 60Hz 일정. 자립 시 ESS·디젤이 <span class="text-cyan-300">VSG(Virtual Synchronous Generator)</span> · <span class="text-amber-300">P-f Droop</span> 제어로 주파수 유지 → 부하 변동 시 ±0.3Hz 진동.</p>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-emerald-300 to-cyan-200 bg-clip-text text-transparent">마이크로그리드 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">전력 균형 (Power Balance)</p>
+                        <div class="math-container mt-2">\(P_{pv}+P_{w}+P_{ess}+P_{dg}+P_{grid}=P_{load}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">P-f Droop 제어</p>
+                        <div class="math-container mt-2">\(f = f_{0} - k_{p}\,(P - P_{0})\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">자급률 (Self-Sufficiency)</p>
+                        <div class="math-container mt-2">\(SSR = \dfrac{P_{pv}+P_{w}+P_{ess,d}+P_{dg}}{P_{load}}\times 100\) <span class="text-[10px] text-slate-400">[%]</span></div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-pcc mr-1">PCC</span> 공통연계점 · 마이크로그리드 ↔ 상위 계통 경계, <span class="font-bold text-pink-300">차단기 CB</span>로 분리</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-iso mr-1">ISL</span> 단독운전 검출 → 정전 시 0.5초 내 자립모드 전환 (IEEE 1547 / KS C IEC 62116)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-vsg mr-1">VSG</span> 가상관성 (Virtual Synchronous Generator) — 인버터가 회전기 관성을 모방, 주파수 안정도 ↑</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-droop mr-1">Droop</span> P-f / Q-V 드룹 제어 → 다중 인버터 부하 분담 (Master 없이 병렬 운전)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-purple-300">대기 → 동기화</span> · 그리드 전압/위상 일치 (Δθ &lt; 10°, ΔV &lt; 5%, Δf &lt; 0.2Hz) 후 CB 투입</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">자립 → 복귀</span> · 그리드 복구 감지 → 재동기화 → Soft-Closing → 계통연계 복귀</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-cyan-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">운영 모드</label>
+                <div class="grid grid-cols-1 gap-1.5">
+                    <button data-mode="auto"   data-kind="auto"   class="mode-btn rounded-md py-1.5 font-bold active auto">🔄 자동 (정전 감지 → 자립 전환)</button>
+                    <button data-mode="tied"   data-kind="tied"   class="mode-btn rounded-md py-1.5 font-bold">🔗 계통연계 강제 (Grid-tied)</button>
+                    <button data-mode="island" data-kind="island" class="mode-btn rounded-md py-1.5 font-bold">🏝 자립 강제 (Islanded)</button>
+                </div>
+                <p id="modeDesc" class="text-[10px] text-slate-400 mt-2">정전을 자동 감지하여 자립모드로 전환 · 그리드 복구 시 재동기화 후 복귀</p>
+            </div>
+
+            <div class="chip-pv chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>☀ PV 출력 (조도)</span><span id="pvDisp" class="font-mono text-base">0.7</span></label>
+                <input type="range" id="pv" min="0" max="1" step="0.02" value="0.7" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">pu · 0(야간) ~ 1(STC)</p>
+            </div>
+
+            <div class="chip-wind chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>🌪 풍속</span><span id="windDisp" class="font-mono text-base">7.0</span></label>
+                <input type="range" id="wind" min="0" max="20" step="0.5" value="7.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">m/s · Cut-in 3 · Rated 12 · Cut-out 25</p>
+            </div>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>🏭 부하</span><span id="loadDisp" class="font-mono text-base">0.9</span></label>
+                <input type="range" id="load" min="0.1" max="1.6" step="0.02" value="0.9" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">MW</p>
+            </div>
+
+            <div class="chip-ess chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>🔋 ESS SOC</span><span id="socDisp" class="font-mono text-base">60</span></label>
+                <input type="range" id="soc" min="0" max="100" step="1" value="60" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">% · 정격 1.0 MWh / Pmax 0.6 MW</p>
+            </div>
+
+            <div class="chip-grid chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">그리드 상태</label>
+                <button id="btnOutage" class="toggle-btn on rounded-md w-full py-2 font-bold">⚡ 그리드 정상 (전력 공급 중)</button>
+                <p class="text-[10px] text-slate-500 mt-1.5">클릭 시 정전 발생 → 자동 모드에서 자립 전환</p>
+            </div>
+
+            <div class="chip-grid chip rounded-lg p-3" style="border-color: rgba(251, 146, 60, 0.5);">
+                <label class="block text-[11px] font-bold tracking-wider mb-2" style="color: #fdba74;">🔥 디젤 발전기</label>
+                <button id="btnDiesel" class="toggle-btn off rounded-md w-full py-2 font-bold">디젤 OFF (대기)</button>
+                <p class="text-[10px] text-slate-500 mt-1.5">예비 전원 · 자립모드 + 부하 부족 시 ON 권장 (정격 0.5 MW)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-cyan-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-pink-300 font-bold">PCC CB</span>: 정전 감지 → 0.5s 내 OPEN · 자립 전환</p>
+                <p class="feature-row rounded-md p-2"><span class="text-emerald-300 font-bold">전력 균형</span>: 자립 시 P_gen = P_load 자동 균형 (ESS·디젤이 조절)</p>
+                <p class="feature-row rounded-md p-2"><span class="text-amber-300 font-bold">주파수</span>: 연계 60Hz · 자립 시 부하 변동 시 ±0.3Hz 흔들림</p>
+                <p class="feature-row rounded-md p-2"><span class="text-purple-300 font-bold">동기화</span>: ΔV·Δf·Δθ 만족 → CB 투입 → 복귀</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const fCv = $('freqCanvas');
+const fctx = fCv.getContext('2d');
+
+// ===== 운영 모드 사양 =====
+const MODES = {
+    auto:   { label: '자동',         desc: '정전을 자동 감지하여 자립모드로 전환 · 그리드 복구 시 재동기화 후 복귀' },
+    tied:   { label: '계통연계',     desc: '그리드와 항상 연계 · 정전 시에도 강제 연계 시도 (실제로는 단독운전 검출로 차단)' },
+    island: { label: '자립',         desc: 'PCC 차단기 OPEN 상태로 마이크로그리드 단독 운전 · ESS/디젤이 주파수 결정' }
+};
+
+// ===== 운영 상태 (FSM) =====
+// standby: 초기 / 모든 분산자원 대기
+// tied:    계통연계 운전 중
+// sync:    동기화 중 (자립 → 연계 복귀 단계)
+// island:  자립 운전 중
+// return:  복귀 진행 중 (CB 투입 직후 부드러운 전력 swap)
+const STATES = ['standby', 'tied', 'sync', 'island', 'return'];
+
+// ===== 자원 정격 [MW] =====
+const PV_RATED   = 0.6;
+const WIND_RATED = 0.4;
+const ESS_RATED_P = 0.6;   // 최대 인버터 전력
+const ESS_RATED_E = 1.0;   // 정격 에너지 [MWh]
+const DG_RATED   = 0.5;
+
+let state = {
+    mode: 'auto',
+    pv: 0.7,           // 조도 0~1
+    windSpeed: 7.0,    // m/s
+    loadCmd: 0.9,      // MW 명령
+    soc: 60,           // %
+    gridOK: true,
+    dieselOn: false,
+
+    running: false,
+    t: 0,
+
+    // 운영 상태
+    fsm: 'standby',
+    cbClosed: true,    // PCC CB
+    syncProgress: 0,   // 0~1 (동기화 진행도)
+    transitionTimer: 0,
+
+    // 전력 (MW) — 양: 부하 방향 (공급), 음: ESS 충전 등
+    pPV: 0,
+    pWind: 0,
+    pESS: 0,           // + 방전 / - 충전
+    pDG: 0,
+    pGrid: 0,          // + 인입 / - 역송
+    pLoad: 0,
+
+    // 주파수 / 전압
+    freq: 60.0,
+    vpu: 1.0,
+    phase: 0,          // 자립 측 위상 (rad)
+    gridPhase: 0,      // 그리드 측 위상
+
+    history: []
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 600;
+    fCv.width = fCv.parentElement.clientWidth - 2;
+    fCv.height = 280;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+// ===== 풍력 출력 모델 =====
+// 베츠 한계 기반: P_wind = 0.5 · ρ · A · v³ · Cp  (이론상 Cp_max ≈ 0.593)
+// 정규화된 (v-3)/9 의 3제곱 곡선으로 단순화 (3 m/s 컷인 → 12 m/s 정격)
+function windPower(v) {
+    if (v < 3) return 0;            // Cut-in
+    if (v > 25) return 0;            // Cut-out
+    if (v >= 12) return WIND_RATED; // 정격 (12 m/s 이상 일정)
+    // 3 ~ 12 m/s: v³ 큐빅 곡선 (Betz 한계 기반)
+    const x = (v - 3) / 9;
+    return WIND_RATED * Math.pow(x, 3);
+}
+
+// ===== 발전 + 부하 계산 + 운영 결정 =====
+function computePower(dt) {
+    state.pPV = state.pv * PV_RATED;
+    state.pWind = windPower(state.windSpeed);
+    state.pLoad = state.loadCmd;
+
+    // 디젤 발전기
+    if (state.dieselOn) {
+        state.pDG = DG_RATED * 0.85; // 운전 시 평균 85% 부하
+    } else state.pDG = 0;
+
+    // 운영 모드 FSM
+    runFSM(dt);
+
+    // 분배: 발전 잉여 / 부족 → ESS / 그리드가 흡수
+    const renewable = state.pPV + state.pWind + state.pDG;
+    const deficit = state.pLoad - renewable; // 양 = 외부 도움 필요, 음 = 잉여
+    const pMaxESS = ESS_RATED_P;
+
+    if (state.cbClosed && state.fsm === 'tied') {
+        // 계통연계 — 그리드가 최종 균형, ESS는 SOC 기반 부동
+        // 단순 정책: 잉여 → ESS 충전 (SOC < 90), 부족 → ESS 방전 (SOC > 10), 그 외 그리드
+        let pEss = 0;
+        if (deficit < 0 && state.soc < 90) {
+            // 잉여: ESS 충전 (음의 값)
+            pEss = Math.max(deficit * 0.5, -pMaxESS); // 잉여의 절반 흡수
+        } else if (deficit > 0 && state.soc > 20) {
+            // 부족: ESS 방전 일부
+            pEss = Math.min(deficit * 0.4, pMaxESS);
+        }
+        state.pESS = pEss;
+        state.pGrid = deficit - pEss; // 나머지는 그리드
+    } else if (state.fsm === 'island' || (state.cbClosed === false)) {
+        // 자립 — 그리드 0, ESS가 균형 책임
+        state.pGrid = 0;
+        let pEss = deficit; // 부족분 전체 ESS가 메움 (방전 +)
+        // SOC 한계 클램프
+        if (pEss > pMaxESS) pEss = pMaxESS;
+        if (pEss < -pMaxESS) pEss = -pMaxESS;
+        if (pEss > 0 && state.soc < 5) pEss = 0; // 방전 정지
+        if (pEss < 0 && state.soc > 95) pEss = 0; // 충전 정지
+        state.pESS = pEss;
+    } else if (state.fsm === 'sync' || state.fsm === 'return') {
+        // 전환 중: 자립과 동일 (CB는 OPEN)
+        state.pGrid = 0;
+        let pEss = deficit;
+        if (pEss > pMaxESS) pEss = pMaxESS;
+        if (pEss < -pMaxESS) pEss = -pMaxESS;
+        state.pESS = pEss;
+    } else { // standby
+        state.pESS = 0;
+        state.pGrid = state.cbClosed ? deficit : 0;
+    }
+
+    // SOC 갱신 (대략적: 방전 = SOC 감소)
+    // dE = pESS * dt[h], 양 = 방전 (SOC ↓)
+    const dE = state.pESS * (dt / 3600);
+    const dSoc = -(dE / ESS_RATED_E) * 100;
+    state.soc = Math.max(0, Math.min(100, state.soc + dSoc));
+
+    // 주파수 (P-f droop) — 자립일 때만 부하 변동 반영
+    const f0 = 60.0;
+    if (state.fsm === 'island' || state.fsm === 'sync' || state.fsm === 'return') {
+        // 부하 - 발전 미스매치 비율로 흔들림
+        const totalGen = state.pPV + state.pWind + state.pDG + Math.max(0, state.pESS);
+        const totalLoad = state.pLoad;
+        const mismatch = (totalLoad - totalGen) / Math.max(0.1, totalLoad);
+        const targetF = f0 - 0.5 * mismatch + 0.05 * Math.sin(state.t * 2.2);
+        state.freq += (targetF - state.freq) * Math.min(1, dt * 4);
+    } else if (state.fsm === 'tied') {
+        // 그리드가 강제로 60Hz 유지
+        state.freq += (f0 - state.freq) * Math.min(1, dt * 8);
+    } else {
+        state.freq += (f0 - state.freq) * Math.min(1, dt * 2);
+    }
+
+    // 위상 누적 (시각화용)
+    state.phase += 2 * Math.PI * state.freq * dt;
+    state.gridPhase += 2 * Math.PI * 60.0 * dt;
+}
+
+// ===== FSM =====
+function runFSM(dt) {
+    state.transitionTimer += dt;
+    const md = state.mode;
+
+    if (md === 'tied') {
+        // 강제 연계: 그리드가 살아있을 때만 CB CLOSE
+        if (state.gridOK) {
+            if (state.fsm !== 'tied') { state.fsm = 'tied'; state.cbClosed = true; state.transitionTimer = 0; }
+        } else {
+            // 정전 시에도 연계 모드는 사용자가 강제 → 시뮬상 CB는 OPEN, FSM은 island로 전이
+            if (state.cbClosed) { state.cbClosed = false; state.transitionTimer = 0; }
+            state.fsm = 'island';
+        }
+    } else if (md === 'island') {
+        // 강제 자립
+        if (state.cbClosed) { state.cbClosed = false; state.transitionTimer = 0; }
+        state.fsm = 'island';
+    } else {
+        // auto
+        if (state.fsm === 'standby') {
+            // 즉시 연계 시도
+            if (state.gridOK) {
+                state.fsm = 'sync';
+                state.cbClosed = false;
+                state.syncProgress = 0;
+                state.transitionTimer = 0;
+            } else {
+                state.fsm = 'island';
+                state.cbClosed = false;
+            }
+        } else if (state.fsm === 'tied') {
+            // 정전 감지 → 단독운전 검출 → island
+            if (!state.gridOK) {
+                state.fsm = 'island';
+                state.cbClosed = false;
+                state.transitionTimer = 0;
+            }
+        } else if (state.fsm === 'island') {
+            // 그리드 복구 감지 → 동기화 시작
+            if (state.gridOK) {
+                state.fsm = 'sync';
+                state.syncProgress = 0;
+                state.transitionTimer = 0;
+            }
+        } else if (state.fsm === 'sync') {
+            // 동기화: 위상·주파수 일치 진행
+            state.syncProgress = Math.min(1, state.syncProgress + dt * 0.35);
+            // 주파수를 60Hz로 끌어당김
+            state.freq += (60.0 - state.freq) * Math.min(1, dt * 1.2);
+            if (state.syncProgress >= 1) {
+                // CB 투입 → 복귀
+                state.fsm = 'return';
+                state.cbClosed = true;
+                state.transitionTimer = 0;
+            }
+            // 동기화 중 그리드 다시 정전이면 island 로 회귀
+            if (!state.gridOK) {
+                state.fsm = 'island';
+                state.cbClosed = false;
+            }
+        } else if (state.fsm === 'return') {
+            // 복귀: 부드러운 전력 swap (1초)
+            if (state.transitionTimer > 1.0) {
+                state.fsm = 'tied';
+            }
+            if (!state.gridOK) {
+                state.fsm = 'island';
+                state.cbClosed = false;
+            }
+        }
+    }
+}
+
+// ===== 색상 / 라벨 =====
+function fsmColor(s) {
+    if (s === 'standby') return '#cbd5e1';
+    if (s === 'tied')    return '#f9a8d4';
+    if (s === 'sync')    return '#fde68a';
+    if (s === 'island')  return '#c4b5fd';
+    if (s === 'return')  return '#67e8f9';
+    return '#cbd5e1';
+}
+function fsmLabel(s) {
+    return { standby: '대기', tied: '계통연계', sync: '동기화', island: '자립', return: '복귀' }[s];
+}
+
+// ===== 메인 캔버스 =====
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경 그라데이션
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(20, 40, 60, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
+    ctx.restore();
+
+    // 헤더 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(103, 232, 249, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ MICROGRID · PCC · DERs · LOAD', 12, 10);
+    ctx.restore();
+
+    drawTopPanel(W, H);
+
+    // ===== 레이아웃 =====
+    // 좌측: 그리드 (외부) — 송전탑
+    // 중앙 좌: PCC + CB (Point of Common Coupling)
+    // 중앙 우: 내부 MG 버스
+    // 우상: PV / 풍력 (분산자원)
+    // 우중: ESS
+    // 우하: 디젤 발전기
+    // 부하: 우측 끝
+    const gridNode = { x: W * 0.04, y: H * 0.36, w: 140, h: 130, label: '⚡ 그리드',    sub: 'UTILITY 22.9kV' };
+    const pccNode  = { x: W * 0.22, y: H * 0.42, w: 90,  h: 90,  label: 'PCC',           sub: 'CB' };
+    const busNode  = { x: W * 0.42, y: H * 0.04, w: 28,  h: H * 0.92, label: 'BUS',     sub: '' };
+    const pvNode   = { x: W * 0.52, y: H * 0.05, w: 130, h: 95,  label: '☀ PV',        sub: 'SOLAR ARRAY' };
+    const windNode = { x: W * 0.70, y: H * 0.05, w: 130, h: 95,  label: '🌪 풍력',     sub: 'WIND TURBINE' };
+    const essNode  = { x: W * 0.52, y: H * 0.36, w: 130, h: 130, label: '🔋 ESS',      sub: 'BATTERY + PCS' };
+    const dgNode   = { x: W * 0.70, y: H * 0.36, w: 130, h: 130, label: '🔥 디젤',     sub: 'BACKUP GEN' };
+    const loadNode = { x: W * 0.74, y: H * 0.72, w: 180, h: 130, label: '🏘 부하',     sub: 'COMMUNITY / INDUSTRIAL' };
+
+    // 1) 그리드 - PCC 라인
+    drawTransmissionLine(
+        gridNode.x + gridNode.w, gridNode.y + gridNode.h / 2,
+        pccNode.x, pccNode.y + pccNode.h / 2,
+        state.gridOK && state.cbClosed && state.fsm === 'tied' ? '#f9a8d4' : 'rgba(148,163,184,0.3)',
+        state.cbClosed && state.fsm === 'tied' && Math.abs(state.pGrid) > 0.01
+    );
+
+    // 2) PCC - BUS 라인
+    drawTransmissionLine(
+        pccNode.x + pccNode.w, pccNode.y + pccNode.h / 2,
+        busNode.x + busNode.w / 2, pccNode.y + pccNode.h / 2,
+        state.cbClosed ? '#a5b4fc' : 'rgba(148,163,184,0.3)',
+        state.cbClosed && Math.abs(state.pGrid) > 0.01
+    );
+
+    // 3) DER → BUS 라인 (PV, Wind 상단)
+    drawDERLine(pvNode.x, pvNode.y + pvNode.h / 2, busNode.x + busNode.w, pvNode.y + pvNode.h / 2, state.pPV, '#fde68a');
+    drawDERLine(windNode.x, windNode.y + windNode.h / 2, busNode.x + busNode.w, pvNode.y + pvNode.h / 2 + 14, state.pWind, '#7dd3fc');
+    drawDERLine(essNode.x, essNode.y + essNode.h / 2, busNode.x + busNode.w, essNode.y + essNode.h / 2, Math.abs(state.pESS), state.pESS >= 0 ? '#86efac' : '#fda4af');
+    drawDERLine(dgNode.x, dgNode.y + dgNode.h / 2, busNode.x + busNode.w, dgNode.y + dgNode.h / 2 + 18, state.pDG, '#fdba74');
+
+    // 4) BUS → LOAD 라인
+    drawDERLine(busNode.x + busNode.w / 2, loadNode.y + loadNode.h * 0.35, loadNode.x, loadNode.y + loadNode.h * 0.35, state.pLoad, '#a5b4fc');
+
+    // 노드 그리기
+    drawGridNode(gridNode);
+    drawPCCNode(pccNode);
+    drawBusNode(busNode);
+    drawPVNode(pvNode, state.pv);
+    drawWindNode(windNode, state.windSpeed);
+    drawESSNodeMG(essNode);
+    drawDieselNode(dgNode);
+    drawLoadNode(loadNode);
+}
+
+// ===== 상단 패널 =====
+function drawTopPanel(W, H) {
+    ctx.save();
+    const pw = 280, ph = 92;
+    const px = W - pw - 10, py = 8;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, px, py, pw, ph, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(103, 232, 249, 0.5)';
+    ctx.stroke();
+
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+
+    // 상태
+    ctx.fillStyle = fsmColor(state.fsm);
+    ctx.fillText(`▶ STATE · ${fsmLabel(state.fsm).toUpperCase()}`, px + 10, py + 8);
+
+    // 주파수
+    const fOk = Math.abs(state.freq - 60) < 0.5;
+    ctx.fillStyle = fOk ? '#86efac' : '#fbbf24';
+    ctx.fillText(`f = ${state.freq.toFixed(2)} Hz`, px + 10, py + 26);
+
+    // CB
+    ctx.fillStyle = state.cbClosed ? '#86efac' : '#fda4af';
+    ctx.fillText(`PCC CB · ${state.cbClosed ? 'CLOSED' : 'OPEN'}`, px + 10, py + 44);
+
+    // 그리드 상태
+    ctx.fillStyle = state.gridOK ? '#86efac' : '#fda4af';
+    ctx.fillText(`GRID · ${state.gridOK ? 'OK' : 'OUTAGE'}`, px + 10, py + 62);
+
+    // 동기화 진행 (sync 시)
+    if (state.fsm === 'sync') {
+        const bx = px + 140, by = py + 50, bw = 130, bh = 12;
+        ctx.fillStyle = 'rgba(5,7,20,0.7)';
+        ctx.strokeStyle = 'rgba(252,211,77,0.5)';
+        roundRect(ctx, bx, by, bw, bh, 4);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fde68a';
+        ctx.shadowBlur = 8; ctx.shadowColor = '#fde68a';
+        roundRect(ctx, bx + 2, by + 2, (bw - 4) * state.syncProgress, bh - 4, 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#fde68a';
+        ctx.fillText(`SYNC ${(state.syncProgress * 100).toFixed(0)}%`, bx, by - 12);
+    }
+
+    ctx.restore();
+}
+
+// ===== 송전선 (그리드 ↔ PCC) =====
+function drawTransmissionLine(x1, y1, x2, y2, color, animated) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 입자 흐름 (그리드 → PCC, p_grid > 0)
+    if (animated && state.running) {
+        const dx = x2 - x1, dy = y2 - y1;
+        const isExporting = state.pGrid < 0; // 역송이면 반대 방향
+        const dir = isExporting ? -1 : 1;
+        for (let i = 0; i < 4; i++) {
+            const phase = ((state.t * 0.4 * dir + i / 4) % 1 + 1) % 1;
+            const px = x1 + dx * phase;
+            const py = y1 + dy * phase;
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+}
+
+// ===== DER 라인 =====
+function drawDERLine(x1, y1, x2, y2, magnitude, color) {
+    if (magnitude < 0.005) {
+        // 라인은 흐릿하게 표시
+        ctx.save();
+        ctx.strokeStyle = 'rgba(148,163,184,0.18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+        return;
+    }
+    const intensity = Math.min(1, magnitude / 0.6);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1 + 2 * intensity;
+    ctx.globalAlpha = 0.5 + 0.4 * intensity;
+    ctx.shadowBlur = 6 + 8 * intensity;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    // 화살촉
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const ah = 7 + 4 * intensity;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ah * Math.cos(ang - 0.4), y2 - ah * Math.sin(ang - 0.4));
+    ctx.lineTo(x2 - ah * Math.cos(ang + 0.4), y2 - ah * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    // 전력값 라벨
+    const lx = (x1 + x2) / 2, ly = (y1 + y2) / 2;
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    const lw = 52;
+    roundRect(ctx, lx - lw / 2, ly - 9, lw, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${magnitude.toFixed(2)} MW`, lx, ly);
+
+    // 흐름 입자
+    if (state.running) {
+        const dx = x2 - x1, dy = y2 - y1;
+        const nDots = Math.floor(3 + 5 * intensity);
+        for (let i = 0; i < nDots; i++) {
+            const phase = (state.t * (0.5 + intensity * 0.6) + i / nDots) % 1;
+            const px = x1 + dx * phase;
+            const py = y1 + dy * phase;
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.8 + 1.0 * intensity, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+}
+
+// ===== 그리드 (외부 계통) 노드 =====
+function drawGridNode(n) {
+    ctx.save();
+    const ok = state.gridOK;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.strokeStyle = ok ? '#f9a8d4' : '#fda4af';
+    ctx.lineWidth = 1.8;
+    ctx.shadowBlur = ok ? 14 : 18;
+    ctx.shadowColor = ok ? '#f9a8d4' : '#dc2626';
+    roundRect(ctx, n.x, n.y, n.w, n.h, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = ok ? '#f9a8d4' : '#fca5a5';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 10, n.y + 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 10, n.y + 26);
+
+    // 송전탑 미니
+    const tx = n.x + n.w / 2 - 10, ty = n.y + 44;
+    ctx.strokeStyle = ok ? '#f9a8d4' : '#64748b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // 타워 다리
+    ctx.moveTo(tx, ty + 50); ctx.lineTo(tx + 10, ty + 4); ctx.lineTo(tx + 20, ty + 50);
+    // 가로대
+    ctx.moveTo(tx - 4, ty + 16); ctx.lineTo(tx + 24, ty + 16);
+    ctx.moveTo(tx - 2, ty + 28); ctx.lineTo(tx + 22, ty + 28);
+    ctx.moveTo(tx, ty + 40); ctx.lineTo(tx + 20, ty + 40);
+    ctx.stroke();
+
+    // OUTAGE 표시
+    if (!ok) {
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillStyle = '#fca5a5';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        const blink = (Math.sin(state.t * 6) + 1) * 0.5;
+        ctx.globalAlpha = 0.6 + 0.4 * blink;
+        ctx.fillText('⚠ OUTAGE', n.x + n.w / 2, n.y + n.h - 18);
+        ctx.globalAlpha = 1;
+    } else {
+        // 그리드 전력
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = '#f9a8d4';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        const sign = state.pGrid >= 0 ? '→' : '←';
+        ctx.fillText(`${sign} ${Math.abs(state.pGrid).toFixed(2)} MW`, n.x + n.w / 2, n.y + n.h - 18);
+    }
+    ctx.restore();
+}
+
+// ===== PCC + CB 노드 =====
+function drawPCCNode(n) {
+    ctx.save();
+    const tied = state.fsm === 'tied' || state.fsm === 'return';
+    const c = tied ? '#f9a8d4' : (state.fsm === 'sync' ? '#fde68a' : '#c4b5fd');
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = c;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = c;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + n.w / 2, n.y + 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('POINT OF', n.x + n.w / 2, n.y + 26);
+    ctx.fillText('COMMON COUPLING', n.x + n.w / 2, n.y + 38);
+
+    // 차단기 심볼 (중앙)
+    const cbCx = n.x + n.w / 2, cbCy = n.y + n.h - 22;
+    // 양쪽 단자
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.arc(cbCx - 18, cbCy, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cbCx + 18, cbCy, 3, 0, Math.PI * 2); ctx.fill();
+    // 차단기 레버 — CLOSED면 수평선, OPEN이면 비스듬히
+    ctx.strokeStyle = state.cbClosed ? '#86efac' : '#fca5a5';
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = state.cbClosed ? 10 : 6;
+    ctx.shadowColor = state.cbClosed ? '#22c55e' : '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(cbCx - 18, cbCy);
+    if (state.cbClosed) {
+        ctx.lineTo(cbCx + 18, cbCy);
+    } else {
+        // 30° 위로 들림
+        const tipX = cbCx + 18 * Math.cos(-Math.PI / 6) - 18;
+        const tipY = cbCy + 18 * Math.sin(-Math.PI / 6);
+        // 실제로 시각화: cbCx-18 → 위쪽 비스듬
+        ctx.lineTo(cbCx - 18 + 32 * Math.cos(-Math.PI / 6), cbCy + 32 * Math.sin(-Math.PI / 6));
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // CB 라벨
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.cbClosed ? '#86efac' : '#fca5a5';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(state.cbClosed ? 'CB · CLOSED' : 'CB · OPEN', cbCx, cbCy + 8);
+
+    ctx.restore();
+}
+
+// ===== 내부 BUS (수직바) =====
+function drawBusNode(n) {
+    ctx.save();
+    const tied = state.fsm === 'tied' || state.fsm === 'return';
+    const c1 = tied ? '#a5b4fc' : '#c4b5fd';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = c1;
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = c1;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 라벨 (수직)
+    ctx.save();
+    ctx.translate(n.x + n.w / 2, n.y + n.h / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🔌 MG BUS · 380V / 60Hz', 0, 0);
+    ctx.restore();
+
+    // 전류 펄스 (수직 흐름)
+    if (state.running) {
+        const nDots = 8;
+        for (let i = 0; i < nDots; i++) {
+            const phase = (state.t * 0.6 + i / nDots) % 1;
+            const py = n.y + 10 + (n.h - 20) * phase;
+            ctx.fillStyle = c1;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = c1;
+            ctx.beginPath();
+            ctx.arc(n.x + n.w / 2, py, 1.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+    }
+
+    // 주파수 표시
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = Math.abs(state.freq - 60) < 0.5 ? '#86efac' : '#fbbf24';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(`${state.freq.toFixed(2)}`, n.x + n.w / 2, n.y + 4);
+    ctx.fillText('Hz', n.x + n.w / 2, n.y + 16);
+
+    ctx.restore();
+}
+
+// ===== PV 노드 =====
+function drawPVNode(n, intensity) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 12 * intensity;
+    ctx.shadowColor = '#fbbf24';
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#fde68a';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 8, n.y + 6);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 8, n.y + 20);
+
+    // 태양 미니
+    const sx = n.x + n.w - 22, sy = n.y + 18;
+    ctx.fillStyle = `rgba(252, 211, 77, ${0.4 + 0.6 * intensity})`;
+    ctx.shadowBlur = 10 * intensity;
+    ctx.shadowColor = '#fbbf24';
+    ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI * 2); ctx.fill();
+    // 광선
+    ctx.strokeStyle = `rgba(252, 211, 77, ${0.6 * intensity})`;
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + state.t * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(sx + 10 * Math.cos(a), sy + 10 * Math.sin(a));
+        ctx.lineTo(sx + 14 * Math.cos(a), sy + 14 * Math.sin(a));
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+
+    // 패널
+    const pX = n.x + 8, pY = n.y + 36, pW = n.w - 16, pH = 32;
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1;
+    roundRect(ctx, pX, pY, pW, pH, 3);
+    ctx.fill(); ctx.stroke();
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) {
+        const cx = pX + 2 + c * ((pW - 4) / 5);
+        const cy = pY + 2 + r * ((pH - 4) / 2);
+        ctx.fillStyle = `rgba(252, 211, 77, ${0.15 + 0.65 * intensity})`;
+        ctx.fillRect(cx, cy, (pW - 4) / 5 - 2, (pH - 4) / 2 - 2);
+    }
+
+    // 출력값
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#fde68a';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(`${state.pPV.toFixed(2)} MW`, n.x + n.w - 8, n.y + n.h - 18);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText(`G=${(intensity * 1000).toFixed(0)} W/m²`, n.x + 8, n.y + n.h - 18);
+
+    ctx.restore();
+}
+
+// ===== 풍력 노드 =====
+function drawWindNode(n, v) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = '#22d3ee';
+    ctx.lineWidth = 1.5;
+    const pIntensity = Math.min(1, state.pWind / WIND_RATED);
+    ctx.shadowBlur = 12 * pIntensity;
+    ctx.shadowColor = '#22d3ee';
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#67e8f9';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 8, n.y + 6);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 8, n.y + 20);
+
+    // 풍속/회전 블레이드
+    const cx = n.x + n.w * 0.74, cy = n.y + n.h * 0.55, R = 16;
+    const speedFactor = (v - 3) / 9;
+    const omega = Math.max(0, Math.min(1, speedFactor)) * 3.5;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(state.t * omega);
+    ctx.strokeStyle = '#67e8f9';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 8 * pIntensity;
+    ctx.shadowColor = '#22d3ee';
+    for (let i = 0; i < 3; i++) {
+        ctx.rotate(Math.PI * 2 / 3);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(R * 0.3, R * 0.1, R, 0);
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // 폴
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 4);
+    ctx.lineTo(cx, n.y + n.h - 8);
+    ctx.stroke();
+
+    // 출력값
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#67e8f9';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(`${state.pWind.toFixed(2)} MW`, n.x + n.w - 8, n.y + n.h - 18);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText(`v=${v.toFixed(1)} m/s`, n.x + 8, n.y + n.h - 18);
+
+    ctx.restore();
+}
+
+// ===== ESS 노드 (배터리 + 전력) =====
+function drawESSNodeMG(n) {
+    ctx.save();
+    const charging = state.pESS < -0.005;
+    const discharging = state.pESS > 0.005;
+    const c1 = discharging ? '#fda4af' : (charging ? '#86efac' : '#cbd5e1');
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.strokeStyle = c1;
+    ctx.lineWidth = 1.8;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = c1;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#86efac';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 8, n.y + 6);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 8, n.y + 20);
+
+    // 배터리 셀 격자 (3 x 4)
+    const cellsX = n.x + 8, cellsY = n.y + 34, cellsW = n.w - 16, cellsH = 50;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.85)';
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.35)';
+    roundRect(ctx, cellsX, cellsY, cellsW, cellsH, 4);
+    ctx.fill(); ctx.stroke();
+
+    const cols = 4, rows = 3;
+    const padX = 4, padY = 4;
+    const cellW = (cellsW - padX * 2) / cols - 1;
+    const cellH = (cellsH - padY * 2) / rows - 1;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const px = cellsX + padX + c * (cellW + 1);
+        const py = cellsY + padY + r * (cellH + 1);
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.4)';
+        ctx.lineWidth = 0.4;
+        roundRect(ctx, px, py, cellW, cellH, 1.5);
+        ctx.fill(); ctx.stroke();
+        // 채움
+        const idx = r * cols + c;
+        const noise = Math.sin(state.t * 0.6 + idx * 0.7) * 1.5;
+        const cellSoc = Math.max(0, Math.min(100, state.soc + noise));
+        const ch = (cellH - 2) * (cellSoc / 100);
+        let col;
+        if (cellSoc < 15) col = 'rgba(248, 113, 113, 0.85)';
+        else if (cellSoc < 40) col = 'rgba(252, 211, 77, 0.85)';
+        else col = 'rgba(134, 239, 172, 0.85)';
+        ctx.fillStyle = col;
+        ctx.fillRect(px + 1, py + cellH - ch - 1, cellW - 2, ch);
+
+        if (state.running && (charging || discharging)) {
+            const speed = charging ? 4 : 6;
+            const flash = (Math.sin(state.t * speed + idx * 0.5) + 1) * 0.5;
+            const flashCol = charging ? 'rgba(187, 247, 208, ' : 'rgba(254, 205, 211, ';
+            ctx.fillStyle = `${flashCol}${0.12 * flash})`;
+            ctx.fillRect(px + 1, py + 1, cellW - 2, cellH - 2);
+        }
+    }
+
+    // SOC 바
+    const gaX = n.x + 8, gaY = cellsY + cellsH + 6, gaW = n.w - 16, gaH = 16;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, gaX, gaY, gaW, gaH, 4);
+    ctx.fill(); ctx.stroke();
+    const ratio = state.soc / 100;
+    const fillW = (gaW - 4) * ratio;
+    let socColors;
+    if (state.soc < 20) socColors = ['#dc2626', '#f87171'];
+    else if (state.soc < 50) socColors = ['#f59e0b', '#fcd34d'];
+    else socColors = ['#16a34a', '#86efac'];
+    const grad = ctx.createLinearGradient(gaX, 0, gaX + gaW, 0);
+    grad.addColorStop(0, socColors[0]); grad.addColorStop(1, socColors[1]);
+    ctx.fillStyle = grad;
+    roundRect(ctx, gaX + 2, gaY + 2, Math.max(0, fillW), gaH - 4, 3);
+    ctx.fill();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`SOC ${state.soc.toFixed(0)}%`, gaX + gaW / 2, gaY + gaH / 2);
+
+    // P_ess
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    const sign = discharging ? '+' : (charging ? '−' : '·');
+    ctx.fillText(`${sign}${Math.abs(state.pESS).toFixed(2)} MW`, n.x + n.w - 8, n.y + n.h - 18);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText(discharging ? '⇧ 방전' : (charging ? '⇩ 충전' : '○ 대기'), n.x + 8, n.y + n.h - 18);
+
+    ctx.restore();
+}
+
+// ===== 디젤 발전기 노드 =====
+function drawDieselNode(n) {
+    ctx.save();
+    const on = state.dieselOn;
+    const c1 = on ? '#fdba74' : '#64748b';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.strokeStyle = c1;
+    ctx.lineWidth = 1.8;
+    ctx.shadowBlur = on ? 16 : 6;
+    ctx.shadowColor = c1;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 8, n.y + 6);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 8, n.y + 20);
+
+    // 엔진/회전부
+    const cx = n.x + n.w * 0.5, cy = n.y + n.h * 0.55, R = 22;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (on) ctx.rotate(state.t * 8);
+    // 외곽 케이스
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
+    ctx.strokeStyle = c1;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // 회전 표시선
+    ctx.strokeStyle = on ? '#fed7aa' : '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-R + 4, 0); ctx.lineTo(R - 4, 0);
+    ctx.moveTo(0, -R + 4); ctx.lineTo(0, R - 4);
+    ctx.stroke();
+    ctx.restore();
+
+    // 연기 (가동 중)
+    if (on) {
+        for (let i = 0; i < 3; i++) {
+            const p = (state.t * 0.8 + i * 0.33) % 1;
+            const sx = cx + Math.sin(p * 4) * 6;
+            const sy = cy - R - 6 - p * 30;
+            ctx.fillStyle = `rgba(148, 163, 184, ${0.4 * (1 - p)})`;
+            ctx.beginPath(); ctx.arc(sx, sy, 4 + 6 * p, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+
+    // 출력값
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(`${state.pDG.toFixed(2)} MW`, n.x + n.w - 8, n.y + n.h - 18);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left';
+    ctx.fillText(on ? '🟢 RUNNING' : '⚪ STANDBY', n.x + 8, n.y + n.h - 18);
+
+    ctx.restore();
+}
+
+// ===== 부하 노드 =====
+function drawLoadNode(n) {
+    ctx.save();
+    const intensity = Math.min(1, state.pLoad / 1.5);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = '#a5b4fc';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 14 * intensity;
+    ctx.shadowColor = '#a5b4fc';
+    roundRect(ctx, n.x, n.y, n.w, n.h, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = '#a5b4fc';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 10, n.y + 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 10, n.y + 24);
+
+    // 빌딩/주택 미니
+    const bx = n.x + 14, by = n.y + 42, bW = n.w - 28, bH = n.h - 70;
+    // 집 모양
+    const houseCount = 3;
+    const houseW = (bW - (houseCount - 1) * 4) / houseCount;
+    for (let i = 0; i < houseCount; i++) {
+        const hx = bx + i * (houseW + 4);
+        const hy = by + 14;
+        const hH = bH - 14;
+        // 몸체
+        ctx.fillStyle = 'rgba(51, 65, 85, 0.7)';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1;
+        ctx.fillRect(hx, hy, houseW, hH);
+        ctx.strokeRect(hx, hy, houseW, hH);
+        // 지붕
+        ctx.fillStyle = 'rgba(75, 85, 99, 0.7)';
+        ctx.beginPath();
+        ctx.moveTo(hx - 2, hy);
+        ctx.lineTo(hx + houseW / 2, hy - 10);
+        ctx.lineTo(hx + houseW + 2, hy);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // 창 (불빛)
+        const ww = Math.max(6, houseW * 0.22), wh = 6;
+        const lit = (Math.sin(i * 1.7 + state.t * 0.5) + 1) * 0.5;
+        const alpha = (lit < intensity + 0.2) ? (0.45 + 0.45 * intensity) : 0.1;
+        ctx.fillStyle = `rgba(252, 211, 77, ${alpha})`;
+        ctx.fillRect(hx + houseW * 0.15, hy + 6, ww, wh);
+        ctx.fillRect(hx + houseW * 0.6, hy + 6, ww, wh);
+        ctx.fillStyle = `rgba(252, 211, 77, ${alpha * 0.8})`;
+        if (hH > 32) {
+            ctx.fillRect(hx + houseW * 0.15, hy + 18, ww, wh);
+            ctx.fillRect(hx + houseW * 0.6, hy + 18, ww, wh);
+        }
+    }
+
+    // 부하 게이지
+    const gx = n.x + 10, gy = n.y + n.h - 24, gw = n.w - 20, gh = 14;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.7)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    roundRect(ctx, gx, gy, gw, gh, 4);
+    ctx.fill(); ctx.stroke();
+    const fillW = (gw - 4) * intensity;
+    const grad = ctx.createLinearGradient(gx, 0, gx + gw, 0);
+    grad.addColorStop(0, '#818cf8'); grad.addColorStop(1, '#c4b5fd');
+    ctx.fillStyle = grad;
+    roundRect(ctx, gx + 2, gy + 2, fillW, gh - 4, 2);
+    ctx.fill();
+
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${state.pLoad.toFixed(2)} MW`, gx + gw - 4, gy + gh / 2);
+
+    ctx.restore();
+}
+
+// ===== 주파수/전력 추이 그래프 =====
+function drawFreqChart() {
+    const W = fCv.width, H = fCv.height;
+    fctx.clearRect(0, 0, W, H);
+    fctx.fillStyle = '#050714';
+    fctx.fillRect(0, 0, W, H);
+
+    const padL = 50, padR = 50, padT = 24, padB = 30;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    // 축
+    fctx.save();
+    fctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    fctx.lineWidth = 1;
+    fctx.beginPath();
+    fctx.moveTo(padL, padT); fctx.lineTo(padL, padT + plotH); fctx.lineTo(padL + plotW, padT + plotH);
+    fctx.stroke();
+    // 격자
+    fctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    for (let i = 1; i <= 4; i++) {
+        const yy = padT + plotH * i / 4;
+        fctx.beginPath(); fctx.moveTo(padL, yy); fctx.lineTo(padL + plotW, yy); fctx.stroke();
+    }
+    for (let i = 1; i <= 6; i++) {
+        const xx = padL + plotW * i / 6;
+        fctx.beginPath(); fctx.moveTo(xx, padT); fctx.lineTo(xx, padT + plotH); fctx.stroke();
+    }
+
+    // 기준선 (60Hz)
+    fctx.strokeStyle = 'rgba(110, 231, 183, 0.4)';
+    fctx.setLineDash([4, 3]);
+    const f0Y = padT + plotH * 0.5; // 60Hz 중앙
+    fctx.beginPath();
+    fctx.moveTo(padL, f0Y); fctx.lineTo(padL + plotW, f0Y);
+    fctx.stroke();
+    fctx.setLineDash([]);
+    fctx.font = 'bold 9px ui-monospace, monospace';
+    fctx.fillStyle = '#6ee7b7';
+    fctx.textAlign = 'right'; fctx.textBaseline = 'middle';
+    fctx.fillText('60Hz', padL - 4, f0Y);
+
+    // 히스토리 플롯 (시간축은 인덱스)
+    if (state.history.length > 1) {
+        const N = state.history.length;
+        const xOf = (i) => padL + (i / Math.max(1, N - 1)) * plotW;
+
+        // FSM 상태별 음영
+        for (let i = 1; i < N; i++) {
+            const x0 = xOf(i - 1), x1 = xOf(i);
+            const fsm = state.history[i].fsm;
+            let color = null;
+            if (fsm === 'tied')   color = 'rgba(244,114,182,0.07)';
+            else if (fsm === 'sync')   color = 'rgba(252,211,77,0.10)';
+            else if (fsm === 'island') color = 'rgba(168,85,247,0.10)';
+            else if (fsm === 'return') color = 'rgba(34,211,238,0.10)';
+            else color = 'rgba(148,163,184,0.05)';
+            fctx.fillStyle = color;
+            fctx.fillRect(x0, padT, x1 - x0 + 0.5, plotH);
+        }
+
+        // 주파수 곡선 (시안)
+        fctx.strokeStyle = '#67e8f9';
+        fctx.lineWidth = 2;
+        fctx.shadowBlur = 10;
+        fctx.shadowColor = '#67e8f9';
+        fctx.beginPath();
+        for (let i = 0; i < N; i++) {
+            const f = state.history[i].freq;
+            // 59.0 ~ 61.0 → plotH
+            const py = padT + plotH * 0.5 - (f - 60) * (plotH * 0.5 / 1.0);
+            const px = xOf(i);
+            if (i === 0) fctx.moveTo(px, py);
+            else fctx.lineTo(px, py);
+        }
+        fctx.stroke();
+        fctx.shadowBlur = 0;
+
+        // 부하 (보라, 영역)
+        fctx.strokeStyle = '#a5b4fc';
+        fctx.lineWidth = 1.8;
+        fctx.beginPath();
+        for (let i = 0; i < N; i++) {
+            const v = state.history[i].pLoad;
+            // 0~1.6 MW 매핑 (위에서 아래로)
+            const py = padT + plotH - (v / 1.6) * plotH * 0.85;
+            const px = xOf(i);
+            if (i === 0) fctx.moveTo(px, py);
+            else fctx.lineTo(px, py);
+        }
+        fctx.stroke();
+
+        // 발전 합 (에메랄드, 점선)
+        fctx.strokeStyle = '#86efac';
+        fctx.lineWidth = 1.5;
+        fctx.setLineDash([3, 3]);
+        fctx.beginPath();
+        for (let i = 0; i < N; i++) {
+            const h = state.history[i];
+            const gen = h.pPV + h.pWind + h.pDG + Math.max(0, h.pESS);
+            const py = padT + plotH - (gen / 1.6) * plotH * 0.85;
+            const px = xOf(i);
+            if (i === 0) fctx.moveTo(px, py);
+            else fctx.lineTo(px, py);
+        }
+        fctx.stroke();
+        fctx.setLineDash([]);
+    }
+
+    // 우측 라벨
+    fctx.font = 'bold 10px ui-monospace, monospace';
+    fctx.fillStyle = '#67e8f9';
+    fctx.textAlign = 'left'; fctx.textBaseline = 'middle';
+    fctx.fillText(`${state.freq.toFixed(2)}`, padL + plotW + 4, padT + plotH * 0.5 - (state.freq - 60) * (plotH * 0.5));
+
+    // X축
+    fctx.font = '10px ui-monospace, monospace';
+    fctx.fillStyle = '#94a3b8';
+    fctx.textAlign = 'center'; fctx.textBaseline = 'top';
+    fctx.fillText('시간 [최근 60초]', padL + plotW / 2, padT + plotH + 12);
+
+    // Y축 좌 라벨
+    fctx.save();
+    fctx.translate(padL - 30, padT + plotH / 2);
+    fctx.rotate(-Math.PI / 2);
+    fctx.fillStyle = '#67e8f9';
+    fctx.textAlign = 'center'; fctx.textBaseline = 'middle';
+    fctx.fillText('주파수 f [Hz] · 전력 [MW]', 0, 0);
+    fctx.restore();
+
+    // 눈금 (주파수)
+    fctx.fillStyle = '#67e8f9';
+    fctx.textAlign = 'right'; fctx.textBaseline = 'middle';
+    [59.0, 59.5, 60.0, 60.5, 61.0].forEach(f => {
+        const py = padT + plotH * 0.5 - (f - 60) * (plotH * 0.5);
+        fctx.fillText(`${f.toFixed(1)}`, padL - 4, py);
+    });
+
+    // 범례
+    fctx.font = 'bold 10px ui-monospace, monospace';
+    fctx.textAlign = 'left'; fctx.textBaseline = 'top';
+    let lx = padL + 6, ly = padT + 4;
+    fctx.fillStyle = '#67e8f9'; fctx.fillText('━ f', lx, ly);
+    fctx.fillStyle = '#a5b4fc'; fctx.fillText('━ 부하', lx + 36, ly);
+    fctx.fillStyle = '#86efac'; fctx.fillText('┄ 발전합', lx + 92, ly);
+
+    fctx.restore();
+}
+
+// ===== 시뮬레이션 스텝 =====
+function simulationStep(dt) {
+    if (!state.running) return;
+    computePower(dt);
+
+    // 히스토리 (0.1초 간격)
+    if (!state.lastSample || (state.t - state.lastSample) > 0.1) {
+        state.history.push({
+            freq: state.freq,
+            pPV: state.pPV, pWind: state.pWind,
+            pESS: state.pESS, pDG: state.pDG,
+            pGrid: state.pGrid, pLoad: state.pLoad,
+            fsm: state.fsm
+        });
+        state.lastSample = state.t;
+        // 600개(60초) 유지
+        if (state.history.length > 600) state.history.shift();
+    }
+}
+
+// ===== UI =====
+function updateLiveChips() {
+    // 자급률
+    const gen = state.pPV + state.pWind + state.pDG + Math.max(0, state.pESS);
+    const ssr = state.pLoad > 0.001 ? (gen / state.pLoad) * 100 : 0;
+    $('srVal').textContent = `${Math.min(999, ssr).toFixed(0)} %`;
+    $('loadVal').textContent = `${state.pLoad.toFixed(2)} MW`;
+    $('gridVal').textContent = `${state.pGrid >= 0 ? '+' : '−'}${Math.abs(state.pGrid).toFixed(2)} MW`;
+    $('modeVal').textContent = fsmLabel(state.fsm);
+
+    const pSr = $('pill-sr');
+    pSr.classList.toggle('ok', ssr >= 100);
+    pSr.classList.toggle('warn', ssr >= 70 && ssr < 100);
+    pSr.classList.toggle('danger', ssr < 70 && state.pLoad > 0.05);
+
+    const pGr = $('pill-grid');
+    pGr.classList.toggle('ok', state.gridOK && state.cbClosed);
+    pGr.classList.toggle('danger', !state.gridOK);
+
+    const pMd = $('pill-mode');
+    pMd.classList.toggle('island', state.fsm === 'island');
+    pMd.classList.toggle('warn', state.fsm === 'sync');
+    pMd.classList.toggle('ok', state.fsm === 'tied');
+}
+
+function updateButtons() {
+    $('btnRun').textContent = state.running ? '⏸ 운영 중...' : '▶ 운영 시작';
+    const oo = $('btnOutage');
+    if (state.gridOK) {
+        oo.className = 'toggle-btn on rounded-md w-full py-2 font-bold';
+        oo.textContent = '⚡ 그리드 정상 (전력 공급 중)';
+    } else {
+        oo.className = 'toggle-btn off rounded-md w-full py-2 font-bold';
+        oo.textContent = '🚫 정전 발생 (Outage)';
+    }
+    const dd = $('btnDiesel');
+    if (state.dieselOn) {
+        dd.className = 'toggle-btn on rounded-md w-full py-2 font-bold';
+        dd.textContent = '🔥 디젤 ON (운전 중)';
+    } else {
+        dd.className = 'toggle-btn off rounded-md w-full py-2 font-bold';
+        dd.textContent = '디젤 OFF (대기)';
+    }
+}
+
+// ===== 루프 =====
+let lastTime = 0;
+function loop(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = Math.min(0.1, (ts - lastTime) / 1000);
+    lastTime = ts;
+    state.t += dt;
+
+    simulationStep(dt);
+    drawMain();
+    drawFreqChart();
+    updateLiveChips();
+
+    requestAnimationFrame(loop);
+}
+
+// ===== 이벤트 =====
+document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(b => {
+            b.classList.remove('active', 'tied', 'island', 'auto');
+        });
+        const kind = btn.dataset.kind;
+        btn.classList.add('active', kind);
+        state.mode = btn.dataset.mode;
+        $('modeDesc').textContent = MODES[state.mode].desc;
+        // 모드 변경 시 FSM 재시작
+        if (state.mode === 'tied' && state.gridOK)      { state.fsm = 'tied'; state.cbClosed = true; }
+        else if (state.mode === 'island')               { state.fsm = 'island'; state.cbClosed = false; }
+        else { /* auto */                                 state.fsm = state.gridOK ? 'sync' : 'island';
+                                                          state.cbClosed = false; state.syncProgress = 0; }
+    });
+});
+
+$('pv').addEventListener('input', e => {
+    state.pv = +e.target.value;
+    $('pvDisp').textContent = state.pv.toFixed(2);
+});
+$('wind').addEventListener('input', e => {
+    state.windSpeed = +e.target.value;
+    $('windDisp').textContent = state.windSpeed.toFixed(1);
+});
+$('load').addEventListener('input', e => {
+    state.loadCmd = +e.target.value;
+    $('loadDisp').textContent = state.loadCmd.toFixed(2);
+});
+$('soc').addEventListener('input', e => {
+    state.soc = +e.target.value;
+    $('socDisp').textContent = state.soc;
+});
+
+$('btnOutage').addEventListener('click', () => {
+    state.gridOK = !state.gridOK;
+    updateButtons();
+});
+$('btnDiesel').addEventListener('click', () => {
+    state.dieselOn = !state.dieselOn;
+    updateButtons();
+});
+
+$('btnRun').addEventListener('click', () => {
+    state.running = !state.running;
+    updateButtons();
+});
+$('btnPause').addEventListener('click', () => {
+    state.running = false;
+    updateButtons();
+});
+$('btnReset').addEventListener('click', () => {
+    state.running = false;
+    state.t = 0;
+    state.lastSample = 0;
+    state.freq = 60.0;
+    state.fsm = 'standby';
+    state.cbClosed = true;
+    state.syncProgress = 0;
+    state.gridOK = true;
+    state.dieselOn = false;
+    state.soc = 60;
+    state.pv = 0.7;
+    state.windSpeed = 7.0;
+    state.loadCmd = 0.9;
+    state.mode = 'auto';
+    state.history = [];
+    $('pv').value = 0.7; $('pvDisp').textContent = '0.70';
+    $('wind').value = 7.0; $('windDisp').textContent = '7.0';
+    $('load').value = 0.9; $('loadDisp').textContent = '0.90';
+    $('soc').value = 60; $('socDisp').textContent = '60';
+    document.querySelectorAll('[data-mode]').forEach(b => {
+        b.classList.remove('active', 'tied', 'island', 'auto');
+        if (b.dataset.mode === 'auto') b.classList.add('active', 'auto');
+    });
+    $('modeDesc').textContent = MODES.auto.desc;
+    updateButtons();
+});
+
+// 초기화
+resize();
+updateButtons();
+
+// 헤더 등장
+if (typeof gsap !== 'undefined') {
+    gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+    gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.5, stagger: 0.08, delay: 0.2, ease: 'power2.out' });
+    gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    gsap.from('#controlPanel', { x: 24, opacity: 0, duration: 0.7, delay: 0.4, ease: 'power3.out' });
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

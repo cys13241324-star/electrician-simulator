@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK LIBRARY · 스파크 도서관 OPAC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf7f1;
+    --paper-2:#f3ecdd;
+    --cream:#efe6d2;
+    --parchment:#e8dcc0;
+    --ink:#241a10;
+    --ink-2:#4a3a26;
+    --muted:#8b7a5e;
+    --line:#d9cba8;
+    --line-2:#c2ad7f;
+    --brown:#6b4a23;
+    --brown-2:#4a2f11;
+    --brown-3:#8a6536;
+    --green:#3f5a35;
+    --green-2:#5a7a4a;
+    --green-soft:#7a9268;
+    --maroon:#7a2b1d;
+    --gold:#a7821f;
+    --accent:#9c6a2a;
+  }
+  *{box-sizing:border-box;}
+  html,body{background:var(--paper);color:var(--ink);font-family:'Lora','Noto Serif KR','EB Garamond',serif;-webkit-font-smoothing:antialiased;}
+  .font-serif{font-family:'Lora','Noto Serif KR',serif;}
+  .font-garamond{font-family:'EB Garamond','Noto Serif KR',serif;}
+  .font-korean{font-family:'Noto Serif KR',serif;}
+  .font-mono{font-family:'Courier New',monospace;letter-spacing:.04em;}
+  /* paper / parchment texture using subtle gradients */
+  .paper-tex{
+    background-color:var(--paper);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139,109,62,.05) 0, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(139,109,62,.05) 0, transparent 40%),
+      repeating-linear-gradient(0deg, rgba(139,109,62,.025) 0 1px, transparent 1px 4px);
+  }
+  .parchment{
+    background-color:var(--cream);
+    background-image:
+      radial-gradient(ellipse at top, rgba(255,255,255,.45), transparent 60%),
+      radial-gradient(ellipse at bottom, rgba(106,72,30,.06), transparent 60%);
+    box-shadow:inset 0 0 0 1px rgba(106,72,30,.12), inset 0 0 40px rgba(106,72,30,.05);
+  }
+  /* decorative rules */
+  .rule-double{border-top:1px solid var(--brown);border-bottom:1px solid var(--brown);height:4px;}
+  .rule-fancy{
+    height:14px;
+    background-image:
+      linear-gradient(to right, var(--brown) 0, var(--brown) 100%),
+      linear-gradient(to right, var(--brown) 0, var(--brown) 100%);
+    background-size:100% 1px, 100% 1px;
+    background-position:0 4px, 0 9px;
+    background-repeat:no-repeat;
+    position:relative;
+  }
+  .rule-fancy::before{
+    content:"✦";
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:var(--paper);padding:0 10px;color:var(--brown);font-size:11px;
+  }
+  .ornament{color:var(--brown);font-size:14px;letter-spacing:.4em;}
+  /* badges */
+  .ddc-chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px;border:1px solid var(--line-2);background:#fff;
+    font-family:'Lora',serif;font-size:13px;color:var(--brown-2);
+    border-radius:2px;cursor:pointer;transition:all .18s ease;
+    box-shadow:1px 1px 0 rgba(106,72,30,.15);
+  }
+  .ddc-chip:hover{background:var(--cream);border-color:var(--brown);}
+  .ddc-chip.is-active{background:var(--brown);color:var(--paper);border-color:var(--brown-2);box-shadow:2px 2px 0 rgba(106,72,30,.3);}
+  .ddc-chip.is-active .ddc-num{color:var(--paper);}
+  .ddc-chip.is-disabled{opacity:.4;cursor:not-allowed;background:repeating-linear-gradient(45deg, transparent 0 6px, rgba(106,72,30,.08) 6px 7px);}
+  .ddc-num{font-family:'Courier New',monospace;font-weight:700;color:var(--brown);letter-spacing:.05em;font-size:12px;}
+  .ddc-chip.is-active .ddc-num{color:var(--cream);}
+  /* book card */
+  .book-card{
+    background:#fff;border:1px solid var(--line);
+    display:flex;flex-direction:column;
+    transition:transform .25s ease, box-shadow .25s ease;
+    cursor:pointer;position:relative;
+    box-shadow:1px 1px 0 rgba(106,72,30,.18), 4px 4px 14px rgba(106,72,30,.05);
+  }
+  .book-card:hover{transform:translateY(-3px) rotate(-.3deg);box-shadow:2px 2px 0 rgba(106,72,30,.25), 8px 10px 22px rgba(106,72,30,.12);}
+  .book-cover{
+    aspect-ratio:2/3;background:var(--paper-2);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;position:relative;
+  }
+  .book-cover svg{width:100%;height:100%;display:block;}
+  .stock-dot{width:8px;height:8px;border-radius:999px;display:inline-block;}
+  .stock-dot.ok{background:var(--green-2);box-shadow:0 0 0 2px rgba(90,122,74,.2);}
+  .stock-dot.low{background:var(--gold);box-shadow:0 0 0 2px rgba(167,130,31,.2);}
+  .stock-dot.out{background:var(--maroon);box-shadow:0 0 0 2px rgba(122,43,29,.2);}
+  /* call number tag */
+  .call-tag{
+    display:inline-block;border:1px solid var(--brown);background:#fff;
+    font-family:'Courier New',monospace;font-size:10px;color:var(--brown-2);
+    padding:2px 6px;letter-spacing:.05em;
+  }
+  /* search bar */
+  .opac-search{
+    background:#fff;border:2px solid var(--brown);
+    box-shadow:3px 3px 0 var(--brown-2);
+  }
+  .opac-search input{background:transparent;border:none;outline:none;}
+  .opac-tab{padding:6px 14px;border:1px solid var(--line-2);background:var(--paper);color:var(--brown-2);font-size:12px;cursor:pointer;border-bottom:none;font-family:'Lora',serif;}
+  .opac-tab.is-active{background:#fff;color:var(--ink);border-color:var(--brown);border-bottom:2px solid #fff;margin-bottom:-2px;font-weight:600;}
+  /* card pockets / due-date slip */
+  .due-slip{
+    background:repeating-linear-gradient(0deg, transparent 0 22px, rgba(106,72,30,.1) 22px 23px);
+    border:1px solid var(--line-2);background-color:#fefcf6;
+    box-shadow:inset 0 0 0 4px #fefcf6, 0 0 0 1px var(--line);
+  }
+  /* member card */
+  .member-card{
+    background:linear-gradient(135deg, #6b4a23 0%, #8a6536 50%, #6b4a23 100%);
+    color:var(--paper);position:relative;overflow:hidden;
+    border-radius:8px;box-shadow:0 10px 30px rgba(74,47,17,.4);
+  }
+  .member-card::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,.1), transparent 50%),
+      repeating-linear-gradient(45deg, transparent 0 18px, rgba(255,255,255,.04) 18px 19px);
+    pointer-events:none;
+  }
+  /* stamps */
+  .stamp{
+    display:inline-flex;align-items:center;justify-content:center;
+    border:2px solid currentColor;padding:6px 12px;
+    font-family:'Lora',serif;font-weight:700;font-size:11px;
+    letter-spacing:.2em;text-transform:uppercase;
+    transform:rotate(-6deg);opacity:.85;
+    border-radius:4px;color:var(--maroon);
+  }
+  .stamp.green{color:var(--green);}
+  .stamp.brown{color:var(--brown-2);}
+  /* modal */
+  .modal-bg{background:rgba(36,26,16,.55);backdrop-filter:blur(3px);}
+  .modal-panel{background:var(--paper);border:1px solid var(--brown);box-shadow:8px 8px 0 rgba(106,72,30,.25);}
+  /* rank list */
+  .rank-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px dashed var(--line-2);}
+  .rank-row:last-child{border-bottom:none;}
+  .rank-num{font-family:'EB Garamond',serif;font-size:30px;font-weight:700;color:var(--brown);min-width:38px;line-height:1;font-style:italic;}
+  .rank-num.top{color:var(--maroon);}
+  /* dewey shelf */
+  .shelf{
+    background:linear-gradient(180deg, var(--brown-3) 0%, var(--brown) 100%);
+    height:14px;border-radius:2px;position:relative;
+    box-shadow:0 6px 12px rgba(74,47,17,.3), inset 0 -3px 0 rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  /* due date countdown */
+  .countdown-box{
+    border:2px dashed var(--maroon);background:#fff8f0;
+    padding:14px;text-align:center;font-family:'Lora',serif;
+  }
+  /* drop cap */
+  .dropcap::first-letter{
+    font-family:'EB Garamond',serif;font-size:54px;font-weight:700;
+    color:var(--brown);float:left;line-height:.9;margin:6px 8px 0 0;
+  }
+  /* utilities */
+  .hidden-init{display:none;}
+  .text-brown{color:var(--brown);}
+  .text-brown-2{color:var(--brown-2);}
+  .text-green{color:var(--green);}
+  .bg-brown{background:var(--brown);}
+  .bg-cream{background:var(--cream);}
+  .border-brown{border-color:var(--brown);}
+  .border-line{border-color:var(--line);}
+  /* responsive tweaks */
+  @media (max-width: 768px){
+    .ornament{letter-spacing:.2em;}
+  }
+  /* scrollbar in modal */
+  .modal-scroll::-webkit-scrollbar{width:8px;}
+  .modal-scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px;}
+  /* small caps */
+  .smallcaps{font-variant:small-caps;letter-spacing:.1em;}
+</style>
+</head>
+<body class="paper-tex min-h-screen">
+
+<!-- TOP RIBBON -->
+<div class="border-b border-brown bg-cream">
+  <div class="max-w-6xl mx-auto px-6 py-2 flex flex-wrap items-center justify-between gap-3 text-xs text-brown-2 font-garamond">
+    <div class="flex items-center gap-4">
+      <span class="smallcaps">Established <em>MMXXIV</em></span>
+      <span class="hidden sm:inline">· 본관 3층 · 전기·기술 자료실</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span>이용시간 09:00 — 21:00</span>
+      <span class="hidden sm:inline">· 휴관 매월 첫째 월요일</span>
+      <span class="font-mono">№ A-2026-0516</span>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER / MASTHEAD -->
+<header class="max-w-6xl mx-auto px-6 pt-10 pb-6 text-center">
+  <div class="ornament mb-3">✦ ❦ ✦</div>
+  <p class="text-xs tracking-[.4em] text-brown-2 smallcaps mb-3">Online Public Access Catalog</p>
+  <h1 class="font-garamond text-5xl sm:text-6xl md:text-7xl font-bold leading-none text-brown-2">
+    <span class="italic">Spark</span> <span class="not-italic">Library</span>
+  </h1>
+  <p class="font-korean text-lg mt-3 text-ink-2" style="color:var(--ink-2)">스파크 도서관 · 전기·전자공학 분과</p>
+  <div class="rule-fancy max-w-md mx-auto my-6"></div>
+  <p class="font-garamond italic text-brown-2 max-w-xl mx-auto leading-relaxed">
+    "한 권의 책은 한 번의 회로 점검과 같다 — 흘려보면 보이지 않고, 머무르면 흐름이 보인다."
+  </p>
+  <div class="flex flex-wrap items-center justify-center gap-3 mt-6 text-xs text-brown-2">
+    <span class="smallcaps">소장 자료 <strong class="font-bold">12,847</strong>권</span>
+    <span>·</span>
+    <span class="smallcaps">대출 가능 <strong class="font-bold">9,213</strong>권</span>
+    <span>·</span>
+    <span class="smallcaps">이번 주 신간 <strong class="font-bold">14</strong>권</span>
+    <span>·</span>
+    <span class="font-mono">CARD № <strong id="cardNo">SPK-2026-04827</strong></span>
+  </div>
+</header>
+
+<!-- SEARCH PANEL -->
+<section class="max-w-6xl mx-auto px-6 pb-8">
+  <div class="flex items-end gap-1">
+    <button class="opac-tab is-active" data-tab="all">📚 전체</button>
+    <button class="opac-tab" data-tab="title">제목</button>
+    <button class="opac-tab" data-tab="author">저자</button>
+    <button class="opac-tab" data-tab="call">청구기호</button>
+  </div>
+  <div class="opac-search p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <div class="flex items-center gap-2 px-3 text-brown-2">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.5-4.5"/></svg>
+      <span class="font-mono text-xs hidden sm:inline">QUERY ▸</span>
+    </div>
+    <input id="searchInput" type="text" placeholder="책 제목 · 저자 · 키워드 · 청구기호 (예: 옴, 변압기, 621.3)" class="flex-1 px-3 py-2 font-serif text-base text-ink placeholder:text-muted" style="color:var(--ink)" />
+    <div class="flex items-center gap-2">
+      <button id="searchBtn" class="px-5 py-2 bg-brown text-paper font-serif text-sm tracking-wider hover:opacity-90" style="color:var(--paper)">검색</button>
+      <button id="clearBtn" class="px-3 py-2 border border-line-2 text-brown-2 font-serif text-sm hover:bg-cream" style="border-color:var(--line-2)">초기화</button>
+    </div>
+  </div>
+  <div class="flex flex-wrap items-center gap-4 mt-3 text-xs text-brown-2 font-garamond">
+    <span class="smallcaps">고급 검색</span>
+    <label class="flex items-center gap-1"><input type="checkbox" checked> 대출 가능만</label>
+    <label class="flex items-center gap-1"><input type="checkbox"> e-Book 포함</label>
+    <label class="flex items-center gap-1"><input type="checkbox"> 절판 도서 제외</label>
+    <span class="ml-auto" id="resultCount">검색 결과 <strong>12</strong>건</span>
+  </div>
+</section>
+
+<!-- DEWEY DECIMAL CLASSIFICATION -->
+<section class="max-w-6xl mx-auto px-6 pb-10">
+  <div class="flex items-baseline justify-between mb-4">
+    <div>
+      <p class="text-xs tracking-[.3em] text-brown-2 smallcaps">Korean Decimal Classification</p>
+      <h2 class="font-garamond text-3xl font-bold text-brown-2 mt-1">한국 십진 분류표 <span class="font-korean text-base text-muted">— 본 자료실 보유 분야</span></h2>
+    </div>
+    <span class="font-mono text-xs text-muted hidden sm:inline">KDC ed. 6</span>
+  </div>
+  <div class="shelf mb-5"></div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" id="ddcGrid">
+    <!-- generated -->
+  </div>
+</section>
+
+<!-- MAIN GRID: BOOK LIST + SIDEBAR -->
+<section class="max-w-6xl mx-auto px-6 pb-16 grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+  <!-- BOOKS COLUMN -->
+  <div class="lg:col-span-2">
+    <div class="flex items-baseline justify-between mb-5">
+      <div>
+        <p class="text-xs tracking-[.3em] text-brown-2 smallcaps">Catalogue</p>
+        <h2 class="font-garamond text-3xl font-bold text-brown-2 mt-1">소장 도서 목록</h2>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-brown-2">
+        <span class="font-garamond italic">정렬</span>
+        <select id="sortSel" class="border border-line-2 bg-white px-2 py-1 font-serif text-sm" style="border-color:var(--line-2)">
+          <option value="popular">인기순</option>
+          <option value="new">신간순</option>
+          <option value="rating">평점순</option>
+          <option value="call">청구기호순</option>
+        </select>
+      </div>
+    </div>
+    <div id="bookGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-5"></div>
+    <div id="emptyState" class="hidden-init text-center py-16 text-brown-2 font-garamond italic">
+      <div class="ornament mb-2">✦</div>
+      <p class="text-lg">해당하는 도서를 찾을 수 없습니다.</p>
+      <p class="text-sm mt-1">다른 키워드로 다시 검색해 보세요.</p>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="space-y-10">
+
+    <!-- MEMBER CARD -->
+    <div>
+      <p class="text-xs tracking-[.3em] text-brown-2 smallcaps mb-3">Library Card</p>
+      <div class="member-card p-5 aspect-[1.586/1] flex flex-col justify-between">
+        <div class="flex items-start justify-between relative z-10">
+          <div>
+            <p class="font-garamond italic text-sm opacity-90">Spark Library</p>
+            <p class="font-garamond text-2xl font-bold leading-tight">스파크 도서관</p>
+            <p class="text-[10px] tracking-[.3em] opacity-70 mt-1 smallcaps">Reader's Card</p>
+          </div>
+          <svg width="44" height="44" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-90">
+            <circle cx="22" cy="22" r="20"/>
+            <path d="M22 8v28M8 22h28"/>
+            <path d="M14 14l16 16M30 14L14 30"/>
+          </svg>
+        </div>
+        <div class="relative z-10">
+          <p class="font-mono text-lg tracking-[.15em]">SPK · 2026 · 04827</p>
+          <div class="flex items-end justify-between mt-2 text-xs">
+            <div>
+              <p class="opacity-70 text-[10px] smallcaps">Member</p>
+              <p class="font-garamond text-base">독자 <em>회원</em></p>
+            </div>
+            <div class="text-right">
+              <p class="opacity-70 text-[10px] smallcaps">Valid Until</p>
+              <p class="font-mono">12/31</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-muted mt-2 font-garamond italic text-center">※ 가상 도서관 시뮬레이션용 회원증</p>
+    </div>
+
+    <!-- POPULAR TOP 10 -->
+    <div>
+      <p class="text-xs tracking-[.3em] text-brown-2 smallcaps mb-3">Most Borrowed</p>
+      <h3 class="font-garamond text-2xl font-bold text-brown-2 mb-3">인기 대출 TOP 10</h3>
+      <div id="topList" class="bg-white border border-line p-5" style="border-color:var(--line)"></div>
+    </div>
+
+    <!-- NEW ARRIVALS -->
+    <div>
+      <p class="text-xs tracking-[.3em] text-brown-2 smallcaps mb-3">Newly Acquired</p>
+      <h3 class="font-garamond text-2xl font-bold text-brown-2 mb-3">신간 안내</h3>
+      <div id="newList" class="space-y-3"></div>
+    </div>
+
+    <!-- DUE DATES -->
+    <div>
+      <p class="text-xs tracking-[.3em] text-brown-2 smallcaps mb-3">Your Loans</p>
+      <h3 class="font-garamond text-2xl font-bold text-brown-2 mb-3">반납 예정일</h3>
+      <div class="due-slip p-4">
+        <div class="flex items-center justify-between text-xs text-brown-2 mb-3 pb-2 border-b" style="border-color:var(--line-2)">
+          <span class="smallcaps">Date Due</span>
+          <span class="font-mono">SLIP № 04827-A</span>
+        </div>
+        <div id="dueList" class="space-y-3"></div>
+        <div class="rule-double my-4"></div>
+        <p class="font-garamond italic text-xs text-brown-2 text-center">기한 내 반납을 부탁드립니다. — 연체일 1일당 100원</p>
+      </div>
+    </div>
+
+  </aside>
+</section>
+
+<!-- FOOTER -->
+<footer class="border-t border-brown bg-cream mt-10">
+  <div class="max-w-6xl mx-auto px-6 py-10 text-center">
+    <div class="ornament mb-3">✦ ❦ ✦</div>
+    <p class="font-garamond italic text-brown-2 text-lg">Spark Library — Where Currents Meet Letters</p>
+    <p class="font-korean text-sm text-brown-2 mt-2">전류와 문자가 만나는 곳, 스파크 도서관</p>
+    <div class="rule-fancy max-w-md mx-auto my-6"></div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left max-w-3xl mx-auto text-xs text-brown-2 font-garamond">
+      <div>
+        <p class="smallcaps font-bold mb-1">Hours</p>
+        <p>평일 09:00 — 21:00</p>
+        <p>주말 10:00 — 18:00</p>
+        <p>휴관 매월 첫째 월요일</p>
+      </div>
+      <div>
+        <p class="smallcaps font-bold mb-1">Services</p>
+        <p>도서 대출 (1인 5권)</p>
+        <p>희망도서 신청</p>
+        <p>전기 실습실 예약</p>
+      </div>
+      <div>
+        <p class="smallcaps font-bold mb-1">Notice</p>
+        <p>본 도서관은 학습 시뮬레이션을 위한</p>
+        <p>가상 공간이며, 등장하는 도서·저자·</p>
+        <p>출판사는 모두 가상의 창작물입니다.</p>
+      </div>
+    </div>
+    <p class="text-[10px] text-muted mt-8 font-mono smallcaps">© MMXXVI · Spark Library Catalog · A Fictional Simulation</p>
+  </div>
+</footer>
+
+<!-- ============= BOOK DETAIL MODAL ============= -->
+<div id="bookModal" class="fixed inset-0 z-50 hidden-init items-center justify-center p-4 modal-bg" style="display:none">
+  <div class="modal-panel max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between px-5 py-3 border-b" style="border-color:var(--line)">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-brown-2">CATALOG ENTRY</span>
+        <span id="modalCall" class="call-tag"></span>
+      </div>
+      <button id="closeModal" class="text-brown-2 hover:text-ink text-xl leading-none px-2">✕</button>
+    </div>
+    <div class="modal-scroll overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div class="md:col-span-2">
+        <div id="modalCover" class="book-cover border border-line" style="border-color:var(--line)"></div>
+        <div class="mt-4 space-y-2 text-sm font-garamond text-brown-2">
+          <div class="flex justify-between border-b pb-1" style="border-color:var(--line)"><span class="smallcaps">평점</span><span id="modalRating"></span></div>
+          <div class="flex justify-between border-b pb-1" style="border-color:var(--line)"><span class="smallcaps">대출 기록</span><span id="modalLoans"></span></div>
+          <div class="flex justify-between border-b pb-1" style="border-color:var(--line)"><span class="smallcaps">재고</span><span id="modalStock"></span></div>
+          <div class="flex justify-between border-b pb-1" style="border-color:var(--line)"><span class="smallcaps">위치</span><span id="modalLocation"></span></div>
+        </div>
+      </div>
+      <div class="md:col-span-3">
+        <p id="modalSub" class="font-garamond italic text-brown-2 text-sm"></p>
+        <h3 id="modalTitle" class="font-garamond text-3xl font-bold text-brown-2 leading-tight mt-1"></h3>
+        <p id="modalAuthor" class="font-korean text-ink-2 mt-2" style="color:var(--ink-2)"></p>
+        <p id="modalPub" class="text-xs text-muted mt-1 font-mono"></p>
+        <div class="rule-fancy my-5"></div>
+        <p class="text-xs tracking-[.3em] text-brown-2 smallcaps mb-2">Table of Contents</p>
+        <ol id="modalToc" class="font-garamond text-sm text-ink-2 space-y-1 list-decimal list-inside" style="color:var(--ink-2)"></ol>
+        <p class="text-xs tracking-[.3em] text-brown-2 smallcaps mt-5 mb-2">Reader Reviews</p>
+        <div id="modalReviews" class="space-y-3"></div>
+        <div class="flex items-center gap-3 mt-6">
+          <button id="borrowBtn" class="flex-1 bg-brown text-paper px-5 py-3 font-serif tracking-wider hover:opacity-90" style="color:var(--paper)">📖 대출하기</button>
+          <button id="reserveBtn" class="px-5 py-3 border border-brown text-brown-2 font-serif hover:bg-cream">예약</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= LOAN RECEIPT MODAL ============= -->
+<div id="receiptModal" class="fixed inset-0 z-50 hidden-init items-center justify-center p-4 modal-bg" style="display:none">
+  <div class="bg-paper border-2 border-brown max-w-md w-full p-8 relative" style="background:var(--paper)">
+    <div class="absolute -top-3 -right-3">
+      <span class="stamp">Borrowed</span>
+    </div>
+    <div class="text-center">
+      <p class="text-xs tracking-[.3em] text-brown-2 smallcaps">Loan Receipt</p>
+      <h3 class="font-garamond text-2xl font-bold text-brown-2 mt-1">대출 영수증</h3>
+      <div class="rule-fancy my-4"></div>
+    </div>
+    <div class="font-mono text-xs text-brown-2 space-y-1">
+      <div class="flex justify-between"><span>SLIP №</span><span id="rcptNo"></span></div>
+      <div class="flex justify-between"><span>DATE</span><span id="rcptDate"></span></div>
+      <div class="flex justify-between"><span>MEMBER</span><span>SPK-2026-04827</span></div>
+    </div>
+    <div class="border-t border-b my-4 py-3" style="border-color:var(--brown)">
+      <p class="font-garamond text-sm text-muted">도서명</p>
+      <p id="rcptTitle" class="font-garamond text-lg font-bold text-brown-2"></p>
+      <p id="rcptCall" class="call-tag mt-2"></p>
+    </div>
+    <div class="countdown-box my-4">
+      <p class="text-xs smallcaps text-brown-2 mb-1">Return By · 반납 예정일</p>
+      <p id="rcptDue" class="font-garamond text-2xl font-bold text-brown-2"></p>
+      <p id="rcptCountdown" class="font-mono text-xs text-maroon mt-1" style="color:var(--maroon)"></p>
+    </div>
+    <p class="font-garamond italic text-xs text-center text-brown-2">기한 엄수 · 연체 시 1일당 100원의 연체료 부과</p>
+    <button id="closeRcpt" class="w-full mt-5 bg-brown text-paper py-3 font-serif tracking-wider" style="color:var(--paper)">확인</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA — 전적으로 가상의 도서관 카탈로그
+// ============================================================
+const escapeHTML = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const DDC = [
+  {code:'000', name:'총류',       sub:'전기 학습 일반',     color:'#6b4a23', enabled:true},
+  {code:'100', name:'철학·심리', sub:'학습 동기',           color:'#7a5a32', enabled:true},
+  {code:'200', name:'종교',       sub:'(본 분과 미소장)',   color:'#9b8b6a', enabled:false},
+  {code:'300', name:'사회과학', sub:'시험 제도·법규',     color:'#5a7a4a', enabled:true},
+  {code:'400', name:'자연과학', sub:'전기 이론',           color:'#3f5a35', enabled:true},
+  {code:'500', name:'기술과학', sub:'전기 기기·설비',     color:'#8b3a1a', enabled:true, highlight:true},
+  {code:'600', name:'예술',       sub:'전기 시각화',         color:'#7a4a23', enabled:true},
+  {code:'700', name:'어학',       sub:'전기 용어',           color:'#5a4a3a', enabled:true},
+  {code:'800', name:'문학',       sub:'전기 소설',           color:'#6a5238', enabled:true},
+  {code:'900', name:'역사',       sub:'전기의 역사',         color:'#4a3a26', enabled:true},
+];
+
+const BOOKS = [
+  { id:1, title:'옴의 법칙 입문', sub:'A Gentle Introduction to Ohm\'s Law',
+    author:'정유미', pub:'스파크학술원', year:2025, call:'421.3-정유-2025',
+    ddc:'400', stock:3, total:5, rating:4.7, loans:284, new:false,
+    cover:'ohm', palette:['#5a7a4a','#3f5a35','#efe6d2'],
+    blurb:'전압·전류·저항이라는 세 단어가 처음 만나는 자리. 가장 쉬운 비유로 시작해 회로 해석의 첫 걸음을 다집니다.',
+    toc:['I. 전기의 흐름이란', 'II. V = IR — 세 친구의 약속', 'III. 직렬과 병렬의 만남', 'IV. 합성 저항 연습', 'V. 첫 풀이 문제집'],
+    reviews:[{who:'독자 ㄱ', text:'비유가 다정해서 회로가 두렵지 않게 됐다.'},{who:'독자 ㄴ', text:'1장만 봐도 옴의 법칙이 손에 잡힌다.'}] },
+
+  { id:2, title:'키르히호프의 노드 완전 정복', sub:'Mastering KCL & KVL',
+    author:'한재호', pub:'노드출판', year:2024, call:'421.4-한재-2024',
+    ddc:'400', stock:1, total:4, rating:4.6, loans:212, new:false,
+    cover:'kcl', palette:['#365a78','#1d3a55','#efe6d2'],
+    blurb:'노드 방정식과 루프 방정식을 손에 익을 때까지 — 단계별 80문제와 해설.',
+    toc:['1. 전류 보존 법칙','2. 전압 합의 법칙','3. 노드 해석법','4. 메시 해석법','5. 실전 회로 80선'],
+    reviews:[{who:'독자 ㄷ', text:'노드가 더 이상 무섭지 않다.'}] },
+
+  { id:3, title:'변압기 권수비 마스터', sub:'Transformer Turns Ratio Workbook',
+    author:'배지원', pub:'트랜스아카데미', year:2025, call:'427.6-배지-2025',
+    ddc:'500', stock:0, total:3, rating:4.5, loans:198, new:false,
+    cover:'transformer', palette:['#8b3a1a','#5a2510','#efe6d2'],
+    blurb:'1차·2차 권수비가 만들어내는 전압·전류·임피던스의 비율 — 손으로 그려가며 익히는 워크북.',
+    toc:['I. 변압기의 구조','II. 권수비 N₁ : N₂','III. 임피던스 변환','IV. 단상과 3상 변압기','V. 손실과 효율'],
+    reviews:[{who:'독자 ㄹ', text:'권수비가 비로소 직관이 되었다.'}] },
+
+  { id:4, title:'RLC 공진 실전 풀이', sub:'Resonance in Practice',
+    author:'서가람', pub:'사인파출판사', year:2025, call:'421.5-서가-2025',
+    ddc:'400', stock:4, total:6, rating:4.8, loans:341, new:true,
+    cover:'rlc', palette:['#7a2b1d','#4a1a10','#efe6d2'],
+    blurb:'직렬·병렬 공진의 주파수, Q값, 대역폭 — 시험에 자주 나오는 30유형을 모았다.',
+    toc:['1. 공진 주파수 f₀','2. Q값과 대역폭','3. 직렬 공진','4. 병렬 공진','5. 30유형 풀이'],
+    reviews:[{who:'독자 ㅁ', text:'공진이 손에 잡히는 첫 책.'},{who:'독자 ㅂ', text:'그림이 친절하다.'}] },
+
+  { id:5, title:'3상 결선의 모든 것', sub:'Y와 Δ, 그 너머',
+    author:'문하영', pub:'삼상학회', year:2024, call:'427.3-문하-2024',
+    ddc:'500', stock:2, total:4, rating:4.6, loans:267, new:false,
+    cover:'threephase', palette:['#a7821f','#7a5a10','#efe6d2'],
+    blurb:'Y결선·Δ결선의 상전압·선전압, 상전류·선전류 관계 — 헷갈리지 않는 한 권.',
+    toc:['1. 3상 교류의 기초','2. Y결선의 성질','3. Δ결선의 성질','4. Y-Δ 변환','5. 3상 전력'],
+    reviews:[{who:'독자 ㅅ', text:'√3이 외워지지 않아도 되는 책.'}] },
+
+  { id:6, title:'안전 수칙 핸드북', sub:'Electrical Safety Handbook',
+    author:'노현석', pub:'세이프티프레스', year:2025, call:'363.1-노현-2025',
+    ddc:'300', stock:5, total:7, rating:4.4, loans:156, new:false,
+    cover:'safety', palette:['#c0392b','#8b1f12','#efe6d2'],
+    blurb:'감전·아크·접지·차단 — 현장에서 가장 먼저 배우는, 그리고 가장 늦게까지 잊지 말아야 할 것들.',
+    toc:['I. 감전의 메커니즘','II. 접지 계통','III. 차단기와 누전','IV. 작업 절차서','V. 사고 사례 해부'],
+    reviews:[{who:'독자 ㅇ', text:'책상 위에 늘 펴두는 책.'}] },
+
+  { id:7, title:'전기기능사 합격 비법', sub:'CBT 5개년 정수',
+    author:'유재경', pub:'합격출판', year:2026, call:'569.07-유재-2026',
+    ddc:'500', stock:6, total:10, rating:4.9, loans:512, new:true,
+    cover:'pass', palette:['#3f5a35','#1f3a18','#efe6d2'],
+    blurb:'최근 5년 CBT 출제 빈도 1위 유형 60개와 단권화 노트. 합격선까지 가장 짧은 길.',
+    toc:['1. 빈출 유형 60','2. 단권화 노트','3. 약점 진단표','4. 모의고사 4회분','5. 마지막 1주 플랜'],
+    reviews:[{who:'독자 ㅈ', text:'한 달 만에 합격.'},{who:'독자 ㅊ', text:'단권화가 정말 잘 되어있다.'}] },
+
+  { id:8, title:'패러데이의 일생', sub:'A Life Bound by Field Lines',
+    author:'임소영', pub:'역사문고', year:2024, call:'990.42-임소-2024',
+    ddc:'900', stock:2, total:2, rating:4.5, loans:134, new:false,
+    cover:'faraday', palette:['#6b4a23','#3a2510','#efe6d2'],
+    blurb:'대장간 견습생에서 전자기 유도의 발견자까지 — 한 사람의 일생을 따라 읽는 전기의 역사.',
+    toc:['I. 런던의 견습생','II. 데이비의 조수','III. 회전하는 도선','IV. 유도의 법칙','V. 만년의 강의'],
+    reviews:[{who:'독자 ㅋ', text:'전기를 사람의 이야기로 만나는 책.'}] },
+
+  { id:9, title:'테슬라 전기 백과사전', sub:'An Illustrated Lexicon',
+    author:'편집부', pub:'스파크학술원', year:2025, call:'420.3-편집-2025',
+    ddc:'000', stock:1, total:2, rating:4.7, loans:289, new:true,
+    cover:'tesla', palette:['#5a4a3a','#2a1f10','#efe6d2'],
+    blurb:'전기·자기·전자공학 용어 3,200개를 도해와 함께 정리한 사전.',
+    toc:['A — Ampere부터','C — Coil까지','E — EMF의 정의','M — Magnetic Flux','Z — Zener 다이오드'],
+    reviews:[{who:'독자 ㅌ', text:'책상 옆에 두는 사전.'}] },
+
+  { id:10, title:'전자기학 강의', sub:'Lectures on Electromagnetism',
+    author:'조은별', pub:'대학출판사', year:2023, call:'427.1-조은-2023',
+    ddc:'400', stock:2, total:3, rating:4.4, loans:171, new:false,
+    cover:'em', palette:['#365a78','#1d3a55','#efe6d2'],
+    blurb:'맥스웰 방정식까지 — 학부 수준의 친절한 강의록 12주차 분량.',
+    toc:['1주. 전기장','2주. 자기장','3주. 가우스 법칙','7주. 패러데이의 법칙','12주. 맥스웰 방정식'],
+    reviews:[{who:'독자 ㅍ', text:'수식을 두려워하지 않게 해 준다.'}] },
+
+  { id:11, title:'회로 분석 입문', sub:'Circuit Analysis · Step by Step',
+    author:'강민지', pub:'노드출판', year:2024, call:'421.7-강민-2024',
+    ddc:'400', stock:3, total:5, rating:4.6, loans:203, new:false,
+    cover:'circuit', palette:['#5a7a4a','#3f5a35','#efe6d2'],
+    blurb:'테브난·노턴 등가, 중첩의 원리, 최대 전력 전달 — 손풀이 단계별 학습서.',
+    toc:['1. 등가 회로','2. 중첩의 원리','3. 테브난 등가','4. 노턴 등가','5. 최대 전력 전달'],
+    reviews:[{who:'독자 ㅎ', text:'예제가 친절해서 막힘이 없다.'}] },
+
+  { id:12, title:'전력 시스템 개론', sub:'Introduction to Power Systems',
+    author:'최도윤', pub:'그리드프레스', year:2025, call:'568.3-최도-2025',
+    ddc:'500', stock:0, total:3, rating:4.3, loans:118, new:true,
+    cover:'grid', palette:['#a7821f','#7a5a10','#efe6d2'],
+    blurb:'발전·송전·배전의 큰 그림과 부하·역률·전력 계통 보호까지.',
+    toc:['1. 전력 계통의 구조','2. 송전선의 모델','3. 배전 시스템','4. 부하와 역률','5. 계통 보호'],
+    reviews:[{who:'독자 a', text:'전기의 큰 지도를 그려주는 책.'}] },
+
+  { id:13, title:'전기 용어 한·영 사전', sub:'Korean–English Dictionary of Electric Terms',
+    author:'편집부', pub:'어학문고', year:2024, call:'747.3-편집-2024',
+    ddc:'700', stock:3, total:3, rating:4.2, loans:97, new:false,
+    cover:'dict', palette:['#7a5a32','#4a2f11','#efe6d2'],
+    blurb:'reactance, susceptance, admittance — 시험과 현장에서 마주치는 용어 1,800개.',
+    toc:['A','C','I','R','X — 마지막 문자까지'],
+    reviews:[{who:'독자 b', text:'시험 직전에 유용했다.'}] },
+
+  { id:14, title:'스파크의 아이들', sub:'A Novel of Currents and Hearts',
+    author:'윤한별', pub:'문학정원', year:2024, call:'813.7-윤한-2024',
+    ddc:'800', stock:1, total:2, rating:4.1, loans:64, new:false,
+    cover:'novel', palette:['#7a2b1d','#4a1a10','#efe6d2'],
+    blurb:'전기기능사 시험을 함께 준비하던 두 청년의 1년 — 작은 도시의 변전소를 배경으로 한 성장 소설.',
+    toc:['1부. 옴의 봄','2부. 키르히호프의 여름','3부. 공진의 가을','4부. 정전의 겨울','5부. 다시 봄'],
+    reviews:[{who:'독자 c', text:'책장을 덮고 한참 앉아 있었다.'}] },
+
+  { id:15, title:'전기 다이어그램 도감', sub:'A Visual Atlas of Electricity',
+    author:'이가온', pub:'시각예술원', year:2025, call:'658.4-이가-2025',
+    ddc:'600', stock:2, total:2, rating:4.7, loans:142, new:true,
+    cover:'atlas', palette:['#9c6a2a','#6a4520','#efe6d2'],
+    blurb:'단선도·계통도·결선도 — 보는 것만으로도 회로가 읽히는 도감.',
+    toc:['I. 단선도','II. 계통도','III. 결선도','IV. 보호계전 도면','V. 한 장으로 보는 발전소'],
+    reviews:[{who:'독자 d', text:'페이지마다 감탄.'}] },
+
+  { id:16, title:'동기의 기록', sub:'Motivation Notes for Exam Takers',
+    author:'박세이', pub:'심리문고', year:2024, call:'159.9-박세-2024',
+    ddc:'100', stock:1, total:2, rating:4.0, loans:51, new:false,
+    cover:'motiv', palette:['#7a5a32','#4a2f11','#efe6d2'],
+    blurb:'시험 두 달 전, 마음이 흔들릴 때 펴는 책 — 짧은 글 60편.',
+    toc:['1. 시작의 두려움','2. 한 달째의 권태','3. 풀이가 막힐 때','4. 마지막 일주일','5. 시험장으로'],
+    reviews:[{who:'독자 e', text:'잠깐 쉬어가는 책.'}] },
+];
+
+// ============================================================
+// COVER SVG GENERATOR — 가상 책 표지
+// ============================================================
+function bookCover(book){
+  const [c1, c2, paper] = book.palette;
+  const title = escapeHTML(book.title);
+  const author = escapeHTML(book.author);
+  const call = escapeHTML(book.call);
+  const motifs = {
+    ohm:`<g transform="translate(100,140)"><text text-anchor="middle" font-family="EB Garamond, serif" font-size="58" font-style="italic" fill="${paper}" opacity=".95">Ω</text></g>`,
+    kcl:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="2" fill="none" opacity=".9"><circle cx="0" cy="0" r="6" fill="${paper}"/><path d="M0 0 L-40 -30 M0 0 L40 -30 M0 0 L0 40"/><text x="0" y="-44" text-anchor="middle" font-size="11" fill="${paper}" font-family="Courier New">ΣI=0</text></g>`,
+    transformer:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="2" fill="none" opacity=".9"><path d="M-50 -30 L-50 30 M50 -30 L50 30"/><circle cx="-35" cy="-20" r="6"/><circle cx="-35" cy="0" r="6"/><circle cx="-35" cy="20" r="6"/><circle cx="35" cy="-20" r="6"/><circle cx="35" cy="0" r="6"/><circle cx="35" cy="20" r="6"/><path d="M-15 -30 L-15 30 M15 -30 L15 30" stroke-dasharray="3 3"/></g>`,
+    rlc:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="2" fill="none" opacity=".9"><path d="M-60 0 Q-45 -20 -30 0 T0 0 T30 0 T60 0"/><text x="0" y="40" text-anchor="middle" font-size="14" fill="${paper}" font-family="EB Garamond">f₀ = 1/2π√LC</text></g>`,
+    threephase:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="2" fill="none" opacity=".9"><circle r="40"/><path d="M0 -40 L0 0 M0 0 L34.6 20 M0 0 L-34.6 20"/><text x="0" y="-48" text-anchor="middle" font-size="12" fill="${paper}" font-family="Courier New">Y</text></g>`,
+    safety:`<g transform="translate(100,140)" stroke="${paper}" stroke-width="2.5" fill="none" opacity=".95"><path d="M-30 -40 L30 -40 L20 40 L-20 40 Z"/><path d="M0 -25 L-10 5 L5 5 L-5 30" stroke-linecap="round" stroke-linejoin="round"/></g>`,
+    pass:`<g transform="translate(100,140)" fill="${paper}" opacity=".95"><text text-anchor="middle" font-family="EB Garamond, serif" font-size="50" font-weight="700">合格</text><text x="0" y="40" text-anchor="middle" font-family="Lora, serif" font-size="14" font-style="italic">PASS</text></g>`,
+    faraday:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="1.5" fill="none" opacity=".9"><ellipse rx="55" ry="22"/><ellipse rx="45" ry="18"/><ellipse rx="35" ry="14"/><path d="M0 -30 L0 30" stroke-dasharray="2 3"/></g>`,
+    tesla:`<g transform="translate(100,140)" stroke="${paper}" stroke-width="2" fill="none" opacity=".9"><path d="M0 -40 L-8 -10 L8 -10 L-12 30" stroke-linecap="round" stroke-linejoin="round"/><circle r="48" stroke-dasharray="3 4"/></g>`,
+    em:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="1.8" fill="none" opacity=".9"><path d="M-60 0 Q-40 -25 -20 0 T20 0 T60 0"/><path d="M-60 10 Q-40 35 -20 10 T20 10 T60 10" stroke-dasharray="2 3"/><text x="0" y="-30" text-anchor="middle" font-size="11" fill="${paper}" font-family="Courier New">∇×E = -∂B/∂t</text></g>`,
+    circuit:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="2" fill="none" opacity=".9"><rect x="-50" y="-25" width="100" height="50"/><rect x="-30" y="-30" width="20" height="10" fill="${paper}"/><circle cx="20" cy="0" r="8"/><path d="M-50 0 L-70 0 M50 0 L70 0"/></g>`,
+    grid:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="1.8" fill="none" opacity=".9"><path d="M-50 20 L-50 -20 L-30 -30 L-10 -20 L-10 20 Z"/><path d="M10 20 L10 -10 L40 -10 L40 20 Z"/><path d="M-50 -30 L-60 -45 L60 -45 L40 -20"/></g>`,
+    dict:`<g transform="translate(100,140)" fill="${paper}" opacity=".95"><text text-anchor="middle" font-family="EB Garamond, serif" font-size="44" font-style="italic">Aa</text><text x="0" y="35" text-anchor="middle" font-family="Noto Serif KR, serif" font-size="22">사전</text></g>`,
+    novel:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="1.5" fill="none" opacity=".9"><path d="M-50 30 Q-30 -50 0 0 Q30 50 50 -30" stroke-linecap="round"/><circle cx="-50" cy="30" r="3" fill="${paper}"/><circle cx="50" cy="-30" r="3" fill="${paper}"/></g>`,
+    atlas:`<g transform="translate(100,150)" stroke="${paper}" stroke-width="1.5" fill="none" opacity=".9"><rect x="-55" y="-35" width="110" height="70"/><path d="M-55 -10 L55 -10 M-55 10 L55 10 M-20 -35 L-20 35 M20 -35 L20 35"/><circle cx="0" cy="0" r="6" fill="${paper}"/></g>`,
+    motiv:`<g transform="translate(100,140)" fill="${paper}" opacity=".95"><text text-anchor="middle" font-family="EB Garamond, serif" font-size="60" font-style="italic">&hearts;</text></g>`,
+  };
+  const motif = motifs[book.cover] || motifs.ohm;
+  return `
+    <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="bg${book.id}" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="${c1}"/>
+          <stop offset="100%" stop-color="${c2}"/>
+        </linearGradient>
+        <pattern id="p${book.id}" width="6" height="6" patternUnits="userSpaceOnUse">
+          <path d="M0 6 L6 0" stroke="${paper}" stroke-width=".4" opacity=".15"/>
+        </pattern>
+      </defs>
+      <rect width="200" height="300" fill="url(#bg${book.id})"/>
+      <rect width="200" height="300" fill="url(#p${book.id})"/>
+      <rect x="6" y="6" width="188" height="288" fill="none" stroke="${paper}" stroke-width=".8" opacity=".5"/>
+      <rect x="10" y="10" width="180" height="280" fill="none" stroke="${paper}" stroke-width=".4" opacity=".3"/>
+      <!-- spine band -->
+      <rect x="0" y="40" width="200" height="2" fill="${paper}" opacity=".4"/>
+      <rect x="0" y="260" width="200" height="2" fill="${paper}" opacity=".4"/>
+      <!-- title -->
+      <foreignObject x="14" y="46" width="172" height="60">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="font-family:'Noto Serif KR',serif;color:${paper};font-size:15px;font-weight:700;line-height:1.2;text-align:center;letter-spacing:-.01em;text-shadow:0 1px 0 rgba(0,0,0,.2)">${title}</div>
+      </foreignObject>
+      <!-- motif -->
+      ${motif}
+      <!-- author/pub -->
+      <text x="100" y="232" text-anchor="middle" font-family="EB Garamond, serif" font-size="11" fill="${paper}" font-style="italic" opacity=".9">${author}</text>
+      <line x1="60" y1="240" x2="140" y2="240" stroke="${paper}" stroke-width=".5" opacity=".5"/>
+      <text x="100" y="254" text-anchor="middle" font-family="Lora, serif" font-size="9" fill="${paper}" opacity=".75" letter-spacing="1">${escapeHTML(book.pub)}</text>
+      <!-- call tag bottom -->
+      <text x="100" y="278" text-anchor="middle" font-family="Courier New, monospace" font-size="8" fill="${paper}" opacity=".7">${call}</text>
+    </svg>`;
+}
+
+// ============================================================
+// RENDER — DDC categories
+// ============================================================
+const ddcGrid = document.getElementById('ddcGrid');
+let activeDDC = 'all';
+function renderDDC(){
+  const all = `
+    <button class="ddc-chip ${activeDDC==='all'?'is-active':''}" data-ddc="all">
+      <span class="ddc-num">ALL</span>
+      <span class="font-korean">전체</span>
+    </button>`;
+  const items = DDC.map(c => `
+    <button class="ddc-chip ${!c.enabled?'is-disabled':''} ${activeDDC===c.code?'is-active':''}" data-ddc="${c.code}" ${!c.enabled?'disabled':''}>
+      <span class="ddc-num">${c.code}</span>
+      <span class="font-korean">${escapeHTML(c.name)}</span>
+      ${c.highlight?`<span class="text-[9px] opacity-70">★</span>`:''}
+    </button>`).join('');
+  ddcGrid.innerHTML = all + items;
+  ddcGrid.querySelectorAll('.ddc-chip').forEach(btn=>{
+    btn.addEventListener('click', () => {
+      if(btn.classList.contains('is-disabled')) return;
+      activeDDC = btn.dataset.ddc;
+      renderDDC();
+      renderBooks();
+    });
+  });
+}
+
+// ============================================================
+// RENDER — book grid
+// ============================================================
+const bookGrid = document.getElementById('bookGrid');
+const emptyState = document.getElementById('emptyState');
+const searchInput = document.getElementById('searchInput');
+const sortSel = document.getElementById('sortSel');
+const resultCount = document.getElementById('resultCount');
+
+function filterBooks(){
+  const q = (searchInput.value || '').trim().toLowerCase();
+  let arr = BOOKS.filter(b => {
+    if(activeDDC !== 'all' && b.ddc !== activeDDC) return false;
+    if(!q) return true;
+    return [b.title, b.author, b.pub, b.call, b.blurb].some(s => s.toLowerCase().includes(q));
+  });
+  const sort = sortSel.value;
+  if(sort==='popular') arr.sort((a,b)=>b.loans-a.loans);
+  else if(sort==='new') arr.sort((a,b)=>(b.new?1:0)-(a.new?1:0) || b.year-a.year);
+  else if(sort==='rating') arr.sort((a,b)=>b.rating-a.rating);
+  else if(sort==='call') arr.sort((a,b)=>a.call.localeCompare(b.call));
+  return arr;
+}
+
+function stockBadge(b){
+  if(b.stock===0) return `<span class="flex items-center gap-1.5 text-xs"><span class="stock-dot out"></span><span class="text-maroon" style="color:var(--maroon)">대출중</span></span>`;
+  if(b.stock<=1) return `<span class="flex items-center gap-1.5 text-xs"><span class="stock-dot low"></span><span style="color:var(--gold)">잔여 ${b.stock}권</span></span>`;
+  return `<span class="flex items-center gap-1.5 text-xs"><span class="stock-dot ok"></span><span class="text-green">대출 가능 (${b.stock}/${b.total})</span></span>`;
+}
+
+function renderBooks(){
+  const arr = filterBooks();
+  resultCount.innerHTML = `검색 결과 <strong>${arr.length}</strong>건`;
+  if(arr.length===0){
+    bookGrid.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+  bookGrid.innerHTML = arr.map(b => `
+    <article class="book-card" data-id="${b.id}">
+      <div class="book-cover">${bookCover(b)}</div>
+      <div class="p-3 flex flex-col gap-1.5 flex-1">
+        <div class="flex items-center justify-between">
+          <span class="call-tag">${escapeHTML(b.call)}</span>
+          ${b.new?'<span class="text-[10px] font-bold text-maroon smallcaps" style="color:var(--maroon)">신간</span>':''}
+        </div>
+        <h3 class="font-korean font-bold text-sm leading-tight text-brown-2 mt-1 line-clamp-2">${escapeHTML(b.title)}</h3>
+        <p class="font-garamond italic text-xs text-muted">${escapeHTML(b.author)} · ${escapeHTML(b.pub)}</p>
+        <div class="flex items-center justify-between mt-auto pt-2 border-t" style="border-color:var(--line)">
+          <span class="text-xs font-mono text-brown">★ ${b.rating.toFixed(1)}</span>
+          ${stockBadge(b)}
+        </div>
+      </div>
+    </article>`).join('');
+  bookGrid.querySelectorAll('.book-card').forEach(card=>{
+    card.addEventListener('click', () => openBook(+card.dataset.id));
+  });
+}
+
+// ============================================================
+// RENDER — popular top10 / new / due
+// ============================================================
+function renderTop(){
+  const top = [...BOOKS].sort((a,b)=>b.loans-a.loans).slice(0,10);
+  const html = top.map((b,i)=>`
+    <div class="rank-row" data-id="${b.id}" style="cursor:pointer">
+      <div class="rank-num ${i<3?'top':''}">${i+1}</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-korean font-bold text-sm text-brown-2 truncate">${escapeHTML(b.title)}</p>
+        <p class="font-garamond italic text-xs text-muted truncate">${escapeHTML(b.author)} · ${escapeHTML(b.call)}</p>
+      </div>
+      <div class="text-right">
+        <p class="font-mono text-xs text-brown">${b.loans}회</p>
+        <p class="text-[10px] text-muted">★ ${b.rating.toFixed(1)}</p>
+      </div>
+    </div>`).join('');
+  document.getElementById('topList').innerHTML = html;
+  document.querySelectorAll('#topList .rank-row').forEach(r => r.addEventListener('click', () => openBook(+r.dataset.id)));
+}
+
+function renderNew(){
+  const news = BOOKS.filter(b=>b.new).slice(0,4);
+  document.getElementById('newList').innerHTML = news.map(b=>`
+    <div class="bg-white border border-line p-3 flex gap-3 cursor-pointer hover:shadow-sm" style="border-color:var(--line)" data-id="${b.id}">
+      <div style="width:48px;flex-shrink:0;aspect-ratio:2/3">${bookCover(b)}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="stamp green" style="transform:rotate(-3deg);padding:2px 6px;font-size:9px">NEW</span>
+        </div>
+        <p class="font-korean font-bold text-xs text-brown-2 mt-1 truncate">${escapeHTML(b.title)}</p>
+        <p class="font-garamond italic text-[11px] text-muted truncate">${escapeHTML(b.author)}</p>
+        <p class="call-tag mt-1" style="font-size:9px">${escapeHTML(b.call)}</p>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('#newList [data-id]').forEach(el => el.addEventListener('click', () => openBook(+el.dataset.id)));
+}
+
+function renderDue(){
+  // 가상 대출 3건
+  const today = new Date();
+  const items = [
+    {bookId:7, days:3},
+    {bookId:4, days:8},
+    {bookId:1, days:14},
+  ];
+  document.getElementById('dueList').innerHTML = items.map(it => {
+    const b = BOOKS.find(x=>x.id===it.bookId);
+    const due = new Date(today.getTime() + it.days*86400000);
+    const dueStr = `${due.getFullYear()}.${String(due.getMonth()+1).padStart(2,'0')}.${String(due.getDate()).padStart(2,'0')}`;
+    const urgent = it.days <= 3;
+    return `
+    <div class="flex items-center gap-3 cursor-pointer" data-id="${b.id}">
+      <div style="width:32px;flex-shrink:0;aspect-ratio:2/3">${bookCover(b)}</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-korean font-bold text-xs text-brown-2 truncate">${escapeHTML(b.title)}</p>
+        <p class="font-mono text-[10px] text-muted">${dueStr}</p>
+      </div>
+      <span class="font-garamond italic text-sm ${urgent?'':'text-brown-2'}" style="${urgent?'color:var(--maroon);font-weight:700':''}">D-${it.days}</span>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#dueList [data-id]').forEach(el => el.addEventListener('click', () => openBook(+el.dataset.id)));
+}
+
+// ============================================================
+// MODAL — book detail
+// ============================================================
+const modal = document.getElementById('bookModal');
+let currentBook = null;
+function openBook(id){
+  const b = BOOKS.find(x=>x.id===id);
+  if(!b) return;
+  currentBook = b;
+  document.getElementById('modalCover').innerHTML = bookCover(b);
+  document.getElementById('modalCall').textContent = b.call;
+  document.getElementById('modalSub').textContent = b.sub;
+  document.getElementById('modalTitle').textContent = b.title;
+  document.getElementById('modalAuthor').textContent = `${b.author} 지음 · ${b.pub} 펴냄`;
+  document.getElementById('modalPub').textContent = `${b.year}년 · ISBN ${String(978000000000 + b.id*113).padStart(13,'0')}`;
+  document.getElementById('modalRating').textContent = `★ ${b.rating.toFixed(1)} / 5.0`;
+  document.getElementById('modalLoans').textContent = `${b.loans}회`;
+  document.getElementById('modalStock').textContent = `${b.stock} / ${b.total}권`;
+  document.getElementById('modalLocation').textContent = `본관 3층 · ${b.ddc}번대`;
+  document.getElementById('modalToc').innerHTML = b.toc.map(t=>`<li>${escapeHTML(t)}</li>`).join('');
+  document.getElementById('modalReviews').innerHTML = b.reviews.map(r=>`
+    <div class="border-l-2 pl-3 py-1" style="border-color:var(--line-2)">
+      <p class="font-garamond italic text-sm text-ink-2" style="color:var(--ink-2)">"${escapeHTML(r.text)}"</p>
+      <p class="text-xs text-muted mt-1 font-korean">— ${escapeHTML(r.who)}</p>
+    </div>`).join('') + `
+    <p class="font-garamond italic text-xs text-muted mt-2">— 서평은 가상 도서관 독자의 창작 인용입니다.</p>`;
+  const bb = document.getElementById('borrowBtn');
+  if(b.stock===0){
+    bb.disabled = true;
+    bb.textContent = '대출 중 (예약만 가능)';
+    bb.style.opacity = '.55';
+    bb.style.cursor = 'not-allowed';
+  } else {
+    bb.disabled = false;
+    bb.textContent = '📖 대출하기';
+    bb.style.opacity = '1';
+    bb.style.cursor = 'pointer';
+  }
+  modal.style.display = 'flex';
+}
+document.getElementById('closeModal').addEventListener('click', () => modal.style.display = 'none');
+modal.addEventListener('click', e => { if(e.target===modal) modal.style.display='none'; });
+
+// ============================================================
+// LOAN RECEIPT
+// ============================================================
+const rcptModal = document.getElementById('receiptModal');
+document.getElementById('borrowBtn').addEventListener('click', () => {
+  if(!currentBook || currentBook.stock===0) return;
+  const today = new Date();
+  const due = new Date(today.getTime() + 14*86400000);
+  document.getElementById('rcptNo').textContent = 'L-' + Math.floor(Math.random()*900000+100000);
+  document.getElementById('rcptDate').textContent = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+  document.getElementById('rcptTitle').textContent = currentBook.title;
+  document.getElementById('rcptCall').textContent = currentBook.call;
+  document.getElementById('rcptDue').textContent = `${due.getFullYear()}.${String(due.getMonth()+1).padStart(2,'0')}.${String(due.getDate()).padStart(2,'0')}`;
+  document.getElementById('rcptCountdown').textContent = '대출 기간 14일 · 1회 연장 가능';
+  modal.style.display = 'none';
+  rcptModal.style.display = 'flex';
+});
+document.getElementById('reserveBtn').addEventListener('click', () => {
+  if(!currentBook) return;
+  alert(`"${currentBook.title}" 예약이 접수되었습니다. (가상 시뮬레이션)`);
+});
+document.getElementById('closeRcpt').addEventListener('click', () => rcptModal.style.display = 'none');
+rcptModal.addEventListener('click', e => { if(e.target===rcptModal) rcptModal.style.display='none'; });
+
+// ============================================================
+// SEARCH / SORT / CLEAR / TABS
+// ============================================================
+searchInput.addEventListener('input', renderBooks);
+sortSel.addEventListener('change', renderBooks);
+document.getElementById('searchBtn').addEventListener('click', renderBooks);
+document.getElementById('clearBtn').addEventListener('click', () => { searchInput.value=''; activeDDC='all'; renderDDC(); renderBooks(); });
+document.querySelectorAll('.opac-tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.opac-tab').forEach(x => x.classList.remove('is-active'));
+  t.classList.add('is-active');
+}));
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape'){ modal.style.display='none'; rcptModal.style.display='none'; }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+renderDDC();
+renderBooks();
+renderTop();
+renderNew();
+renderDue();
+</script>
+</body>
+</html>

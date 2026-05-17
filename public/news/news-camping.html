@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK CAMPING · 스파크 캠핑장</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --forest:#1f3a2d;
+    --moss:#3d6b4a;
+    --leaf:#6aa56a;
+    --sky:#87c5d9;
+    --sky-deep:#4a90a8;
+    --bark:#5a3e2b;
+    --bark-soft:#8b6b4f;
+    --sand:#e8dcc3;
+    --cream:#faf6ec;
+    --ember:#e67a3c;
+    --night:#142033;
+    --star:#fff4b8;
+  }
+  html,body{background:var(--cream);font-family:'Noto Sans KR','Inter',sans-serif;color:#22312b;}
+  .font-hand{font-family:'Caveat',cursive;}
+  .font-en{font-family:'Inter',sans-serif;}
+  .grain{background-image:radial-gradient(rgba(90,62,43,.06) 1px, transparent 1px);background-size:4px 4px;}
+  .paper{background:linear-gradient(180deg,#faf6ec 0%,#f3ead5 100%);}
+  .wood{background:
+    repeating-linear-gradient(90deg, rgba(90,62,43,.08) 0 2px, transparent 2px 14px),
+    linear-gradient(180deg,#7a563b,#5a3e2b);
+  }
+  .wood-light{background:
+    repeating-linear-gradient(90deg, rgba(90,62,43,.07) 0 2px, transparent 2px 14px),
+    linear-gradient(180deg,#a8845e,#8b6b4f);
+  }
+  .leaf-card{background:linear-gradient(180deg,#ffffff 0%,#f5efdc 100%);border:1px solid #d6c79f;}
+  .tag-pill{background:rgba(106,165,106,.15);color:#1f3a2d;border:1px solid #6aa56a;}
+  .btn-forest{background:#1f3a2d;color:#faf6ec;}
+  .btn-forest:hover{background:#2b5340;}
+  .btn-ember{background:#e67a3c;color:#fff;}
+  .btn-ember:hover{background:#d56828;}
+  .heart-btn.liked{color:#e64a4a;}
+  .heart-btn.liked svg{fill:#e64a4a;}
+  .stamp{transform:rotate(-6deg);border:3px double #5a3e2b;color:#5a3e2b;padding:6px 14px;font-family:'Caveat',cursive;font-size:22px;letter-spacing:1px;background:rgba(250,246,236,.6);}
+  .ridge{background:linear-gradient(135deg, transparent 49%, rgba(90,62,43,.18) 50%, transparent 51%);background-size:8px 8px;}
+  .ember-glow{filter:drop-shadow(0 0 8px rgba(230,122,60,.6));}
+  .star-twinkle{animation:twinkle 2.4s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.4;}50%{opacity:1;}}
+  .star-twinkle.s2{animation-delay:.6s;}
+  .star-twinkle.s3{animation-delay:1.2s;}
+  .star-twinkle.s4{animation-delay:1.8s;}
+  details[open] .chev{transform:rotate(90deg);}
+  .chev{transition:transform .2s;}
+  .modal-backdrop{background:rgba(20,32,51,.7);backdrop-filter:blur(4px);}
+  .progress-bar{transition:width .3s ease;}
+  .cal-day{aspect-ratio:1;}
+  .cal-day.available{background:#e8f0e0;color:#1f3a2d;}
+  .cal-day.available:hover{background:#c4dab0;cursor:pointer;}
+  .cal-day.booked{background:#f0d4c4;color:#8b4a2b;text-decoration:line-through;cursor:not-allowed;}
+  .cal-day.selected{background:#e67a3c;color:#fff;}
+  .cal-day.weekend{color:#c25555;}
+  .checklist-item.checked label{text-decoration:line-through;opacity:.55;}
+  .smoke{animation:smoke 4s ease-in-out infinite;}
+  @keyframes smoke{0%,100%{transform:translateY(0) scale(1);opacity:.5;}50%{transform:translateY(-8px) scale(1.05);opacity:.8;}}
+  .flame{animation:flame 1.2s ease-in-out infinite;transform-origin:center bottom;}
+  @keyframes flame{0%,100%{transform:scaleY(1);}50%{transform:scaleY(1.08);}}
+  .tab-active{background:#1f3a2d;color:#faf6ec;}
+  .tab-inactive{background:#e8dcc3;color:#5a3e2b;}
+  .scroll-hide::-webkit-scrollbar{display:none;}
+  .scroll-hide{scrollbar-width:none;}
+</style>
+</head>
+<body class="grain">
+
+<!-- ╔══ TOP STRIP ══╗ -->
+<div class="wood text-amber-50 text-xs font-en tracking-wide">
+  <div class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-3">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-300"></span>
+      <span>OPEN · 2026 SPRING SEASON</span>
+      <span class="opacity-60">|</span>
+      <span>날씨: <span id="weather-emoji">☀️</span> 맑음 · 18°C</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span>입장료 ₩0 (가상)</span>
+      <span class="opacity-60">|</span>
+      <span class="font-hand text-base">since 2026</span>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══ HEADER ══╗ -->
+<header class="paper border-b border-amber-900/20">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+      <div>
+        <p class="font-hand text-3xl text-emerald-900 leading-none">welcome to the woods</p>
+        <h1 class="mt-2 text-4xl md:text-6xl font-black tracking-tight text-stone-800">
+          SPARK <span class="text-emerald-800">CAMPING</span>
+        </h1>
+        <p class="mt-2 text-stone-600">스파크 캠핑장 · 전기기능사 소식지 2026년 봄호 · 캠핑장 가이드 에디션</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="stamp">VOL.07 · SPRING</div>
+        <button class="heart-btn flex items-center gap-2 px-4 py-2 rounded-full border-2 border-stone-300 hover:border-rose-300 transition" onclick="toggleHeader(this)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span class="like-count font-bold">128</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ╔══ HERO LANDSCAPE SVG ══╗ -->
+<section class="relative overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50">
+  <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid slice" class="w-full h-[340px] md:h-[460px] block" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#bde0ee"/>
+        <stop offset="60%" stop-color="#f4ead0"/>
+        <stop offset="100%" stop-color="#e6d9b3"/>
+      </linearGradient>
+      <linearGradient id="mtnFar" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#7a99a8"/>
+        <stop offset="100%" stop-color="#5b7a8a"/>
+      </linearGradient>
+      <linearGradient id="mtnMid" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#4a6b58"/>
+        <stop offset="100%" stop-color="#2f4a3a"/>
+      </linearGradient>
+      <linearGradient id="mtnNear" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#3d6b4a"/>
+        <stop offset="100%" stop-color="#1f3a2d"/>
+      </linearGradient>
+      <linearGradient id="river" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#a8d4e0"/>
+        <stop offset="100%" stop-color="#5a92a8"/>
+      </linearGradient>
+      <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff4b8"/>
+        <stop offset="80%" stop-color="#f6c97a" stop-opacity=".8"/>
+        <stop offset="100%" stop-color="#f6c97a" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- sky -->
+    <rect width="1200" height="480" fill="url(#sky)"/>
+    <!-- sun -->
+    <circle cx="920" cy="120" r="80" fill="url(#sun)"/>
+    <circle cx="920" cy="120" r="34" fill="#fff4b8"/>
+    <!-- clouds -->
+    <g fill="#ffffff" opacity=".75">
+      <ellipse cx="180" cy="90" rx="60" ry="14"/>
+      <ellipse cx="220" cy="80" rx="38" ry="10"/>
+      <ellipse cx="520" cy="130" rx="70" ry="12"/>
+      <ellipse cx="1080" cy="60" rx="50" ry="11"/>
+    </g>
+    <!-- far mountains -->
+    <path d="M0,260 L120,180 L240,230 L340,160 L460,220 L580,170 L720,210 L860,150 L1000,200 L1120,170 L1200,210 L1200,480 L0,480 Z" fill="url(#mtnFar)"/>
+    <!-- mid mountains -->
+    <path d="M0,310 L100,250 L220,300 L340,230 L500,290 L640,240 L780,300 L920,250 L1080,290 L1200,260 L1200,480 L0,480 Z" fill="url(#mtnMid)"/>
+    <!-- snow caps -->
+    <g fill="#faf6ec" opacity=".85">
+      <path d="M335,165 L350,180 L320,180 Z"/>
+      <path d="M855,155 L870,170 L840,170 Z"/>
+      <path d="M105,255 L120,270 L90,270 Z"/>
+    </g>
+    <!-- river -->
+    <path d="M0,380 Q300,360 600,390 T1200,400 L1200,420 Q900,410 600,420 T0,415 Z" fill="url(#river)"/>
+    <g fill="#ffffff" opacity=".5">
+      <path d="M120,395 q20,-4 40,0" stroke="#fff" stroke-width="1.5" fill="none"/>
+      <path d="M520,400 q24,-4 50,0" stroke="#fff" stroke-width="1.5" fill="none"/>
+      <path d="M880,398 q20,-4 44,0" stroke="#fff" stroke-width="1.5" fill="none"/>
+    </g>
+    <!-- near hills with trees -->
+    <path d="M0,400 L160,330 L320,395 L500,340 L680,400 L880,350 L1080,395 L1200,360 L1200,480 L0,480 Z" fill="url(#mtnNear)"/>
+    <!-- pine trees -->
+    <g fill="#1f3a2d">
+      <g transform="translate(80,360)"><path d="M0,0 L-14,30 L14,30 Z"/><path d="M0,-15 L-12,15 L12,15 Z"/><rect x="-3" y="30" width="6" height="10" fill="#5a3e2b"/></g>
+      <g transform="translate(260,378)"><path d="M0,0 L-12,26 L12,26 Z"/><path d="M0,-12 L-10,12 L10,12 Z"/><rect x="-2.5" y="26" width="5" height="8" fill="#5a3e2b"/></g>
+      <g transform="translate(440,355)"><path d="M0,0 L-16,34 L16,34 Z"/><path d="M0,-18 L-13,16 L13,16 Z"/><rect x="-3" y="34" width="6" height="11" fill="#5a3e2b"/></g>
+      <g transform="translate(760,365)"><path d="M0,0 L-14,30 L14,30 Z"/><path d="M0,-15 L-12,15 L12,15 Z"/><rect x="-3" y="30" width="6" height="10" fill="#5a3e2b"/></g>
+      <g transform="translate(1020,372)"><path d="M0,0 L-13,28 L13,28 Z"/><path d="M0,-14 L-11,14 L11,14 Z"/><rect x="-2.5" y="28" width="5" height="9" fill="#5a3e2b"/></g>
+      <g transform="translate(1140,388)"><path d="M0,0 L-12,24 L12,24 Z"/><path d="M0,-12 L-10,12 L10,12 Z"/><rect x="-2.5" y="24" width="5" height="8" fill="#5a3e2b"/></g>
+    </g>
+    <!-- tent (center) -->
+    <g transform="translate(600,380)">
+      <!-- guy lines -->
+      <line x1="-50" y1="40" x2="-30" y2="0" stroke="#5a3e2b" stroke-width="1.2"/>
+      <line x1="50" y1="40" x2="30" y2="0" stroke="#5a3e2b" stroke-width="1.2"/>
+      <!-- tent body -->
+      <path d="M-50,40 L0,-20 L50,40 Z" fill="#e67a3c"/>
+      <path d="M0,-20 L0,40 L-15,40 L-3,10 Z" fill="#142033" opacity=".6"/>
+      <path d="M-50,40 L50,40" stroke="#5a3e2b" stroke-width="1.5"/>
+      <circle cx="0" cy="-20" r="2" fill="#5a3e2b"/>
+    </g>
+    <!-- campfire (left of tent) -->
+    <g transform="translate(540,420)">
+      <ellipse cx="0" cy="0" rx="22" ry="4" fill="#3a2818"/>
+      <line x1="-18" y1="0" x2="18" y2="-2" stroke="#5a3e2b" stroke-width="3"/>
+      <line x1="-16" y1="2" x2="14" y2="-3" stroke="#3a2818" stroke-width="2"/>
+      <g class="flame ember-glow">
+        <path d="M0,-2 Q-10,-18 0,-26 Q10,-18 0,-2 Z" fill="#e67a3c"/>
+        <path d="M0,-4 Q-6,-14 0,-22 Q6,-14 0,-4 Z" fill="#f6c97a"/>
+      </g>
+      <g class="smoke" fill="#ffffff" opacity=".5">
+        <ellipse cx="0" cy="-38" rx="6" ry="3"/>
+        <ellipse cx="4" cy="-46" rx="5" ry="2.5"/>
+      </g>
+    </g>
+    <!-- birds -->
+    <g stroke="#142033" stroke-width="1.5" fill="none" stroke-linecap="round">
+      <path d="M380,140 q5,-6 10,0 q5,-6 10,0"/>
+      <path d="M620,170 q4,-5 8,0 q4,-5 8,0"/>
+      <path d="M780,110 q5,-6 10,0 q5,-6 10,0"/>
+    </g>
+  </svg>
+  <div class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-stone-800/70 text-cream px-4 py-1.5 rounded-full text-xs text-amber-50 backdrop-blur-sm">
+    스파크 캠핑장 · 가상의 풍경 · 옴빛 골짜기
+  </div>
+</section>
+
+<!-- ╔══ NAV TABS ══╗ -->
+<nav class="sticky top-0 z-30 bg-emerald-900 text-amber-50 shadow-md">
+  <div class="max-w-6xl mx-auto px-2 overflow-x-auto scroll-hide">
+    <ul class="flex items-center gap-1 py-2 text-sm font-semibold whitespace-nowrap">
+      <li><a href="#sites" class="px-3 py-1.5 rounded-full hover:bg-emerald-700 transition">캠핑 사이트</a></li>
+      <li><a href="#calendar" class="px-3 py-1.5 rounded-full hover:bg-emerald-700 transition">예약 캘린더</a></li>
+      <li><a href="#checklist" class="px-3 py-1.5 rounded-full hover:bg-emerald-700 transition">장비 체크리스트</a></li>
+      <li><a href="#tips" class="px-3 py-1.5 rounded-full hover:bg-emerald-700 transition">캠핑 팁</a></li>
+      <li><a href="#recipes" class="px-3 py-1.5 rounded-full hover:bg-emerald-700 transition">모닥불 레시피</a></li>
+      <li><a href="#stars" class="px-3 py-1.5 rounded-full hover:bg-emerald-700 transition">별 관측</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ╔══ INTRO ══╗ -->
+<section class="paper py-10">
+  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-6">
+    <div class="md:col-span-2">
+      <h2 class="font-hand text-4xl text-emerald-900">소나무 사이로 흘러드는 바람</h2>
+      <p class="mt-3 text-stone-700 leading-relaxed">
+        전기기능사 공부를 잠시 접어두고 텐트 폴대를 펴는 시간. 스파크 캠핑장은 옴의 법칙처럼 단순하고,
+        키르히호프 법칙처럼 명료한 휴식을 제안합니다. 6개 사이트에는 저마다의 성격이 있고,
+        밤이 되면 모닥불 옆에서 회로도 대신 별자리를 그립니다.
+      </p>
+      <p class="mt-3 text-stone-700 leading-relaxed">
+        이 캠핑장은 <span class="font-semibold">실재하지 않습니다</span>.
+        모든 사이트·요금·시설은 가상이며, 학습을 위한 시뮬레이션입니다.
+        예약 버튼을 눌러도 실제 예약이 되지는 않으니, 즐거운 상상으로 즐겨주세요.
+      </p>
+    </div>
+    <aside class="leaf-card rounded-2xl p-5">
+      <p class="font-hand text-2xl text-emerald-900">오늘의 캠프 노트</p>
+      <ul class="mt-3 space-y-2 text-sm text-stone-700">
+        <li class="flex gap-2"><span>🌡️</span><span>낮 18°C · 밤 8°C, 일교차 큼</span></li>
+        <li class="flex gap-2"><span>💨</span><span>북서풍 2m/s · 모닥불 안전</span></li>
+        <li class="flex gap-2"><span>🌅</span><span>일출 05:32 · 일몰 19:14</span></li>
+        <li class="flex gap-2"><span>🌙</span><span>월령: 상현 (별 관측 양호)</span></li>
+        <li class="flex gap-2"><span>🚿</span><span>샤워장 온수 정상 (3kW × 2회로)</span></li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<!-- ╔══ SITES DIRECTORY ══╗ -->
+<section id="sites" class="bg-emerald-50/60 py-12 border-t border-b border-emerald-900/10">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="flex items-end justify-between mb-6">
+      <div>
+        <p class="font-hand text-3xl text-emerald-800">site directory</p>
+        <h3 class="text-2xl md:text-3xl font-black text-stone-800">캠핑 사이트 6선</h3>
+      </div>
+      <div class="text-sm text-stone-600 hidden md:block">카드를 누르면 상세 풍경이 열립니다</div>
+    </div>
+
+    <div id="site-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- cards injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ╔══ CALENDAR ══╗ -->
+<section id="calendar" class="py-12 paper">
+  <div class="max-w-6xl mx-auto px-4 grid lg:grid-cols-5 gap-8">
+    <div class="lg:col-span-3">
+      <p class="font-hand text-3xl text-emerald-800">reservation</p>
+      <h3 class="text-2xl md:text-3xl font-black text-stone-800">예약 캘린더 · 2026년 5월</h3>
+      <p class="mt-2 text-sm text-stone-600">초록은 예약 가능, 갈색은 만실, 주황은 선택 중 (UI 시연)</p>
+
+      <div class="mt-5 leaf-card rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <button class="px-3 py-1 rounded-full border border-stone-300 text-sm hover:bg-stone-100" onclick="alert('가상 캠핑장 — 4월 캘린더는 준비되지 않았습니다.')">◀ 4월</button>
+          <div class="font-bold text-lg">2026년 5월</div>
+          <button class="px-3 py-1 rounded-full border border-stone-300 text-sm hover:bg-stone-100" onclick="alert('가상 캠핑장 — 6월 캘린더는 준비되지 않았습니다.')">6월 ▶</button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-stone-600 mb-1">
+          <div class="text-rose-500">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-sky-600">토</div>
+        </div>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-sm"></div>
+        <div class="mt-4 flex flex-wrap gap-3 text-xs text-stone-600">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-emerald-100 border border-emerald-300"></span>가능</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-orange-200 border border-orange-400"></span>선택</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded bg-orange-100 border border-orange-300"></span>만실</span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="lg:col-span-2 leaf-card rounded-2xl p-6">
+      <p class="font-hand text-2xl text-emerald-900">예약 요약</p>
+      <div class="mt-3 space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-stone-500">선택한 날짜</span><span id="sel-date" class="font-semibold">—</span></div>
+        <div class="flex justify-between"><span class="text-stone-500">선호 사이트</span>
+          <select id="sel-site" class="bg-transparent border-b border-stone-300 text-right focus:outline-none">
+            <option>옴 사이트</option><option>패러데이 캠프</option><option>키르히호프 야영지</option>
+            <option>변압기 글램핑</option><option>RLC 오토캠핑</option><option>3상 단지</option>
+          </select>
+        </div>
+        <div class="flex justify-between"><span class="text-stone-500">인원</span>
+          <select id="sel-people" class="bg-transparent border-b border-stone-300 text-right focus:outline-none">
+            <option>1명</option><option>2명</option><option>3명</option><option>4명</option><option>5명 이상</option>
+          </select>
+        </div>
+        <div class="flex justify-between"><span class="text-stone-500">박 수</span>
+          <select id="sel-nights" class="bg-transparent border-b border-stone-300 text-right focus:outline-none">
+            <option>1박</option><option>2박</option><option>3박</option>
+          </select>
+        </div>
+        <hr class="border-stone-300 my-3" />
+        <div class="flex justify-between text-base"><span>예상 요금</span><span id="sel-fee" class="font-black text-emerald-800">₩0</span></div>
+      </div>
+      <button class="mt-5 w-full btn-ember py-3 rounded-xl font-bold text-sm" onclick="fakeReserve()">예약 확정 (가상)</button>
+      <p class="mt-2 text-[11px] text-stone-500 text-center">* 실제 결제·예약은 발생하지 않습니다.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- ╔══ CHECKLIST ══╗ -->
+<section id="checklist" class="bg-amber-50/60 py-12 border-t border-b border-amber-900/10">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="flex items-end justify-between mb-6 flex-wrap gap-3">
+      <div>
+        <p class="font-hand text-3xl text-emerald-800">gear check</p>
+        <h3 class="text-2xl md:text-3xl font-black text-stone-800">출발 전 장비 체크리스트</h3>
+      </div>
+      <div class="text-sm font-semibold text-stone-700">
+        진행률: <span id="pct">0</span>% (<span id="done">0</span>/<span id="total">0</span>)
+      </div>
+    </div>
+    <div class="w-full h-2 bg-stone-200 rounded-full overflow-hidden mb-6">
+      <div id="bar" class="progress-bar h-full bg-emerald-600" style="width:0%"></div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5">
+      <div class="leaf-card rounded-2xl p-5">
+        <h4 class="font-bold text-lg flex items-center gap-2"><span>⛺</span>기본 캠핑 장비</h4>
+        <ul class="mt-3 space-y-2" data-group="camp">
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">텐트 (방수포·폴대·팩 확인)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">침낭 (계절용 · -5°C 이상 권장)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">매트 (단열 + 충격 완화)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">캠핑 의자 × 인원수</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">랜턴 + 예비 건전지</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">코펠·버너·연료</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">아이스박스·식기·수저</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-emerald-700"><label class="text-sm">우비·여벌옷·수건</label></li>
+        </ul>
+      </div>
+
+      <div class="leaf-card rounded-2xl p-5">
+        <h4 class="font-bold text-lg flex items-center gap-2"><span>📚</span>학습 장비 (캠프용 패러디)</h4>
+        <ul class="mt-3 space-y-2" data-group="study">
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">옴미터 (모닥불 옆 저항 측정용)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">키르히호프 메모장 (별 관측 기록겸용)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">암기카드 덱 (전기기능사 핵심 50)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">소형 회로 실험 키트 (저항·LED·배터리)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">방수 단어장 (이슬 대비)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">헤드랜턴 (책 읽기·노트 필기)</label></li>
+          <li class="checklist-item flex items-center gap-3"><input type="checkbox" class="w-4 h-4 accent-amber-700"><label class="text-sm">오디오북 (귀 학습 · 보조배터리 필수)</label></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══ TIPS ══╗ -->
+<section id="tips" class="py-12 paper">
+  <div class="max-w-6xl mx-auto px-4">
+    <p class="font-hand text-3xl text-emerald-800">camp tips</p>
+    <h3 class="text-2xl md:text-3xl font-black text-stone-800 mb-6">캠핑 팁 · 안전 · 매너</h3>
+    <div class="grid md:grid-cols-2 gap-4">
+      <details class="leaf-card rounded-xl p-4">
+        <summary class="cursor-pointer font-bold flex items-center gap-2"><span class="chev">▶</span>🔥 모닥불 안전 수칙</summary>
+        <ul class="mt-3 text-sm text-stone-700 space-y-1 list-disc list-inside">
+          <li>지정된 화로대에서만 불을 피웁니다. 바닥불 금지.</li>
+          <li>물 한 통과 모래를 항상 곁에 둡니다. (소화기 = 차단기 같은 존재)</li>
+          <li>잘 마른 활엽수 위주, 송진 많은 침엽수는 불꽃 튐 주의.</li>
+          <li>잠자기 전 완전 진화 — 재를 손으로 만져 차가운지 확인.</li>
+        </ul>
+      </details>
+      <details class="leaf-card rounded-xl p-4">
+        <summary class="cursor-pointer font-bold flex items-center gap-2"><span class="chev">▶</span>⛈️ 날씨 변화 대응</summary>
+        <ul class="mt-3 text-sm text-stone-700 space-y-1 list-disc list-inside">
+          <li>비 예보: 텐트 입구를 바람 반대 방향으로. 그라운드시트 필수.</li>
+          <li>천둥번개: 즉시 텐트 아래로, 금속 폴대·전자기기 멀리.</li>
+          <li>강풍: 팩을 X자로 추가, 타프는 접거나 낮춥니다.</li>
+          <li>일교차: 새벽 5~6시가 가장 추움, 침낭 안에 핫팩.</li>
+        </ul>
+      </details>
+      <details class="leaf-card rounded-xl p-4">
+        <summary class="cursor-pointer font-bold flex items-center gap-2"><span class="chev">▶</span>🤝 캠핑 매너</summary>
+        <ul class="mt-3 text-sm text-stone-700 space-y-1 list-disc list-inside">
+          <li>밤 10시 이후 음악·큰 목소리는 자제. 자연이 곧 스피커입니다.</li>
+          <li>이웃 사이트 가로지르지 않기 — 텐트 줄(가이라인) 발에 걸림.</li>
+          <li>쓰레기는 들고 나오기. 분리수거가 어려우면 통째로.</li>
+          <li>야생동물 먹이 주지 않기 — 그들에겐 독이 될 수 있음.</li>
+        </ul>
+      </details>
+      <details class="leaf-card rounded-xl p-4">
+        <summary class="cursor-pointer font-bold flex items-center gap-2"><span class="chev">▶</span>⚡ 캠핑장 전기 사용 (보너스 학습)</summary>
+        <ul class="mt-3 text-sm text-stone-700 space-y-1 list-disc list-inside">
+          <li>사이트 전원: 단상 220V · 사이트당 최대 600W 권장 (인덕션은 차단기 주의).</li>
+          <li>릴선은 완전히 풀어서 사용 (감긴 채로 사용 시 발열 → 화재 위험).</li>
+          <li>젖은 손으로 플러그 만지지 않기 — 누전차단기 있어도 위험.</li>
+          <li>접지가 없는 멀티탭은 사용 금지. KS·KC 인증 확인.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══ RECIPES ══╗ -->
+<section id="recipes" class="bg-stone-100 py-12 border-t border-b border-stone-300">
+  <div class="max-w-6xl mx-auto px-4">
+    <p class="font-hand text-3xl text-emerald-800">campfire recipes</p>
+    <h3 class="text-2xl md:text-3xl font-black text-stone-800 mb-6">모닥불 레시피 (가상)</h3>
+    <div class="grid md:grid-cols-3 gap-5">
+      <article class="leaf-card rounded-2xl overflow-hidden">
+        <div class="bg-gradient-to-br from-orange-200 to-amber-300 h-32 relative">
+          <svg viewBox="0 0 200 100" class="w-full h-full">
+            <ellipse cx="100" cy="70" rx="60" ry="14" fill="#7a4a2a"/>
+            <rect x="60" y="50" width="80" height="22" rx="4" fill="#a8845e"/>
+            <circle cx="100" cy="55" r="8" fill="#e67a3c"/>
+            <circle cx="80" cy="60" r="5" fill="#f6c97a"/>
+            <circle cx="120" cy="60" r="5" fill="#f6c97a"/>
+          </svg>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">옴 호일구이 감자</h4>
+          <p class="text-xs text-stone-500 mt-1">15분 · 1인분 · ★☆☆</p>
+          <p class="mt-2 text-sm text-stone-700">감자에 버터·소금·로즈마리를 두르고 호일로 단단히 감싸 모닥불 가장자리 잿불에서 15분. 옴의 법칙처럼 균일하게 익습니다.</p>
+        </div>
+      </article>
+      <article class="leaf-card rounded-2xl overflow-hidden">
+        <div class="bg-gradient-to-br from-emerald-200 to-teal-300 h-32 relative">
+          <svg viewBox="0 0 200 100" class="w-full h-full">
+            <ellipse cx="100" cy="80" rx="65" ry="10" fill="#3d6b4a"/>
+            <path d="M50,60 Q100,30 150,60 L150,75 Q100,55 50,75 Z" fill="#1f3a2d"/>
+            <circle cx="80" cy="55" r="6" fill="#e67a3c"/>
+            <circle cx="115" cy="50" r="5" fill="#f6c97a"/>
+            <circle cx="100" cy="62" r="4" fill="#a8d4e0"/>
+          </svg>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">키르히호프 찌개</h4>
+          <p class="text-xs text-stone-500 mt-1">30분 · 2~3인분 · ★★☆</p>
+          <p class="mt-2 text-sm text-stone-700">들어간 모든 재료(전류)의 맛이 한 그릇에서 합쳐집니다(KCL). 김치·두부·돼지고기·대파를 코펠에 넣고 끓이세요.</p>
+        </div>
+      </article>
+      <article class="leaf-card rounded-2xl overflow-hidden">
+        <div class="bg-gradient-to-br from-amber-200 to-orange-300 h-32 relative">
+          <svg viewBox="0 0 200 100" class="w-full h-full">
+            <rect x="40" y="50" width="120" height="20" rx="3" fill="#c08a4a"/>
+            <rect x="50" y="42" width="100" height="10" rx="2" fill="#faf6ec"/>
+            <rect x="50" y="68" width="100" height="10" rx="2" fill="#faf6ec"/>
+            <circle cx="80" cy="55" r="5" fill="#3d6b4a"/>
+            <circle cx="110" cy="60" r="6" fill="#e64a4a"/>
+            <circle cx="130" cy="55" r="4" fill="#f6c97a"/>
+          </svg>
+        </div>
+        <div class="p-4">
+          <h4 class="font-bold text-lg">변압기 토스트</h4>
+          <p class="text-xs text-stone-500 mt-1">10분 · 1인분 · ★☆☆</p>
+          <p class="mt-2 text-sm text-stone-700">식빵 두 장 사이에 치즈·햄·계란을 끼우고 호일로 감싸 모닥불 잿불에서 5분씩 양면. 1차→2차 권선처럼 양면을 거쳐야 완성됩니다.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══ STARS ══╗ -->
+<section id="stars" class="relative overflow-hidden text-amber-50" style="background:linear-gradient(180deg,#0c1628 0%,#142033 50%,#1f2a44 100%);">
+  <svg class="absolute inset-0 w-full h-full opacity-90 pointer-events-none" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+    <g fill="#fff4b8">
+      <circle cx="80" cy="60" r="1.2" class="star-twinkle"/>
+      <circle cx="200" cy="120" r="1.8" class="star-twinkle s2"/>
+      <circle cx="340" cy="80" r="1" class="star-twinkle s3"/>
+      <circle cx="460" cy="160" r="1.4" class="star-twinkle s4"/>
+      <circle cx="600" cy="50" r="2" class="star-twinkle"/>
+      <circle cx="720" cy="140" r="1.2" class="star-twinkle s2"/>
+      <circle cx="860" cy="90" r="1.6" class="star-twinkle s3"/>
+      <circle cx="1000" cy="180" r="1" class="star-twinkle s4"/>
+      <circle cx="1120" cy="70" r="1.4" class="star-twinkle"/>
+      <circle cx="140" cy="220" r="1" class="star-twinkle s2"/>
+      <circle cx="380" cy="260" r="1.6" class="star-twinkle s3"/>
+      <circle cx="540" cy="240" r="1.2" class="star-twinkle s4"/>
+      <circle cx="780" cy="280" r="1.4" class="star-twinkle"/>
+      <circle cx="940" cy="220" r="1" class="star-twinkle s2"/>
+      <circle cx="1080" cy="300" r="1.8" class="star-twinkle s3"/>
+    </g>
+    <!-- Big Dipper -->
+    <g stroke="#fff4b8" stroke-width="0.6" fill="none" opacity=".5">
+      <path d="M250,360 L320,340 L390,360 L450,380 L510,360 L560,330 L600,360"/>
+    </g>
+    <g fill="#fff4b8">
+      <circle cx="250" cy="360" r="2.2" class="star-twinkle"/>
+      <circle cx="320" cy="340" r="2.2" class="star-twinkle s2"/>
+      <circle cx="390" cy="360" r="2.2" class="star-twinkle s3"/>
+      <circle cx="450" cy="380" r="2.2" class="star-twinkle s4"/>
+      <circle cx="510" cy="360" r="2.4" class="star-twinkle"/>
+      <circle cx="560" cy="330" r="2.4" class="star-twinkle s2"/>
+      <circle cx="600" cy="360" r="2.4" class="star-twinkle s3"/>
+    </g>
+  </svg>
+
+  <div class="relative max-w-6xl mx-auto px-4 py-14">
+    <p class="font-hand text-3xl text-amber-200">stargazing</p>
+    <h3 class="text-2xl md:text-3xl font-black mb-6">밤 9시 이후 · 별 관측 가이드</h3>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-amber-200/20">
+        <h4 class="font-bold text-amber-200">북두칠성 (큰곰자리)</h4>
+        <p class="text-sm mt-2 opacity-90">국자 모양으로 가장 알아보기 쉬운 별자리. 손잡이 끝에서 호를 그려 따라가면 아크투루스(목동자리)에 닿습니다.</p>
+        <p class="text-xs mt-2 opacity-60">최적 관측: 봄철 북쪽 하늘 / 고도 약 60°</p>
+      </div>
+      <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-amber-200/20">
+        <h4 class="font-bold text-amber-200">사자자리</h4>
+        <p class="text-sm mt-2 opacity-90">봄철 남쪽 하늘의 주인공. 머리 부분이 거꾸로 된 물음표 모양(낫). 가장 밝은 별은 레굴루스.</p>
+        <p class="text-xs mt-2 opacity-60">최적 관측: 5월 21시~24시 / 남중 22시경</p>
+      </div>
+      <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-amber-200/20">
+        <h4 class="font-bold text-amber-200">처녀자리 (스피카)</h4>
+        <p class="text-sm mt-2 opacity-90">목동자리 아크투루스와 함께 "봄철 대곡선"의 끝점. 푸른 백색의 1등성 스피카가 표지등 역할.</p>
+        <p class="text-xs mt-2 opacity-60">최적 관측: 5~6월 동남쪽 하늘</p>
+      </div>
+    </div>
+    <p class="mt-6 text-sm opacity-80">
+      💡 관측 팁: 모닥불·헤드랜턴은 빨간 셀로판을 씌워 야간 시력을 보호하세요.
+      적색광은 동공이 닫히지 않아 어두운 별까지 보입니다. (가시광 스펙트럼 중 가장 긴 파장)
+    </p>
+  </div>
+</section>
+
+<!-- ╔══ FOOTER ══╗ -->
+<footer class="wood text-amber-50">
+  <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6">
+    <div>
+      <p class="font-hand text-3xl">spark camping</p>
+      <p class="mt-2 text-sm opacity-80">옴빛 골짜기 · 스파크 캠핑장<br />운영: 전기기능사 학습 위원회 (가상)</p>
+    </div>
+    <div class="text-sm space-y-1 opacity-90">
+      <p class="font-bold mb-2 opacity-100">캠프 운영 시간</p>
+      <p>입실: 14:00 · 퇴실: 11:00</p>
+      <p>매니저 상주: 24시간</p>
+      <p>비상 연락: 010-0000-0000 (가상)</p>
+    </div>
+    <div class="text-sm space-y-1 opacity-90">
+      <p class="font-bold mb-2 opacity-100">법적 고지</p>
+      <p>본 페이지는 학습 시뮬레이션입니다.</p>
+      <p>실재하는 캠핑장·기관·인물과 무관합니다.</p>
+      <p>예약·결제는 발생하지 않습니다.</p>
+    </div>
+  </div>
+  <div class="border-t border-amber-50/15">
+    <div class="max-w-6xl mx-auto px-4 py-3 text-xs opacity-70 text-center">
+      © 2026 SPARK CAMPING — 가상 캠핑장 시뮬레이션 · 전기기능사 소식지
+    </div>
+  </div>
+</footer>
+
+<!-- ╔══ SITE MODAL ══╗ -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop" onclick="closeModal(event)">
+  <div class="bg-cream paper rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
+    <div id="modal-body" class="p-0"></div>
+    <div class="p-5 border-t border-stone-300 flex items-center justify-between gap-3">
+      <button class="px-4 py-2 rounded-full border border-stone-300 text-sm hover:bg-stone-100" onclick="document.getElementById('modal').classList.add('hidden');document.getElementById('modal').classList.remove('flex');">닫기</button>
+      <button class="btn-ember px-6 py-2 rounded-full text-sm font-bold" onclick="fakeReserveFromModal()">이 사이트 예약하기 (가상)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============== SAFETY ============== */
+const esc = (s) => String(s).replace(/[&<>"']/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ============== SITES DATA ============== */
+const sites = [
+  {
+    id:'ohm', name:'옴 사이트', tag:'강가 · 조용함',
+    capacity:'2~4인', fee:35000, amenities:['전원 220V','강가 데크','샤워 5분 거리'],
+    desc:'졸졸 흐르는 옴 강가의 단정한 데크 사이트. R=V/I 처럼 정직한 풍경.',
+    palette:{sky:'#bde0ee', land:'#3d6b4a', accent:'#e67a3c'},
+    scene:'river'
+  },
+  {
+    id:'faraday', name:'패러데이 캠프', tag:'숲속 · 그늘',
+    capacity:'2~3인', fee:32000, amenities:['전원 220V','솔숲 그늘','새 노래 BGM'],
+    desc:'유도현상처럼 잎사귀 사이로 빛이 흘러드는 솔숲 사이트.',
+    palette:{sky:'#a8c4d6', land:'#1f3a2d', accent:'#6aa56a'},
+    scene:'forest'
+  },
+  {
+    id:'kirchhoff', name:'키르히호프 야영지', tag:'호숫가 · 풍경',
+    capacity:'2~4인', fee:38000, amenities:['전원 220V','호수 일출 뷰','카누 대여'],
+    desc:'호수면에 산 그림자가 합쳐졌다(KCL) 나뉘는 풍경이 일품.',
+    palette:{sky:'#d8e9f0', land:'#4a6b58', accent:'#4a90a8'},
+    scene:'lake'
+  },
+  {
+    id:'transformer', name:'변압기 글램핑', tag:'글램핑 · 편의',
+    capacity:'2~5인', fee:120000, amenities:['에어컨','침대','전원·온수·냉장고','BBQ 데크'],
+    desc:'1차측 자연 + 2차측 안락함을 동시에. 비 와도 걱정 없는 풀옵션.',
+    palette:{sky:'#f4ead0', land:'#8b6b4f', accent:'#e67a3c'},
+    scene:'glamp'
+  },
+  {
+    id:'rlc', name:'RLC 오토캠핑', tag:'차박 · 편리',
+    capacity:'2~4인', fee:45000, amenities:['전원 220V','차량 진입','수도꼭지'],
+    desc:'저항·인덕턴스·커패시턴스가 직렬로 늘어선 듯한 오토 사이트.',
+    palette:{sky:'#cde0d4', land:'#5a7a5a', accent:'#a8845e'},
+    scene:'auto'
+  },
+  {
+    id:'threephase', name:'3상 단지', tag:'그룹 · 단체',
+    capacity:'8~12인', fee:90000, amenities:['전원 220V × 3','대형 타프 가능','캠프파이어 큰 화로'],
+    desc:'120° 위상차로 배치된 세 텐트 자리. 가족·동아리 모임에 최적.',
+    palette:{sky:'#bde0ee', land:'#3d6b4a', accent:'#e64a4a'},
+    scene:'group'
+  }
+];
+
+/* ============== SCENE SVG (small/big) ============== */
+function sceneSVG(s, big=false){
+  const h = big ? 280 : 130;
+  const w = 600;
+  const sky = s.palette.sky, land = s.palette.land, acc = s.palette.accent;
+  let extra = '';
+  if(s.scene==='river'){
+    extra = `
+      <path d="M0,${h-30} Q${w/2},${h-50} ${w},${h-25} L${w},${h} L0,${h} Z" fill="#5a92a8"/>
+      <ellipse cx="${w/2}" cy="${h-45}" rx="${big?70:40}" ry="${big?10:6}" fill="#a8d4e0" opacity=".7"/>`;
+  } else if(s.scene==='forest'){
+    extra = `
+      <g fill="#1f3a2d">
+        <g transform="translate(${w*0.2},${h-25})"><path d="M0,0 L-22,40 L22,40 Z"/><path d="M0,-20 L-18,16 L18,16 Z"/></g>
+        <g transform="translate(${w*0.45},${h-30})"><path d="M0,0 L-26,46 L26,46 Z"/><path d="M0,-26 L-22,18 L22,18 Z"/></g>
+        <g transform="translate(${w*0.78},${h-25})"><path d="M0,0 L-22,40 L22,40 Z"/><path d="M0,-20 L-18,16 L18,16 Z"/></g>
+      </g>`;
+  } else if(s.scene==='lake'){
+    extra = `
+      <ellipse cx="${w/2}" cy="${h-15}" rx="${w*0.45}" ry="${big?28:14}" fill="#5a92a8"/>
+      <ellipse cx="${w/2}" cy="${h-20}" rx="${w*0.4}" ry="${big?16:8}" fill="#a8d4e0" opacity=".6"/>
+      <circle cx="${w*0.8}" cy="${h*0.3}" r="${big?22:12}" fill="#fff4b8"/>`;
+  } else if(s.scene==='glamp'){
+    extra = `
+      <rect x="${w*0.3}" y="${h-70}" width="${w*0.4}" height="55" rx="${big?40:20}" fill="${acc}"/>
+      <rect x="${w*0.42}" y="${h-40}" width="${w*0.16}" height="25" fill="#142033" opacity=".5"/>
+      <circle cx="${w*0.36}" cy="${h-50}" r="${big?5:3}" fill="#fff4b8"/>
+      <circle cx="${w*0.64}" cy="${h-50}" r="${big?5:3}" fill="#fff4b8"/>`;
+  } else if(s.scene==='auto'){
+    extra = `
+      <rect x="${w*0.55}" y="${h-50}" width="${big?100:60}" height="${big?32:20}" rx="6" fill="#5a3e2b"/>
+      <rect x="${w*0.58}" y="${h-55}" width="${big?60:40}" height="${big?14:10}" rx="4" fill="#a8845e"/>
+      <circle cx="${w*0.58}" cy="${h-22}" r="${big?6:4}" fill="#142033"/>
+      <circle cx="${w*0.58 + (big?78:50)}" cy="${h-22}" r="${big?6:4}" fill="#142033"/>`;
+  } else if(s.scene==='group'){
+    extra = `
+      <g>
+        <path d="M${w*0.2},${h-20} L${w*0.27},${h-55} L${w*0.34},${h-20} Z" fill="${acc}"/>
+        <path d="M${w*0.46},${h-20} L${w*0.53},${h-60} L${w*0.6},${h-20} Z" fill="#6aa56a"/>
+        <path d="M${w*0.72},${h-20} L${w*0.79},${h-55} L${w*0.86},${h-20} Z" fill="#4a90a8"/>
+      </g>`;
+  }
+  return `
+  <svg viewBox="0 0 ${w} ${h}" class="w-full" preserveAspectRatio="xMidYMid slice" style="height:${h}px;display:block;">
+    <defs>
+      <linearGradient id="sk_${s.id}_${big?'b':'s'}" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="${sky}"/>
+        <stop offset="100%" stop-color="#f4ead0"/>
+      </linearGradient>
+    </defs>
+    <rect width="${w}" height="${h}" fill="url(#sk_${s.id}_${big?'b':'s'})"/>
+    <path d="M0,${h*0.55} L${w*0.18},${h*0.35} L${w*0.36},${h*0.55} L${w*0.55},${h*0.3} L${w*0.74},${h*0.55} L${w*0.92},${h*0.4} L${w},${h*0.5} L${w},${h} L0,${h} Z" fill="${land}" opacity=".9"/>
+    ${extra}
+    <g transform="translate(${w*0.12},${h-25})">
+      <path d="M0,0 L-18,32 L18,32 Z" fill="${acc}"/>
+      <path d="M0,0 L0,32 L-6,32 L-2,12 Z" fill="#142033" opacity=".5"/>
+    </g>
+  </svg>`;
+}
+
+/* ============== RENDER SITE CARDS ============== */
+function renderSites(){
+  const grid = document.getElementById('site-grid');
+  grid.innerHTML = sites.map((s,i)=>`
+    <article class="leaf-card rounded-2xl overflow-hidden hover:shadow-xl transition cursor-pointer group" onclick="openSite('${s.id}')">
+      <div class="overflow-hidden">${sceneSVG(s,false)}</div>
+      <div class="p-4">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <h4 class="font-black text-lg text-stone-800">${esc(s.name)}</h4>
+            <p class="text-xs text-stone-500 mt-0.5">${esc(s.tag)}</p>
+          </div>
+          <button class="heart-btn text-stone-400 hover:text-rose-400" onclick="event.stopPropagation();toggleSiteLike(this,'${s.id}')" title="좋아요">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+          ${s.amenities.slice(0,3).map(a=>`<span class="tag-pill text-[11px] rounded-full px-2 py-0.5">${esc(a)}</span>`).join('')}
+        </div>
+        <div class="mt-3 flex items-end justify-between">
+          <div>
+            <p class="text-xs text-stone-500">${esc(s.capacity)}</p>
+            <p class="font-black text-emerald-800 text-lg">₩${s.fee.toLocaleString()}<span class="text-xs font-normal text-stone-500"> / 박</span></p>
+          </div>
+          <span class="text-xs px-3 py-1 rounded-full bg-emerald-700 text-amber-50">자세히 ▸</span>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+/* ============== MODAL ============== */
+let currentSite = null;
+function openSite(id){
+  const s = sites.find(x=>x.id===id); if(!s) return;
+  currentSite = s;
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `
+    <div class="relative">${sceneSVG(s,true)}
+      <div class="absolute top-3 left-3 stamp bg-cream/80">SITE · ${esc(s.id.toUpperCase())}</div>
+    </div>
+    <div class="p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-2xl font-black text-stone-800">${esc(s.name)}</h3>
+          <p class="text-sm text-stone-500">${esc(s.tag)} · ${esc(s.capacity)}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-stone-500">1박 요금</p>
+          <p class="text-2xl font-black text-emerald-800">₩${s.fee.toLocaleString()}</p>
+        </div>
+      </div>
+      <p class="mt-4 text-stone-700 leading-relaxed">${esc(s.desc)}</p>
+      <div class="mt-5">
+        <p class="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">시설</p>
+        <div class="flex flex-wrap gap-2">
+          ${s.amenities.map(a=>`<span class="tag-pill text-xs rounded-full px-3 py-1">${esc(a)}</span>`).join('')}
+        </div>
+      </div>
+      <div class="mt-5 grid grid-cols-3 gap-3 text-center text-xs">
+        <div class="bg-emerald-50 rounded-lg p-3"><div class="font-black text-emerald-800 text-lg">★ 4.8</div><div class="text-stone-500">평점 (가상)</div></div>
+        <div class="bg-amber-50 rounded-lg p-3"><div class="font-black text-amber-800 text-lg">${Math.floor(Math.random()*30)+10}</div><div class="text-stone-500">이번 주 예약</div></div>
+        <div class="bg-sky-50 rounded-lg p-3"><div class="font-black text-sky-800 text-lg">${Math.floor(Math.random()*5)+1}일</div><div class="text-stone-500">최단 예약</div></div>
+      </div>
+    </div>
+  `;
+  const m = document.getElementById('modal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeModal(e){ if(e.target.id==='modal'){ const m=document.getElementById('modal'); m.classList.add('hidden'); m.classList.remove('flex'); } }
+function fakeReserveFromModal(){
+  if(!currentSite) return;
+  alert(`[가상] ${currentSite.name} 사이트 예약 요청이 접수되었습니다.\n실제 예약은 발생하지 않습니다.`);
+  const m = document.getElementById('modal'); m.classList.add('hidden'); m.classList.remove('flex');
+}
+
+/* ============== CALENDAR ============== */
+function renderCalendar(){
+  const grid = document.getElementById('calendar-grid');
+  const firstDay = 5; // 2026-05-01 = Friday (가상 가정)
+  const daysInMonth = 31;
+  const today = 16;
+  const booked = new Set([5,6,7,13,14,20,21,27,28]);
+  let html = '';
+  for(let i=0;i<firstDay;i++) html += `<div></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const dow = (firstDay + d - 1) % 7;
+    const isWeekend = dow===0 || dow===6;
+    const isBooked = booked.has(d) || d < today;
+    let cls = 'cal-day flex items-center justify-center rounded font-semibold ';
+    if(isBooked) cls += 'booked '; else cls += 'available ';
+    if(isWeekend && !isBooked) cls += 'weekend ';
+    html += `<div class="${cls}" data-day="${d}" onclick="selectDay(${d}, this, ${isBooked?'true':'false'})">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+let selectedDay = null;
+function selectDay(d, el, isBooked){
+  if(isBooked) return;
+  document.querySelectorAll('.cal-day.selected').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedDay = d;
+  document.getElementById('sel-date').textContent = `2026.05.${String(d).padStart(2,'0')}`;
+  updateFee();
+}
+function updateFee(){
+  const siteName = document.getElementById('sel-site').value;
+  const s = sites.find(x=>x.name===siteName);
+  const nightsSel = document.getElementById('sel-nights').value;
+  const n = parseInt(nightsSel) || 1;
+  if(!s || !selectedDay){ document.getElementById('sel-fee').textContent = '₩0'; return; }
+  document.getElementById('sel-fee').textContent = `₩${(s.fee*n).toLocaleString()}`;
+}
+function fakeReserve(){
+  if(!selectedDay){ alert('날짜를 먼저 선택해주세요.'); return; }
+  alert(`[가상] ${document.getElementById('sel-date').textContent} · ${document.getElementById('sel-site').value} 예약 요청이 접수되었습니다.`);
+}
+
+/* ============== CHECKLIST ============== */
+function initChecklist(){
+  const items = document.querySelectorAll('.checklist-item input');
+  document.getElementById('total').textContent = items.length;
+  items.forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      cb.closest('.checklist-item').classList.toggle('checked', cb.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+}
+function updateProgress(){
+  const items = document.querySelectorAll('.checklist-item input');
+  const done = [...items].filter(i=>i.checked).length;
+  const pct = items.length ? Math.round(done/items.length*100) : 0;
+  document.getElementById('done').textContent = done;
+  document.getElementById('pct').textContent = pct;
+  document.getElementById('bar').style.width = pct+'%';
+}
+
+/* ============== LIKES ============== */
+function toggleHeader(btn){
+  btn.classList.toggle('liked');
+  const span = btn.querySelector('.like-count');
+  span.textContent = parseInt(span.textContent) + (btn.classList.contains('liked') ? 1 : -1);
+}
+const siteLikes = {};
+function toggleSiteLike(btn,id){
+  btn.classList.toggle('liked');
+  siteLikes[id] = (siteLikes[id]||0) + (btn.classList.contains('liked') ? 1 : -1);
+}
+
+/* ============== INIT ============== */
+renderSites();
+renderCalendar();
+initChecklist();
+document.getElementById('sel-site').addEventListener('change',updateFee);
+document.getElementById('sel-nights').addEventListener('change',updateFee);
+document.getElementById('sel-people').addEventListener('change',updateFee);
+</script>
+</body>
+</html>

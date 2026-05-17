@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIS 변전소 (SF6 가스 절연) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 20% -10%, rgba(56, 189, 248, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(251, 191, 36, 0.12), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 18% 28%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 62% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 22%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 32% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 72% 42%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 92% 88%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 620px 620px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(56,189,248,0.45), rgba(251,191,36,0.40), rgba(168,139,250,0.45));
+    box-shadow: 0 30px 100px -20px rgba(56, 189, 248, 0.28), 0 0 40px rgba(251, 191, 36, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 700px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fde68a; box-shadow: 0 0 12px #fde68a;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fde68a; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(56,189,248,0.4), rgba(251,191,36,0.4), rgba(168,139,250,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7dd3fc, #fde68a, #c4b5fd);
+    box-shadow: 0 0 22px rgba(125, 211, 252, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-mode   { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-press  { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.55); color: #fde68a; }
+.chip-step   { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.chip-fault  { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fda4af; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45);
+}
+.live-pill.arc {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-pill.gas-low {
+    border-color: rgba(251, 113, 133, 0.85);
+    box-shadow: 0 0 22px rgba(251, 113, 133, 0.45);
+    background: linear-gradient(135deg, rgba(251,113,133,0.16), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #7dd3fc, #fde68a, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(125, 211, 252, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(125,211,252,0.16), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(125, 211, 252, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #e0f2fe; }
+.toggle-btn {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.toggle-btn:hover { background: rgba(148, 163, 184, 0.18); }
+.toggle-btn.active {
+    background: linear-gradient(135deg, rgba(125,211,252,0.30), rgba(56,189,248,0.25));
+    border-color: rgba(125, 211, 252, 0.75);
+    color: white;
+    box-shadow: 0 0 20px rgba(125, 211, 252, 0.4);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(125,211,252,0.18), rgba(251,191,36,0.18));
+    border: 1px solid rgba(125,211,252,0.45);
+    color: #bae6fd;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(125,211,252,0.32), rgba(251,191,36,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(125,211,252,0.45);
+}
+.preset-btn.fault {
+    background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(251,113,133,0.18));
+    border-color: rgba(244, 63, 94, 0.55);
+    color: #fda4af;
+}
+.preset-btn.fault:hover {
+    background: linear-gradient(135deg, rgba(244,63,94,0.40), rgba(251,113,133,0.30));
+    box-shadow: 0 0 22px rgba(244,63,94,0.5);
+}
+.step-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.3);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+    text-align: left;
+}
+.step-btn:hover { background: rgba(15, 23, 42, 0.9); border-color: rgba(168, 139, 250, 0.55); }
+.step-btn.done {
+    background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(15,23,42,0.7));
+    border-color: rgba(34, 197, 94, 0.6);
+    color: #bbf7d0;
+}
+.step-btn.next {
+    background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(15,23,42,0.7));
+    border-color: rgba(251, 191, 36, 0.7);
+    color: #fde68a;
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.35);
+    animation: stepPulse 1.6s ease-in-out infinite;
+}
+@keyframes stepPulse { 0%,100% { box-shadow: 0 0 12px rgba(251,191,36,0.30); } 50% { box-shadow: 0 0 26px rgba(251,191,36,0.65); } }
+.step-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.stage-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.stage-card.active {
+    background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(15,23,42,0.75));
+    border-color: rgba(125, 211, 252, 0.7);
+    box-shadow: 0 0 18px rgba(125, 211, 252, 0.32);
+    transform: translateY(-2px);
+}
+.cmp-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 12px;
+    padding: 12px;
+}
+.cmp-row { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:11px; }
+.cmp-bar { flex:1; height:8px; border-radius:9999px; background: rgba(15,23,42,0.85); overflow:hidden; position:relative; border:1px solid rgba(148,163,184,0.1);}
+.cmp-fill { height:100%; border-radius:9999px; }
+.cmp-fill.gis { background: linear-gradient(90deg, #7dd3fc, #38bdf8); box-shadow: 0 0 8px rgba(125,211,252,0.5); }
+.cmp-fill.ais { background: linear-gradient(90deg, #f59e0b, #f43f5e); box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-300">
+            <span class="pulse-dot"></span>
+            GAS INSULATED SWITCHGEAR · SF6 INSULATION · 154/345 kV CLASS
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-sky-200 via-amber-200 to-violet-200 bg-clip-text text-transparent">
+            GIS 변전소 (SF6 가스 절연) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            <span class="text-sky-300 font-semibold">밀폐된 금속 외함</span> 안을
+            <span class="text-amber-300 font-semibold">SF<sub>6</sub> 가스(절연내력 공기 ≈ 3배)</span>로 채워
+            차단기·단로기·접지스위치를 한 모듈에 집적합니다. 점검 개로 시퀀스는 반드시
+            <span class="text-violet-300 font-semibold">① CB OPEN → ② DS OPEN → ③ ES CLOSE</span> 순서를 지켜야 안전합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">운전 모드</p>
+            <p class="mt-1 text-lg font-bold" id="modeDisp"><span class="text-sky-300">● 정상 운전</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-step">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">시퀀스 단계</p>
+            <p class="mt-1 text-lg font-bold"><span id="stepDisp" class="live-num">0 / 3</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-arc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">아크 상태</p>
+            <p class="mt-1 text-lg font-bold" id="arcDisp"><span class="text-emerald-300">● 안정</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-press">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">SF<sub>6</sub> 압력 P</p>
+            <p class="mt-1 text-lg font-bold"><span id="pressDisp" class="live-num">5.0</span> <span class="text-xs opacity-60 font-normal">bar (abs)</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚡ FAULT — 단락 사고 검출, CB 자동 차단 동작
+    </div>
+    <div id="warnBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden"
+         style="background:linear-gradient(90deg, rgba(251,191,36,0.18), rgba(251,191,36,0.04), rgba(251,191,36,0.18)); border-color:rgba(251,191,36,0.55); color:#fde68a;">
+        ▲ INTERLOCK — 시퀀스 위반: CB가 닫혀 있으면 DS를 조작할 수 없음
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">BUSHING → CT → DS → CB(SF<sub>6</sub>) → ES → PT → BUSHING · 밀폐 금속 외함 단면도</span>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="maintenance">점검개로</button>
+                        <button class="preset-btn fault rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="fault">⚡ 단락</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 동작 시퀀스 단계 표시 -->
+            <div class="glass rounded-2xl p-5" id="stageCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">⏱</span>
+                    <span class="bg-gradient-to-r from-sky-200 to-amber-200 bg-clip-text text-transparent">점검 개로 시퀀스 (Operating Sequence)</span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3 text-[11px]" id="stageList">
+                    <div class="stage-card rounded-lg p-3" data-stage="1">
+                        <p class="font-bold text-rose-300">① CB OPEN</p>
+                        <p class="text-slate-400 mt-0.5">부하전류가 흐르는 상태에서 <strong>차단기로 먼저 끊는다</strong> (소호 능력 있음)</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="2">
+                        <p class="font-bold text-amber-300">② DS OPEN</p>
+                        <p class="text-slate-400 mt-0.5">전류 차단 후 <strong>단로기로 전기적 절연</strong> (DS는 무부하 개폐 전용)</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="3">
+                        <p class="font-bold text-emerald-300">③ ES CLOSE</p>
+                        <p class="text-slate-400 mt-0.5">정전 구간에 <strong>접지스위치를 투입</strong>해 잔류전하 방전·작업 안전 확보</p>
+                    </div>
+                </div>
+                <p class="mt-3 text-[10px] text-slate-500">투입은 역순(③ OPEN → ② CLOSE → ① CLOSE). 인터록(Interlock)이 잘못된 조작을 막습니다.</p>
+            </div>
+
+            <!-- GIS vs AIS 비교 -->
+            <div class="glass rounded-2xl p-5" id="compareCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">⚖</span>
+                    <span class="bg-gradient-to-r from-amber-200 to-sky-200 bg-clip-text text-transparent">GIS vs AIS 비교</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div class="cmp-card">
+                        <p class="text-[11px] font-bold text-sky-300">GIS · 가스절연</p>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">설치면적</span><div class="cmp-bar"><div class="cmp-fill gis" style="width:18%"></div></div><span class="text-sky-200 w-10 text-right">10%</span></div>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">신뢰도</span><div class="cmp-bar"><div class="cmp-fill gis" style="width:95%"></div></div><span class="text-sky-200 w-10 text-right">매우↑</span></div>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">유지보수</span><div class="cmp-bar"><div class="cmp-fill gis" style="width:25%"></div></div><span class="text-sky-200 w-10 text-right">적음</span></div>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">초기비용</span><div class="cmp-bar"><div class="cmp-fill gis" style="width:85%"></div></div><span class="text-sky-200 w-10 text-right">높음</span></div>
+                    </div>
+                    <div class="cmp-card">
+                        <p class="text-[11px] font-bold text-amber-300">AIS · 공기절연(옥외)</p>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">설치면적</span><div class="cmp-bar"><div class="cmp-fill ais" style="width:90%"></div></div><span class="text-amber-200 w-10 text-right">100%</span></div>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">신뢰도</span><div class="cmp-bar"><div class="cmp-fill ais" style="width:60%"></div></div><span class="text-amber-200 w-10 text-right">보통</span></div>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">유지보수</span><div class="cmp-bar"><div class="cmp-fill ais" style="width:80%"></div></div><span class="text-amber-200 w-10 text-right">많음</span></div>
+                        <div class="cmp-row"><span class="w-16 text-slate-400">초기비용</span><div class="cmp-bar"><div class="cmp-fill ais" style="width:40%"></div></div><span class="text-amber-200 w-10 text-right">낮음</span></div>
+                    </div>
+                </div>
+                <p class="mt-3 text-[10px] text-slate-500">SF<sub>6</sub>는 공기 대비 절연내력 약 3배, 소호능력 약 100배. 다만 GWP 23,500의 강력한 온실가스라 누설 관리·회수가 의무화됩니다.</p>
+            </div>
+
+            <!-- 수식 카드 -->
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-sky-200 to-amber-200 bg-clip-text text-transparent">절연내력 · 아크 소호</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$V_{BD} \;\propto\; E_{cr}(P)\cdot d \quad\Rightarrow\quad \text{압력 P 클수록 절연내력 } V_{BD} \text{ 증가}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$\text{SF}_6 \text{ 절연내력} \;\approx\; 3 \times \text{(공기, 같은 조건)}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$\text{아크 소호: } P_{arc} = u_{arc}\cdot i \;\to\; 0 \quad (\text{전류 영점 통과 + SF}_6 \text{ 분출 냉각})$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">SF<sub>6</sub>는 강한 전기음성도로 자유전자를 포획해 아크 전도경로를 빠르게 소멸시킵니다. 압력이 정격(보통 약 5 bar abs) 이하로 떨어지면 절연내력이 급감해 동작 봉쇄(Lockout)됩니다.</p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-amber-200">제어반</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">운전 모드</p>
+                <div class="grid grid-cols-1 gap-1.5 mt-2">
+                    <button class="toggle-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-mode="normal">정상 운전 (충전·통전)</button>
+                    <button class="toggle-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="maintenance">점검 개로</button>
+                    <button class="toggle-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="fault">사고 차단</button>
+                </div>
+            </div>
+
+            <div class="chip-step chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">시퀀스 단계 조작</p>
+                <div class="grid grid-cols-1 gap-1.5 mt-2 text-[11px]">
+                    <button class="step-btn rounded-md px-2.5 py-1.5 font-bold" data-step="cb">① CB <span id="cbState" class="opacity-80 font-normal">CLOSED</span></button>
+                    <button class="step-btn rounded-md px-2.5 py-1.5 font-bold" data-step="ds">② DS <span id="dsState" class="opacity-80 font-normal">CLOSED</span></button>
+                    <button class="step-btn rounded-md px-2.5 py-1.5 font-bold" data-step="es">③ ES <span id="esState" class="opacity-80 font-normal">OPEN</span></button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">버튼 = 토글. 인터록 위반 시 거부됩니다.</p>
+            </div>
+
+            <div class="chip-fault chip rounded-lg p-3">
+                <label class="flex justify-between items-center text-[11px] font-bold tracking-wider">
+                    <span>단락 사고 강제 토글</span>
+                    <input type="checkbox" id="faultToggle" class="w-4 h-4 accent-rose-400 cursor-pointer">
+                </label>
+                <p class="text-[10px] text-slate-500 mt-1">ON 시 사고 전류·아크 발생 → CB 자동 차단</p>
+            </div>
+
+            <div class="chip-press chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>SF<sub>6</sub> 가스 압력</span><span id="pressVal" class="font-mono text-base">5.0</span></label>
+                <input type="range" id="press" min="1.5" max="7.0" step="0.1" value="5.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">bar (abs) · 정격 ≈ 5.0, 경보 &lt; 4.5, Lockout &lt; 4.0</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-sky-300">CB</span> · 부하·고장 전류 차단 (SF<sub>6</sub> 소호)</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">DS</span> · 무전압 절연용, <em>전류 차단 불가</em></p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">ES</span> · 점검 시 정전 회로 접지·잔류전하 방전</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-violet-300">CT/PT</span> · 보호계전·계측용 전류/전압 변환기</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const GIS_H = 420;       // 상단 GIS 단면
+const TIME_H = 280;      // 하단 타임라인
+const TOTAL_H = GIS_H + TIME_H;
+
+const state = {
+    mode: 'normal',          // normal | maintenance | fault
+    cb: 'closed',            // closed | open
+    ds: 'closed',            // closed | open
+    es: 'open',              // open | closed
+    fault: false,
+    pressure: 5.0,           // bar abs
+    arcActive: false,
+    arcIntensity: 0,         // 0..1
+    t: 0,
+    history: [],             // {t, label} for timeline (max 200)
+    cbAnim: 1.0,             // 1 = fully closed visually, 0 = open
+    dsAnim: 1.0,
+    esAnim: 0.0,             // 1 = closed (touching bus)
+    interlockMsg: 0          // frames remaining to show interlock warning
+};
+
+let comp = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildLayout();
+}
+window.addEventListener('resize', resize);
+
+function buildLayout() {
+    const W = canvas.width;
+    const yLine = GIS_H * 0.50;
+    const padX = 40;
+
+    // x positions (left to right inside enclosure)
+    const xs = {
+        bushL : padX + 30,
+        ct    : padX + 100,
+        ds    : padX + 200,
+        cb    : padX + 320,
+        es    : padX + 430,
+        pt    : padX + 520,
+        bushR : W - padX - 30
+    };
+    comp = { W, yLine, padX, xs, encTop: 70, encBot: GIS_H - 60 };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 상태 머신 ============
+function applyPreset(mode) {
+    state.mode = mode;
+    document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+    if (mode === 'normal') {
+        state.cb = 'closed'; state.ds = 'closed'; state.es = 'open';
+        state.fault = false;
+        $('faultToggle').checked = false;
+    } else if (mode === 'maintenance') {
+        // 사용자가 시퀀스대로 조작하게 둠. 초기는 정상 폐로
+        state.cb = 'closed'; state.ds = 'closed'; state.es = 'open';
+        state.fault = false;
+        $('faultToggle').checked = false;
+    } else if (mode === 'fault') {
+        state.cb = 'closed'; state.ds = 'closed'; state.es = 'open';
+        state.fault = true;
+        $('faultToggle').checked = true;
+    }
+    state.history.push({ t: state.t, label: 'MODE:' + mode });
+    flashPanel('pill-mode');
+}
+
+function tryToggle(part) {
+    // 인터록 규칙:
+    // - DS는 CB가 OPEN 상태에서만 조작 가능 (전류 흐름 차단 후)
+    // - ES는 DS가 OPEN 상태에서만 CLOSE 가능 (활선 접지 방지)
+    // - CB는 ES가 OPEN 상태에서만 CLOSE 가능 (접지 상태 투입 방지)
+    if (part === 'cb') {
+        if (state.cb === 'closed') {
+            state.cb = 'open';
+            // 부하전류 차단 시 아크 발생
+            if (!state.fault && getStepCount() < 1) {
+                triggerArc(0.6);
+            } else if (state.fault) {
+                triggerArc(1.0);
+            }
+            state.history.push({ t: state.t, label: 'CB:OPEN' });
+        } else {
+            // CB 투입은 ES OPEN 상태에서만
+            if (state.es === 'closed') return reject('CB 투입 불가 (ES가 CLOSED)');
+            state.cb = 'closed';
+            state.history.push({ t: state.t, label: 'CB:CLOSE' });
+        }
+    } else if (part === 'ds') {
+        if (state.cb === 'closed') return reject('DS 조작 불가 (CB가 CLOSED)');
+        state.ds = state.ds === 'closed' ? 'open' : 'closed';
+        state.history.push({ t: state.t, label: 'DS:' + state.ds.toUpperCase() });
+    } else if (part === 'es') {
+        if (state.es === 'open') {
+            if (state.ds === 'closed') return reject('ES 투입 불가 (DS가 CLOSED, 활선 위험)');
+            state.es = 'closed';
+            state.history.push({ t: state.t, label: 'ES:CLOSE' });
+        } else {
+            state.es = 'open';
+            state.history.push({ t: state.t, label: 'ES:OPEN' });
+        }
+    }
+    flashPanel('pill-step');
+    return true;
+}
+
+function reject(msg) {
+    state.interlockMsg = 90; // ~1.5s
+    $('warnBanner').classList.remove('hidden');
+    $('warnBanner').innerHTML = '▲ INTERLOCK — ' + msg;
+    state.history.push({ t: state.t, label: 'REJECT' });
+    if (window.gsap) {
+        gsap.fromTo('#warnBanner', { x: -8 }, { x: 0, duration: 0.35, ease: 'elastic.out(1.2,0.4)' });
+    }
+    return false;
+}
+
+function getStepCount() {
+    // 점검 개로 시퀀스 완료 단계 수: CB OPEN(1) → DS OPEN(2) → ES CLOSE(3)
+    let n = 0;
+    if (state.cb === 'open') n++;
+    if (state.cb === 'open' && state.ds === 'open') n++;
+    if (state.cb === 'open' && state.ds === 'open' && state.es === 'closed') n++;
+    return n;
+}
+
+function triggerArc(intensity) {
+    state.arcActive = true;
+    state.arcIntensity = intensity;
+    if (window.gsap) {
+        gsap.fromTo('#canvasCard',
+            { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+            { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+        gsap.fromTo('#pill-arc', { scale: 1.12 }, { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+    }
+}
+
+function resetAll() {
+    state.cb = 'closed'; state.ds = 'closed'; state.es = 'open';
+    state.fault = false;
+    state.arcActive = false; state.arcIntensity = 0;
+    state.history = [];
+    $('faultToggle').checked = false;
+    $('alarmBanner').classList.add('hidden');
+    $('warnBanner').classList.add('hidden');
+    applyPreset('normal');
+}
+
+// ============ 디스플레이 갱신 ============
+function updateDisplays() {
+    // Step buttons
+    const stepLabels = { cb: 'cbState', ds: 'dsState', es: 'esState' };
+    $('cbState').textContent = state.cb === 'closed' ? 'CLOSED' : 'OPEN';
+    $('dsState').textContent = state.ds === 'closed' ? 'CLOSED' : 'OPEN';
+    $('esState').textContent = state.es === 'closed' ? 'CLOSED' : 'OPEN';
+
+    // step button visual
+    const stepCount = getStepCount();
+    const nextStep = state.mode === 'maintenance'
+        ? (stepCount === 0 ? 'cb' : stepCount === 1 ? 'ds' : stepCount === 2 ? 'es' : null)
+        : null;
+    document.querySelectorAll('.step-btn').forEach(b => {
+        b.classList.remove('done', 'next');
+        const id = b.dataset.step;
+        if (state.mode === 'maintenance') {
+            if (
+                (id === 'cb' && state.cb === 'open') ||
+                (id === 'ds' && state.ds === 'open') ||
+                (id === 'es' && state.es === 'closed')
+            ) {
+                b.classList.add('done');
+            }
+            if (id === nextStep) b.classList.add('next');
+        }
+    });
+
+    // chips
+    $('pressVal').textContent = state.pressure.toFixed(1);
+    $('pressDisp').textContent = state.pressure.toFixed(1);
+    $('stepDisp').textContent = stepCount + ' / 3';
+
+    // mode display
+    const modeMap = {
+        normal: '<span class="text-sky-300">● 정상 운전</span>',
+        maintenance: '<span class="text-violet-300">▲ 점검 개로</span>',
+        fault: '<span class="text-rose-300">⚡ 사고 차단</span>'
+    };
+    $('modeDisp').innerHTML = modeMap[state.mode];
+
+    // arc display
+    if (state.arcActive && state.arcIntensity > 0.05) {
+        $('arcDisp').innerHTML = '<span class="text-rose-300">⚡ ARC · 소호중</span>';
+        $('pill-arc').classList.add('arc');
+    } else if (state.fault) {
+        $('arcDisp').innerHTML = '<span class="text-amber-300">▲ FAULT 통전</span>';
+        $('pill-arc').classList.add('arc');
+    } else {
+        $('arcDisp').innerHTML = '<span class="text-emerald-300">● 안정</span>';
+        $('pill-arc').classList.remove('arc');
+    }
+
+    // 알람: 단락 + CB 폐로
+    const showAlarm = state.fault && state.cb === 'closed';
+    $('alarmBanner').classList.toggle('hidden', !showAlarm);
+
+    // 인터록 경고 자동 해제
+    if (state.interlockMsg > 0) {
+        state.interlockMsg--;
+        if (state.interlockMsg === 0) $('warnBanner').classList.add('hidden');
+    }
+
+    // 압력 경보
+    const pPill = $('pill-press');
+    pPill.classList.remove('gas-low');
+    if (state.pressure < 4.5) pPill.classList.add('gas-low');
+
+    // stage list highlight (점검 시퀀스)
+    document.querySelectorAll('#stageList .stage-card').forEach((el, i) => {
+        el.classList.toggle('active', stepCount >= i + 1);
+    });
+
+    // 차단기/단로기/접지 애니메이션 보간
+    const target = {
+        cb: state.cb === 'closed' ? 1 : 0,
+        ds: state.ds === 'closed' ? 1 : 0,
+        es: state.es === 'closed' ? 1 : 0
+    };
+    state.cbAnim += (target.cb - state.cbAnim) * 0.18;
+    state.dsAnim += (target.ds - state.dsAnim) * 0.18;
+    state.esAnim += (target.es - state.esAnim) * 0.18;
+
+    // 아크 감쇠: CB가 열려 있으면 빠르게 소호, 사고 통전 중이면 유지
+    if (state.fault && state.cb === 'closed') {
+        state.arcActive = true;
+        state.arcIntensity = Math.min(1, state.arcIntensity + 0.05);
+    } else if (state.arcActive) {
+        state.arcIntensity *= 0.93;
+        if (state.arcIntensity < 0.04) { state.arcActive = false; state.arcIntensity = 0; }
+    }
+}
+
+// ============ 드로잉 ============
+function isEnergized() {
+    // 전류 흐름 조건: CB & DS 둘 다 CLOSED, fault 아니더라도 흐름
+    return state.cb === 'closed' && state.ds === 'closed';
+}
+
+function drawBackground() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, GIS_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, GIS_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, GIS_H); ctx.stroke();
+    }
+    for (let i = 0; i < GIS_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 230, 138, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ GIS MODULE CROSS-SECTION · SEALED ENCLOSURE · SF6 GAS', 12, 10);
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.45)';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillText(`GROUND POTENTIAL · ENCLOSURE @ EARTH · BUS @ ${state.cb === 'closed' && state.ds === 'closed' ? '154 kV' : '0 V'}`, 12, 26);
+    ctx.restore();
+}
+
+function drawEnclosure() {
+    const top = comp.encTop, bot = comp.encBot;
+    const left = comp.padX, right = canvas.width - comp.padX;
+
+    // 외함 (이중 벽)
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.35)';
+    const eg = ctx.createLinearGradient(0, top, 0, bot);
+    eg.addColorStop(0, '#1e293b');
+    eg.addColorStop(0.5, '#0f172a');
+    eg.addColorStop(1, '#1e293b');
+    ctx.fillStyle = eg;
+    roundRect(ctx, left, top, right - left, bot - top, 24);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // SF6 가스 영역 (yellow dotted pattern)
+    ctx.save();
+    const innerPad = 14;
+    const ix = left + innerPad, iy = top + innerPad;
+    const iw = (right - left) - innerPad * 2;
+    const ih = (bot - top) - innerPad * 2;
+
+    // 가스 압력에 따른 색 강도
+    const pAlpha = 0.12 + (state.pressure / 7) * 0.18; // 0.12 ~ 0.30
+    const gasColor = state.pressure < 4.0 ? 'rgba(244, 63, 94, ' : 'rgba(251, 191, 36, ';
+
+    // 베이스
+    const sg = ctx.createLinearGradient(0, iy, 0, iy + ih);
+    sg.addColorStop(0, gasColor + (pAlpha * 0.4) + ')');
+    sg.addColorStop(0.5, gasColor + (pAlpha * 0.2) + ')');
+    sg.addColorStop(1, gasColor + (pAlpha * 0.4) + ')');
+    ctx.fillStyle = sg;
+    roundRect(ctx, ix, iy, iw, ih, 16);
+    ctx.fill();
+
+    // 점 패턴 (가스 분자)
+    ctx.fillStyle = state.pressure < 4.0 ? 'rgba(244, 63, 94, 0.45)' : 'rgba(251, 191, 36, 0.45)';
+    const dotDensity = Math.max(15, Math.floor(state.pressure * 8));
+    // 시드된 점 배치 (애니메이션 가능하게)
+    for (let i = 0; i < dotDensity * 4; i++) {
+        const seed = i * 137.5;
+        const baseX = ix + ((seed * 13) % iw);
+        const baseY = iy + ((seed * 19) % ih);
+        const wob = Math.sin(state.t * 0.04 + i * 0.7) * 1.6;
+        const wob2 = Math.cos(state.t * 0.035 + i * 0.5) * 1.6;
+        ctx.beginPath();
+        ctx.arc(baseX + wob, baseY + wob2, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = state.pressure < 4.0 ? '#fda4af' : '#fde68a';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`SF6 @ ${state.pressure.toFixed(1)} bar`, left + 18, top + 18);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'right';
+    ctx.fillText('ENCLOSURE · GROUNDED METAL', right - 14, top + 18);
+    ctx.restore();
+
+    // 외함 접지 표시 (땅)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    const gx = left + 30, gy = bot + 4;
+    ctx.moveTo(gx, bot); ctx.lineTo(gx, gy + 4);
+    // 접지 심볼
+    for (let k = 0; k < 3; k++) {
+        const yy = gy + 6 + k * 4;
+        const ww = 14 - k * 4;
+        ctx.moveTo(gx - ww, yy); ctx.lineTo(gx + ww, yy);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawBushings() {
+    const { xs, yLine, encTop, encBot } = comp;
+    // 좌측·우측 부싱 (외함 위로 솟아오른 절연체)
+    [xs.bushL, xs.bushR].forEach(bx => {
+        ctx.save();
+        const topY = encTop - 38;
+        // 그라데이션 부싱(원통)
+        const bg = ctx.createLinearGradient(bx - 14, topY, bx + 14, topY);
+        bg.addColorStop(0, 'rgba(248, 250, 252, 0.25)');
+        bg.addColorStop(0.5, 'rgba(248, 250, 252, 0.85)');
+        bg.addColorStop(1, 'rgba(248, 250, 252, 0.25)');
+        ctx.fillStyle = bg;
+        roundRect(ctx, bx - 12, topY, 24, encTop - topY + 12, 6);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // 갓(쉘) 4단
+        ctx.fillStyle = 'rgba(125, 211, 252, 0.35)';
+        for (let k = 0; k < 4; k++) {
+            const yy = topY + 4 + k * 8;
+            roundRect(ctx, bx - 18, yy, 36, 4, 2);
+            ctx.fill();
+        }
+        // 상단 단자
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.95)';
+        ctx.beginPath();
+        ctx.arc(bx, topY - 4, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.85)';
+        ctx.textAlign = 'center';
+        ctx.fillText('부싱', bx, topY - 14);
+        ctx.restore();
+    });
+
+    // 외함 위로 연장되는 부싱 → 내부 도체 연결
+    ctx.save();
+    ctx.strokeStyle = isEnergized() ? 'rgba(253, 230, 138, 0.85)' : 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = isEnergized() ? 12 : 0;
+    ctx.shadowColor = 'rgba(253, 230, 138, 0.7)';
+    ctx.beginPath();
+    ctx.moveTo(xs.bushL, encTop - 4); ctx.lineTo(xs.bushL, yLine);
+    ctx.moveTo(xs.bushR, encTop - 4); ctx.lineTo(xs.bushR, yLine);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 메인 도체 (수평) — 구간별 통전 표시
+function drawMainConductor() {
+    const { xs, yLine } = comp;
+    // 구간:
+    //   bushL → CT → DS → CB (좌측에서 CB 전)
+    //   CB → ES → PT → bushR (CB 후)
+    // 통전 여부:
+    //   좌측 활성: 항상 (외부에서 들어옴)
+    //   우측 활성: cb=closed AND ds=closed
+    const leftEnergized = true;  // 모선 측
+    const rightEnergized = state.cb === 'closed' && state.ds === 'closed';
+
+    function drawSeg(x1, x2, energized, faultOverlay) {
+        ctx.save();
+        const color = energized
+            ? (faultOverlay ? 'rgba(244, 63, 94, 0.95)' : 'rgba(253, 230, 138, 0.95)')
+            : 'rgba(148, 163, 184, 0.45)';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.shadowBlur = energized ? (faultOverlay ? 18 : 12) : 0;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.moveTo(x1, yLine); ctx.lineTo(x2, yLine);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    const faultOn = state.fault && state.cb === 'closed';
+    drawSeg(xs.bushL, xs.ds - 18, leftEnergized, faultOn);   // bushL → DS (CT 포함)
+    // DS 구간 — DS가 open이면 다음으로 흐름 중단
+    drawSeg(xs.ds + 18, xs.cb - 26, state.ds === 'closed' && leftEnergized, faultOn);
+    drawSeg(xs.cb + 26, xs.bushR, rightEnergized, faultOn);  // CB → PT → bushR
+}
+
+// 전류 입자
+function drawCurrentParticles() {
+    const { xs, yLine } = comp;
+    if (state.cb === 'open' && state.ds === 'open') return;
+    const faultOn = state.fault && state.cb === 'closed';
+    const speed = faultOn ? 5.5 : 1.8;
+    const color = faultOn ? 'rgba(253, 164, 175, 0.95)' : 'rgba(253, 230, 138, 0.95)';
+
+    // 좌측 부분 (항상)
+    drawParticleLine(xs.bushL, xs.ds - 18, yLine, speed, color);
+    // 중간 (DS closed)
+    if (state.ds === 'closed') {
+        drawParticleLine(xs.ds + 18, xs.cb - 26, yLine, speed, color);
+    }
+    // 우측 (CB+DS closed)
+    if (state.cb === 'closed' && state.ds === 'closed') {
+        drawParticleLine(xs.cb + 26, xs.bushR, yLine, speed, color);
+    }
+}
+
+function drawParticleLine(x1, x2, y, speed, color) {
+    if (x2 <= x1) return;
+    const len = x2 - x1;
+    const n = Math.max(4, Math.floor(len / 28));
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = color;
+    for (let i = 0; i < n; i++) {
+        const phase = ((state.t * speed + i * (len / n)) % len);
+        ctx.beginPath();
+        ctx.arc(x1 + phase, y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// CT (current transformer) — 좌측, 도체 둘러싼 토로이드
+function drawCT() {
+    const { xs, yLine } = comp;
+    const x = xs.ct;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.85)';
+    ctx.lineWidth = 2.2;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(168, 139, 250, 0.5)';
+    ctx.beginPath(); ctx.arc(x, yLine, 18, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(x, yLine, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'center';
+    ctx.fillText('CT', x, yLine - 26);
+    ctx.font = '8px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.7)';
+    ctx.fillText('600 : 5', x, yLine + 32);
+    ctx.restore();
+}
+
+// PT (potential transformer) — 우측, 도체에서 분기
+function drawPT() {
+    const { xs, yLine, encBot } = comp;
+    const x = xs.pt;
+    // 분기선
+    ctx.save();
+    ctx.strokeStyle = state.cb === 'closed' && state.ds === 'closed' ? 'rgba(125, 211, 252, 0.7)' : 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, yLine);
+    ctx.lineTo(x, yLine + 60);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 박스 (PT 코일 + 코어)
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(125, 211, 252, 0.45)';
+    const bx = x - 16, by = yLine + 60, bw = 32, bh = 30;
+    const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, '#1e3a5f'); g.addColorStop(1, '#0c2540');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, bw, bh, 4); ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.4; ctx.stroke();
+    // 코일 표시 (지그재그)
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.85)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (let k = 0; k < 4; k++) {
+        const yy = by + 6 + k * 6;
+        ctx.moveTo(bx + 4, yy); ctx.lineTo(bx + bw - 4, yy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#bae6fd';
+    ctx.textAlign = 'center';
+    ctx.fillText('PT', x, yLine + 100);
+    ctx.font = '8px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.7)';
+    ctx.fillText('22.9k : 110', x, yLine - 26);
+    ctx.restore();
+}
+
+// 단로기 DS (회전형 표현)
+function drawDS() {
+    const { xs, yLine } = comp;
+    const x = xs.ds;
+    const closed = state.dsAnim; // 0..1 (1=닫힘)
+
+    // 좌·우 단자
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.92)';
+    ctx.beginPath(); ctx.arc(x - 18, yLine, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 18, yLine, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 칼날 (왼쪽 단자에서 오른쪽으로, 회전 각)
+    ctx.save();
+    const angOpen = -Math.PI * 0.35;
+    const ang = (1 - closed) * angOpen;
+    ctx.translate(x - 18, yLine);
+    ctx.rotate(ang);
+    const dsColor = closed > 0.9 ? 'rgba(251, 191, 36, 0.95)' :
+                   closed < 0.1 ? 'rgba(148, 163, 184, 0.8)' : 'rgba(251, 191, 36, 0.7)';
+    ctx.strokeStyle = dsColor;
+    ctx.shadowBlur = closed > 0.9 ? 8 : 0;
+    ctx.shadowColor = dsColor;
+    ctx.lineWidth = 3.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(36, 0);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#fde68a';
+    ctx.textAlign = 'center';
+    ctx.fillText('DS · 단로기', x, yLine - 26);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.ds === 'closed' ? '#fde68a' : '#94a3b8';
+    ctx.fillText(state.ds === 'closed' ? 'CLOSED' : 'OPEN', x, yLine + 32);
+    ctx.restore();
+}
+
+// 차단기 CB (아크 챔버 + 가동·고정 접촉자)
+function drawCB() {
+    const { xs, yLine } = comp;
+    const x = xs.cb;
+    const closed = state.cbAnim;
+
+    // 아크 챔버 박스 (대형)
+    ctx.save();
+    ctx.shadowBlur = state.arcActive ? (20 + state.arcIntensity * 30) : 10;
+    ctx.shadowColor = state.arcActive ? 'rgba(244, 63, 94, 0.7)' : 'rgba(125, 211, 252, 0.5)';
+    const bx = x - 32, by = yLine - 30, bw = 64, bh = 60;
+    const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, '#1e293b'); g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, bw, bh, 8);
+    ctx.fill();
+    ctx.strokeStyle = state.arcActive ? 'rgba(244, 63, 94, 0.9)' : 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+
+    // 좌·우 접촉자
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.95)';
+    ctx.beginPath(); ctx.arc(x - 22, yLine, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 22, yLine, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 가동 접촉자 (오른쪽이 좌측을 향해 이동)
+    ctx.save();
+    const sep = 22 - closed * 22; // separation distance from x (mid)
+    ctx.strokeStyle = closed > 0.95 ? 'rgba(253, 230, 138, 0.95)' :
+                      closed < 0.05 ? 'rgba(148, 163, 184, 0.75)' : 'rgba(244, 63, 94, 0.9)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = closed > 0.95 ? 8 : 0;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(x - 22, yLine); ctx.lineTo(x - sep, yLine);
+    ctx.moveTo(x + sep, yLine); ctx.lineTo(x + 22, yLine);
+    ctx.stroke();
+    ctx.restore();
+
+    // 아크 (분리 중 또는 fault)
+    if (state.arcActive && sep > 1) {
+        drawArc(x - sep, yLine, x + sep, yLine, state.arcIntensity);
+        // SF6 가스 분사 효과
+        drawSF6Jet(x, yLine, state.arcIntensity);
+    } else if (state.fault && state.cb === 'closed') {
+        // closed 통전 중 fault: 살짝 번쩍
+        drawArc(x - 2, yLine, x + 2, yLine, 0.5 + Math.sin(state.t * 0.4) * 0.2);
+    }
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = state.arcActive ? '#fda4af' : '#bae6fd';
+    ctx.textAlign = 'center';
+    ctx.fillText('CB · SF6 차단기', x, by - 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.cb === 'closed' ? (state.fault ? '#fda4af' : '#34d399') : '#94a3b8';
+    ctx.fillText(state.cb === 'closed' ? (state.fault ? 'CLOSED · FAULT' : 'CLOSED') : 'OPEN ⚡', x, by + bh + 12);
+    ctx.restore();
+}
+
+function drawArc(x1, y1, x2, y2, intensity) {
+    const segs = 8;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let layer = 0; layer < 3; layer++) {
+        const colors = ['rgba(253, 230, 138, 0.95)', 'rgba(244, 114, 182, 0.85)', 'rgba(125, 211, 252, 0.55)'];
+        const widths = [2.2, 3.6, 5.2];
+        ctx.strokeStyle = colors[layer];
+        ctx.lineWidth = widths[layer] * intensity;
+        ctx.shadowBlur = 16 + layer * 10;
+        ctx.shadowColor = colors[layer];
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        for (let i = 1; i < segs; i++) {
+            const t = i / segs;
+            const x = x1 + (x2 - x1) * t;
+            const wob = (Math.random() - 0.5) * 10 * intensity;
+            ctx.lineTo(x, y1 + wob);
+        }
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawSF6Jet(cx, cy, intensity) {
+    // 위·아래로 SF6 분사 (소호) — 노랑/하늘색 가스 분출
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const n = Math.floor(14 * intensity);
+    for (let i = 0; i < n; i++) {
+        const angle = -Math.PI/2 + (Math.random() - 0.5) * 0.8 * (i % 2 === 0 ? 1 : -1);
+        const dist = 4 + Math.random() * 28 * intensity;
+        const x = cx + Math.cos(angle) * dist + (Math.random() - 0.5) * 8;
+        const y = cy + Math.sin(angle) * dist;
+        const r = 2 + Math.random() * 3;
+        const alpha = (1 - dist / 30) * intensity;
+        ctx.fillStyle = `rgba(125, 211, 252, ${alpha * 0.7})`;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(125, 211, 252, 0.6)';
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        // 위쪽도 동시에 (양방향)
+        const y2 = cy - Math.sin(angle) * dist;
+        ctx.fillStyle = `rgba(253, 230, 138, ${alpha * 0.6})`;
+        ctx.shadowColor = 'rgba(253, 230, 138, 0.6)';
+        ctx.beginPath();
+        ctx.arc(x, y2, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// 접지 스위치 ES (수직, 도체에서 외함 바닥으로)
+function drawES() {
+    const { xs, yLine, encBot } = comp;
+    const x = xs.es;
+    const closed = state.esAnim;
+
+    // 상단 단자 (도체)
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.95)';
+    ctx.beginPath(); ctx.arc(x, yLine, 3, 0, Math.PI * 2); ctx.fill();
+    // 하단 단자 (외함 = 접지)
+    ctx.beginPath(); ctx.arc(x, encBot - 18, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 칼날 (위에서 아래로 회전)
+    ctx.save();
+    const angOpen = Math.PI * 0.45;
+    const ang = (1 - closed) * angOpen;
+    ctx.translate(x, yLine);
+    ctx.rotate(Math.PI / 2 - ang); // 닫힘=수직 아래
+    const len = (encBot - 18) - yLine;
+    const esColor = closed > 0.9 ? 'rgba(110, 231, 183, 0.95)' :
+                    closed < 0.1 ? 'rgba(148, 163, 184, 0.75)' : 'rgba(110, 231, 183, 0.7)';
+    ctx.strokeStyle = esColor;
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = closed > 0.9 ? 8 : 0;
+    ctx.shadowColor = esColor;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, len);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.textAlign = 'center';
+    ctx.fillText('ES · 접지', x, yLine - 26);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.es === 'closed' ? '#34d399' : '#94a3b8';
+    ctx.fillText(state.es === 'closed' ? 'CLOSED' : 'OPEN', x, encBot + 8);
+    ctx.restore();
+
+    // ES CLOSED 시 잔류전하 방전 효과
+    if (closed > 0.9 && state.cb === 'open' && state.ds === 'open') {
+        // 첫 1.5초 정도 작은 스파크
+        const recent = state.history[state.history.length - 1];
+        if (recent && recent.label === 'ES:CLOSE' && (state.t - recent.t) < 60) {
+            const prog = (state.t - recent.t) / 60;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (let i = 0; i < 4; i++) {
+                ctx.fillStyle = `rgba(110, 231, 183, ${0.5 * (1 - prog)})`;
+                ctx.shadowBlur = 10; ctx.shadowColor = '#6ee7b7';
+                ctx.beginPath();
+                ctx.arc(x + (Math.random() - 0.5) * 6, yLine + Math.random() * len, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+    }
+}
+
+// ============ 하단: 타임라인 + 압력 게이지 ============
+function drawTimelinePanel() {
+    const W = canvas.width;
+    const top0 = GIS_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + TIME_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, TIME_H);
+
+    // 상단 구분선
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(168, 139, 250, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ EVENT TIMELINE & GAS PRESSURE GAUGE', 12, top0 + 10);
+    ctx.restore();
+
+    // 좌측: 이벤트 타임라인 (가로형 라인)
+    const padL = 40, padR = 24, padT = 36, padB = 28;
+    const timelineW = W * 0.62;
+    const x0 = padL, y0 = top0 + padT;
+    const plotW = timelineW - padL - 10;
+    const plotH = TIME_H - padT - padB;
+
+    // 가로 라인
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1;
+    const midY = y0 + plotH * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x0, midY); ctx.lineTo(x0 + plotW, midY);
+    ctx.stroke();
+    // 눈금
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    ctx.textAlign = 'center';
+    for (let k = 0; k <= 10; k++) {
+        const xx = x0 + (k / 10) * plotW;
+        ctx.beginPath(); ctx.moveTo(xx, midY - 3); ctx.lineTo(xx, midY + 3); ctx.stroke();
+        const sec = (k - 10) * 1; // 가장 오른쪽 = 현재
+        ctx.fillText((sec === 0 ? 'NOW' : sec + 's'), xx, midY + 12);
+    }
+    ctx.restore();
+
+    // 이벤트 점/라벨 (최근 60s window 가정)
+    const windowFrames = 60 * 10; // 10초 윈도우 표시
+    ctx.save();
+    state.history.slice(-30).forEach(ev => {
+        const dt = state.t - ev.t;
+        if (dt > windowFrames) return;
+        const frac = 1 - dt / windowFrames;
+        const xx = x0 + frac * plotW;
+        // 라벨별 색
+        let color = '#7dd3fc';
+        if (ev.label.startsWith('CB')) color = '#fda4af';
+        else if (ev.label.startsWith('DS')) color = '#fde68a';
+        else if (ev.label.startsWith('ES')) color = '#6ee7b7';
+        else if (ev.label === 'REJECT') color = '#f43f5e';
+        else if (ev.label.startsWith('MODE')) color = '#c4b5fd';
+
+        ctx.fillStyle = color;
+        ctx.shadowBlur = 8; ctx.shadowColor = color;
+        ctx.beginPath(); ctx.arc(xx, midY, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 라벨 (홀짝 위아래)
+        const isUp = (ev.t % 2) === 0;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        const ly = isUp ? midY - 14 : midY + 24;
+        ctx.fillText(ev.label, xx, ly);
+        // 연결선
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(xx, midY); ctx.lineTo(xx, isUp ? midY - 8 : midY + 12);
+        ctx.stroke();
+    });
+    ctx.restore();
+
+    // 우측: 압력 게이지 (반원형)
+    const gx0 = timelineW + 30;
+    const gw = W - gx0 - 20;
+    const gcx = gx0 + gw / 2;
+    const gcy = top0 + padT + plotH * 0.6;
+    const gR = Math.min(80, gw / 2 - 10);
+
+    ctx.save();
+    // 외곽
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(gcx, gcy, gR, Math.PI, 0, false);
+    ctx.stroke();
+
+    // 색대역
+    function arcSegment(p1, p2, color, lw) {
+        // p in [1.5, 7.0] mapped to angle [PI, 0]
+        const a1 = Math.PI - ((p1 - 1.5) / (7.0 - 1.5)) * Math.PI;
+        const a2 = Math.PI - ((p2 - 1.5) / (7.0 - 1.5)) * Math.PI;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        ctx.arc(gcx, gcy, gR - 8, a1, a2, true);
+        ctx.stroke();
+    }
+    arcSegment(1.5, 4.0, 'rgba(244, 63, 94, 0.85)', 7);   // Lockout
+    arcSegment(4.0, 4.5, 'rgba(251, 191, 36, 0.85)', 7);  // Alarm
+    arcSegment(4.5, 7.0, 'rgba(110, 231, 183, 0.85)', 7); // Normal
+
+    // 눈금
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.7)';
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    [1.5, 3, 4.5, 6, 7].forEach(v => {
+        const a = Math.PI - ((v - 1.5) / (7.0 - 1.5)) * Math.PI;
+        const tx = gcx + Math.cos(a) * (gR + 14);
+        const ty = gcy + Math.sin(a) * (gR + 14);
+        ctx.fillText(v.toFixed(1), tx, ty + 3);
+    });
+
+    // 바늘
+    const p = Math.max(1.5, Math.min(7.0, state.pressure));
+    const angN = Math.PI - ((p - 1.5) / (7.0 - 1.5)) * Math.PI;
+    ctx.strokeStyle = p < 4.0 ? '#f43f5e' : p < 4.5 ? '#fbbf24' : '#34d399';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(gcx, gcy);
+    ctx.lineTo(gcx + Math.cos(angN) * (gR - 14), gcy + Math.sin(angN) * (gR - 14));
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 중심점
+    ctx.fillStyle = '#e5e7eb';
+    ctx.beginPath(); ctx.arc(gcx, gcy, 4, 0, Math.PI * 2); ctx.fill();
+
+    // 라벨
+    ctx.fillStyle = '#fde68a';
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillText(p.toFixed(1) + ' bar', gcx, gcy + 28);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = p < 4.0 ? '#fda4af' : p < 4.5 ? '#fde68a' : '#6ee7b7';
+    const stateLbl = p < 4.0 ? 'LOCKOUT' : p < 4.5 ? 'ALARM' : 'NORMAL';
+    ctx.fillText(stateLbl, gcx, gcy + 44);
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillText('SF6 PRESSURE', gcx, top0 + padT + 6);
+    ctx.restore();
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    updateDisplays();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
+    drawEnclosure();
+    drawMainConductor();
+    drawCurrentParticles();
+    drawBushings();
+    drawCT();
+    drawDS();
+    drawCB();
+    drawES();
+    drawPT();
+    drawTimelinePanel();
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+document.querySelectorAll('[data-mode]').forEach(b => {
+    b.addEventListener('click', () => applyPreset(b.dataset.mode));
+});
+
+document.querySelectorAll('.step-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const part = b.dataset.step;
+        const ok = tryToggle(part);
+        if (ok && window.gsap) {
+            gsap.fromTo(b, { scale: 0.95 }, { scale: 1, duration: 0.3, ease: 'back.out(1.7)' });
+        }
+    });
+});
+
+$('press').addEventListener('input', () => {
+    state.pressure = +$('press').value;
+    flashPanel('pill-press');
+});
+
+$('faultToggle').addEventListener('change', () => {
+    state.fault = $('faultToggle').checked;
+    if (state.fault) {
+        applyPreset('fault');
+        // CB 자동 차단 (보호계전 동작)
+        setTimeout(() => {
+            if (state.fault && state.cb === 'closed') {
+                state.cb = 'open';
+                state.history.push({ t: state.t, label: 'CB:AUTO-TRIP' });
+                triggerArc(1.0);
+                flashPanel('pill-arc');
+            }
+        }, 600);
+    } else {
+        // 사고 해제 — 모드는 사용자가 다시 선택
+    }
+});
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        if (mode === 'normal')        applyPreset('normal');
+        else if (mode === 'maintenance') applyPreset('maintenance');
+        else if (mode === 'fault') {
+            applyPreset('fault');
+            // 자동 트립 트리거
+            setTimeout(() => {
+                if (state.fault && state.cb === 'closed') {
+                    state.cb = 'open';
+                    state.history.push({ t: state.t, label: 'CB:AUTO-TRIP' });
+                    triggerArc(1.0);
+                    flashPanel('pill-arc');
+                }
+            }, 700);
+        }
+        else if (mode === 'reset')   resetAll();
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#stageCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#compareCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.55, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

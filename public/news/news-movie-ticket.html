@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스파크 시네마 · 전기 학습 시네마 페스티벌 2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700;800;900&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #1a1a1a;
+    --bg2:      #232323;
+    --bg3:      #2c2c2c;
+    --line:     #3a3a3a;
+    --line2:    #4d4d4d;
+    --text:     #f2f2f2;
+    --muted:    #9a9a9a;
+    --muted2:   #6b6b6b;
+    --red:      #e10600;
+    --red-deep: #8b0303;
+    --red-soft: #ff2d20;
+    --gold:     #f5c542;
+    --gold-deep:#b88a14;
+    --green:    #19c37d;
+    --blue:     #4a9eff;
+    --seat-empty: #4d4d4d;
+    --seat-hover: #f5c542;
+    --seat-selected: #e10600;
+    --seat-sold: #2a2a2a;
+  }
+  html, body {
+    background: #111;
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 0; padding: 0;
+    overflow-x: hidden;
+  }
+  .mono  { font-family: 'Roboto Mono', monospace; }
+  .head  { font-family: 'Black Han Sans', 'Noto Sans KR', sans-serif; letter-spacing: -.01em; }
+  .bebas { font-family: 'Bebas Neue', sans-serif; letter-spacing: .06em; }
+
+  /* Top utility bar */
+  .util-bar {
+    background: #0d0d0d;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 6px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .util-bar a { color: var(--muted); }
+  .util-bar a:hover { color: var(--gold); }
+
+  /* GNB */
+  .gnb {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 18px;
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(8px);
+  }
+  .gnb-logo {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 22px;
+    color: var(--red-soft);
+    letter-spacing: -.02em;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .gnb-logo .reel {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--red-soft), var(--red-deep));
+    position: relative;
+    box-shadow: 0 0 18px rgba(225,6,0,.45);
+  }
+  .gnb-logo .reel::before, .gnb-logo .reel::after {
+    content: ""; position: absolute; inset: 35%;
+    background: #1a1a1a; border-radius: 50%;
+  }
+  .gnb-menu a {
+    color: #d8d8d8; font-weight: 500; font-size: 14px;
+    padding: 6px 12px; border-radius: 4px; transition: .15s;
+  }
+  .gnb-menu a:hover { background: rgba(245,197,66,.1); color: var(--gold); }
+  .gnb-menu a.active { color: var(--red-soft); font-weight: 700; }
+
+  /* Hero ribbon */
+  .hero {
+    position: relative;
+    background:
+      radial-gradient(800px 320px at 25% 30%, rgba(225,6,0,.18), transparent 70%),
+      radial-gradient(700px 360px at 80% 70%, rgba(245,197,66,.10), transparent 70%),
+      linear-gradient(180deg, #1f1f1f 0%, #141414 100%);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 60px);
+    pointer-events: none;
+  }
+  .ticker {
+    background: var(--red-deep);
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 6px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    border-top: 1px solid rgba(255,255,255,.1);
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  .ticker-track {
+    display: inline-block;
+    animation: slide 38s linear infinite;
+  }
+  .ticker-track span { padding: 0 36px; }
+  @keyframes slide {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* Poster card */
+  .poster-card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: .2s;
+    cursor: pointer;
+  }
+  .poster-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--gold);
+    box-shadow: 0 10px 30px rgba(0,0,0,.6), 0 0 0 1px rgba(245,197,66,.3);
+  }
+  .poster-rank {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(0,0,0,.7);
+    color: var(--gold);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    border: 1px solid rgba(245,197,66,.4);
+  }
+  .grade-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 4px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    color: #fff;
+  }
+  .grade-all   { background: #19c37d; }
+  .grade-12    { background: #f5c542; color: #1a1a1a; }
+  .grade-15    { background: #ff8c1a; }
+  .grade-18    { background: #e10600; }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 22px;
+    border-left: 4px solid var(--red-soft);
+    padding-left: 12px;
+    margin-bottom: 18px;
+  }
+
+  /* Schedule */
+  .day-tab {
+    padding: 10px 18px;
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: .15s;
+    text-align: center;
+    min-width: 92px;
+  }
+  .day-tab.active {
+    background: var(--red-soft);
+    border-color: var(--red-soft);
+    color: #fff;
+    font-weight: 700;
+  }
+  .schedule-row {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+  }
+  .time-chip {
+    display: inline-flex; flex-direction: column; align-items: center;
+    min-width: 76px;
+    padding: 8px 6px;
+    background: #2c2c2c;
+    border: 1px solid var(--line2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .time-chip:hover {
+    border-color: var(--gold);
+    background: #3a3a3a;
+  }
+  .time-chip.sold-out {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+    color: var(--muted2);
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  .time-chip .t { font-family: 'Roboto Mono', monospace; font-size: 15px; font-weight: 700; color: #fff; }
+  .time-chip .s { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .time-chip.few .s { color: var(--red-soft); font-weight: 700; }
+  .time-chip.sold-out .t,
+  .time-chip.sold-out .s { color: var(--muted2); }
+
+  /* Branch */
+  .branch-card {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px;
+    transition: .15s;
+  }
+  .branch-card:hover {
+    border-color: var(--gold);
+    background: #2a2a2a;
+  }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display: none;
+    align-items: flex-start; justify-content: center;
+    overflow-y: auto;
+    padding: 40px 16px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal-card {
+    background: var(--bg);
+    border: 1px solid var(--line2);
+    border-radius: 8px;
+    max-width: 880px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(0,0,0,.8);
+  }
+  .modal-close {
+    background: transparent;
+    border: 1px solid var(--line2);
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .modal-close:hover {
+    background: var(--red-soft);
+    color: #fff;
+    border-color: var(--red-soft);
+  }
+
+  /* Seat map */
+  .screen-bar {
+    height: 8px;
+    margin: 0 auto 8px;
+    background: linear-gradient(180deg, #f5c542, #b88a14);
+    border-radius: 50% 50% 6px 6px / 100% 100% 6px 6px;
+    width: 70%;
+    box-shadow: 0 6px 24px rgba(245,197,66,.5);
+  }
+  .screen-label {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: .3em;
+    margin-bottom: 18px;
+  }
+  .seat-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 5px;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  .seat {
+    aspect-ratio: 1 / 1;
+    background: var(--seat-empty);
+    border-radius: 4px 4px 2px 2px;
+    cursor: pointer;
+    transition: .1s;
+    font-size: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: #1a1a1a;
+    font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+    user-select: none;
+  }
+  .seat:hover:not(.sold):not(.selected) {
+    background: var(--seat-hover);
+    transform: scale(1.08);
+  }
+  .seat.sold {
+    background: var(--seat-sold);
+    cursor: not-allowed;
+    color: #444;
+  }
+  .seat.selected {
+    background: var(--seat-selected);
+    color: #fff;
+    box-shadow: 0 0 8px rgba(225,6,0,.6);
+  }
+  .seat.aisle { visibility: hidden; }
+  .row-label {
+    color: var(--muted);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+    align-self: center;
+  }
+
+  /* Footer */
+  footer {
+    background: #0d0d0d;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  footer .col-title { color: #d8d8d8; font-weight: 700; margin-bottom: 10px; font-size: 13px; }
+  footer a:hover { color: var(--gold); }
+
+  /* Buttons */
+  .btn-primary {
+    background: var(--red-soft);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .btn-primary:hover { background: var(--red); box-shadow: 0 4px 16px rgba(225,6,0,.4); }
+  .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--line2);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: .15s;
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* Star rating */
+  .star { color: var(--gold); }
+  .star-empty { color: #444; }
+
+  .legend-dot {
+    display: inline-block; width: 14px; height: 14px;
+    border-radius: 3px 3px 1px 1px;
+    margin-right: 6px; vertical-align: middle;
+  }
+
+  /* Sound icon waveform */
+  .wave-bar {
+    display: inline-block;
+    width: 3px;
+    background: var(--gold);
+    margin: 0 1px;
+    border-radius: 1px;
+    animation: wave 1.2s ease-in-out infinite;
+  }
+  @keyframes wave {
+    0%, 100% { height: 4px; }
+    50% { height: 14px; }
+  }
+  .wave-bar:nth-child(2) { animation-delay: .1s; }
+  .wave-bar:nth-child(3) { animation-delay: .2s; }
+  .wave-bar:nth-child(4) { animation-delay: .3s; }
+
+  /* Live red dot */
+  .live-dot {
+    width: 8px; height: 8px;
+    background: var(--red-soft);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============== TOP UTILITY BAR ============== -->
+<div class="util-bar">
+  <div class="flex items-center gap-4">
+    <span><span class="live-dot"></span> 실시간 예매 가능</span>
+    <span class="hidden sm:inline">고객센터 1577-XXXX (가상)</span>
+  </div>
+  <div class="flex items-center gap-4">
+    <a href="#">로그인</a>
+    <a href="#">회원가입</a>
+    <a href="#">멤버십</a>
+    <a href="#" class="text-yellow-400">고객지원</a>
+  </div>
+</div>
+
+<!-- ============== GNB ============== -->
+<nav class="gnb">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-8">
+      <div class="gnb-logo">
+        <span class="reel"></span>
+        <span>SPARK<span class="text-yellow-400">CINEMA</span></span>
+      </div>
+      <div class="gnb-menu hidden md:flex items-center gap-1">
+        <a href="#schedule" class="active">예매</a>
+        <a href="#movies">영화</a>
+        <a href="#branches">극장</a>
+        <a href="#">스토어</a>
+        <a href="#">이벤트</a>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-3 text-sm">
+      <div class="mono text-yellow-400 text-xs px-3 py-1.5 rounded border border-yellow-700/50 bg-yellow-700/10">
+        FESTIVAL 2026
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ============== HERO ============== -->
+<header class="hero">
+  <div class="max-w-7xl mx-auto px-6 py-14 relative">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="bebas text-red-500 text-sm bg-red-900/30 border border-red-800/60 px-3 py-1 rounded">SPECIAL FESTIVAL</span>
+      <span class="text-xs text-gray-400 mono">2026.05.01 — 2026.06.30</span>
+    </div>
+    <h1 class="head text-4xl md:text-6xl leading-tight">
+      전기 학습 <span class="text-red-500">시네마 페스티벌</span> 2026
+    </h1>
+    <p class="text-gray-300 mt-4 max-w-2xl text-base md:text-lg">
+      옴의 법칙부터 3상 결선까지 — 전기기능사 핵심 개념을 8편의 가상 영화로 만나는 학습 시네마 축제.
+      <span class="text-yellow-400">스파크 시네마 전국 5개 지점</span> 동시 상영.
+    </p>
+    <div class="flex flex-wrap items-center gap-3 mt-7">
+      <button class="btn-primary" onclick="document.getElementById('schedule').scrollIntoView({behavior:'smooth'})">지금 예매</button>
+      <button class="btn-ghost" onclick="document.getElementById('movies').scrollIntoView({behavior:'smooth'})">상영작 보기</button>
+      <div class="flex items-center gap-1 ml-2 text-yellow-400">
+        <span class="wave-bar" style="height:8px"></span>
+        <span class="wave-bar" style="height:12px"></span>
+        <span class="wave-bar" style="height:6px"></span>
+        <span class="wave-bar" style="height:10px"></span>
+        <span class="text-xs text-gray-400 ml-2 mono">DOLBY ATMOS · 4DX</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker">
+    <div class="ticker-track">
+      <span>NEW · "옴의 법칙" 박스오피스 1위 7주 연속</span>
+      <span>·</span>
+      <span>"테슬라 vs 에디슨" 평점 9.4 / 10</span>
+      <span>·</span>
+      <span>4DX 상영관 좌석 한정 — 예매 서두르세요</span>
+      <span>·</span>
+      <span>멤버십 회원 20% 할인 (가상)</span>
+      <span>·</span>
+      <span>"공명의 노래" 뮤지컬 무대인사 5/22 (가상)</span>
+      <span>·</span>
+      <!-- duplicate for seamless loop -->
+      <span>NEW · "옴의 법칙" 박스오피스 1위 7주 연속</span>
+      <span>·</span>
+      <span>"테슬라 vs 에디슨" 평점 9.4 / 10</span>
+      <span>·</span>
+      <span>4DX 상영관 좌석 한정 — 예매 서두르세요</span>
+      <span>·</span>
+      <span>멤버십 회원 20% 할인 (가상)</span>
+      <span>·</span>
+      <span>"공명의 노래" 뮤지컬 무대인사 5/22 (가상)</span>
+      <span>·</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============== MOVIE POSTERS GRID ============== -->
+<section id="movies" class="max-w-7xl mx-auto px-6 py-14">
+  <div class="flex items-end justify-between mb-2">
+    <h2 class="section-title">상영작 (전 8편 · 가상)</h2>
+    <div class="text-xs text-gray-500 mono">CURRENTLY SCREENING</div>
+  </div>
+  <p class="text-gray-400 text-sm mb-6">포스터를 클릭하면 상세 정보를 볼 수 있습니다.</p>
+
+  <div id="poster-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+</section>
+
+<!-- ============== SCHEDULE ============== -->
+<section id="schedule" class="max-w-7xl mx-auto px-6 pb-14">
+  <h2 class="section-title">상영 시간표</h2>
+
+  <!-- Day tabs -->
+  <div id="day-tabs" class="flex flex-wrap gap-2 mb-6"></div>
+
+  <!-- Branch filter chip -->
+  <div class="flex items-center gap-3 mb-5 text-sm">
+    <span class="text-gray-400">극장:</span>
+    <select id="branch-filter" class="bg-gray-800 border border-gray-700 text-white px-3 py-1.5 rounded text-sm focus:outline-none focus:border-yellow-400">
+      <option value="all">전체 지점</option>
+    </select>
+  </div>
+
+  <div id="schedule-list" class="bg-gray-900/50 border border-gray-800 rounded-lg p-4"></div>
+</section>
+
+<!-- ============== BRANCHES ============== -->
+<section id="branches" class="max-w-7xl mx-auto px-6 pb-14">
+  <h2 class="section-title">스파크 시네마 지점 안내 (가상)</h2>
+  <div id="branch-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+</section>
+
+<!-- ============== INFO STRIP ============== -->
+<section class="bg-gray-900/70 border-t border-b border-gray-800 py-10">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+    <div>
+      <div class="bebas text-3xl text-yellow-400">8</div>
+      <div class="text-xs text-gray-400 mt-1">상영작 (가상)</div>
+    </div>
+    <div>
+      <div class="bebas text-3xl text-red-500">5</div>
+      <div class="text-xs text-gray-400 mt-1">전국 지점 (가상)</div>
+    </div>
+    <div>
+      <div class="bebas text-3xl text-green-400">120+</div>
+      <div class="text-xs text-gray-400 mt-1">일일 상영 회차</div>
+    </div>
+    <div>
+      <div class="bebas text-3xl text-blue-400">9.2</div>
+      <div class="text-xs text-gray-400 mt-1">평균 관객 평점</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="py-10">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+    <div>
+      <div class="col-title">SPARK CINEMA</div>
+      <p class="leading-relaxed">전기기능사 학습을 영화로 풀어내는 가상 시네마. 모든 상영작·인물·극장은 학습 목적의 픽션입니다.</p>
+    </div>
+    <div>
+      <div class="col-title">예매</div>
+      <ul class="space-y-1.5">
+        <li><a href="#schedule">상영 시간표</a></li>
+        <li><a href="#movies">전체 상영작</a></li>
+        <li><a href="#">예매 도움말</a></li>
+        <li><a href="#">취소·환불 정책</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="col-title">고객지원</div>
+      <ul class="space-y-1.5">
+        <li><a href="#">1:1 문의</a></li>
+        <li><a href="#">자주 묻는 질문</a></li>
+        <li><a href="#">분실물 센터</a></li>
+        <li><a href="#">단체관람 문의</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="col-title">법적 고지</div>
+      <p class="leading-relaxed text-gray-500 text-[11px]">
+        본 페이지는 전기기능사 학습 콘텐츠 시뮬레이션입니다. 등장하는 영화관·영화·인물·평점·예매 정보는 모두 가상이며, 실재 주요 영화관·영화·인물과 무관합니다.
+      </p>
+    </div>
+  </div>
+  <div class="border-t border-gray-800 mt-10 pt-6 max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-3 text-[11px] text-gray-600">
+    <div>© 2026 Spark Cinema (Fiction). All scenarios are imaginary educational content.</div>
+    <div class="mono">v1.0.0-festival</div>
+  </div>
+</footer>
+
+<!-- ============== MOVIE DETAIL MODAL ============== -->
+<div class="modal-bg" id="movie-modal">
+  <div class="modal-card relative">
+    <button class="modal-close absolute top-4 right-4" onclick="closeModal('movie-modal')" aria-label="닫기">✕</button>
+    <div id="movie-modal-body" class="p-6 md:p-8"></div>
+  </div>
+</div>
+
+<!-- ============== SEAT SELECTION MODAL ============== -->
+<div class="modal-bg" id="seat-modal">
+  <div class="modal-card relative">
+    <button class="modal-close absolute top-4 right-4" onclick="closeModal('seat-modal')" aria-label="닫기">✕</button>
+    <div class="p-6 md:p-8">
+      <div class="mb-4">
+        <div class="text-xs text-gray-500 mono mb-1">SEAT SELECTION</div>
+        <h3 id="seat-title" class="head text-xl md:text-2xl"></h3>
+        <p id="seat-subtitle" class="text-sm text-gray-400 mt-1"></p>
+      </div>
+
+      <div class="bg-black/40 border border-gray-800 rounded-lg p-6 mb-5">
+        <div class="screen-bar"></div>
+        <div class="screen-label">SCREEN</div>
+        <div id="seat-grid" class="seat-grid"></div>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-4 text-xs text-gray-400 mb-5 justify-center">
+        <span><span class="legend-dot" style="background:var(--seat-empty)"></span>선택 가능</span>
+        <span><span class="legend-dot" style="background:var(--seat-selected)"></span>내 선택</span>
+        <span><span class="legend-dot" style="background:var(--seat-sold)"></span>매진</span>
+      </div>
+
+      <!-- Footer summary -->
+      <div class="border-t border-gray-800 pt-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="text-sm">
+          <div class="text-gray-400">선택 좌석 <span id="selected-count" class="text-yellow-400 font-bold">0</span>개</div>
+          <div id="selected-seats-label" class="mono text-gray-300 mt-1 text-xs">—</div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div class="text-xs text-gray-400">총 결제 금액</div>
+            <div id="total-price" class="bebas text-3xl text-yellow-400">0원</div>
+          </div>
+          <button id="pay-btn" class="btn-primary" disabled onclick="openPayment()">결제하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== PAYMENT MODAL ============== -->
+<div class="modal-bg" id="pay-modal">
+  <div class="modal-card relative" style="max-width:520px">
+    <button class="modal-close absolute top-4 right-4" onclick="closeModal('pay-modal')" aria-label="닫기">✕</button>
+    <div class="p-6 md:p-8">
+      <div class="text-xs text-gray-500 mono mb-1">PAYMENT</div>
+      <h3 class="head text-2xl mb-4">결제 정보 확인 (UI 시뮬레이션)</h3>
+
+      <div class="bg-black/40 border border-gray-800 rounded p-4 mb-4 text-sm space-y-2">
+        <div class="flex justify-between"><span class="text-gray-400">영화</span><span id="pay-movie">—</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">극장 · 관</span><span id="pay-theater">—</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">시간</span><span id="pay-time" class="mono">—</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">좌석</span><span id="pay-seats" class="mono">—</span></div>
+        <div class="border-t border-gray-800 pt-2 mt-2 flex justify-between text-base">
+          <span class="text-gray-400">합계</span>
+          <span id="pay-total" class="text-yellow-400 font-bold">0원</span>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="text-xs text-gray-400 mb-2">결제 수단 선택</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button class="btn-ghost text-xs py-2" onclick="selectPay(this)">신용카드</button>
+          <button class="btn-ghost text-xs py-2" onclick="selectPay(this)">간편결제</button>
+          <button class="btn-ghost text-xs py-2" onclick="selectPay(this)">상품권</button>
+        </div>
+      </div>
+
+      <button class="btn-primary w-full" onclick="finalizePayment()">예매 확정 (시뮬레이션)</button>
+      <p class="text-[11px] text-gray-500 mt-3 text-center">실제 결제는 이뤄지지 않습니다. 학습용 UI 시연입니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============== TICKET CONFIRM MODAL ============== -->
+<div class="modal-bg" id="ticket-modal">
+  <div class="modal-card relative" style="max-width:460px">
+    <button class="modal-close absolute top-4 right-4" onclick="closeAllAndReset()" aria-label="닫기">✕</button>
+    <div class="p-6 md:p-8 text-center">
+      <div class="text-green-400 text-5xl mb-3">✓</div>
+      <h3 class="head text-2xl mb-2">예매 완료 (가상)</h3>
+      <p class="text-sm text-gray-400 mb-5">학습용 시뮬레이션이므로 실제 티켓은 발행되지 않습니다.</p>
+      <div class="bg-black/40 border border-dashed border-yellow-700 rounded p-4 text-sm mono text-left space-y-1">
+        <div class="text-yellow-400 font-bold bebas text-xl tracking-widest text-center">SPARK CINEMA TICKET</div>
+        <div class="border-t border-gray-700 my-2"></div>
+        <div id="ticket-detail"></div>
+      </div>
+      <button class="btn-primary mt-5 w-full" onclick="closeAllAndReset()">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================================
+   ESCAPE INPUT
+=========================================== */
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* ===========================================
+   DATA (all fictional)
+=========================================== */
+const MOVIES = [
+  {
+    id: 'ohm', title: '옴의 법칙', subtitle: 'OHM\'S LAW',
+    genre: '액션 다큐', rating: 9.4, grade: 'all',
+    runtime: 118, director: '강전류 감독', cast: ['이저항', '박전압', '김전력'],
+    synopsis: '한 무명의 전기 기술자가 V=IR이라는 단 하나의 진리를 좇는다. 회로 속 모든 흐름은 결국 한 점에서 만난다.',
+    color: ['#1a4a8c', '#0a2455'], rank: 1, posterType: 'ohm',
+  },
+  {
+    id: 'current', title: '전류의 흐름', subtitle: 'CURRENT FLOW',
+    genre: '스릴러', rating: 8.7, grade: '15',
+    runtime: 102, director: '서철호 감독', cast: ['전직류', '교류진', '하나임'],
+    synopsis: '직류 vs 교류, 보이지 않는 흐름의 전쟁. 분기점마다 갈라지는 운명은 어디로 향하는가.',
+    color: ['#8b1a1a', '#3a0808'], rank: 2, posterType: 'current',
+  },
+  {
+    id: 'faraday', title: '패러데이의 코일', subtitle: 'FARADAY\'S COIL',
+    genre: '전기 드라마', rating: 9.0, grade: '12',
+    runtime: 132, director: '코일정 감독', cast: ['자기장', '유도해', '회전수'],
+    synopsis: '한 노 과학자의 실험실, 자기장 변화 한 번이 세상을 바꾼다. 유도기전력은 사랑처럼 흐른다.',
+    color: ['#6b1a8c', '#2a0844'], rank: 3, posterType: 'faraday',
+  },
+  {
+    id: 'tesla', title: '테슬라 對 에디슨', subtitle: 'TESLA VS EDISON (FICTION)',
+    genre: '역사극', rating: 9.6, grade: '12',
+    runtime: 145, director: '교류파 감독', cast: ['니콜라', '토마스', '조지'],
+    synopsis: '19세기 말, 세상의 전기를 누가 흐르게 할 것인가. ※ 등장 인물은 모두 가상화된 캐릭터입니다.',
+    color: ['#b87a14', '#5a3a08'], rank: 4, posterType: 'tesla',
+  },
+  {
+    id: 'kirchhoff', title: '키르히호프의 비밀', subtitle: 'KIRCHHOFF\'S SECRET',
+    genre: '미스터리', rating: 8.5, grade: '15',
+    runtime: 121, director: '폐회로 감독', cast: ['전류합', '전압합', '마디점'],
+    synopsis: '한 마디에서 들어간 전류는 정확히 같은 양으로 나간다. 그렇다면 사라진 그 전류는 어디로 갔는가.',
+    color: ['#1a8c6b', '#08442a'], rank: 5, posterType: 'kirchhoff',
+  },
+  {
+    id: 'transformer', title: '변압기 라이프', subtitle: 'TRANSFORMER LIFE',
+    genre: '코미디', rating: 8.2, grade: 'all',
+    runtime: 96, director: '권선비 감독', cast: ['1차측', '2차측', '철심'],
+    synopsis: '평범한 1차 코일의 좌충우돌 직장 분투기. 권수비가 인생을 바꿀 수 있을까?',
+    color: ['#e10600', '#5a0303'], rank: 6, posterType: 'transformer',
+  },
+  {
+    id: 'threephase', title: '3상 결선 클럽', subtitle: 'THREE-PHASE CLUB',
+    genre: '음악', rating: 8.8, grade: '12',
+    runtime: 108, director: 'Y결선 감독', cast: ['R상', 'S상', 'T상'],
+    synopsis: '120도씩 어긋난 세 친구가 한 무대에 선다. Y와 △ 사이, 위상의 우정.',
+    color: ['#4a9eff', '#1a4470'], rank: 7, posterType: 'threephase',
+  },
+  {
+    id: 'resonance', title: '공명의 노래', subtitle: 'SONG OF RESONANCE',
+    genre: '뮤지컬', rating: 9.1, grade: 'all',
+    runtime: 124, director: '주파수 감독', cast: ['L코일', 'C콘덴서', 'R저항'],
+    synopsis: 'LC 회로가 부르는 단 하나의 주파수. 공진점에서 만난 그들의 노래가 무한히 커진다.',
+    color: ['#f5c542', '#7a5a08'], rank: 8, posterType: 'resonance',
+  },
+];
+
+const BRANCHES = [
+  { id: 'gangnam', name: '강남 스파크점', sub: '서울 강남구 가상로 1', halls: 8, special: ['IMAX', '4DX', 'DOLBY'] },
+  { id: 'hongdae', name: '홍대 스파크점', sub: '서울 마포구 가상길 22', halls: 6, special: ['DOLBY', 'PRIVATE BOX'] },
+  { id: 'busan',   name: '부산 해운대점', sub: '부산 해운대구 가상해변로 88', halls: 7, special: ['IMAX', '4DX'] },
+  { id: 'daejeon', name: '대전 둔산점', sub: '대전 서구 가상대로 50', halls: 5, special: ['DOLBY'] },
+  { id: 'gwangju', name: '광주 충장점', sub: '광주 동구 가상문화길 12', halls: 5, special: ['4DX'] },
+];
+
+const DAYS = (() => {
+  const labels = ['오늘', '내일', '모레', '+3일', '+4일'];
+  const today = new Date('2026-05-15');
+  return labels.map((l, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return {
+      key: `d${i}`,
+      label: l,
+      date: `${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`,
+      weekday: ['일','월','화','수','목','금','토'][d.getDay()],
+    };
+  });
+})();
+
+/* Generate schedule deterministically */
+function genSchedule() {
+  // For each movie, each day, generate 3-6 showtimes across branches
+  const out = {};
+  MOVIES.forEach(m => {
+    out[m.id] = {};
+    DAYS.forEach((day, di) => {
+      out[m.id][day.key] = [];
+      const seed = (m.rank * 7 + di * 13) % 100;
+      const baseHours = [9, 11, 14, 16, 19, 21];
+      baseHours.forEach((h, hi) => {
+        if ((seed + hi * 11) % 5 < 4) { // ~80% probability
+          const br = BRANCHES[(seed + hi) % BRANCHES.length];
+          const hall = ((seed + hi * 3) % br.halls) + 1;
+          const sold = (seed + hi * 17 + di * 5) % 100;
+          let remain;
+          let isSoldOut = false;
+          if (sold < 12) { remain = 0; isSoldOut = true; }
+          else if (sold < 35) remain = (sold % 15) + 1;
+          else remain = ((sold % 60) + 30);
+          out[m.id][day.key].push({
+            time: `${h.toString().padStart(2,'0')}:${(hi*5 % 60).toString().padStart(2,'0')}`,
+            branchId: br.id,
+            branchName: br.name,
+            hall: `${hall}관`,
+            remain,
+            soldOut: isSoldOut,
+            special: br.special[(seed + hi) % br.special.length],
+          });
+        }
+      });
+    });
+  });
+  return out;
+}
+const SCHEDULE = genSchedule();
+
+/* ===========================================
+   POSTER SVG GENERATION
+=========================================== */
+function posterSVG(m) {
+  const [c1, c2] = m.color;
+  const grad = `<defs><linearGradient id="g_${m.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient><radialGradient id="r_${m.id}" cx="0.5" cy="0.3" r="0.7"><stop offset="0" stop-color="rgba(255,255,255,0.15)"/><stop offset="1" stop-color="rgba(0,0,0,0)"/></radialGradient></defs>`;
+  let illust = '';
+  switch (m.posterType) {
+    case 'ohm':
+      // Greek omega symbol with electric ring
+      illust = `
+        <circle cx="100" cy="130" r="62" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <circle cx="100" cy="130" r="48" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="100" y="158" font-family="serif" font-size="92" font-weight="900" text-anchor="middle" fill="#f5c542" style="filter: drop-shadow(0 0 12px rgba(245,197,66,.6))">Ω</text>
+        <path d="M 30 220 Q 60 200, 90 220 T 150 220 T 200 220" stroke="#fff" stroke-width="1" fill="none" opacity="0.3"/>`;
+      break;
+    case 'current':
+      // Lightning bolts
+      illust = `
+        <path d="M 90 60 L 60 140 L 95 140 L 70 220 L 130 130 L 100 130 L 130 60 Z" fill="#f5c542" opacity="0.9" style="filter: drop-shadow(0 0 10px rgba(245,197,66,.5))"/>
+        <path d="M 130 80 L 115 140 L 135 140 L 120 200" stroke="#fff" stroke-width="2" fill="none" opacity="0.4"/>
+        <line x1="30" y1="240" x2="170" y2="240" stroke="#fff" stroke-width="0.5" opacity="0.3"/>`;
+      break;
+    case 'faraday':
+      // Coil shape
+      illust = `
+        <g transform="translate(100,140)">
+          ${Array.from({length: 8}).map((_, i) => `<ellipse cx="0" cy="${-50 + i*14}" rx="50" ry="8" fill="none" stroke="#f5c542" stroke-width="2" opacity="${0.4 + i*0.07}"/>`).join('')}
+          <line x1="-60" y1="-58" x2="-60" y2="68" stroke="#fff" stroke-width="2" opacity="0.6"/>
+          <line x1="60" y1="-58" x2="60" y2="68" stroke="#fff" stroke-width="2" opacity="0.6"/>
+        </g>`;
+      break;
+    case 'tesla':
+      // Versus dual silhouettes (abstract)
+      illust = `
+        <circle cx="65" cy="120" r="36" fill="rgba(255,255,255,0.12)"/>
+        <rect x="40" y="155" width="50" height="60" rx="6" fill="rgba(255,255,255,0.10)"/>
+        <circle cx="135" cy="120" r="36" fill="rgba(0,0,0,0.25)"/>
+        <rect x="110" y="155" width="50" height="60" rx="6" fill="rgba(0,0,0,0.25)"/>
+        <text x="100" y="200" font-family="'Bebas Neue', sans-serif" font-size="44" font-weight="900" text-anchor="middle" fill="#fff" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,.6))">VS</text>
+        <path d="M 100 60 L 90 110 L 105 110 L 92 160" stroke="#f5c542" stroke-width="2" fill="none"/>`;
+      break;
+    case 'kirchhoff':
+      // Node with arrows
+      illust = `
+        <circle cx="100" cy="140" r="14" fill="#f5c542"/>
+        <line x1="40" y1="80" x2="92" y2="132" stroke="#fff" stroke-width="2" opacity="0.7" marker-end="url(#arr_${m.id})"/>
+        <line x1="160" y1="80" x2="108" y2="132" stroke="#fff" stroke-width="2" opacity="0.7" marker-end="url(#arr_${m.id})"/>
+        <line x1="40" y1="200" x2="92" y2="148" stroke="#fff" stroke-width="2" opacity="0.7" marker-end="url(#arr_${m.id})"/>
+        <line x1="160" y1="200" x2="108" y2="148" stroke="#fff" stroke-width="2" opacity="0.7" marker-end="url(#arr_${m.id})"/>
+        <defs><marker id="arr_${m.id}" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fff"/></marker></defs>`;
+      break;
+    case 'transformer':
+      // Two coils with iron core
+      illust = `
+        <rect x="80" y="80" width="40" height="130" fill="rgba(255,255,255,0.1)" stroke="#fff" stroke-width="1" opacity="0.6"/>
+        <g transform="translate(50,100)">
+          ${Array.from({length: 6}).map((_, i) => `<ellipse cx="0" cy="${i*16}" rx="18" ry="5" fill="none" stroke="#f5c542" stroke-width="2"/>`).join('')}
+        </g>
+        <g transform="translate(150,100)">
+          ${Array.from({length: 6}).map((_, i) => `<ellipse cx="0" cy="${i*16}" rx="18" ry="5" fill="none" stroke="#fff" stroke-width="2" opacity="0.7"/>`).join('')}
+        </g>`;
+      break;
+    case 'threephase':
+      // Three sine waves offset
+      illust = `
+        <g transform="translate(20,140)">
+          ${[0, 1, 2].map(p => {
+            const colors = ['#f5c542', '#e10600', '#19c37d'];
+            const offset = p * 53;
+            let path = `M 0 0`;
+            for (let x = 0; x <= 160; x += 4) {
+              const y = Math.sin((x + offset) * Math.PI / 80) * 30;
+              path += ` L ${x} ${-y}`;
+            }
+            return `<path d="${path}" stroke="${colors[p]}" stroke-width="2.5" fill="none" opacity="0.85"/>`;
+          }).join('')}
+        </g>`;
+      break;
+    case 'resonance':
+      // Concentric circles (resonance ripples)
+      illust = `
+        ${[20, 40, 60, 80].map((r, i) => `<circle cx="100" cy="140" r="${r}" fill="none" stroke="#fff" stroke-width="${2 - i*0.3}" opacity="${0.8 - i*0.18}"/>`).join('')}
+        <circle cx="100" cy="140" r="8" fill="#fff" style="filter: drop-shadow(0 0 12px rgba(255,255,255,.9))"/>`;
+      break;
+  }
+
+  return `
+    <svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" width="100%" preserveAspectRatio="xMidYMid slice">
+      ${grad}
+      <rect width="200" height="300" fill="url(#g_${m.id})"/>
+      <rect width="200" height="300" fill="url(#r_${m.id})"/>
+      ${illust}
+      <rect x="0" y="240" width="200" height="60" fill="rgba(0,0,0,0.55)"/>
+      <text x="100" y="266" font-family="'Black Han Sans', sans-serif" font-size="20" text-anchor="middle" fill="#fff">${esc(m.title)}</text>
+      <text x="100" y="285" font-family="'Bebas Neue', sans-serif" font-size="11" text-anchor="middle" fill="#f5c542" letter-spacing="2">${esc(m.subtitle)}</text>
+    </svg>`;
+}
+
+/* ===========================================
+   RENDER POSTERS
+=========================================== */
+function gradeBadge(g) {
+  const map = {
+    'all': { cls: 'grade-all', label: 'ALL' },
+    '12': { cls: 'grade-12', label: '12' },
+    '15': { cls: 'grade-15', label: '15' },
+    '18': { cls: 'grade-18', label: '18' },
+  };
+  const x = map[g] || map['all'];
+  return `<span class="grade-badge ${x.cls}">${x.label}</span>`;
+}
+function stars(rating) {
+  const full = Math.floor(rating / 2);
+  const half = (rating / 2) - full >= 0.5;
+  let html = '';
+  for (let i = 0; i < 5; i++) {
+    if (i < full) html += '<span class="star">★</span>';
+    else if (i === full && half) html += '<span class="star">★</span>';
+    else html += '<span class="star-empty">★</span>';
+  }
+  return html;
+}
+
+function renderPosters() {
+  const grid = document.getElementById('poster-grid');
+  grid.innerHTML = MOVIES.map(m => `
+    <div class="poster-card relative" onclick="openMovieModal('${m.id}')">
+      <div class="poster-rank">${m.rank}</div>
+      <div class="aspect-[2/3] bg-black">${posterSVG(m)}</div>
+      <div class="p-3">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[10px] text-gray-500 mono">${esc(m.genre)}</span>
+          ${gradeBadge(m.grade)}
+        </div>
+        <h3 class="head text-base truncate">${esc(m.title)}</h3>
+        <div class="flex items-center gap-2 mt-1.5 text-xs">
+          <span>${stars(m.rating)}</span>
+          <span class="text-yellow-400 font-bold mono">${m.rating.toFixed(1)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ===========================================
+   RENDER BRANCHES
+=========================================== */
+function renderBranches() {
+  const grid = document.getElementById('branch-grid');
+  grid.innerHTML = BRANCHES.map(b => `
+    <div class="branch-card">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <h3 class="head text-lg">${esc(b.name)}</h3>
+          <div class="text-xs text-gray-400 mt-1">${esc(b.sub)}</div>
+        </div>
+        <div class="text-right">
+          <div class="bebas text-2xl text-yellow-400">${b.halls}</div>
+          <div class="text-[10px] text-gray-500">HALLS</div>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1 mt-3">
+        ${b.special.map(s => `<span class="text-[10px] bebas px-2 py-0.5 rounded border border-gray-700 text-gray-300">${esc(s)}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Populate filter dropdown
+  const sel = document.getElementById('branch-filter');
+  BRANCHES.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = b.name;
+    sel.appendChild(opt);
+  });
+}
+
+/* ===========================================
+   SCHEDULE RENDER
+=========================================== */
+let currentDay = 'd0';
+let currentBranch = 'all';
+
+function renderDayTabs() {
+  const c = document.getElementById('day-tabs');
+  c.innerHTML = DAYS.map(d => `
+    <button class="day-tab ${d.key === currentDay ? 'active' : ''}" data-day="${d.key}" onclick="selectDay('${d.key}')">
+      <div class="text-xs opacity-80">${esc(d.label)}</div>
+      <div class="mono text-lg font-bold mt-0.5">${esc(d.date)}</div>
+      <div class="text-[10px] opacity-70 mt-0.5">(${esc(d.weekday)})</div>
+    </button>
+  `).join('');
+}
+
+function selectDay(key) {
+  currentDay = key;
+  renderDayTabs();
+  renderSchedule();
+}
+
+function renderSchedule() {
+  const c = document.getElementById('schedule-list');
+  const rows = MOVIES.map(m => {
+    let times = SCHEDULE[m.id][currentDay] || [];
+    if (currentBranch !== 'all') times = times.filter(t => t.branchId === currentBranch);
+    if (!times.length) return '';
+    return `
+      <div class="schedule-row grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4 items-start">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-16 rounded overflow-hidden flex-shrink-0 bg-black">${posterSVG(m)}</div>
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">${gradeBadge(m.grade)}<span class="text-[10px] text-gray-500 mono">${esc(m.genre)}</span></div>
+            <div class="head text-sm leading-tight">${esc(m.title)}</div>
+            <div class="text-[11px] text-gray-400 mt-0.5">${m.runtime}분 · ★ ${m.rating.toFixed(1)}</div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          ${times.map(t => `
+            <div class="time-chip ${t.soldOut ? 'sold-out' : (t.remain < 16 ? 'few' : '')}" ${t.soldOut ? '' : `onclick="openSeatModal('${m.id}','${t.branchId}','${esc(t.hall)}','${t.time}','${esc(t.special)}')"`}>
+              <span class="t">${esc(t.time)}</span>
+              <span class="s">${esc(t.branchName)} · ${esc(t.hall)}</span>
+              <span class="s">${t.soldOut ? '매진' : (t.remain + '석 / ' + esc(t.special))}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }).filter(Boolean).join('');
+  c.innerHTML = rows || `<div class="text-center text-gray-500 py-10 text-sm">선택한 조건에 해당하는 상영 회차가 없습니다.</div>`;
+}
+
+/* ===========================================
+   MOVIE DETAIL MODAL
+=========================================== */
+function openMovieModal(id) {
+  const m = MOVIES.find(x => x.id === id);
+  if (!m) return;
+  const body = document.getElementById('movie-modal-body');
+  body.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
+      <div class="aspect-[2/3] rounded overflow-hidden bg-black">${posterSVG(m)}</div>
+      <div>
+        <div class="text-xs text-gray-500 mono mb-1">NOW SHOWING · #${m.rank}</div>
+        <h3 class="head text-3xl mb-1">${esc(m.title)}</h3>
+        <div class="bebas text-yellow-400 text-sm tracking-widest mb-3">${esc(m.subtitle)}</div>
+
+        <div class="flex flex-wrap items-center gap-3 mb-4 text-xs">
+          ${gradeBadge(m.grade)}
+          <span class="text-gray-400">${esc(m.genre)}</span>
+          <span class="text-gray-400">${m.runtime}분</span>
+          <span class="flex items-center gap-1">${stars(m.rating)} <span class="text-yellow-400 font-bold mono ml-1">${m.rating.toFixed(1)}</span></span>
+        </div>
+
+        <p class="text-sm text-gray-300 leading-relaxed mb-4">${esc(m.synopsis)}</p>
+
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mb-5">
+          <div><span class="text-gray-500 text-xs">감독</span><div>${esc(m.director)}</div></div>
+          <div><span class="text-gray-500 text-xs">출연 (가상)</span><div>${m.cast.map(esc).join(' · ')}</div></div>
+        </div>
+
+        <!-- Fake trailer placeholder -->
+        <div class="bg-black/60 border border-gray-800 rounded p-4 mb-5 flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-red-600/80 flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-lg ml-0.5">▶</span>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-bold">예고편 (가상)</div>
+            <div class="text-[11px] text-gray-500 mono">TRAILER · 1:42 · 학습용 시뮬레이션</div>
+          </div>
+          <div class="flex items-center gap-0.5">
+            <span class="wave-bar" style="height:8px"></span>
+            <span class="wave-bar" style="height:14px"></span>
+            <span class="wave-bar" style="height:6px"></span>
+            <span class="wave-bar" style="height:10px"></span>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button class="btn-primary" onclick="closeModal('movie-modal'); document.getElementById('schedule').scrollIntoView({behavior:'smooth'});">시간표 보기</button>
+          <button class="btn-ghost" onclick="closeModal('movie-modal')">닫기</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('movie-modal').classList.add('open');
+}
+
+/* ===========================================
+   SEAT SELECTION
+=========================================== */
+const ROWS = ['A','B','C','D','E','F','G','H'];
+const COLS = 12;
+const SEAT_PRICE = 12000;
+
+let currentBooking = null;
+let selectedSeats = [];
+
+function generateSoldSeats(seedStr) {
+  // Deterministic sold seats based on seedStr
+  let seed = 0;
+  for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) % 1000000;
+  const sold = new Set();
+  const count = 18 + (seed % 22);
+  for (let i = 0; i < count; i++) {
+    seed = (seed * 1103515245 + 12345) % 2147483647;
+    const r = ROWS[seed % ROWS.length];
+    const c = (Math.floor(seed / 8) % COLS) + 1;
+    sold.add(`${r}${c}`);
+  }
+  return sold;
+}
+
+function openSeatModal(movieId, branchId, hall, time, special) {
+  const m = MOVIES.find(x => x.id === movieId);
+  const b = BRANCHES.find(x => x.id === branchId);
+  if (!m || !b) return;
+
+  currentBooking = { movie: m, branch: b, hall, time, special };
+  selectedSeats = [];
+
+  document.getElementById('seat-title').textContent = m.title;
+  document.getElementById('seat-subtitle').textContent =
+    `${b.name} · ${hall} · ${time} · ${special} · ${m.runtime}분`;
+
+  // Generate seats
+  const sold = generateSoldSeats(`${movieId}-${branchId}-${hall}-${time}`);
+  const grid = document.getElementById('seat-grid');
+  let html = '';
+  ROWS.forEach(r => {
+    for (let c = 1; c <= COLS; c++) {
+      const id = `${r}${c}`;
+      // Aisle gap between col 6 and 7? Skip - just keep a clean grid
+      const isSold = sold.has(id);
+      html += `<div class="seat ${isSold ? 'sold' : ''}" data-id="${id}" ${isSold ? '' : `onclick="toggleSeat('${id}', this)"`}>${id}</div>`;
+    }
+  });
+  grid.innerHTML = html;
+
+  updateSelectedSummary();
+  document.getElementById('seat-modal').classList.add('open');
+}
+
+function toggleSeat(id, el) {
+  const i = selectedSeats.indexOf(id);
+  if (i >= 0) {
+    selectedSeats.splice(i, 1);
+    el.classList.remove('selected');
+  } else {
+    if (selectedSeats.length >= 8) {
+      alert('최대 8석까지 선택 가능합니다.');
+      return;
+    }
+    selectedSeats.push(id);
+    el.classList.add('selected');
+  }
+  updateSelectedSummary();
+}
+
+function updateSelectedSummary() {
+  document.getElementById('selected-count').textContent = selectedSeats.length;
+  document.getElementById('selected-seats-label').textContent =
+    selectedSeats.length ? selectedSeats.sort().join(', ') : '—';
+  const total = selectedSeats.length * SEAT_PRICE;
+  document.getElementById('total-price').textContent = total.toLocaleString() + '원';
+  document.getElementById('pay-btn').disabled = selectedSeats.length === 0;
+}
+
+/* ===========================================
+   PAYMENT FLOW
+=========================================== */
+function openPayment() {
+  if (!currentBooking || !selectedSeats.length) return;
+  const { movie, branch, hall, time } = currentBooking;
+  document.getElementById('pay-movie').textContent = movie.title;
+  document.getElementById('pay-theater').textContent = `${branch.name} · ${hall}`;
+  document.getElementById('pay-time').textContent = time;
+  document.getElementById('pay-seats').textContent = selectedSeats.sort().join(', ');
+  document.getElementById('pay-total').textContent = (selectedSeats.length * SEAT_PRICE).toLocaleString() + '원';
+  document.getElementById('pay-modal').classList.add('open');
+}
+
+function selectPay(btn) {
+  document.querySelectorAll('#pay-modal .btn-ghost').forEach(b => {
+    b.style.borderColor = '';
+    b.style.color = '';
+  });
+  btn.style.borderColor = '#f5c542';
+  btn.style.color = '#f5c542';
+}
+
+function finalizePayment() {
+  if (!currentBooking) return;
+  const { movie, branch, hall, time } = currentBooking;
+  const total = selectedSeats.length * SEAT_PRICE;
+  const code = 'SC-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+
+  document.getElementById('ticket-detail').innerHTML = `
+    <div>예매번호: <span class="text-yellow-400">${esc(code)}</span></div>
+    <div>영화: ${esc(movie.title)}</div>
+    <div>극장: ${esc(branch.name)} ${esc(hall)}</div>
+    <div>시간: ${esc(time)}</div>
+    <div>좌석: ${esc(selectedSeats.sort().join(', '))}</div>
+    <div class="text-yellow-400 mt-1 font-bold">합계: ${total.toLocaleString()}원 (가상)</div>`;
+
+  closeModal('pay-modal');
+  document.getElementById('ticket-modal').classList.add('open');
+}
+
+function closeAllAndReset() {
+  ['movie-modal','seat-modal','pay-modal','ticket-modal'].forEach(closeModal);
+  selectedSeats = [];
+  currentBooking = null;
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+/* ===========================================
+   INIT
+=========================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  renderPosters();
+  renderBranches();
+  renderDayTabs();
+  renderSchedule();
+
+  // Branch filter
+  document.getElementById('branch-filter').addEventListener('change', e => {
+    currentBranch = e.target.value;
+    renderSchedule();
+  });
+
+  // Click outside modal to close
+  document.querySelectorAll('.modal-bg').forEach(bg => {
+    bg.addEventListener('click', e => {
+      if (e.target === bg) bg.classList.remove('open');
+    });
+  });
+
+  // ESC to close modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-bg.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+});
+</script>
+
+</body>
+</html>

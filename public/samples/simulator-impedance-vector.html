@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>임피던스 벡터 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.45), rgba(168,85,247,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(168, 85, 247, 0.45),
+        0 0 40px rgba(34, 211, 238, 0.12);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 700px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(251,191,36,0.4), rgba(168,85,247,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fde68a, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-r { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-l { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-c { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-f { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 220ms, box-shadow 220ms;
+}
+.live-pill.flash-ind {
+    border-color: rgba(168, 85, 247, 0.7);
+    box-shadow: 0 0 22px rgba(168, 85, 247, 0.45);
+}
+.live-pill.flash-cap {
+    border-color: rgba(34, 211, 238, 0.7);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.45);
+}
+.live-pill.flash-res {
+    border-color: rgba(244, 114, 182, 0.85);
+    box-shadow: 0 0 28px rgba(244, 114, 182, 0.55);
+    animation: glow 1.5s ease-in-out infinite alternate;
+}
+@keyframes glow {
+    0% { box-shadow: 0 0 22px rgba(244,114,182,0.4) }
+    100% { box-shadow: 0 0 40px rgba(244,114,182,0.7) }
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.tune-btn {
+    background: linear-gradient(135deg, rgba(244,114,182,0.2), rgba(168,139,250,0.2));
+    border: 1px solid rgba(244,114,182,0.45);
+    color: #f9a8d4;
+    transition: all 200ms;
+}
+.tune-btn:hover {
+    background: linear-gradient(135deg, rgba(244,114,182,0.35), rgba(168,139,250,0.35));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(244,114,182,0.5);
+}
+.preset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.mode-badge {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+.mode-ind { background: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(168,85,247,0.1)); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.5); }
+.mode-cap { background: linear-gradient(135deg, rgba(34,211,238,0.3), rgba(34,211,238,0.1)); color: #67e8f9; border: 1px solid rgba(34,211,238,0.5); }
+.mode-res { background: linear-gradient(135deg, rgba(244,114,182,0.3), rgba(244,114,182,0.1)); color: #f9a8d4; border: 1px solid rgba(244,114,182,0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · IMPEDANCE VECTOR · COMPLEX PLANE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent">
+            🧭 임피던스 벡터 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">복소 평면에서 <span class="text-amber-200 font-semibold">R(실수축)</span>과 <span class="text-fuchsia-200 font-semibold">X = X_L − X_C(허수축)</span>을 합성하여 임피던스 <span class="text-cyan-200 font-semibold">Z = R + jX</span>를 시각화. 위상각 θ로 회로의 성격을 판별.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-z">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">임피던스 |Z|</p>
+            <p class="mt-1 text-lg font-bold"><span id="zVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-r">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">저항 R (실수)</p>
+            <p class="mt-1 text-lg font-bold"><span id="rValOut" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-x">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">리액턴스 X (허수)</p>
+            <p class="mt-1 text-lg font-bold"><span id="xVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-theta">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">위상각 θ</p>
+            <p class="mt-1 text-lg font-bold"><span id="thetaVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <!-- 회로 성격 배지 -->
+    <div class="mb-4 flex items-center gap-2 flex-wrap" id="characterRow">
+        <span class="text-[11px] text-slate-500 tracking-wider font-bold">회로 성격</span>
+        <span id="charBadge" class="mode-badge mode-res">RESONANT (순저항)</span>
+        <span class="text-[11px] text-slate-500" id="charHint">X = 0 → 순수 저항 회로, 전류와 전압 동상</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">복소 임피던스 평면 — R + jX 벡터 합성</span>
+                    <div class="flex items-center gap-2">
+                        <button id="tuneBtn" class="tune-btn rounded-md px-3 py-1.5 text-xs font-bold">→ 공진 (X=0) 튜닝</button>
+                        <button id="freezeBtn" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⏸ 정지</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+                <div class="mt-3 flex items-center gap-4 text-[11px] flex-wrap">
+                    <span class="text-amber-200"><span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>R 실수축 벡터</span>
+                    <span class="text-purple-200"><span class="legend-dot" style="background:#a855f7;color:#a855f7"></span>X_L 유도성 (+j)</span>
+                    <span class="text-cyan-200"><span class="legend-dot" style="background:#22d3ee;color:#22d3ee"></span>X_C 용량성 (−j)</span>
+                    <span class="text-pink-200"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>Z 합성 벡터</span>
+                    <span class="text-amber-300"><span class="legend-dot" style="background:#fcd34d;color:#fcd34d"></span>θ 위상각 호</span>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-amber-200 via-fuchsia-200 to-cyan-200 bg-clip-text text-transparent">복소 임피던스 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">복소 임피던스</p>
+                        <div class="math-container mt-2">\(Z = R + j(X_L - X_C)\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">크기</p>
+                        <div class="math-container mt-2">\(|Z| = \sqrt{R^2 + X^2}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">위상각</p>
+                        <div class="math-container mt-2">\(\theta = \tan^{-1}\!\dfrac{X}{R}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">유도 리액턴스</p>
+                        <div class="math-container mt-2">\(X_L = \omega L = 2\pi f L\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">용량 리액턴스</p>
+                        <div class="math-container mt-2">\(X_C = \dfrac{1}{\omega C} = \dfrac{1}{2\pi f C}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">공진 조건</p>
+                        <div class="math-container mt-2">\(X_L = X_C \;\Rightarrow\; \theta = 0\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-purple-300">X > 0</span> · 유도성 (X_L > X_C) — 전류가 전압보다 뒤짐 (지상)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">X < 0</span> · 용량성 (X_L < X_C) — 전류가 전압보다 앞섬 (진상)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">X = 0</span> · 공진 — 순저항, |Z| 최소, 동상</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>저항 R</span><span id="rDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="r" min="1" max="50" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+            <div class="chip-l chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>인덕턴스 L</span><span id="lDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="l" min="1" max="100" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mH</p>
+            </div>
+            <div class="chip-c chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>커패시턴스 C</span><span id="cDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="c" min="1" max="100" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">μF</p>
+            </div>
+            <div class="chip-f chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>구동 주파수 f</span><span id="fDisp" class="font-mono text-base">500</span></label>
+                <input type="range" id="f" min="50" max="3000" step="10" value="500" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Hz</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-indigo-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-amber-200 font-bold">실수축</span>: 저항 R — 에너지 소비, 위상 변화 없음</p>
+                <p class="feature-row rounded-md p-2"><span class="text-purple-200 font-bold">+j 허수축</span>: 코일 X_L — 자기에너지 저장</p>
+                <p class="feature-row rounded-md p-2"><span class="text-cyan-200 font-bold">−j 허수축</span>: 콘덴서 X_C — 전기에너지 저장</p>
+                <p class="feature-row rounded-md p-2"><span class="text-pink-200 font-bold">합성 Z</span>의 길이가 임피던스, 각도가 위상</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button id="presetInd" class="preset-btn rounded-md py-2 text-[11px] font-bold">유도성 ↑</button>
+                <button id="presetCap" class="preset-btn rounded-md py-2 text-[11px] font-bold">용량성 ↑</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+let state = {
+    R: 10, L: 0.01, C: 1e-5, f: 500,
+    Xl: 0, Xc: 0, X: 0, Z: 0, theta: 0, f0: 0,
+    t: 0,
+    rotPhase: 0,
+    frozen: false
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 700;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function arrow(c, x1, y1, x2, y2, color, lw, glow) {
+    c.save();
+    if (glow) {
+        c.shadowBlur = glow;
+        c.shadowColor = color;
+    }
+    c.strokeStyle = color;
+    c.fillStyle = color;
+    c.lineWidth = lw;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
+    // head
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const headLen = Math.max(10, lw * 3);
+    c.translate(x2, y2);
+    c.rotate(ang);
+    c.beginPath();
+    c.moveTo(0, 0);
+    c.lineTo(-headLen, -headLen * 0.45);
+    c.lineTo(-headLen, headLen * 0.45);
+    c.closePath();
+    c.fill();
+    c.restore();
+}
+
+// ====================================================
+// 복소 평면 그리기
+// ====================================================
+function drawPlane() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경 그라데이션
+    const bg = ctx.createRadialGradient(W * 0.5, H * 0.55, 60, W * 0.5, H * 0.55, Math.max(W, H) * 0.75);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.4)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.18)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자 (얇음)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 좌상 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ COMPLEX IMPEDANCE PLANE · Z = R + jX', 12, 10);
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.55)';
+    ctx.fillText('Re(Z) = R    Im(Z) = X_L − X_C', 12, 26);
+    ctx.restore();
+
+    // 원점(우측 컨트롤 박스 자리를 비워두기 위해 왼쪽으로 조금 치우침)
+    const ox = W * 0.42;
+    const oy = H * 0.55;
+
+    // 좌표축 스케일 (px / Ω)
+    // R, |X|, |Z| 최대값을 추정해 적절한 스케일 선정
+    const maxVal = Math.max(state.R, Math.abs(state.X), state.Z, 30);
+    // 가용 반경
+    const availX = Math.min(ox - 60, W - ox - 60);
+    const availY = Math.min(oy - 60, H - oy - 60);
+    const avail = Math.min(availX, availY);
+    const scale = (avail * 0.85) / maxVal;
+
+    // 축 끝점
+    const axHalfX = avail;
+    const axHalfY = avail;
+
+    // === 동심원 격자 (1, 2, 3 ring) ===
+    ctx.save();
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.1)';
+    ctx.lineWidth = 1;
+    for (let k = 1; k <= 4; k++) {
+        ctx.beginPath();
+        ctx.arc(ox, oy, (avail * k) / 4, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    // 눈금값 (ring 마다 Ω 값 표시)
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    for (let k = 1; k <= 4; k++) {
+        const v = (maxVal * k) / 4;
+        ctx.fillText(`${v.toFixed(0)} Ω`, ox + (avail * k) / 4 + 4, oy - 8);
+    }
+    ctx.restore();
+
+    // === 좌표축 ===
+    ctx.save();
+    // 실수축 (Re, R) - 수평
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(ox - axHalfX, oy);
+    ctx.lineTo(ox + axHalfX, oy);
+    ctx.stroke();
+
+    // 허수축 (Im, X) - 수직
+    ctx.strokeStyle = 'rgba(168, 85, 247, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(ox, oy - axHalfY);
+    ctx.lineTo(ox, oy + axHalfY);
+    ctx.stroke();
+
+    // 축 끝 화살촉
+    arrow(ctx, ox + axHalfX - 10, oy, ox + axHalfX, oy, 'rgba(251, 191, 36, 0.85)', 1, 0);
+    arrow(ctx, ox, oy - axHalfY + 10, ox, oy - axHalfY, 'rgba(168, 85, 247, 0.85)', 1, 0);
+
+    // 축 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#fbbf24';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('Re (R, Ω)', ox + axHalfX + 6, oy);
+    ctx.fillStyle = '#a855f7';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('+jX (유도성, X_L)', ox, oy - axHalfY - 6);
+    ctx.fillStyle = '#22d3ee';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('−jX (용량성, X_C)', ox, oy + axHalfY + 6);
+    ctx.restore();
+
+    // 눈금
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.45)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let k = -4; k <= 4; k++) {
+        if (k === 0) continue;
+        const px = ox + (k * maxVal / 4) * scale;
+        if (px < 20 || px > W - 20) continue;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.3)';
+        ctx.moveTo(px, oy - 4); ctx.lineTo(px, oy + 4);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(252, 211, 77, 0.55)';
+        ctx.fillText(`${(k * maxVal / 4).toFixed(0)}`, px, oy + 6);
+    }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let k = -4; k <= 4; k++) {
+        if (k === 0) continue;
+        const py = oy - (k * maxVal / 4) * scale;
+        if (py < 20 || py > H - 20) continue;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+        ctx.moveTo(ox - 4, py); ctx.lineTo(ox + 4, py);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(216, 180, 254, 0.55)';
+        ctx.fillText(`${(k * maxVal / 4).toFixed(0)}`, ox - 6, py);
+    }
+    ctx.restore();
+
+    // === 벡터 좌표 계산 ===
+    const R_px = state.R * scale;            // 실수축 길이
+    const Xl_px = state.Xl * scale;          // 위쪽 (양의 허수축)
+    const Xc_px = state.Xc * scale;          // 아래쪽 (음의 허수축)
+    const X_px = state.X * scale;            // 순 리액턴스 (X>0 위, X<0 아래)
+    // Z 종점
+    const Zx = ox + R_px;
+    const Zy = oy - X_px;  // 캔버스 좌표는 y 아래로 +이므로 부호 반전
+
+    // === 1) X_L 화살표 (+허수축 방향, 풀길이로 강조) ===
+    // 원점에서 위로 X_L 만큼
+    if (state.Xl > 0.01) {
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#a855f7';
+        const grad = ctx.createLinearGradient(ox, oy, ox, oy - Xl_px);
+        grad.addColorStop(0, 'rgba(168, 85, 247, 0.55)');
+        grad.addColorStop(1, 'rgba(216, 180, 254, 0.95)');
+        ctx.strokeStyle = grad;
+        ctx.fillStyle = '#a855f7';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.setLineDash([7, 4]);
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox, oy - Xl_px);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // 작은 화살촉
+        ctx.translate(ox, oy - Xl_px);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-5, 8); ctx.lineTo(5, 8); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // X_L 라벨
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        const txt = `X_L = ${state.Xl.toFixed(1)}`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, ox - tw - 16, oy - Xl_px - 9, tw + 10, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#d8b4fe';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, ox - tw/2 - 11, oy - Xl_px);
+        ctx.restore();
+    }
+
+    // === 2) X_C 화살표 (−허수축 방향) ===
+    if (state.Xc > 0.01) {
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#22d3ee';
+        const grad = ctx.createLinearGradient(ox, oy, ox, oy + Xc_px);
+        grad.addColorStop(0, 'rgba(34, 211, 238, 0.55)');
+        grad.addColorStop(1, 'rgba(103, 232, 249, 0.95)');
+        ctx.strokeStyle = grad;
+        ctx.fillStyle = '#22d3ee';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.setLineDash([7, 4]);
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox, oy + Xc_px);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.translate(ox, oy + Xc_px);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-5, -8); ctx.lineTo(5, -8); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // X_C 라벨
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        const txt = `X_C = ${state.Xc.toFixed(1)}`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, ox - tw - 16, oy + Xc_px - 9, tw + 10, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#67e8f9';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, ox - tw/2 - 11, oy + Xc_px);
+        ctx.restore();
+    }
+
+    // === 3) 순 리액턴스 X 화살표 (메인 강조) ===
+    // 두 리액턴스 차이를 우측 사선 위치에 별도로 그리지 않고, 합성 경로상에 그림 (R 끝점에서 위/아래로)
+    if (Math.abs(X_px) > 1) {
+        const X_color = state.X > 0 ? '#c4b5fd' : '#67e8f9';
+        const X_glow  = state.X > 0 ? '#a855f7' : '#22d3ee';
+        ctx.save();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = X_glow;
+        ctx.strokeStyle = X_color;
+        ctx.fillStyle = X_color;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ox + R_px, oy);
+        ctx.lineTo(Zx, Zy);
+        ctx.stroke();
+        // 화살촉 (X 방향)
+        const ang2 = state.X > 0 ? -Math.PI/2 : Math.PI/2;
+        ctx.translate(Zx, Zy);
+        ctx.rotate(ang2);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-9, -5); ctx.lineTo(-9, 5); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // X 라벨 (R 끝점 옆)
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        const txt = `jX = ${state.X >= 0 ? '+' : ''}${state.X.toFixed(1)}`;
+        const tw = ctx.measureText(txt).width;
+        const lx = ox + R_px + 12;
+        const ly = oy - X_px / 2;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, lx, ly - 9, tw + 10, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = X_color;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, lx + tw/2 + 5, ly);
+        ctx.restore();
+    }
+
+    // === 4) R 화살표 (실수축, 두꺼움) ===
+    if (R_px > 1) {
+        ctx.save();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = '#fbbf24';
+        const grad = ctx.createLinearGradient(ox, oy, ox + R_px, oy);
+        grad.addColorStop(0, 'rgba(245, 158, 11, 0.65)');
+        grad.addColorStop(1, 'rgba(253, 224, 71, 0.95)');
+        ctx.strokeStyle = grad;
+        ctx.fillStyle = '#fbbf24';
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox + R_px, oy);
+        ctx.stroke();
+        // 화살촉
+        ctx.translate(ox + R_px, oy);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-11, -5.5); ctx.lineTo(-11, 5.5); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // R 라벨
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        const txt = `R = ${state.R.toFixed(0)} Ω`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, ox + R_px/2 - tw/2 - 6, oy + 8, tw + 12, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#fde68a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, ox + R_px/2, oy + 17);
+        ctx.restore();
+    }
+
+    // === 5) Z 합성 벡터 (메인 강조 + 펄스) ===
+    {
+        const pulse = 1 + Math.sin(state.t * 0.08) * 0.06;
+        ctx.save();
+        ctx.shadowBlur = 28 * pulse;
+        ctx.shadowColor = '#f472b6';
+        const grad = ctx.createLinearGradient(ox, oy, Zx, Zy);
+        grad.addColorStop(0, 'rgba(236, 72, 153, 0.65)');
+        grad.addColorStop(0.5, 'rgba(244, 114, 182, 0.95)');
+        grad.addColorStop(1, 'rgba(249, 168, 212, 1)');
+        ctx.strokeStyle = grad;
+        ctx.fillStyle = '#f472b6';
+        ctx.lineWidth = 5.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(Zx, Zy);
+        ctx.stroke();
+        // 화살촉
+        const angZ = Math.atan2(Zy - oy, Zx - ox);
+        ctx.translate(Zx, Zy);
+        ctx.rotate(angZ);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(-15, -7); ctx.lineTo(-15, 7); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Z 끝점 글로우 원
+        ctx.save();
+        ctx.shadowBlur = 22;
+        ctx.shadowColor = '#f472b6';
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.95)';
+        ctx.beginPath();
+        ctx.arc(Zx, Zy, 6 + Math.sin(state.t * 0.12) * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // Z 라벨 (Z 화살표 중간 부근, 살짝 위로)
+        ctx.save();
+        ctx.font = 'bold 12px ui-monospace, monospace';
+        const txt = `|Z| = ${state.Z.toFixed(2)} Ω`;
+        const tw = ctx.measureText(txt).width;
+        const mx = (ox + Zx) / 2;
+        const my = (oy + Zy) / 2;
+        // 화살표에 수직으로 살짝 오프셋
+        const perpAng = angZ - Math.PI / 2;
+        const offX = Math.cos(perpAng) * 22;
+        const offY = Math.sin(perpAng) * 22;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        roundRect(ctx, mx + offX - tw/2 - 8, my + offY - 11, tw + 16, 22, 11);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(244, 114, 182, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#f9a8d4';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, mx + offX, my + offY);
+        ctx.restore();
+    }
+
+    // === 6) 위상각 θ 호 ===
+    if (Math.abs(state.theta) > 0.01) {
+        const arcR = Math.min(R_px * 0.6, 70);
+        const a0 = 0; // 실수축
+        const a1 = -state.theta; // 캔버스 y 뒤집힘
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#fcd34d';
+        ctx.strokeStyle = 'rgba(252, 211, 77, 0.9)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(ox, oy, arcR, Math.min(a0, a1), Math.max(a0, a1), false);
+        ctx.stroke();
+        // θ 라벨
+        const midA = (a0 + a1) / 2;
+        const labelR = arcR + 18;
+        const lx = ox + Math.cos(midA) * labelR;
+        const ly = oy + Math.sin(midA) * labelR;
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        const txt = `θ = ${(state.theta * 180/Math.PI).toFixed(1)}°`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        roundRect(ctx, lx - tw/2 - 6, ly - 10, tw + 12, 20, 10);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(252, 211, 77, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#fde68a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, lx, ly);
+        ctx.restore();
+    } else {
+        // 공진 표시
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        const txt = 'θ ≈ 0° · RESONANT';
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.18)';
+        roundRect(ctx, ox + 12, oy - 26, tw + 16, 18, 9);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(244, 114, 182, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#f9a8d4';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, ox + 20, oy - 17);
+        ctx.restore();
+    }
+
+    // === 7) 원점 점 ===
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fff';
+    ctx.beginPath();
+    ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // === 8) Z 회전 페이저 (작게, 우상단 미니 위젯) ===
+    drawMiniRotation(W - 130, 80, 50);
+
+    // === 9) 좌하단: 회로 성격 정보 박스 ===
+    drawInfoBox(14, H - 110, 240, 96);
+}
+
+function drawMiniRotation(cx, cy, r) {
+    // Z = |Z|∠θ 회전 페이저 — 작게 (현재 위상 위치 시각화)
+    ctx.save();
+    // 배경
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 라벨
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.8)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('V·I PHASOR', cx, cy - r - 16);
+
+    // 단위원
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    // 축
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
+    ctx.stroke();
+
+    // V 페이저 (회전)
+    const omega = state.rotPhase;
+    const Vx = cx + Math.cos(omega) * r * 0.9;
+    const Vy = cy - Math.sin(omega) * r * 0.9;
+    arrow(ctx, cx, cy, Vx, Vy, '#fcd34d', 2, 10);
+
+    // I 페이저 (θ만큼 위상 차 — 유도성이면 뒤짐, 용량성이면 앞섬)
+    // 회로 임피던스 위상각 θ. 전류 I = V/Z 의 위상은 V보다 −θ
+    const Iphase = omega - state.theta;
+    const Ix = cx + Math.cos(Iphase) * r * 0.7;
+    const Iy = cy - Math.sin(Iphase) * r * 0.7;
+    arrow(ctx, cx, cy, Ix, Iy, '#6ee7b7', 2, 10);
+
+    // 라벨
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('V', Vx + 4, Vy);
+    ctx.fillStyle = '#6ee7b7';
+    ctx.fillText('I', Ix + 4, Iy);
+
+    // 중심점
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawInfoBox(x, y, w, h) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText('[ COMPLEX Z DECOMPOSITION ]', x + 10, y + 8);
+
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = '#fde68a';
+    ctx.fillText(`Re(Z) = R = ${state.R.toFixed(1)} Ω`, x + 10, y + 26);
+    ctx.fillStyle = '#d8b4fe';
+    ctx.fillText(`X_L = ωL = ${state.Xl.toFixed(2)} Ω`, x + 10, y + 42);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillText(`X_C = 1/ωC = ${state.Xc.toFixed(2)} Ω`, x + 10, y + 58);
+    ctx.fillStyle = '#f9a8d4';
+    const sign = state.X >= 0 ? '+' : '−';
+    ctx.fillText(`Z = ${state.R.toFixed(1)} ${sign} j${Math.abs(state.X).toFixed(2)}`, x + 10, y + 74);
+
+    ctx.restore();
+}
+
+// ====================================================
+// 계산 + UI
+// ====================================================
+function compute() {
+    state.R = +$('r').value;
+    state.L = +$('l').value / 1000;
+    state.C = +$('c').value * 1e-6;
+    state.f = +$('f').value;
+
+    const w = 2 * Math.PI * state.f;
+    state.Xl = w * state.L;
+    state.Xc = 1 / (w * state.C);
+    state.X = state.Xl - state.Xc;
+    state.Z = Math.sqrt(state.R ** 2 + state.X ** 2);
+    state.theta = Math.atan2(state.X, state.R);
+    state.f0 = 1 / (2 * Math.PI * Math.sqrt(state.L * state.C));
+
+    // UI 표시
+    $('rDisp').textContent = $('r').value;
+    $('lDisp').textContent = $('l').value;
+    $('cDisp').textContent = $('c').value;
+    $('fDisp').textContent = $('f').value;
+
+    $('zVal').textContent = `${state.Z.toFixed(2)} Ω`;
+    $('rValOut').textContent = `${state.R.toFixed(1)} Ω`;
+    const xSign = state.X >= 0 ? '+' : '';
+    $('xVal').textContent = `${xSign}${state.X.toFixed(2)} Ω`;
+    $('thetaVal').textContent = `${(state.theta * 180/Math.PI).toFixed(1)}°`;
+
+    // 회로 성격 분류
+    const absX = Math.abs(state.X);
+    const ratio = absX / Math.max(state.R, 0.1);
+    let badge, hint, badgeClass, pillClass;
+    if (ratio < 0.05) {
+        badge = 'RESONANT (순저항)';
+        hint = 'X ≈ 0 → 순수 저항 회로, 전류·전압 동상, |Z| 최소';
+        badgeClass = 'mode-res';
+        pillClass = 'flash-res';
+    } else if (state.X > 0) {
+        badge = 'INDUCTIVE (유도성)';
+        hint = 'X > 0 (X_L > X_C) → 전류가 전압보다 θ만큼 지상';
+        badgeClass = 'mode-ind';
+        pillClass = 'flash-ind';
+    } else {
+        badge = 'CAPACITIVE (용량성)';
+        hint = 'X < 0 (X_L < X_C) → 전류가 전압보다 |θ|만큼 진상';
+        badgeClass = 'mode-cap';
+        pillClass = 'flash-cap';
+    }
+    const badgeEl = $('charBadge');
+    badgeEl.textContent = badge;
+    badgeEl.className = `mode-badge ${badgeClass}`;
+    $('charHint').textContent = hint;
+
+    // 라이브 칩 강조
+    ['flash-ind', 'flash-cap', 'flash-res'].forEach(c => {
+        $('pill-x').classList.remove(c);
+        $('pill-theta').classList.remove(c);
+        $('pill-z').classList.remove(c);
+    });
+    $('pill-x').classList.add(pillClass);
+    $('pill-theta').classList.add(pillClass);
+    if (pillClass === 'flash-res') $('pill-z').classList.add('flash-res');
+}
+
+function flashCard() {
+    if (window.gsap) {
+        gsap.fromTo('#canvasCard',
+            { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+    }
+}
+
+['r', 'l', 'c', 'f'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); flashCard(); });
+});
+
+$('tuneBtn').addEventListener('click', () => {
+    const target = Math.round(state.f0);
+    const clamped = Math.max(50, Math.min(3000, target));
+    if (window.gsap) {
+        gsap.to($('f'), { value: clamped, duration: 0.9, ease: 'power3.out',
+            onUpdate: () => compute() });
+    } else {
+        $('f').value = clamped;
+        compute();
+    }
+    flashCard();
+});
+
+$('freezeBtn').addEventListener('click', () => {
+    state.frozen = !state.frozen;
+    $('freezeBtn').textContent = state.frozen ? '▶ 재생' : '⏸ 정지';
+});
+
+$('presetInd').addEventListener('click', () => {
+    // 유도성 우세: L 크게, C 작게, f 살짝 위
+    if (window.gsap) {
+        gsap.to($('l'), { value: 60, duration: 0.6, ease: 'power3.out', onUpdate: () => compute() });
+        gsap.to($('c'), { value: 5,  duration: 0.6, ease: 'power3.out', onUpdate: () => compute() });
+        gsap.to($('f'), { value: 1500, duration: 0.6, ease: 'power3.out', onUpdate: () => compute() });
+    } else {
+        $('l').value = 60; $('c').value = 5; $('f').value = 1500;
+        compute();
+    }
+    flashCard();
+});
+
+$('presetCap').addEventListener('click', () => {
+    // 용량성 우세: L 작게, C 크게, f 낮게
+    if (window.gsap) {
+        gsap.to($('l'), { value: 5,  duration: 0.6, ease: 'power3.out', onUpdate: () => compute() });
+        gsap.to($('c'), { value: 60, duration: 0.6, ease: 'power3.out', onUpdate: () => compute() });
+        gsap.to($('f'), { value: 200, duration: 0.6, ease: 'power3.out', onUpdate: () => compute() });
+    } else {
+        $('l').value = 5; $('c').value = 60; $('f').value = 200;
+        compute();
+    }
+    flashCard();
+});
+
+// ====================================================
+// 메인 루프
+// ====================================================
+function animate() {
+    state.t++;
+    if (!state.frozen) {
+        state.rotPhase += 0.04;
+    }
+    drawPlane();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#characterRow', { y: 10, opacity: 0, duration: 0.6, delay: 0.25, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

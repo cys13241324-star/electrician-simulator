@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크 레코드 샵 · 1962 SINCE — 전기기능사 음반점</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper-0: #0c0805;
+    --paper-1: #15100a;
+    --paper-2: #1f1810;
+    --paper-3: #2a2014;
+    --brown-0: #3a2a18;
+    --brown-1: #523a20;
+    --brown-2: #6e4e2a;
+    --beige-0: #e9d8b6;
+    --beige-1: #d8c197;
+    --beige-2: #b89e6f;
+    --beige-3: #8c7350;
+    --gold-0: #d4a64a;
+    --gold-1: #e8bf63;
+    --gold-2: #b5882f;
+    --cream: #f4e6c8;
+    --rust: #8a3a18;
+    --rust-2: #b04a20;
+    --ink: #2a1f12;
+    --line: #4a3624;
+    --line-2: #6a4e30;
+  }
+  * { font-family: 'Inter', 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+  html, body { background: var(--paper-0); color: var(--cream); overflow-x: hidden; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(212,166,74,0.10), transparent 45%),
+      radial-gradient(circle at 88% 25%, rgba(176,74,32,0.08), transparent 50%),
+      radial-gradient(circle at 50% 95%, rgba(110,78,42,0.10), transparent 55%),
+      linear-gradient(180deg, #0c0805 0%, #15100a 40%, #0c0805 100%);
+  }
+  .serif { font-family: 'Playfair Display', 'Cormorant Garamond', serif; }
+  .serif-i { font-family: 'Cormorant Garamond', 'Playfair Display', serif; font-style: italic; }
+  .mono { font-family: 'DM Mono', 'Inter', monospace; letter-spacing: 0.02em; }
+
+  /* Paper grain overlay */
+  .grain::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.78 0 0 0 0 0.5 0 0 0 0.12 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.28; mix-blend-mode: overlay;
+  }
+
+  /* Vinyl spin */
+  @keyframes vinyl-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .spin-33 { animation: vinyl-spin 1.8s linear infinite; }
+  .spin-slow { animation: vinyl-spin 6s linear infinite; }
+  .spin-paused { animation-play-state: paused; }
+
+  /* Card slip-out */
+  .album-card { transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 0.4s; }
+  .album-card:hover { transform: translateY(-6px); }
+  .album-vinyl {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 86%; aspect-ratio: 1;
+    transform: translate(-50%, -50%) translateX(0);
+    transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+    z-index: 1;
+  }
+  .album-card:hover .album-vinyl {
+    transform: translate(-50%, -50%) translateX(30%) rotate(8deg);
+  }
+  .album-sleeve {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Wood texture */
+  .wood-panel {
+    background:
+      repeating-linear-gradient(90deg,
+        rgba(0,0,0,0.0) 0px,
+        rgba(0,0,0,0.0) 6px,
+        rgba(0,0,0,0.06) 6px,
+        rgba(0,0,0,0.06) 7px),
+      repeating-linear-gradient(0deg,
+        rgba(255,255,255,0.0) 0px,
+        rgba(255,255,255,0.0) 24px,
+        rgba(255,255,255,0.015) 24px,
+        rgba(255,255,255,0.015) 25px),
+      linear-gradient(135deg, #3a2a18 0%, #2a1d10 50%, #3a2a18 100%);
+  }
+  .beige-panel {
+    background:
+      linear-gradient(180deg, var(--beige-0) 0%, var(--beige-1) 100%);
+    color: var(--ink);
+  }
+
+  /* Gold foil text */
+  .foil {
+    background: linear-gradient(180deg, #f5d98a 0%, #d4a64a 45%, #b5882f 55%, #f5d98a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 0.5px rgba(212,166,74,0.4));
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--paper-1); }
+  ::-webkit-scrollbar-thumb { background: var(--brown-2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-2); }
+
+  /* Pulse for now-spinning */
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 24px rgba(212,166,74,0.35), 0 0 60px rgba(212,166,74,0.12); }
+    50%      { box-shadow: 0 0 36px rgba(212,166,74,0.55), 0 0 90px rgba(212,166,74,0.25); }
+  }
+  .glow-gold { animation: glow-pulse 2.8s ease-in-out infinite; }
+
+  /* Tonearm */
+  .tonearm-base {
+    transform-origin: 8% 50%;
+    transition: transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .tonearm-down { transform: rotate(28deg); }
+
+  /* Modal */
+  .modal-backdrop { background: rgba(8,5,2,0.78); backdrop-filter: blur(6px); }
+
+  /* Stamp / sticker */
+  .stamp {
+    border: 2px solid var(--gold-0);
+    color: var(--gold-1);
+    padding: 2px 8px;
+    transform: rotate(-3deg);
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.1em;
+  }
+  .sticker-circle {
+    width: 60px; height: 60px; border-radius: 999px;
+    background: radial-gradient(circle at 30% 30%, #ffd87a, #d4a64a 60%, #8a6520);
+    color: #2a1f12;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-weight: 800;
+    box-shadow: inset 0 -3px 6px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.4);
+    transform: rotate(-12deg);
+  }
+
+  /* Progress bar */
+  .progress-fill { transition: width 0.2s linear; }
+
+  /* Star */
+  .star { color: var(--gold-1); }
+  .star-empty { color: rgba(212,166,74,0.25); }
+
+  /* Heart pop */
+  @keyframes heart-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+  .heart-pop { animation: heart-pop 0.35s ease-out; }
+
+  /* Section divider */
+  .ornament {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--beige-2);
+  }
+  .ornament::before, .ornament::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brown-2), transparent);
+  }
+
+  /* Sleeve corner wear */
+  .sleeve-wear {
+    position: absolute; top: 0; right: 0; width: 24px; height: 24px;
+    background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.3) 50%);
+  }
+
+  /* Equalizer bars */
+  @keyframes eq-bounce {
+    0%, 100% { height: 20%; }
+    50% { height: 90%; }
+  }
+  .eq-bar { animation: eq-bounce 0.9s ease-in-out infinite; transform-origin: bottom; }
+  .eq-bar:nth-child(2) { animation-delay: 0.1s; animation-duration: 0.7s; }
+  .eq-bar:nth-child(3) { animation-delay: 0.2s; animation-duration: 1.0s; }
+  .eq-bar:nth-child(4) { animation-delay: 0.05s; animation-duration: 0.8s; }
+  .eq-bar:nth-child(5) { animation-delay: 0.15s; animation-duration: 0.95s; }
+  .eq-paused { animation-play-state: paused; }
+
+  /* Fade-in */
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fade-up 0.4s ease-out both; }
+</style>
+</head>
+<body class="grain">
+
+<!-- ==================== TOP BAR ==================== -->
+<header class="border-b border-[var(--line)] bg-[var(--paper-1)]/80 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between gap-6">
+    <div class="flex items-center gap-3">
+      <!-- mini logo svg -->
+      <svg width="36" height="36" viewBox="0 0 36 36" class="shrink-0">
+        <circle cx="18" cy="18" r="17" fill="#1a1208" stroke="#d4a64a" stroke-width="1"/>
+        <circle cx="18" cy="18" r="14" fill="none" stroke="#3a2a18" stroke-width="0.4"/>
+        <circle cx="18" cy="18" r="11" fill="none" stroke="#3a2a18" stroke-width="0.4"/>
+        <circle cx="18" cy="18" r="8" fill="none" stroke="#3a2a18" stroke-width="0.4"/>
+        <circle cx="18" cy="18" r="5" fill="#b04a20"/>
+        <circle cx="18" cy="18" r="1.4" fill="#0c0805"/>
+      </svg>
+      <div class="leading-tight">
+        <div class="serif text-[var(--gold-1)] text-lg font-bold tracking-wider">SPARK RECORDS</div>
+        <div class="mono text-[10px] text-[var(--beige-3)] uppercase tracking-[0.2em]">EST · 1962 · SEOUL</div>
+      </div>
+    </div>
+
+    <nav class="hidden md:flex items-center gap-7 text-[13px] text-[var(--beige-1)]">
+      <a class="hover:text-[var(--gold-1)] transition" href="#shop">SHOP</a>
+      <a class="hover:text-[var(--gold-1)] transition" href="#turntable">TURNTABLE</a>
+      <a class="hover:text-[var(--gold-1)] transition" href="#new">NEW ARRIVALS</a>
+      <a class="hover:text-[var(--gold-1)] transition" href="#charts">CHARTS</a>
+      <a class="hover:text-[var(--gold-1)] transition" href="#upcoming">UPCOMING</a>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <button id="favBtn" class="flex items-center gap-2 text-[13px] text-[var(--beige-1)] hover:text-[var(--rust-2)] transition px-3 py-1.5 border border-[var(--line)] rounded">
+        <span aria-hidden="true">♥</span>
+        <span>찜 <span id="favCount" class="text-[var(--gold-1)] font-semibold">0</span></span>
+      </button>
+      <div class="mono text-[11px] text-[var(--beige-3)] hidden lg:block">VOL. LXIV · MAY 2026</div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== HERO ==================== -->
+<section class="relative overflow-hidden border-b border-[var(--line)]">
+  <div class="wood-panel absolute inset-0 opacity-95"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[var(--paper-0)]/70"></div>
+
+  <div class="relative max-w-[1400px] mx-auto px-6 py-16 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+    <!-- TITLE -->
+    <div class="space-y-6">
+      <div class="ornament">
+        <span class="serif-i text-sm">— A Vintage Selection —</span>
+      </div>
+      <h1 class="serif text-[var(--cream)] leading-[0.95]">
+        <div class="text-[15px] tracking-[0.5em] text-[var(--beige-2)] mb-3">VOL. LXIV</div>
+        <div class="text-6xl md:text-7xl lg:text-8xl font-black">
+          <span class="foil">스파크</span>
+        </div>
+        <div class="text-5xl md:text-6xl lg:text-7xl font-black mt-1">
+          레코드 샵
+        </div>
+        <div class="serif-i text-2xl md:text-3xl text-[var(--beige-1)] mt-4">
+          "전기기능사 학습의 명반"
+        </div>
+      </h1>
+      <p class="text-[var(--beige-1)] text-[15px] leading-relaxed max-w-xl">
+        1962년 종로 골목, 진공관 라디오의 황금 시대에 문을 연 작은 음반점.
+        오늘은 전기 이론의 명반 8장을 LP에 새겨 다시 선보입니다.
+        턴테이블에 바늘을 내려놓는 순간, 옴의 법칙은 한 곡의 발라드가 됩니다.
+      </p>
+      <div class="flex flex-wrap items-center gap-4 pt-2">
+        <a href="#shop" class="inline-flex items-center gap-2 bg-[var(--gold-0)] hover:bg-[var(--gold-1)] text-[var(--ink)] px-6 py-3 font-semibold tracking-wide transition rounded-sm shadow-lg">
+          <span aria-hidden="true">▼</span> 음반 둘러보기
+        </a>
+        <a href="#turntable" class="inline-flex items-center gap-2 border border-[var(--gold-2)] text-[var(--gold-1)] hover:bg-[var(--gold-2)]/10 px-6 py-3 font-semibold tracking-wide transition rounded-sm">
+          턴테이블에 올리기
+        </a>
+        <div class="mono text-[11px] text-[var(--beige-3)] ml-2">SINCE 1962 · 64주년</div>
+      </div>
+    </div>
+
+    <!-- HERO ALBUM (spinning) -->
+    <div class="relative flex items-center justify-center">
+      <div class="relative w-[380px] h-[380px] md:w-[460px] md:h-[460px]">
+        <!-- Sleeve background -->
+        <div class="absolute inset-0 rounded-sm shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
+             style="background: linear-gradient(135deg, #8a3a18 0%, #5a2410 100%); border: 1px solid #6a2a14;">
+        </div>
+        <!-- Vinyl, partially exposed -->
+        <div class="absolute top-1/2 left-[58%] -translate-y-1/2 w-[88%] aspect-square spin-slow">
+          <svg viewBox="0 0 200 200" class="w-full h-full">
+            <defs>
+              <radialGradient id="heroVinyl" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#1a0e06"/>
+                <stop offset="60%" stop-color="#0a0604"/>
+                <stop offset="100%" stop-color="#15100a"/>
+              </radialGradient>
+              <radialGradient id="heroLabel" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#e8bf63"/>
+                <stop offset="100%" stop-color="#8a6520"/>
+              </radialGradient>
+            </defs>
+            <circle cx="100" cy="100" r="98" fill="url(#heroVinyl)"/>
+            <g stroke="#2a1f12" stroke-width="0.3" fill="none" opacity="0.7">
+              <circle cx="100" cy="100" r="90"/>
+              <circle cx="100" cy="100" r="82"/>
+              <circle cx="100" cy="100" r="74"/>
+              <circle cx="100" cy="100" r="66"/>
+              <circle cx="100" cy="100" r="58"/>
+              <circle cx="100" cy="100" r="50"/>
+            </g>
+            <circle cx="100" cy="100" r="32" fill="url(#heroLabel)"/>
+            <text x="100" y="92" text-anchor="middle" font-family="Playfair Display" font-size="6" font-weight="800" fill="#2a1f12">SPARK</text>
+            <text x="100" y="102" text-anchor="middle" font-family="Playfair Display" font-size="4" font-style="italic" fill="#2a1f12">vol. I</text>
+            <text x="100" y="112" text-anchor="middle" font-family="Playfair Display" font-size="3" fill="#2a1f12">옴의 법칙</text>
+            <circle cx="100" cy="100" r="2.5" fill="#0c0805"/>
+          </svg>
+        </div>
+        <!-- Sleeve text overlay -->
+        <div class="absolute inset-0 p-7 flex flex-col justify-between pointer-events-none">
+          <div>
+            <div class="mono text-[10px] text-[var(--beige-1)] tracking-[0.3em]">SR · 001</div>
+            <div class="serif text-[var(--cream)] text-3xl font-black mt-2 leading-tight">옴의 법칙</div>
+            <div class="serif-i text-[var(--beige-1)] text-base mt-1">Vol. I · 1962</div>
+          </div>
+          <div class="flex justify-between items-end">
+            <div class="stamp text-[10px] inline-block">★ DELUXE EDITION ★</div>
+            <div class="sticker-circle text-[10px] leading-tight text-center">NEW<br/>2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marquee strip -->
+  <div class="relative bg-[var(--paper-2)]/80 border-t border-[var(--line)]">
+    <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-8 overflow-hidden text-[var(--beige-2)] text-[12px] mono uppercase tracking-[0.2em]">
+      <span class="text-[var(--gold-1)]">◆ NOW SPINNING</span>
+      <span>옴의 법칙 Vol.I</span>
+      <span class="text-[var(--brown-2)]">/</span>
+      <span>키르히호프의 노드 LIVE</span>
+      <span class="text-[var(--brown-2)]">/</span>
+      <span>변압기 발라드</span>
+      <span class="text-[var(--brown-2)]">/</span>
+      <span>패러데이의 코일</span>
+      <span class="text-[var(--brown-2)]">/</span>
+      <span>3상 결선 재즈</span>
+      <span class="text-[var(--brown-2)]">/</span>
+      <span class="text-[var(--gold-1)]">합격의 송가 ★</span>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== MAIN LAYOUT ==================== -->
+<main class="max-w-[1400px] mx-auto px-6 py-12 grid lg:grid-cols-[1fr_320px] gap-12">
+
+  <!-- ==================== LEFT: SHOP ==================== -->
+  <div class="space-y-16">
+
+    <!-- TURNTABLE -->
+    <section id="turntable" class="relative">
+      <div class="flex items-end justify-between mb-6">
+        <div>
+          <div class="mono text-[11px] text-[var(--beige-3)] tracking-[0.3em] mb-2">SECTION I</div>
+          <h2 class="serif text-4xl text-[var(--cream)] font-black">턴테이블 · The Turntable</h2>
+          <div class="serif-i text-[var(--beige-1)] mt-1">선택한 LP가 여기서 회전합니다</div>
+        </div>
+        <div class="mono text-[11px] text-[var(--beige-3)] hidden md:block">33⅓ RPM</div>
+      </div>
+
+      <div class="wood-panel rounded p-8 md:p-10 border border-[var(--line)] shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative">
+        <div class="grid md:grid-cols-[1fr_280px] gap-8 items-center">
+          <!-- Platter -->
+          <div class="relative aspect-square max-w-[440px] mx-auto w-full">
+            <!-- Platter base -->
+            <div class="absolute inset-0 rounded-full"
+                 style="background: radial-gradient(circle at 30% 30%, #2a2014, #15100a 70%); box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 0 10px 30px rgba(0,0,0,0.5);"></div>
+            <!-- Vinyl -->
+            <div id="ttVinyl" class="absolute inset-[6%] rounded-full spin-33 spin-paused glow-gold">
+              <svg viewBox="0 0 200 200" class="w-full h-full">
+                <defs>
+                  <radialGradient id="ttGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#1a0e06"/>
+                    <stop offset="55%" stop-color="#0a0604"/>
+                    <stop offset="100%" stop-color="#1a1208"/>
+                  </radialGradient>
+                  <radialGradient id="ttLabel" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#e8bf63"/>
+                    <stop offset="100%" stop-color="#8a6520"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="100" cy="100" r="98" fill="url(#ttGrad)"/>
+                <g stroke="#3a2a18" stroke-width="0.25" fill="none" opacity="0.6">
+                  <circle cx="100" cy="100" r="92"/><circle cx="100" cy="100" r="86"/>
+                  <circle cx="100" cy="100" r="80"/><circle cx="100" cy="100" r="74"/>
+                  <circle cx="100" cy="100" r="68"/><circle cx="100" cy="100" r="62"/>
+                  <circle cx="100" cy="100" r="56"/><circle cx="100" cy="100" r="50"/>
+                </g>
+                <circle cx="100" cy="100" r="34" fill="url(#ttLabel)"/>
+                <text id="ttLabelTitle" x="100" y="92" text-anchor="middle" font-family="Playfair Display" font-size="5.5" font-weight="800" fill="#2a1f12">SPARK</text>
+                <text id="ttLabelSub" x="100" y="102" text-anchor="middle" font-family="Playfair Display" font-size="3.6" font-style="italic" fill="#2a1f12">— select an LP —</text>
+                <text x="100" y="112" text-anchor="middle" font-family="DM Mono" font-size="2.8" fill="#2a1f12">33⅓ RPM · STEREO</text>
+                <circle cx="100" cy="100" r="2.2" fill="#0c0805"/>
+              </svg>
+            </div>
+            <!-- Center spindle -->
+            <div class="absolute top-1/2 left-1/2 w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--gold-2)] z-10"></div>
+            <!-- Tonearm -->
+            <div id="tonearm" class="tonearm-base absolute top-[10%] right-[-4%] w-[55%] z-20" aria-hidden="true">
+              <svg viewBox="0 0 200 60" class="w-full">
+                <!-- pivot -->
+                <circle cx="190" cy="30" r="14" fill="#3a2a18" stroke="#6a4e30" stroke-width="1.5"/>
+                <circle cx="190" cy="30" r="6" fill="#15100a"/>
+                <!-- arm -->
+                <rect x="40" y="27" width="148" height="6" fill="#c9b790" stroke="#3a2a18" stroke-width="0.5"/>
+                <!-- counter weight -->
+                <rect x="180" y="22" width="14" height="16" fill="#4a3624"/>
+                <!-- head shell -->
+                <polygon points="40,18 10,30 40,42" fill="#3a2a18" stroke="#6a4e30" stroke-width="0.5"/>
+                <!-- needle -->
+                <rect x="14" y="28" width="2" height="4" fill="#d4a64a"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="space-y-4">
+            <div class="beige-panel rounded p-4 border border-[var(--brown-2)]">
+              <div class="mono text-[10px] uppercase tracking-[0.3em] text-[var(--brown-1)]">NOW PLAYING</div>
+              <div id="nowTitle" class="serif text-xl font-bold mt-1 leading-tight">— LP를 선택하세요 —</div>
+              <div id="nowArtist" class="serif-i text-sm text-[var(--brown-1)] mt-1">아무것도 회전하지 않음</div>
+              <!-- Progress -->
+              <div class="mt-3">
+                <div class="h-1.5 bg-[var(--brown-2)]/30 rounded-full overflow-hidden">
+                  <div id="progressFill" class="progress-fill h-full bg-gradient-to-r from-[var(--gold-2)] to-[var(--rust)]" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between mono text-[10px] text-[var(--brown-1)] mt-1">
+                  <span id="progressTime">0:00</span>
+                  <span id="progressTotal">0:00</span>
+                </div>
+              </div>
+              <!-- EQ bars -->
+              <div id="eqBars" class="flex items-end gap-1 h-6 mt-3">
+                <span class="eq-bar eq-paused w-1 bg-[var(--brown-1)]" style="height:30%"></span>
+                <span class="eq-bar eq-paused w-1 bg-[var(--brown-1)]" style="height:60%"></span>
+                <span class="eq-bar eq-paused w-1 bg-[var(--brown-1)]" style="height:40%"></span>
+                <span class="eq-bar eq-paused w-1 bg-[var(--brown-1)]" style="height:80%"></span>
+                <span class="eq-bar eq-paused w-1 bg-[var(--brown-1)]" style="height:50%"></span>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <button id="btnPlay" class="flex-1 bg-[var(--gold-0)] hover:bg-[var(--gold-1)] text-[var(--ink)] font-semibold py-3 px-4 rounded-sm transition flex items-center justify-center gap-2">
+                <span id="playIcon" aria-hidden="true">▶</span>
+                <span id="playLabel">PLAY</span>
+              </button>
+              <button id="btnStop" class="bg-[var(--brown-1)] hover:bg-[var(--brown-2)] text-[var(--cream)] py-3 px-4 rounded-sm transition" aria-label="정지">
+                <span aria-hidden="true">■</span>
+              </button>
+            </div>
+
+            <div class="mono text-[10px] text-[var(--beige-2)] uppercase tracking-[0.2em] flex items-center justify-between border-t border-[var(--line)] pt-3">
+              <span>33⅓ · STEREO · HiFi</span>
+              <span id="ttStatus" class="text-[var(--beige-3)]">STOPPED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHOP GRID -->
+    <section id="shop">
+      <div class="flex items-end justify-between mb-6">
+        <div>
+          <div class="mono text-[11px] text-[var(--beige-3)] tracking-[0.3em] mb-2">SECTION II</div>
+          <h2 class="serif text-4xl text-[var(--cream)] font-black">매장 진열대 · The Floor</h2>
+          <div class="serif-i text-[var(--beige-1)] mt-1">전기 이론, 음반으로 듣는 여덟 장의 선집</div>
+        </div>
+        <div class="hidden md:flex gap-2 mono text-[11px] text-[var(--beige-2)]">
+          <button class="px-3 py-1.5 border border-[var(--gold-2)] bg-[var(--gold-2)]/10 text-[var(--gold-1)] rounded-sm">ALL · 8</button>
+          <button class="px-3 py-1.5 border border-[var(--line)] hover:border-[var(--gold-2)] transition rounded-sm">CLASSIC</button>
+          <button class="px-3 py-1.5 border border-[var(--line)] hover:border-[var(--gold-2)] transition rounded-sm">JAZZ</button>
+          <button class="px-3 py-1.5 border border-[var(--line)] hover:border-[var(--gold-2)] transition rounded-sm">ROCK</button>
+        </div>
+      </div>
+
+      <div id="albumGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- album cards injected by JS -->
+      </div>
+    </section>
+
+    <!-- LINER NOTES (editorial) -->
+    <section class="beige-panel rounded p-8 md:p-10 border border-[var(--brown-2)] relative">
+      <div class="absolute -top-4 left-8 stamp bg-[var(--paper-1)]">LINER NOTES</div>
+      <div class="grid md:grid-cols-[1fr_2fr] gap-8 items-start">
+        <div>
+          <div class="serif text-3xl font-black text-[var(--ink)] leading-tight">"바늘이 내려앉는 순간,<br/>이론이 곡이 된다."</div>
+          <div class="serif-i text-[var(--brown-1)] mt-3">— 박상문, 1962년 개업 당시 메모에서</div>
+        </div>
+        <div class="text-[15px] leading-relaxed text-[var(--ink)] space-y-4 serif-i">
+          <p>
+            올해 64주년을 맞아 스파크 레코드 샵은 전기기능사 학습 LP 8장을 한정 재발매합니다.
+            한 면에 5~10곡, A면은 개념, B면은 응용. 익숙한 공식이 한 곡의 후렴구처럼 머리에 새겨지도록.
+          </p>
+          <p>
+            <span class="not-italic font-semibold serif">"옴의 법칙 Vol. I"</span>은 1962년 첫 프레싱 당시
+            진공관 앰프로만 마스터링되었던 원본 톤을 그대로 살렸고,
+            <span class="not-italic font-semibold serif">"합격의 송가"</span>는 64년의 베스트 트랙만을 모은 더블 컴필레이션입니다.
+          </p>
+          <p class="text-[var(--brown-1)] text-[13px] not-italic mono">
+            ※ 본 페이지는 가상의 음반 시뮬레이션입니다. 실제 음원·구매는 제공되지 않습니다.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ==================== RIGHT: SIDEBAR ==================== -->
+  <aside class="space-y-8 lg:sticky lg:top-24 self-start">
+
+    <!-- CHARTS -->
+    <div id="charts" class="border border-[var(--line)] bg-[var(--paper-1)]/60 rounded p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="serif text-xl text-[var(--gold-1)] font-bold">베스트셀러 TOP 5</h3>
+        <span class="mono text-[10px] text-[var(--beige-3)]">THIS WEEK</span>
+      </div>
+      <ol class="space-y-3" id="chartList"></ol>
+    </div>
+
+    <!-- NEW ARRIVALS -->
+    <div id="new" class="border border-[var(--line)] bg-[var(--paper-1)]/60 rounded p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="serif text-xl text-[var(--gold-1)] font-bold">신규 입고</h3>
+        <span class="mono text-[10px] text-[var(--rust-2)]">NEW</span>
+      </div>
+      <ul id="newList" class="space-y-3"></ul>
+    </div>
+
+    <!-- UPCOMING -->
+    <div id="upcoming" class="border border-[var(--line)] bg-[var(--paper-1)]/60 rounded p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="serif text-xl text-[var(--gold-1)] font-bold">다음 발매 예정</h3>
+        <span class="mono text-[10px] text-[var(--beige-3)]">SOON</span>
+      </div>
+      <ul class="space-y-4 text-[13px] text-[var(--beige-1)]">
+        <li class="flex gap-3">
+          <div class="mono text-[10px] text-[var(--gold-1)] shrink-0 w-12">JUN<br/>2026</div>
+          <div>
+            <div class="serif font-semibold text-[var(--cream)]">"전동기 심포니" Op. 64</div>
+            <div class="serif-i text-[var(--beige-2)] text-[12px]">유도전동기 — 동기전동기 — 직류전동기</div>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="mono text-[10px] text-[var(--gold-1)] shrink-0 w-12">JUL<br/>2026</div>
+          <div>
+            <div class="serif font-semibold text-[var(--cream)]">"접지의 시"</div>
+            <div class="serif-i text-[var(--beige-2)] text-[12px]">시 낭독 + 어쿠스틱 기타</div>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="mono text-[10px] text-[var(--gold-1)] shrink-0 w-12">AUG<br/>2026</div>
+          <div>
+            <div class="serif font-semibold text-[var(--cream)]">"실기 시험장 LIVE 1985"</div>
+            <div class="serif-i text-[var(--beige-2)] text-[12px]">미발표 음원 + 인터뷰</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- STAFF PICK -->
+    <div class="border border-[var(--gold-2)] bg-gradient-to-b from-[var(--paper-2)] to-[var(--paper-1)] rounded p-5 relative">
+      <div class="absolute -top-3 -right-3 sticker-circle text-[10px]">STAFF<br/>PICK</div>
+      <div class="mono text-[10px] text-[var(--gold-1)] tracking-[0.3em]">점장 추천</div>
+      <div class="serif text-lg font-bold text-[var(--cream)] mt-2">RLC 공진 — Double LP</div>
+      <div class="serif-i text-[var(--beige-1)] text-[13px] mt-1">
+        "B면 4번 트랙, 공진 주파수에서의 페이드아웃이 압권."
+      </div>
+      <div class="mt-3 mono text-[11px] text-[var(--beige-2)]">— 박상문 (점주, 64년차)</div>
+    </div>
+
+    <!-- SHOP INFO -->
+    <div class="border border-[var(--line)] bg-[var(--paper-1)]/60 rounded p-5 mono text-[11px] text-[var(--beige-2)] leading-relaxed">
+      <div class="serif text-[var(--gold-1)] text-base font-bold mb-2 not-italic">SHOP HOURS</div>
+      <div>화—토 · 11:00 — 21:00</div>
+      <div>일 · 13:00 — 19:00</div>
+      <div class="text-[var(--beige-3)]">월 · 휴무</div>
+      <div class="mt-3 pt-3 border-t border-[var(--line)] text-[var(--beige-3)]">
+        서울 종로구 인사동 14길<br/>지하 1층 · 진공관 간판
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="border-t border-[var(--line)] bg-[var(--paper-1)] mt-12">
+  <div class="max-w-[1400px] mx-auto px-6 py-10 grid md:grid-cols-3 gap-8 text-[var(--beige-2)] text-[13px]">
+    <div>
+      <div class="serif text-[var(--gold-1)] text-xl font-bold tracking-wider">SPARK RECORDS</div>
+      <div class="mono text-[10px] tracking-[0.3em] text-[var(--beige-3)] mt-1">EST · 1962 · SEOUL</div>
+      <p class="mt-4 serif-i text-[var(--beige-1)] leading-relaxed">
+        진공관과 바늘, 그리고 옴의 법칙.<br/>
+        64년 동안 한 골목을 지킨 작은 음반점.
+      </p>
+    </div>
+    <div>
+      <div class="serif text-[var(--gold-1)] font-bold mb-3">CATALOG</div>
+      <ul class="space-y-1.5">
+        <li><a href="#shop" class="hover:text-[var(--gold-1)] transition">전체 음반 · 8장</a></li>
+        <li><a href="#charts" class="hover:text-[var(--gold-1)] transition">베스트셀러 차트</a></li>
+        <li><a href="#new" class="hover:text-[var(--gold-1)] transition">신규 입고</a></li>
+        <li><a href="#upcoming" class="hover:text-[var(--gold-1)] transition">발매 예정</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="serif text-[var(--gold-1)] font-bold mb-3">DISCLAIMER</div>
+      <p class="text-[var(--beige-3)] leading-relaxed">
+        본 페이지는 <span class="text-[var(--beige-1)]">전기기능사 학습 콘텐츠</span>를 LP 음반점 컨셉으로 표현한
+        <span class="text-[var(--gold-1)]">가상 음반 시뮬레이션</span>입니다.
+        실제 음원·앨범·구매·배송은 제공되지 않으며, 등장하는 매장·점주·연도는 모두 가상입니다.
+      </p>
+    </div>
+  </div>
+  <div class="border-t border-[var(--line)] bg-[var(--paper-0)]">
+    <div class="max-w-[1400px] mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-3 mono text-[10px] text-[var(--beige-3)] tracking-[0.2em] uppercase">
+      <div>© 1962—2026 SPARK RECORDS · A VIRTUAL VINYL SIMULATION</div>
+      <div>VOL. LXIV · 33⅓ · STEREO · HiFi</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ==================== MODAL ==================== -->
+<div id="modal" class="fixed inset-0 z-[200] hidden modal-backdrop items-center justify-center p-4">
+  <div class="bg-[var(--paper-1)] border border-[var(--gold-2)] rounded max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-[0_30px_80px_rgba(0,0,0,0.7)]">
+    <div class="grid md:grid-cols-[300px_1fr] gap-6 p-6 md:p-8">
+      <!-- LEFT: cover + disc -->
+      <div>
+        <div id="modalCover" class="aspect-square relative rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden">
+          <!-- injected -->
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <button id="modalPlayBtn" class="flex-1 bg-[var(--gold-0)] hover:bg-[var(--gold-1)] text-[var(--ink)] font-semibold py-2.5 px-3 rounded-sm transition text-sm">
+            ▶ 턴테이블에 올리기
+          </button>
+          <button id="modalFavBtn" class="border border-[var(--line)] hover:border-[var(--rust-2)] text-[var(--beige-1)] hover:text-[var(--rust-2)] py-2.5 px-3 rounded-sm transition" aria-label="찜">
+            <span id="modalFavIcon">♡</span>
+          </button>
+        </div>
+      </div>
+      <!-- RIGHT: details -->
+      <div>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div id="modalCat" class="mono text-[10px] text-[var(--gold-1)] tracking-[0.3em]">SR · 000</div>
+            <h2 id="modalTitle" class="serif text-3xl font-black text-[var(--cream)] mt-1 leading-tight"></h2>
+            <div id="modalArtist" class="serif-i text-lg text-[var(--beige-1)] mt-1"></div>
+          </div>
+          <button id="modalClose" class="text-[var(--beige-2)] hover:text-[var(--gold-1)] text-2xl leading-none px-2" aria-label="닫기">×</button>
+        </div>
+        <div class="grid grid-cols-4 gap-3 mt-4 text-[12px]">
+          <div class="border border-[var(--line)] rounded-sm p-2">
+            <div class="mono text-[9px] text-[var(--beige-3)] uppercase">YEAR</div>
+            <div id="modalYear" class="serif text-[var(--cream)] font-bold"></div>
+          </div>
+          <div class="border border-[var(--line)] rounded-sm p-2">
+            <div class="mono text-[9px] text-[var(--beige-3)] uppercase">GENRE</div>
+            <div id="modalGenre" class="serif text-[var(--cream)] font-bold"></div>
+          </div>
+          <div class="border border-[var(--line)] rounded-sm p-2">
+            <div class="mono text-[9px] text-[var(--beige-3)] uppercase">PRICE</div>
+            <div id="modalPrice" class="serif text-[var(--gold-1)] font-bold"></div>
+          </div>
+          <div class="border border-[var(--line)] rounded-sm p-2">
+            <div class="mono text-[9px] text-[var(--beige-3)] uppercase">RATING</div>
+            <div id="modalRating" class="text-[var(--gold-1)]"></div>
+          </div>
+        </div>
+        <p id="modalDesc" class="serif-i text-[var(--beige-1)] leading-relaxed mt-4 text-[14px]"></p>
+
+        <div class="mt-5">
+          <div class="ornament mb-2"><span class="serif-i text-sm">— Tracklist —</span></div>
+          <div class="grid md:grid-cols-2 gap-x-6 gap-y-1 text-[13px]" id="modalTracks"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== JS ==================== -->
+<script>
+(function(){
+  'use strict';
+
+  // ====== SAFE TEXT (escape) ======
+  function esc(s){
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  // ====== DATA ======
+  /** @type {{id:string, cat:string, title:string, artist:string, year:number, genre:string, price:string, rating:number, color:string, color2:string, labelColor:string, desc:string, tags:string[], tracks:string[], double?:boolean, gold?:boolean}[]} */
+  const ALBUMS = [
+    {
+      id: 'sr001', cat: 'SR · 001',
+      title: '옴의 법칙', artist: '게오르크 옴 & 진공관 오케스트라',
+      year: 1962, genre: 'Classic', price: '₩ 33,000', rating: 5,
+      color: '#8a3a18', color2: '#5a2410', labelColor: '#e8bf63',
+      desc: '한 면에 V=IR, 다른 한 면에 그 변주. 진공관 앰프로 마스터링한 디럭스 초판 음반. 64년 전 첫 프레싱 그대로의 따스한 톤.',
+      tags: ['DELUXE','초판'],
+      tracks: ['전압의 서곡','전류의 행진','저항의 발라드','직렬과 병렬 — 듀엣','옴의 법칙 — 클로징 테마','히든 트랙 : 와트의 속삭임']
+    },
+    {
+      id: 'sr007', cat: 'SR · 007',
+      title: '키르히호프의 노드', artist: '구스타프 키르히호프 콰르텟',
+      year: 1968, genre: 'Jazz · LIVE', price: '₩ 48,000', rating: 5,
+      color: '#3a4a2a', color2: '#1f2a14', labelColor: '#d4a64a',
+      desc: '베를린 클럽 라이브 더블 LP. KCL과 KVL을 즉흥 변주로 풀어낸 4중주. 노드와 루프 사이를 오가는 비밥의 미학.',
+      tags: ['DOUBLE LP','LIVE'], double: true,
+      tracks: ['Node Theme (KCL)','Loop Theme (KVL)','중첩의 원리 — 12분 솔로','테브난 즉흥곡','노턴 변주','마디 사이의 침묵','앙코르 : 미지의 전류','클로징 : 새벽 4시']
+    },
+    {
+      id: 'sr014', cat: 'SR · 014',
+      title: '변압기 발라드', artist: '윌리엄 스탠리 트리오',
+      year: 1970, genre: 'Ballad', price: '₩ 55,000', rating: 5,
+      color: '#d4a64a', color2: '#8a6520', labelColor: '#2a1f12',
+      desc: '골드 디스크 인증. 1차와 2차 권선이 부르는 비례의 노래. 면도날처럼 깨끗한 사인파 보컬.',
+      tags: ['GOLD DISC','★'], gold: true,
+      tracks: ['1차 권선 인트로','권수비의 사랑','전압변동률 발라드','단권변압기 듀엣','3상 변압기 — 합창','효율 99% — 종곡']
+    },
+    {
+      id: 'sr021', cat: 'SR · 021',
+      title: '패러데이의 코일', artist: '마이클 패러데이 익스페리언스',
+      year: 1973, genre: 'Psychedelic Rock', price: '₩ 42,000', rating: 4,
+      color: '#6a3a8a', color2: '#3a1a4a', labelColor: '#e8bf63',
+      desc: '유도 기전력의 사이키델릭한 해석. 페이저와 플랜저로 도색된 자속의 향연.',
+      tags: ['사이키델릭'],
+      tracks: ['자속의 환각','렌츠의 법칙 — 7분','상호 인덕턴스','자기 인덕턴스 — 깊은 잠','발전기의 꿈','전자기 유도 — 클라이맥스']
+    },
+    {
+      id: 'sr028', cat: 'SR · 028',
+      title: '3상 결선 재즈', artist: 'V.A. — 결선의 거장들',
+      year: 1975, genre: 'Tribute · Jazz', price: '₩ 38,000', rating: 4,
+      color: '#1a4a5a', color2: '#0a2a3a', labelColor: '#d4a64a',
+      desc: 'Y결선과 △결선의 거장들에게 바치는 헌정 음반. 선간전압과 상전압 사이를 오가는 7명의 색소포니스트.',
+      tags: ['TRIBUTE'],
+      tracks: ['Y결선 인트로','△결선 응답','상전압의 산책','선전류의 질주','균형 부하의 평화','불평형 부하 — 불협화음','중성선의 침묵']
+    },
+    {
+      id: 'sr035', cat: 'SR · 035',
+      title: 'RLC 공진', artist: '하인리히 헤르츠 앙상블',
+      year: 1978, genre: 'Concept · Double', price: '₩ 64,000', rating: 5,
+      color: '#1f1a4a', color2: '#0c0820', labelColor: '#e8bf63',
+      desc: '저항·인덕터·캐패시터, 세 주인공이 공진 주파수에서 만나는 더블 컨셉트 앨범. B면 4번이 압권.',
+      tags: ['DOUBLE LP','CONCEPT'], double: true,
+      tracks: ['A1. 임피던스의 시작','A2. 위상각 0도','A3. 리액턴스 듀엣','A4. 공진 주파수 — 도입','B1. 양호도 Q','B2. 대역폭의 폭','B3. 직렬 공진','B4. 병렬 공진 — 페이드아웃','B5. 클로징 — 11분']
+    },
+    {
+      id: 'sr042', cat: 'SR · 042',
+      title: '안전 수칙 어쿠스틱', artist: '안전 관리자 협회 합창단',
+      year: 1980, genre: 'Acoustic', price: '₩ 28,000', rating: 4,
+      color: '#5a8a3a', color2: '#2a4a1f', labelColor: '#2a1f12',
+      desc: '나무 의자에 앉아 듣는 11곡의 어쿠스틱 안전수칙. 감전 예방의 따뜻한 화음.',
+      tags: ['ACOUSTIC'],
+      tracks: ['접지의 시','누전차단기 — 자장가','절연저항 어쿠스틱','보호계전기 합창','감전 예방 — 솔로 기타','전기화재 — 발라드','피뢰기의 노래','보호구의 시 — 11곡 메들리']
+    },
+    {
+      id: 'sr064', cat: 'SR · 064',
+      title: '합격의 송가', artist: 'V.A. — 64년의 베스트',
+      year: 1985, genre: 'Best · Compilation', price: '₩ 88,000', rating: 5,
+      color: '#b04a20', color2: '#6a2410', labelColor: '#e8bf63',
+      desc: '64년의 명반에서 가려 뽑은 최고의 트랙들. 시험장 입실 30분 전 의식처럼 듣는 컴필레이션.',
+      tags: ['BEST','★ 64주년'],
+      tracks: ['OP. 합격 서곡','옴의 법칙 (리마스터)','키르히호프의 노드 (편집판)','변압기 발라드 (싱글 컷)','RLC 공진 (라디오 에디트)','안전 수칙 — 메들리','합격의 송가 — 마지막 트랙','앙코르 : 시험장 LIVE 1985']
+    }
+  ];
+
+  // ====== STATE ======
+  const state = {
+    favs: new Set(),
+    playing: null,     // album id
+    progressTimer: null,
+    progress: 0
+  };
+
+  // ====== STAR RENDER ======
+  function stars(n){
+    const full = '★'.repeat(n);
+    const empty = '☆'.repeat(5 - n);
+    return `<span class="star">${full}</span><span class="star-empty">${empty}</span>`;
+  }
+
+  // ====== ALBUM CARD ======
+  function vinylDiscSvg(label, color){
+    return `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <defs>
+          <radialGradient id="g-${label}" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1a0e06"/>
+            <stop offset="55%" stop-color="#0a0604"/>
+            <stop offset="100%" stop-color="#15100a"/>
+          </radialGradient>
+          <radialGradient id="lab-${label}" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="${esc(color)}"/>
+            <stop offset="100%" stop-color="#2a1f12"/>
+          </radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="98" fill="url(#g-${label})"/>
+        <g stroke="#3a2a18" stroke-width="0.25" fill="none" opacity="0.55">
+          <circle cx="100" cy="100" r="90"/><circle cx="100" cy="100" r="80"/>
+          <circle cx="100" cy="100" r="70"/><circle cx="100" cy="100" r="60"/>
+          <circle cx="100" cy="100" r="50"/>
+        </g>
+        <circle cx="100" cy="100" r="32" fill="url(#lab-${label})"/>
+        <text x="100" y="98" text-anchor="middle" font-family="Playfair Display" font-size="5" font-weight="800" fill="#2a1f12">SPARK</text>
+        <text x="100" y="108" text-anchor="middle" font-family="Playfair Display" font-size="3.6" font-style="italic" fill="#2a1f12">vinyl</text>
+        <circle cx="100" cy="100" r="2.2" fill="#0c0805"/>
+      </svg>
+    `;
+  }
+
+  function sleeveSvg(a){
+    // decorative SVG inside sleeve
+    const lightLabel = (a.labelColor === '#2a1f12');
+    const textColor = lightLabel ? '#2a1f12' : '#f4e6c8';
+    const subColor = lightLabel ? '#5a4528' : '#e9d8b6';
+    return `
+      <svg viewBox="0 0 300 300" class="w-full h-full" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="bg-${esc(a.id)}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="${esc(a.color)}"/>
+            <stop offset="100%" stop-color="${esc(a.color2)}"/>
+          </linearGradient>
+          <pattern id="dots-${esc(a.id)}" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="0.5" fill="${esc(a.labelColor)}" opacity="0.15"/>
+          </pattern>
+        </defs>
+        <rect width="300" height="300" fill="url(#bg-${esc(a.id)})"/>
+        <rect width="300" height="300" fill="url(#dots-${esc(a.id)})"/>
+        <!-- decorative concentric arcs -->
+        <g stroke="${esc(a.labelColor)}" stroke-width="0.4" fill="none" opacity="0.35">
+          <circle cx="50" cy="50" r="120"/>
+          <circle cx="50" cy="50" r="160"/>
+          <circle cx="50" cy="50" r="200"/>
+        </g>
+        <!-- border -->
+        <rect x="10" y="10" width="280" height="280" fill="none" stroke="${esc(a.labelColor)}" stroke-width="1" opacity="0.6"/>
+        <rect x="14" y="14" width="272" height="272" fill="none" stroke="${esc(a.labelColor)}" stroke-width="0.3" opacity="0.4"/>
+        <!-- catalog -->
+        <text x="24" y="40" font-family="DM Mono" font-size="10" fill="${textColor}" opacity="0.8" letter-spacing="2">${esc(a.cat)}</text>
+        <!-- title -->
+        <text x="24" y="180" font-family="Playfair Display" font-weight="900" font-size="34" fill="${textColor}">${esc(a.title)}</text>
+        <!-- artist -->
+        <text x="24" y="208" font-family="Cormorant Garamond" font-style="italic" font-size="13" fill="${subColor}">${esc(a.artist)}</text>
+        <!-- year -->
+        <text x="24" y="270" font-family="Playfair Display" font-weight="800" font-size="20" fill="${textColor}" opacity="0.85">${a.year}</text>
+        <text x="24" y="284" font-family="DM Mono" font-size="8" fill="${subColor}" opacity="0.7" letter-spacing="2">${esc(a.genre).toUpperCase()}</text>
+        <!-- ornament -->
+        <text x="276" y="40" text-anchor="end" font-family="Playfair Display" font-style="italic" font-size="14" fill="${subColor}" opacity="0.8">★</text>
+      </svg>
+    `;
+  }
+
+  function albumCard(a){
+    const tagsHtml = (a.tags || []).map(t => {
+      const goldish = /GOLD|BEST|★|DELUXE/i.test(t);
+      const cls = goldish
+        ? 'border-[var(--gold-2)] text-[var(--gold-1)] bg-[var(--gold-2)]/10'
+        : 'border-[var(--line)] text-[var(--beige-1)]';
+      return `<span class="mono text-[9px] uppercase tracking-[0.2em] px-1.5 py-0.5 border ${cls} rounded-sm">${esc(t)}</span>`;
+    }).join('');
+    const isFav = state.favs.has(a.id);
+    return `
+      <article class="album-card group relative" data-id="${esc(a.id)}">
+        <div class="relative aspect-square">
+          <!-- Vinyl behind sleeve -->
+          <div class="album-vinyl">${vinylDiscSvg(a.id, a.labelColor)}</div>
+          <!-- Sleeve -->
+          <div class="album-sleeve relative aspect-square rounded-sm overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.55)] border border-black/40 cursor-pointer">
+            ${sleeveSvg(a)}
+            <div class="sleeve-wear"></div>
+            ${a.gold ? `<div class="absolute top-3 right-3 sticker-circle text-[9px]">GOLD<br/>DISC</div>` : ''}
+            ${a.double ? `<div class="absolute bottom-3 right-3 stamp text-[9px] bg-black/40 backdrop-blur-sm">DOUBLE LP</div>` : ''}
+          </div>
+        </div>
+        <div class="mt-4 px-1">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <div class="mono text-[9px] text-[var(--beige-3)] tracking-[0.25em]">${esc(a.cat)} · ${a.year}</div>
+              <h3 class="serif text-xl font-bold text-[var(--cream)] mt-1 leading-tight truncate" title="${esc(a.title)}">${esc(a.title)}</h3>
+              <div class="serif-i text-[13px] text-[var(--beige-1)] truncate" title="${esc(a.artist)}">${esc(a.artist)}</div>
+            </div>
+            <button class="fav-btn shrink-0 text-xl leading-none ${isFav ? 'text-[var(--rust-2)]' : 'text-[var(--beige-3)] hover:text-[var(--rust-2)]'}" data-id="${esc(a.id)}" aria-label="찜">
+              ${isFav ? '♥' : '♡'}
+            </button>
+          </div>
+          <div class="flex items-center justify-between mt-2">
+            <div class="text-sm">${stars(a.rating)}</div>
+            <div class="serif text-[var(--gold-1)] font-bold">${esc(a.price)}</div>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mt-2">${tagsHtml}</div>
+          <div class="flex gap-2 mt-3">
+            <button class="preview-btn flex-1 mono text-[10px] tracking-[0.2em] uppercase border border-[var(--gold-2)] text-[var(--gold-1)] hover:bg-[var(--gold-2)]/15 py-2 rounded-sm transition" data-id="${esc(a.id)}">
+              ▶ 미리듣기
+            </button>
+            <button class="detail-btn mono text-[10px] tracking-[0.2em] uppercase border border-[var(--line)] text-[var(--beige-1)] hover:border-[var(--gold-2)] hover:text-[var(--gold-1)] py-2 px-3 rounded-sm transition" data-id="${esc(a.id)}">
+              상세
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderGrid(){
+    const grid = document.getElementById('albumGrid');
+    grid.innerHTML = ALBUMS.map(albumCard).join('');
+    // attach
+    grid.querySelectorAll('.fav-btn').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation(); toggleFav(b.getAttribute('data-id'));
+    }));
+    grid.querySelectorAll('.preview-btn').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation(); playOnTurntable(b.getAttribute('data-id'));
+      window.location.hash = '#turntable';
+    }));
+    grid.querySelectorAll('.detail-btn').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation(); openModal(b.getAttribute('data-id'));
+    }));
+    grid.querySelectorAll('.album-sleeve').forEach((s) => {
+      s.addEventListener('click', (e) => {
+        const card = s.closest('.album-card');
+        if (card) openModal(card.getAttribute('data-id'));
+      });
+    });
+  }
+
+  // ====== FAVS ======
+  function toggleFav(id){
+    if (state.favs.has(id)) state.favs.delete(id);
+    else state.favs.add(id);
+    document.getElementById('favCount').textContent = String(state.favs.size);
+    // update buttons
+    document.querySelectorAll(`.fav-btn[data-id="${CSS.escape(id)}"]`).forEach(b => {
+      const isFav = state.favs.has(id);
+      b.innerHTML = isFav ? '♥' : '♡';
+      b.classList.toggle('text-[var(--rust-2)]', isFav);
+      b.classList.toggle('text-[var(--beige-3)]', !isFav);
+      b.classList.add('heart-pop');
+      setTimeout(() => b.classList.remove('heart-pop'), 360);
+    });
+    // modal fav
+    const mb = document.getElementById('modalFavIcon');
+    if (mb && document.getElementById('modal').dataset.id === id) {
+      mb.textContent = state.favs.has(id) ? '♥' : '♡';
+    }
+  }
+
+  // ====== TURNTABLE ======
+  function getAlbum(id){ return ALBUMS.find(a => a.id === id); }
+
+  function playOnTurntable(id){
+    const a = getAlbum(id);
+    if (!a) return;
+    state.playing = id;
+    state.progress = 0;
+    // update label
+    document.getElementById('nowTitle').textContent = a.title;
+    document.getElementById('nowArtist').textContent = a.artist + ' · ' + a.year;
+    // label colors on turntable vinyl
+    document.getElementById('ttLabelTitle').textContent = a.title.length > 10 ? a.title.slice(0,9) + '…' : a.title;
+    document.getElementById('ttLabelSub').textContent = a.cat;
+    // start
+    const vinyl = document.getElementById('ttVinyl');
+    vinyl.classList.remove('spin-paused');
+    document.getElementById('tonearm').classList.add('tonearm-down');
+    document.getElementById('playIcon').textContent = '❚❚';
+    document.getElementById('playLabel').textContent = 'PAUSE';
+    document.getElementById('ttStatus').textContent = 'NOW SPINNING';
+    document.getElementById('ttStatus').classList.remove('text-[var(--beige-3)]');
+    document.getElementById('ttStatus').classList.add('text-[var(--gold-1)]');
+    // EQ
+    document.querySelectorAll('#eqBars .eq-bar').forEach(b => {
+      b.classList.remove('eq-paused');
+      b.classList.remove('bg-[var(--brown-1)]');
+      b.classList.add('bg-[var(--rust)]');
+    });
+    // fake total time
+    const total = 180 + (a.tracks.length * 12); // seconds
+    document.getElementById('progressTotal').textContent = fmt(total);
+    // progress
+    clearInterval(state.progressTimer);
+    state.progressTimer = setInterval(() => {
+      state.progress += 1;
+      if (state.progress >= total) {
+        state.progress = 0;
+      }
+      const pct = (state.progress / total) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressTime').textContent = fmt(state.progress);
+    }, 1000);
+  }
+
+  function pauseTurntable(){
+    const vinyl = document.getElementById('ttVinyl');
+    vinyl.classList.add('spin-paused');
+    document.getElementById('tonearm').classList.remove('tonearm-down');
+    document.getElementById('playIcon').textContent = '▶';
+    document.getElementById('playLabel').textContent = 'PLAY';
+    document.getElementById('ttStatus').textContent = 'PAUSED';
+    document.getElementById('ttStatus').classList.remove('text-[var(--gold-1)]');
+    document.getElementById('ttStatus').classList.add('text-[var(--beige-3)]');
+    document.querySelectorAll('#eqBars .eq-bar').forEach(b => b.classList.add('eq-paused'));
+    clearInterval(state.progressTimer);
+    state.progressTimer = null;
+  }
+
+  function stopTurntable(){
+    pauseTurntable();
+    state.playing = null;
+    state.progress = 0;
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressTime').textContent = '0:00';
+    document.getElementById('progressTotal').textContent = '0:00';
+    document.getElementById('nowTitle').textContent = '— LP를 선택하세요 —';
+    document.getElementById('nowArtist').textContent = '아무것도 회전하지 않음';
+    document.getElementById('ttLabelTitle').textContent = 'SPARK';
+    document.getElementById('ttLabelSub').textContent = '— select an LP —';
+    document.getElementById('ttStatus').textContent = 'STOPPED';
+  }
+
+  function fmt(s){
+    const m = Math.floor(s/60);
+    const r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+
+  // Play/Pause toggle
+  document.getElementById('btnPlay').addEventListener('click', () => {
+    if (!state.playing) {
+      // default to first
+      playOnTurntable(ALBUMS[0].id);
+      return;
+    }
+    if (state.progressTimer) {
+      pauseTurntable();
+    } else {
+      playOnTurntable(state.playing);
+    }
+  });
+  document.getElementById('btnStop').addEventListener('click', stopTurntable);
+
+  // ====== MODAL ======
+  function openModal(id){
+    const a = getAlbum(id);
+    if (!a) return;
+    const modal = document.getElementById('modal');
+    modal.dataset.id = id;
+    document.getElementById('modalCat').textContent = a.cat;
+    document.getElementById('modalTitle').textContent = a.title;
+    document.getElementById('modalArtist').textContent = a.artist;
+    document.getElementById('modalYear').textContent = a.year;
+    document.getElementById('modalGenre').textContent = a.genre;
+    document.getElementById('modalPrice').textContent = a.price;
+    document.getElementById('modalRating').innerHTML = stars(a.rating);
+    document.getElementById('modalDesc').textContent = a.desc;
+    document.getElementById('modalCover').innerHTML = `
+      <div class="absolute inset-0">${sleeveSvg(a)}</div>
+      <div class="absolute top-1/2 left-[55%] -translate-y-1/2 w-[88%] aspect-square spin-slow opacity-90">
+        ${vinylDiscSvg(a.id + '-modal', a.labelColor)}
+      </div>
+      <div class="absolute inset-0 ${'pointer-events-none'}">
+        <div class="sleeve-wear"></div>
+      </div>
+    `;
+    // tracks
+    document.getElementById('modalTracks').innerHTML = a.tracks.map((t, i) => `
+      <div class="flex items-baseline gap-3 border-b border-dashed border-[var(--line)] py-1.5">
+        <span class="mono text-[10px] text-[var(--beige-3)] w-6 shrink-0">${String(i+1).padStart(2,'0')}.</span>
+        <span class="serif text-[var(--cream)] truncate" title="${esc(t)}">${esc(t)}</span>
+      </div>
+    `).join('');
+    document.getElementById('modalFavIcon').textContent = state.favs.has(id) ? '♥' : '♡';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(){
+    const modal = document.getElementById('modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+  document.getElementById('modalPlayBtn').addEventListener('click', () => {
+    const id = document.getElementById('modal').dataset.id;
+    if (id) {
+      playOnTurntable(id);
+      closeModal();
+      document.getElementById('turntable').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+  document.getElementById('modalFavBtn').addEventListener('click', () => {
+    const id = document.getElementById('modal').dataset.id;
+    if (id) toggleFav(id);
+  });
+
+  // ====== SIDEBAR LISTS ======
+  function renderCharts(){
+    const top = [...ALBUMS].sort((a,b) => b.rating - a.rating).slice(0, 5);
+    document.getElementById('chartList').innerHTML = top.map((a, i) => `
+      <li class="flex items-center gap-3 cursor-pointer group" data-id="${esc(a.id)}">
+        <span class="serif text-2xl font-black ${i === 0 ? 'text-[var(--gold-1)]' : 'text-[var(--beige-3)]'} w-6 text-center">${i+1}</span>
+        <div class="w-10 h-10 shrink-0 rounded-sm overflow-hidden border border-[var(--line)]">${sleeveSvg(a)}</div>
+        <div class="min-w-0 flex-1">
+          <div class="serif text-[14px] font-bold text-[var(--cream)] group-hover:text-[var(--gold-1)] transition truncate">${esc(a.title)}</div>
+          <div class="serif-i text-[11px] text-[var(--beige-2)] truncate">${esc(a.artist)}</div>
+        </div>
+      </li>
+    `).join('');
+    document.querySelectorAll('#chartList li').forEach(li => li.addEventListener('click', () => openModal(li.getAttribute('data-id'))));
+  }
+
+  function renderNew(){
+    const latest = [...ALBUMS].sort((a,b) => b.year - a.year).slice(0, 4);
+    document.getElementById('newList').innerHTML = latest.map(a => `
+      <li class="flex items-center gap-3 cursor-pointer group" data-id="${esc(a.id)}">
+        <div class="w-12 h-12 shrink-0 rounded-sm overflow-hidden border border-[var(--line)] relative">
+          ${sleeveSvg(a)}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="serif text-[14px] font-bold text-[var(--cream)] group-hover:text-[var(--gold-1)] transition truncate">${esc(a.title)}</div>
+          <div class="serif-i text-[11px] text-[var(--beige-2)] truncate">${esc(a.artist)} · ${a.year}</div>
+        </div>
+        <span class="mono text-[10px] text-[var(--rust-2)] shrink-0">NEW</span>
+      </li>
+    `).join('');
+    document.querySelectorAll('#newList li').forEach(li => li.addEventListener('click', () => openModal(li.getAttribute('data-id'))));
+  }
+
+  // ====== FAV BUTTON SCROLL ======
+  document.getElementById('favBtn').addEventListener('click', () => {
+    document.getElementById('shop').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // ====== INIT ======
+  renderGrid();
+  renderCharts();
+  renderNew();
+
+})();
+</script>
+
+</body>
+</html>

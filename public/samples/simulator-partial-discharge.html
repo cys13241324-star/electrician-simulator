@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부분 방전 (Partial Discharge) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(168, 85, 247, 0.16), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 18, 40, 0.6), transparent),
+        #060614;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.55;
+}
+@keyframes twinkle { 0% { opacity: 0.35 } 100% { opacity: 0.8 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.5), rgba(244, 114, 182, 0.42), rgba(251, 191, 36, 0.4));
+    box-shadow: 0 30px 100px -20px rgba(168, 85, 247, 0.32), 0 0 40px rgba(244, 114, 182, 0.20);
+}
+canvas#scene {
+    display: block;
+    width: 100%;
+    height: 360px;
+    border-radius: 17px;
+    background: #050414;
+}
+canvas#prpd {
+    display: block;
+    width: 100%;
+    height: 240px;
+    border-radius: 13px;
+    background: #04030e;
+}
+.glass {
+    background: rgba(15, 18, 38, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #d946ef; box-shadow: 0 0 12px #d946ef;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #d946ef; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168,85,247,0.5), transparent);
+}
+.chip-pc   { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border: 1px solid rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-cnt  { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06));   border: 1px solid rgba(168,85,247,0.5);  color: #d8b4fe; }
+.chip-volt { background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.06));   border: 1px solid rgba(251,191,36,0.5);  color: #fcd34d; }
+.chip-grade-ok   { background: linear-gradient(135deg, rgba(16,185,129,0.28), rgba(16,185,129,0.06)); border: 1px solid rgba(16,185,129,0.6); color: #6ee7b7; }
+.chip-grade-warn { background: linear-gradient(135deg, rgba(251,191,36,0.32), rgba(245,158,11,0.10)); border: 1px solid rgba(251,191,36,0.7); color: #fde68a; }
+.chip-grade-ng   { background: linear-gradient(135deg, rgba(244,63,94,0.32), rgba(244,63,94,0.08));   border: 1px solid rgba(244,63,94,0.7);  color: #fda4af; box-shadow: 0 0 22px rgba(244,63,94,0.30); }
+.live-pill {
+    background: rgba(15, 18, 38, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #f9a8d4, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.theory-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(244,114,182,0.08)), rgba(15, 18, 38, 0.6);
+    border: 1px solid rgba(168,85,247,0.35);
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(168,85,247,0.10)), rgba(15, 18, 38, 0.6);
+    border: 1px solid rgba(244,114,182,0.32);
+}
+.danger-card {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04)), rgba(15, 18, 38, 0.6);
+    border: 1px solid rgba(244,63,94,0.4);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.30); } 50% { box-shadow: 0 0 24px rgba(244,63,94,0.6); } }
+.warn-banner {
+    background: linear-gradient(90deg, rgba(251,191,36,0.16), rgba(251,191,36,0.04), rgba(251,191,36,0.16));
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    color: #fde68a;
+}
+.btn {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 180ms;
+}
+.btn:hover { background: rgba(168, 85, 247, 0.14); border-color: rgba(168, 85, 247, 0.45); }
+.btn.active {
+    background: linear-gradient(135deg, rgba(168,85,247,0.38), rgba(244,114,182,0.20));
+    color: white;
+    border-color: rgba(168, 85, 247, 0.7);
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.5);
+}
+.btn.state-bad.active {
+    background: linear-gradient(135deg, rgba(244,63,94,0.38), rgba(251,113,133,0.20));
+    border-color: rgba(244, 63, 94, 0.75);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.5);
+}
+.btn.state-good.active {
+    background: linear-gradient(135deg, rgba(34,197,94,0.38), rgba(16,185,129,0.20));
+    border-color: rgba(34, 197, 94, 0.75);
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.45);
+}
+.range {
+    width: 100%;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.16);
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+.range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px; border-radius: 9999px;
+    background: linear-gradient(135deg, #f9a8d4, #c084fc);
+    border: 2px solid #1e1b3a;
+    box-shadow: 0 0 10px rgba(244, 114, 182, 0.7);
+}
+.range::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 9999px;
+    background: linear-gradient(135deg, #f9a8d4, #c084fc);
+    border: 2px solid #1e1b3a;
+    box-shadow: 0 0 10px rgba(244, 114, 182, 0.7);
+}
+.row-card {
+    background: rgba(30, 25, 55, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.10);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.row-card.highlight {
+    background: linear-gradient(135deg, rgba(168,85,247,0.20), rgba(15,18,38,0.7));
+    border-color: rgba(168,85,247,0.65);
+    box-shadow: 0 0 16px rgba(168,85,247,0.35);
+    transform: translateX(2px);
+}
+.discharge-mode-card {
+    background: rgba(20, 18, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.10);
+}
+.mode-internal { border-color: rgba(244, 63, 94, 0.45); }
+.mode-surface  { border-color: rgba(251, 191, 36, 0.45); }
+.mode-corona   { border-color: rgba(125, 211, 252, 0.45); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-fuchsia-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · PARTIAL DISCHARGE · PRPD ANALYZER
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-fuchsia-200 via-purple-200 to-amber-200 bg-clip-text text-transparent">
+            부분 방전 (Partial Discharge) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            절연체 내부의 미세 공극(void)에서 전계가 집중되면 <span class="text-fuchsia-300 font-semibold">국부적 미세 방전</span>이 발생합니다.
+            인가 전압·공극 크기·절연 상태를 바꿔보고
+            <span class="text-purple-300 font-semibold">PRPD 패턴</span>(위상 vs 방전 크기)으로 절연 열화·수명을 진단해보세요.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="chip-pc live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">방전 크기 q</p>
+            <p class="mt-1 text-2xl font-bold"><span id="qDisp" class="live-num">0</span> <span class="text-xs opacity-60 font-normal">pC</span></p>
+        </div>
+        <div class="chip-cnt live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">방전 횟수 N/s</p>
+            <p class="mt-1 text-2xl font-bold"><span id="nDisp" class="live-num">0</span> <span class="text-xs opacity-60 font-normal">/s</span></p>
+        </div>
+        <div class="chip-volt live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">인가 전압</p>
+            <p class="mt-1 text-2xl font-bold"><span id="vDisp" class="live-num">10</span> <span class="text-xs opacity-60 font-normal">kV</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="gradeChip">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">절연 등급</p>
+            <p class="mt-1 text-2xl font-bold" id="gradeDisp"><span class="text-emerald-300">A · 양호</span></p>
+        </div>
+    </div>
+
+    <!-- 배너 -->
+    <div id="warnBanner" class="warn-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ 경계 — PD 방전 크기 100 pC 이상 감지. 절연 열화 진행 중, 정기 점검·재시험 권장.
+    </div>
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ 위험 — PD 방전 크기 500 pC 이상. 절연 파괴 임박, 즉시 부하 정지·기기 교체.
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 메인 캔버스 영역 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">HV CONDUCTOR · INSULATION · VOID · ENCLOSURE — 절연체 단면</span>
+                <span id="statusTag" class="text-[11px] font-bold text-emerald-300 tracking-widest">PDIV: --</span>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="scene"></canvas>
+            </div>
+
+            <!-- PRPD -->
+            <div class="mt-4">
+                <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
+                    <p class="text-xs font-bold tracking-widest text-fuchsia-200">PRPD · PHASE RESOLVED PARTIAL DISCHARGE</p>
+                    <div class="flex gap-2">
+                        <button id="clearPrpdBtn" class="btn rounded-md px-2 py-1 text-[10px] font-bold">CLEAR</button>
+                        <button id="freezeBtn" class="btn rounded-md px-2 py-1 text-[10px] font-bold">FREEZE</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(244,114,182,0.4), rgba(168,85,247,0.4), rgba(251,191,36,0.35));">
+                    <canvas id="prpd"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                    가로축 0~360° 인가 전압 위상 · 세로축 방전 크기(pC) · 색상 농도 = 누적 빈도.
+                    <span class="text-rose-300 font-semibold">내부 방전</span> ≈ 양극(45°·225° 부근) 클러스터,
+                    <span class="text-amber-300 font-semibold">표면 방전</span> ≈ 위상 폭 넓음·비대칭,
+                    <span class="text-sky-300 font-semibold">코로나</span> ≈ 음극(270°)에 집중·작은 크기.
+                </p>
+            </div>
+
+            <div class="formula-card rounded-xl p-4 mt-4">
+                <p class="text-[10px] uppercase tracking-widest text-fuchsia-300 mb-2 font-bold">PD 발생 원리 · 공극 내 전계 집중</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <p class="font-mono">$E_{void} = \dfrac{\varepsilon_r}{\varepsilon_{void}}\, E_{ins}$</p>
+                    <p class="font-mono">$V_{ig} \ge \dfrac{(pd)\cdot B}{\ln(pd) + C}$ (Paschen)</p>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-2">
+                    절연체($\varepsilon_r\approx4$)와 공극 공기($\varepsilon\approx1$)는 직렬 커패시턴스이므로 전계가 <span class="text-fuchsia-300 font-semibold">공극에 집중</span>됩니다.
+                    공극 전압이 점화 전압 $V_{ig}$(Paschen 곡선)를 넘으면 미세 아크가 점멸하며 PD 펄스가 발생.
+                </p>
+            </div>
+
+            <div class="theory-card rounded-xl p-4 mt-3">
+                <p class="text-[10px] uppercase tracking-widest text-purple-300 mb-2 font-bold">방전 모드 분류 (IEC 60270 · 60034-27)</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                    <div class="discharge-mode-card mode-internal rounded-md px-3 py-2">
+                        <p class="font-bold text-rose-200">내부 방전 (Internal)</p>
+                        <p class="text-slate-400 text-[11px] mt-1">고체 절연체 내부 공극·boid에서 발생. PRPD 양극·음극 대칭 클러스터.</p>
+                    </div>
+                    <div class="discharge-mode-card mode-surface rounded-md px-3 py-2">
+                        <p class="font-bold text-amber-200">표면 방전 (Surface)</p>
+                        <p class="text-slate-400 text-[11px] mt-1">절연체 표면을 따라 진행. 오염·결로 시 trk(트래킹) 위험.</p>
+                    </div>
+                    <div class="discharge-mode-card mode-corona rounded-md px-3 py-2">
+                        <p class="font-bold text-sky-200">코로나 (Corona)</p>
+                        <p class="text-slate-400 text-[11px] mt-1">고압 도체 첨단부 공기 중 방전. 가청 잡음·오존 발생.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theory-card rounded-xl p-4 mt-3">
+                <p class="text-[10px] uppercase tracking-widest text-purple-300 mb-2 font-bold">절연 등급 기준 (IEC 60270 · KS C IEC)</p>
+                <div class="space-y-2 text-xs" id="gradeTable">
+                    <div class="row-card rounded-md px-3 py-2 flex justify-between items-center" data-band="A">
+                        <span><span class="font-bold text-slate-200">A · 양호</span> · 신규/관리 양호</span>
+                        <span class="font-mono text-emerald-300">q &lt; <span class="font-bold">10 pC</span></span>
+                    </div>
+                    <div class="row-card rounded-md px-3 py-2 flex justify-between items-center" data-band="B">
+                        <span><span class="font-bold text-slate-200">B · 주의</span> · 미세 PD 감지</span>
+                        <span class="font-mono text-cyan-300">10 ≤ q &lt; <span class="font-bold">100 pC</span></span>
+                    </div>
+                    <div class="row-card rounded-md px-3 py-2 flex justify-between items-center" data-band="C">
+                        <span><span class="font-bold text-slate-200">C · 경계</span> · 절연 열화 진행</span>
+                        <span class="font-mono text-amber-300">100 ≤ q &lt; <span class="font-bold">500 pC</span></span>
+                    </div>
+                    <div class="row-card rounded-md px-3 py-2 flex justify-between items-center" data-band="D">
+                        <span><span class="font-bold text-slate-200">D · 위험</span> · 절연 파괴 임박</span>
+                        <span class="font-mono text-rose-300">q ≥ <span class="font-bold">500 pC</span></span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-3 leading-relaxed">
+                    ※ PD는 단위 시간당 누적 에너지로 절연을 서서히 깎아내려 결국 절연 파괴를 일으킵니다.
+                    <span class="text-amber-300 font-semibold">조기 검출</span>이 핵심.
+                </p>
+            </div>
+
+            <div id="dangerCard" class="danger-card rounded-xl p-4 mt-3 hidden">
+                <p class="text-[10px] uppercase tracking-widest text-rose-300 mb-2 font-bold">⚠ PD 위험 — 조치</p>
+                <p id="dangerMsg" class="text-xs text-rose-100"></p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-5 h-fit" id="controlPanel">
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-amber-200">인가 전압 V</h2>
+                <p class="text-[11px] text-slate-500 mt-1">시험 인가 전압 (실효치, kV)</p>
+                <div class="mt-3">
+                    <input id="vRange" class="range" type="range" min="2" max="40" step="0.5" value="10">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>2</span><span class="text-amber-300 font-bold"><span id="vNum">10.0</span> kV</span><span>40</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-fuchsia-200">공극 크기 d</h2>
+                <p class="text-[11px] text-slate-500 mt-1">절연체 내부 void 직경 (μm)</p>
+                <div class="mt-3">
+                    <input id="dRange" class="range" type="range" min="10" max="500" step="5" value="80">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>10</span><span class="text-fuchsia-300 font-bold"><span id="dNum">80</span> μm</span><span>500</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-indigo-200">측정 주파수</h2>
+                <p class="text-[11px] text-slate-500 mt-1">인가 전압 주파수 (Hz)</p>
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                    <button class="btn freq-btn rounded-lg py-2 text-xs font-bold" data-freq="50">50 Hz</button>
+                    <button class="btn freq-btn rounded-lg py-2 text-xs font-bold" data-freq="60">60 Hz</button>
+                    <button class="btn freq-btn rounded-lg py-2 text-xs font-bold" data-freq="200">200 Hz</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-emerald-200">절연 상태</h2>
+                <p class="text-[11px] text-slate-500 mt-1">현장 시나리오를 골라 PRPD 패턴 비교</p>
+                <div class="mt-3 grid grid-cols-1 gap-2">
+                    <button class="btn state-good state-btn rounded-lg py-2 text-xs font-bold" data-state="good">양호 (신규·관리 양호)</button>
+                    <button class="btn state-btn rounded-lg py-2 text-xs font-bold" data-state="aged">노후 (열화·수분 침투)</button>
+                    <button class="btn state-bad state-btn rounded-lg py-2 text-xs font-bold" data-state="bad">불량 (대형 보이드·균열)</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-purple-200">방전 모드</h2>
+                <p class="text-[11px] text-slate-500 mt-1">결함 위치에 따른 PD 유형</p>
+                <div class="mt-3 grid grid-cols-1 gap-2">
+                    <button class="btn mode-btn rounded-lg py-2 text-xs font-bold" data-mode="internal">내부 방전 (Internal)</button>
+                    <button class="btn mode-btn rounded-lg py-2 text-xs font-bold" data-mode="surface">표면 방전 (Surface)</button>
+                    <button class="btn mode-btn rounded-lg py-2 text-xs font-bold" data-mode="corona">코로나 (Corona)</button>
+                </div>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="row-card rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">PDIV</span> · 부분 방전 개시 전압 (Inception)</p>
+            </div>
+            <div class="row-card rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">PDEV</span> · 부분 방전 소멸 전압 (Extinction) — PDIV보다 낮음</p>
+            </div>
+            <div class="row-card rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-fuchsia-300">1 pC</span> = $10^{-12}$ C · 누적량이 클수록 수명 단축</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const sceneCv = $('scene');
+const sceneCtx = sceneCv.getContext('2d');
+const prpdCv = $('prpd');
+const prpdCtx = prpdCv.getContext('2d');
+
+// === 상태 ===
+const state = {
+    V: 10,              // 인가 전압 kV (실효치)
+    d: 80,              // 공극 크기 μm
+    freq: 60,           // 측정 주파수 Hz
+    insulState: 'good', // good / aged / bad
+    mode: 'internal',   // internal / surface / corona
+    t: 0,
+    pdivKV: 12,         // 동적으로 갱신
+    qLast: 0,           // 최근 펄스 크기 pC
+    qMax: 0,            // 1초 윈도우 내 최대
+    qSum1s: [],         // {t, q}
+    sparks: [],         // 시각 효과 (도체-공극 미세 아크)
+    surfArcs: [],       // 표면 방전 호
+    coronaParticles: [],// 코로나 파티클
+    prpdHits: [],       // {phase(0~360), q}
+    prpdFrozen: false,
+    pdivBlink: 0,
+};
+
+// === 캔버스 크기 ===
+function resize() {
+    sceneCv.width = sceneCv.parentElement.clientWidth - 2;
+    sceneCv.height = 360;
+    prpdCv.width = prpdCv.parentElement.clientWidth - 2;
+    prpdCv.height = 240;
+}
+window.addEventListener('resize', resize);
+
+// === PDIV/펄스 발생 모델 ===
+// 공극 내 전계가 점화 전압을 넘는 위상 구간에서 펄스 발생.
+// 인가 전압 v(t) = Vm*sin(2πft), Vm = V*sqrt(2)
+// 공극 분압비 k = εr_ins/(εr_ins(d_void/d_ins) + 1) — 단순화
+// PDIV: Paschen 곡선 근사값을 모드/상태로 보정
+function computePDIVkV() {
+    // 공극 d(μm), Paschen 근사 (공기, 1 atm) — Vbreak ≈ 327 V (Paschen min) ~ 수 kV (>1mm)
+    // 절연체 두께를 단순히 5mm로 가정 → 공극 분압비 ≈ ratio
+    const dIns_um = 5000;  // 절연체 두께 5mm
+    const eps_r = 4.0;     // 에폭시·XLPE 평균
+    const k = (eps_r * state.d) / (eps_r * state.d + (dIns_um - state.d)); // 공극 분압
+    // 공극의 절연 파괴 전압 (Paschen 근사)
+    // pd_mm·kPa ≈ d_um*1.013e-1 → 단순 모델: Vig(공극) = 0.3 + 0.025*d  [kV]
+    let VigVoid_kV = 0.3 + 0.025 * state.d;
+    // 인가 전압 중 공극에 걸리는 피크
+    // 공극이 점화하려면 Vm*k ≥ VigVoid
+    // → 시스템 PDIV(인가 실효치) = VigVoid/(k*sqrt(2))
+    let pdiv = VigVoid_kV / (k * Math.SQRT2);
+    // 상태/모드 보정
+    if (state.insulState === 'aged') pdiv *= 0.65;
+    if (state.insulState === 'bad')  pdiv *= 0.35;
+    if (state.mode === 'corona')  pdiv *= 0.75; // 첨단 효과
+    if (state.mode === 'surface') pdiv *= 0.80; // 트래킹 통로
+    return Math.max(2, pdiv);
+}
+
+// 단일 펄스 크기 모델 (pC, 무작위 분포)
+function samplePulseSize_pC() {
+    // 공극 부피, 절연 상태, 모드별 분포
+    // 공극 직경 d → 부피 ∝ d^3, 방전 가능 전하 ∝ d^2 ~ d^3 사이
+    let base = Math.pow(state.d / 80, 1.7) * 30; // 80μm 기준 ~30pC
+    if (state.insulState === 'aged') base *= 3;
+    if (state.insulState === 'bad')  base *= 12;
+    if (state.mode === 'corona')   base *= 0.3;   // 코로나는 펄스 작음
+    if (state.mode === 'surface')  base *= 1.5;
+    // 인가 전압 ↑ → 평균 펄스 크기 ↑
+    const over = Math.max(0.1, state.V / state.pdivKV);
+    base *= over;
+    // 무작위 (로그정규 비슷)
+    const noise = Math.exp((Math.random() - 0.5) * 0.9);
+    return Math.max(0.5, base * noise);
+}
+
+// 위상별 펄스 발생 확률 (각 모드 PRPD 시그니처)
+function phasePDF(phase_deg) {
+    // 0~360, 양의 반사이클 양극(0~180), 음의 반사이클(180~360)
+    const ph = phase_deg;
+    if (state.mode === 'corona') {
+        // 음의 반사이클 첨단 코로나 (음극 코로나) 집중 + 약한 양극
+        const g1 = Math.exp(-Math.pow((ph - 270) / 22, 2));
+        const g2 = 0.18 * Math.exp(-Math.pow((ph - 90) / 30, 2));
+        return g1 + g2;
+    }
+    if (state.mode === 'surface') {
+        // 양극·음극 모두 폭 넓음 + 약간 비대칭
+        const g1 = 1.0 * Math.exp(-Math.pow((ph - 60) / 55, 2));
+        const g2 = 0.85 * Math.exp(-Math.pow((ph - 240) / 55, 2));
+        return g1 + g2;
+    }
+    // internal — 양극(45°)·음극(225°) 클러스터 대칭
+    const g1 = Math.exp(-Math.pow((ph - 45) / 28, 2));
+    const g2 = 0.9 * Math.exp(-Math.pow((ph - 225) / 28, 2));
+    return g1 + g2;
+}
+
+// === 메인 펄스 생성 — 사이클당 위상 진행 시 PD 점화 검사 ===
+let lastPhase = 0;
+function step(dt) {
+    state.t += dt;
+    state.pdivKV = computePDIVkV();
+
+    // 현재 위상 (도)
+    const omega = 2 * Math.PI * state.freq;
+    const phase = ((state.t * omega) % (2 * Math.PI)) * 180 / Math.PI; // 0~360
+    // 위상 윈도우(이전~지금) 사이에 적용 — 펄스 발생 빈도 모델
+    let dPhase = phase - lastPhase;
+    if (dPhase < 0) dPhase += 360;
+    lastPhase = phase;
+
+    if (state.V >= state.pdivKV) {
+        // 윈도우 내 점화 시도 횟수: 인가 전압 초과 비율·상태에 따라 가중
+        const over = state.V / state.pdivKV;
+        const lambdaPerDeg = {
+            internal: 0.012,
+            surface:  0.020,
+            corona:   0.035
+        }[state.mode] * Math.pow(over, 1.6) *
+        ({ good: 0.5, aged: 1.4, bad: 2.8 }[state.insulState]);
+        const expected = lambdaPerDeg * dPhase;
+        // Poisson-ish: integer trials
+        let trials = Math.floor(expected) + (Math.random() < (expected - Math.floor(expected)) ? 1 : 0);
+        for (let i = 0; i < trials; i++) {
+            // 위상은 윈도우 + 위상별 확률
+            const ph = lastPhase - Math.random() * dPhase;
+            const phN = (ph + 360) % 360;
+            const acc = phasePDF(phN);
+            if (Math.random() > acc * 0.9) continue;
+            const q = samplePulseSize_pC();
+            firePulse(phN, q);
+        }
+    }
+
+    // 시각 이펙트 업데이트
+    state.sparks = state.sparks.filter(s => (s.life -= dt) > 0);
+    state.surfArcs = state.surfArcs.filter(a => (a.life -= dt) > 0);
+    state.coronaParticles = state.coronaParticles.filter(p => {
+        p.life -= dt;
+        p.r += dt * 28;
+        return p.life > 0;
+    });
+
+    // 카운트/통계
+    const cutoff = state.t - 1.0;
+    state.qSum1s = state.qSum1s.filter(e => e.t > cutoff);
+}
+
+function firePulse(phase_deg, q_pC) {
+    state.qLast = q_pC;
+    state.qSum1s.push({ t: state.t, q: q_pC });
+    if (!state.prpdFrozen) {
+        state.prpdHits.push({ phase: phase_deg, q: q_pC, age: 0 });
+        if (state.prpdHits.length > 2400) state.prpdHits.splice(0, state.prpdHits.length - 2400);
+    }
+    state.pdivBlink = 0.6;
+
+    if (state.mode === 'internal') {
+        // 보이드 안 미세 스파크
+        state.sparks.push({ x: 0, y: 0, life: 0.18, q: q_pC, ang: Math.random() * Math.PI * 2 });
+    } else if (state.mode === 'surface') {
+        state.surfArcs.push({ life: 0.22, q: q_pC, seed: Math.random() });
+    } else {
+        // corona — 도체 첨단 주위 파티클
+        for (let k = 0; k < 4; k++) {
+            state.coronaParticles.push({
+                life: 0.4, r: 4, ang: (Math.random() - 0.5) * Math.PI * 0.7,
+                q: q_pC
+            });
+        }
+    }
+}
+
+// === 렌더 — 메인 씬 (절연체 단면) ===
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+function drawScene() {
+    const c = sceneCtx;
+    const W = sceneCv.width, H = sceneCv.height;
+    c.clearRect(0, 0, W, H);
+
+    // 좌측: 사인 인가 전압 + PDIV 표시 (작은 차트)
+    drawAppliedV(16, 14, Math.min(220, W * 0.30), 110);
+
+    // 절연체 단면 (메인)
+    const csX = 16 + Math.min(220, W * 0.30) + 18;
+    const csY = 14;
+    const csW = W - csX - 16;
+    const csH = H - 28;
+    drawCrossSection(csX, csY, csW, csH);
+}
+
+function drawAppliedV(x, y, w, h) {
+    const c = sceneCtx;
+    c.save();
+    c.fillStyle = 'rgba(15, 12, 32, 0.7)';
+    c.strokeStyle = 'rgba(168, 85, 247, 0.35)';
+    c.lineWidth = 1;
+    roundRect(c, x, y, w, h, 10);
+    c.fill();
+    c.stroke();
+    c.restore();
+
+    c.save();
+    c.font = 'bold 10px ui-monospace, monospace';
+    c.fillStyle = '#f9a8d4';
+    c.textAlign = 'left';
+    c.fillText('APPLIED V · sin', x + 10, y + 14);
+    c.textAlign = 'right';
+    c.fillStyle = '#fde68a';
+    c.fillText(`${state.V.toFixed(1)} kV · ${state.freq}Hz`, x + w - 10, y + 14);
+    c.restore();
+
+    // 축
+    const ax = x + 10, ay = y + h - 18;
+    const aw = w - 20, ah = h - 32;
+    c.save();
+    c.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(ax, ay - ah / 2); c.lineTo(ax + aw, ay - ah / 2);
+    c.stroke();
+    c.restore();
+
+    // PDIV 가이드라인 (절대값으로 환산)
+    const Vm = state.V * Math.SQRT2;
+    const halfH = ah / 2 - 4;
+    const scale = Vm > 0 ? halfH / Math.max(Vm, state.pdivKV * Math.SQRT2 * 1.05) : 0;
+    const pdivY_top = ay - ah / 2 - state.pdivKV * Math.SQRT2 * scale;
+    const pdivY_bot = ay - ah / 2 + state.pdivKV * Math.SQRT2 * scale;
+    c.save();
+    c.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+    c.setLineDash([4, 3]);
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(ax, pdivY_top); c.lineTo(ax + aw, pdivY_top);
+    c.moveTo(ax, pdivY_bot); c.lineTo(ax + aw, pdivY_bot);
+    c.stroke();
+    c.setLineDash([]);
+    c.font = '9px ui-monospace, monospace';
+    c.fillStyle = '#fda4af';
+    c.textAlign = 'left';
+    c.fillText(`+PDIV`, ax + 4, pdivY_top - 3);
+    c.fillText(`−PDIV`, ax + 4, pdivY_bot + 11);
+    c.restore();
+
+    // 사인파
+    c.save();
+    c.shadowBlur = 8;
+    c.shadowColor = '#fcd34d';
+    c.strokeStyle = '#fde68a';
+    c.lineWidth = 1.6;
+    c.beginPath();
+    const cyclesShown = 1.2;
+    const omega = 2 * Math.PI * state.freq;
+    for (let px = 0; px <= aw; px++) {
+        const tRel = (px / aw) * (cyclesShown / state.freq);
+        const phaseRad = (state.t * omega + tRel * omega) % (2 * Math.PI);
+        const v = Vm * Math.sin(phaseRad);
+        const py = ay - ah / 2 - v * scale;
+        if (px === 0) c.moveTo(ax + px, py);
+        else c.lineTo(ax + px, py);
+    }
+    c.stroke();
+    c.restore();
+
+    // 현재 위상 마커 (좌측 끝)
+    const phaseRadNow = (state.t * omega) % (2 * Math.PI);
+    const vNow = Vm * Math.sin(phaseRadNow);
+    const py = ay - ah / 2 - vNow * scale;
+    c.save();
+    c.fillStyle = '#fde68a';
+    c.shadowBlur = 10;
+    c.shadowColor = '#fcd34d';
+    c.beginPath();
+    c.arc(ax, py, 3, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+}
+
+function drawCrossSection(x, y, w, h) {
+    const c = sceneCtx;
+    // 외함 (사각)
+    c.save();
+    c.shadowBlur = 14;
+    c.shadowColor = 'rgba(148, 163, 184, 0.4)';
+    const eg = c.createLinearGradient(x, y, x, y + h);
+    eg.addColorStop(0, '#1f2436');
+    eg.addColorStop(1, '#0a0d1c');
+    c.fillStyle = eg;
+    roundRect(c, x, y, w, h, 12);
+    c.fill();
+    c.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    c.lineWidth = 1.5;
+    c.stroke();
+    c.restore();
+
+    // 라벨
+    c.save();
+    c.font = 'bold 10px ui-monospace, monospace';
+    c.fillStyle = 'rgba(148, 163, 184, 0.65)';
+    c.textAlign = 'left';
+    c.fillText('ENCLOSURE / EARTH', x + 8, y + 16);
+    c.textAlign = 'right';
+    c.fillStyle = '#fcd34d';
+    c.fillText(`PDIV ≈ ${state.pdivKV.toFixed(1)} kV`, x + w - 8, y + 16);
+    c.restore();
+
+    // 도체 (가운데 막대)
+    const condH = 26;
+    const condW = w - 60;
+    const condX = x + 30;
+    const condY = y + h / 2 - condH / 2;
+    c.save();
+    c.shadowBlur = 16;
+    c.shadowColor = '#fcd34d';
+    const cg = c.createLinearGradient(0, condY, 0, condY + condH);
+    cg.addColorStop(0, '#fef3c7');
+    cg.addColorStop(1, '#b45309');
+    c.fillStyle = cg;
+    roundRect(c, condX, condY, condW, condH, 6);
+    c.fill();
+    c.strokeStyle = 'rgba(251, 191, 36, 0.8)';
+    c.lineWidth = 1.2;
+    c.stroke();
+    c.restore();
+
+    // HV 라벨
+    c.save();
+    c.font = 'bold 11px ui-monospace, monospace';
+    c.fillStyle = '#fde68a';
+    c.textAlign = 'center';
+    c.fillText('HV CONDUCTOR', condX + condW / 2, condY + condH / 2 + 4);
+    c.restore();
+
+    // 절연체 (도체 위·아래 영역, 도체와 외함 사이)
+    const insTopY = y + 30;
+    const insTopH = condY - insTopY - 4;
+    const insBotY = condY + condH + 4;
+    const insBotH = (y + h - 18) - insBotY;
+
+    const stateColor = {
+        good:  ['rgba(34, 197, 94, 0.18)', 'rgba(34, 197, 94, 0.05)'],
+        aged:  ['rgba(251, 191, 36, 0.22)', 'rgba(251, 191, 36, 0.05)'],
+        bad:   ['rgba(244, 63, 94, 0.26)', 'rgba(244, 63, 94, 0.06)']
+    }[state.insulState];
+
+    c.save();
+    [[insTopY, insTopH], [insBotY, insBotH]].forEach(([iy, ih]) => {
+        const ig = c.createLinearGradient(0, iy, 0, iy + ih);
+        ig.addColorStop(0, stateColor[0]);
+        ig.addColorStop(1, stateColor[1]);
+        c.fillStyle = ig;
+        roundRect(c, x + 14, iy, w - 28, ih, 6);
+        c.fill();
+        c.strokeStyle = state.insulState === 'good' ? 'rgba(110, 231, 183, 0.5)' :
+                          state.insulState === 'aged' ? 'rgba(253, 224, 71, 0.55)' :
+                          'rgba(253, 164, 175, 0.65)';
+        c.lineWidth = 1;
+        c.stroke();
+    });
+    c.font = '9px ui-monospace, monospace';
+    c.fillStyle = '#cbd5e1';
+    c.textAlign = 'left';
+    c.fillText(`INSULATION (εr≈4) · ${state.insulState.toUpperCase()}`, x + 18, insTopY + 12);
+    c.restore();
+
+    // 공극 위치 (절연체 상부 안)
+    // 공극 시각 크기: μm → 픽셀 (10~500 → 4~36 px)
+    const voidR = 3 + (state.d - 10) / 490 * 32;
+    const voidX = x + 14 + (w - 28) * 0.55;
+    const voidY = insTopY + insTopH * 0.5;
+
+    if (state.mode === 'internal' || state.mode === 'surface') {
+        // 공극(보이드)
+        c.save();
+        c.shadowBlur = 14;
+        c.shadowColor = state.insulState === 'bad' ? '#f43f5e' :
+                         state.insulState === 'aged' ? '#fbbf24' : '#a78bfa';
+        const vg = c.createRadialGradient(voidX - 2, voidY - 2, 1, voidX, voidY, voidR);
+        vg.addColorStop(0, 'rgba(252, 211, 77, 0.85)');
+        vg.addColorStop(0.7, 'rgba(168, 85, 247, 0.35)');
+        vg.addColorStop(1, 'rgba(15, 18, 38, 0)');
+        c.fillStyle = vg;
+        c.beginPath();
+        c.arc(voidX, voidY, voidR, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+        c.lineWidth = 1.2;
+        c.stroke();
+        // 라벨
+        c.font = 'bold 9px ui-monospace, monospace';
+        c.fillStyle = '#fde68a';
+        c.textAlign = 'left';
+        c.fillText(`VOID ${state.d}μm`, voidX + voidR + 4, voidY - 4);
+        c.restore();
+    }
+
+    // 전계 라인 (도체 → 외함, 공극에서 집중)
+    c.save();
+    c.strokeStyle = 'rgba(125, 211, 252, 0.18)';
+    c.lineWidth = 0.8;
+    for (let i = 0; i < 12; i++) {
+        const fx = condX + 30 + i * ((condW - 60) / 11);
+        c.beginPath();
+        c.moveTo(fx, condY);
+        // 휘어진 라인 (공극 근처일수록 공극으로 굽음)
+        const distVoid = Math.abs(fx - voidX);
+        const bend = Math.max(0, 1 - distVoid / 60) * (state.mode !== 'corona' ? 14 : 0);
+        c.quadraticCurveTo(fx + bend, (condY + y + 30) / 2, fx, y + 28);
+        c.stroke();
+
+        c.beginPath();
+        c.moveTo(fx, condY + condH);
+        c.quadraticCurveTo(fx, (condY + condH + y + h - 18) / 2, fx, y + h - 18);
+        c.stroke();
+    }
+    c.restore();
+
+    // === 방전 시각화 ===
+    if (state.mode === 'internal') {
+        // 공극 내 미세 스파크
+        state.sparks.forEach(sp => {
+            const a = Math.max(0, sp.life / 0.18);
+            c.save();
+            c.translate(voidX, voidY);
+            c.rotate(sp.ang);
+            c.shadowBlur = 14;
+            c.shadowColor = '#fcd34d';
+            c.strokeStyle = `rgba(254, 240, 138, ${a})`;
+            c.lineWidth = 1.4 + Math.log10(1 + sp.q) * 0.6;
+            c.beginPath();
+            const len = Math.min(voidR * 1.4, 6 + Math.log10(1 + sp.q) * 4);
+            c.moveTo(-len, 0); c.lineTo(len, 0);
+            c.stroke();
+            // 직각 분기
+            c.lineWidth = 0.9;
+            c.strokeStyle = `rgba(244, 114, 182, ${a * 0.7})`;
+            c.beginPath();
+            c.moveTo(-len * 0.4, 0); c.lineTo(-len * 0.4, len * 0.4);
+            c.moveTo(len * 0.5, 0); c.lineTo(len * 0.5, -len * 0.5);
+            c.stroke();
+            c.restore();
+        });
+    } else if (state.mode === 'surface') {
+        // 절연체 표면을 따라 흐르는 호
+        state.surfArcs.forEach(sa => {
+            const a = Math.max(0, sa.life / 0.22);
+            c.save();
+            c.shadowBlur = 12;
+            c.shadowColor = '#fbbf24';
+            c.strokeStyle = `rgba(253, 224, 71, ${a})`;
+            c.lineWidth = 1.2 + Math.log10(1 + sa.q) * 0.6;
+            const baseY = insTopY + insTopH - 2;
+            const startX = condX + 12 + sa.seed * (condW - 24);
+            c.beginPath();
+            c.moveTo(startX, baseY);
+            const segs = 8;
+            for (let i = 1; i <= segs; i++) {
+                const px = startX + (i / segs) * 40 * (sa.seed > 0.5 ? 1 : -1);
+                const py = baseY - i * 1.2 + (Math.random() - 0.5) * 2;
+                c.lineTo(px, py);
+            }
+            c.stroke();
+            c.restore();
+        });
+    } else if (state.mode === 'corona') {
+        // 도체 단부에서 방사형 코로나
+        const tipX = condX + condW;
+        const tipY = condY + condH / 2;
+        state.coronaParticles.forEach(p => {
+            const a = Math.max(0, p.life / 0.4);
+            const px = tipX + Math.cos(p.ang) * p.r;
+            const py = tipY + Math.sin(p.ang) * p.r;
+            c.save();
+            c.shadowBlur = 8;
+            c.shadowColor = '#67e8f9';
+            c.fillStyle = `rgba(125, 211, 252, ${a})`;
+            c.beginPath();
+            c.arc(px, py, 1.6, 0, Math.PI * 2);
+            c.fill();
+            c.restore();
+        });
+        // 첨단 글로우
+        const glow = 0.4 + Math.sin(state.t * 30) * 0.15;
+        c.save();
+        c.shadowBlur = 18;
+        c.shadowColor = '#22d3ee';
+        c.fillStyle = `rgba(125, 211, 252, ${glow * 0.5})`;
+        c.beginPath();
+        c.arc(tipX + 2, tipY, 6, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+    }
+
+    // 접지 기호 (아래)
+    c.save();
+    c.strokeStyle = '#86efac';
+    c.lineWidth = 1.4;
+    c.shadowBlur = 6;
+    c.shadowColor = '#10b981';
+    const gx = x + w / 2;
+    const gy = y + h - 8;
+    c.beginPath();
+    c.moveTo(gx - 16, gy); c.lineTo(gx + 16, gy);
+    c.moveTo(gx - 11, gy + 4); c.lineTo(gx + 11, gy + 4);
+    c.moveTo(gx - 6, gy + 8); c.lineTo(gx + 6, gy + 8);
+    c.stroke();
+    c.restore();
+
+    // PD 점화 시 박스 글로우
+    if (state.pdivBlink > 0) {
+        c.save();
+        c.strokeStyle = `rgba(244, 114, 182, ${state.pdivBlink})`;
+        c.lineWidth = 2;
+        roundRect(c, x - 1, y - 1, w + 2, h + 2, 13);
+        c.stroke();
+        c.restore();
+        state.pdivBlink *= 0.92;
+    }
+}
+
+// === PRPD 캔버스 ===
+function drawPRPD() {
+    const c = prpdCtx;
+    const W = prpdCv.width, H = prpdCv.height;
+    c.clearRect(0, 0, W, H);
+
+    const padL = 36, padR = 14, padT = 12, padB = 22;
+    const aw = W - padL - padR;
+    const ah = H - padT - padB;
+
+    // 배경 그리드
+    c.save();
+    c.strokeStyle = 'rgba(168, 85, 247, 0.18)';
+    c.lineWidth = 1;
+    c.beginPath();
+    for (let i = 0; i <= 12; i++) {
+        const px = padL + (i / 12) * aw;
+        c.moveTo(px, padT); c.lineTo(px, padT + ah);
+    }
+    for (let j = 0; j <= 4; j++) {
+        const py = padT + (j / 4) * ah;
+        c.moveTo(padL, py); c.lineTo(padL + aw, py);
+    }
+    c.stroke();
+    c.restore();
+
+    // 0V 기준선 (180°) & 90°/270° 극치
+    c.save();
+    c.strokeStyle = 'rgba(252, 211, 77, 0.32)';
+    c.lineWidth = 1;
+    c.setLineDash([3, 3]);
+    [90, 180, 270].forEach(d => {
+        const px = padL + (d / 360) * aw;
+        c.beginPath();
+        c.moveTo(px, padT); c.lineTo(px, padT + ah);
+        c.stroke();
+    });
+    c.setLineDash([]);
+    c.restore();
+
+    // 인가 전압 위상 가이드 라인 (밝게)
+    c.save();
+    c.strokeStyle = 'rgba(252, 211, 77, 0.35)';
+    c.lineWidth = 1.2;
+    c.beginPath();
+    for (let px = 0; px <= aw; px++) {
+        const ph = (px / aw) * 360;
+        const v = Math.sin(ph * Math.PI / 180);
+        const py = padT + ah / 2 - v * (ah * 0.42);
+        if (px === 0) c.moveTo(padL + px, py);
+        else c.lineTo(padL + px, py);
+    }
+    c.stroke();
+    c.restore();
+
+    // 산점도 (누적 빈도 표현)
+    // 로그 스케일 y: 0.5 ~ 5000 pC
+    function qToY(q) {
+        const lq = Math.log10(Math.max(0.5, q));
+        // -0.3 ~ 3.7 → 0 ~ 1
+        const t = Math.min(1, Math.max(0, (lq + 0.3) / 4));
+        return padT + ah - t * ah;
+    }
+    // 양의 반사이클 → 위, 음의 반사이클 → 아래 (PRPD 표준)
+    function plotPoint(phase, q) {
+        const px = padL + (phase / 360) * aw;
+        // PRPD 표준: 양극(0~180)은 +q, 음극(180~360)은 -q에 표시
+        // 여기서는 진폭만 표시하되 음극은 아래쪽으로 미러
+        const baseY = padT + ah / 2;
+        const yMag = (qToY(q) - padT) - ah / 2; // -ah/2 ~ ah/2
+        const sign = phase < 180 ? -1 : 1; // 양극 위, 음극 아래
+        const py = baseY + sign * Math.abs(yMag) * 0.85;
+        return { px, py };
+    }
+
+    // 색상: 작은 q (cyan) → 큰 q (rose)
+    function qColor(q, alpha) {
+        const t = Math.min(1, Math.log10(Math.max(0.5, q) / 0.5) / 4);
+        if (t < 0.33) {
+            // cyan → green
+            const k = t / 0.33;
+            const r = Math.round(56 + (134 - 56) * k);
+            const g = Math.round(189 + (239 - 189) * k);
+            const b = Math.round(248 + (172 - 248) * k);
+            return `rgba(${r},${g},${b},${alpha})`;
+        } else if (t < 0.66) {
+            // green → amber
+            const k = (t - 0.33) / 0.33;
+            const r = Math.round(134 + (251 - 134) * k);
+            const g = Math.round(239 + (191 - 239) * k);
+            const b = Math.round(172 + (36 - 172) * k);
+            return `rgba(${r},${g},${b},${alpha})`;
+        } else {
+            // amber → rose
+            const k = (t - 0.66) / 0.34;
+            const r = Math.round(251 + (244 - 251) * k);
+            const g = Math.round(191 + (63 - 191) * k);
+            const b = Math.round(36 + (94 - 36) * k);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+    }
+
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    state.prpdHits.forEach(h => {
+        const { px, py } = plotPoint(h.phase, h.q);
+        const a = Math.max(0.2, 0.8 - h.age * 0.01);
+        c.shadowBlur = 6;
+        c.shadowColor = qColor(h.q, 0.6);
+        c.fillStyle = qColor(h.q, a);
+        c.beginPath();
+        const radius = 1.5 + Math.log10(Math.max(1, h.q)) * 0.7;
+        c.arc(px, py, radius, 0, Math.PI * 2);
+        c.fill();
+        h.age++;
+    });
+    c.restore();
+
+    // 축 라벨
+    c.save();
+    c.font = '9px ui-monospace, monospace';
+    c.fillStyle = 'rgba(203, 213, 225, 0.7)';
+    c.textAlign = 'center';
+    [0, 90, 180, 270, 360].forEach(d => {
+        const px = padL + (d / 360) * aw;
+        c.fillText(`${d}°`, px, padT + ah + 14);
+    });
+    c.textAlign = 'right';
+    c.fillStyle = 'rgba(168, 85, 247, 0.9)';
+    c.fillText('+q', padL - 4, padT + 12);
+    c.fillStyle = 'rgba(244, 114, 182, 0.9)';
+    c.fillText('−q', padL - 4, padT + ah - 4);
+    c.fillStyle = '#a78bfa';
+    c.font = 'bold 9px ui-monospace, monospace';
+    c.textAlign = 'left';
+    c.fillText('pC (log)', 6, padT + ah / 2);
+    c.restore();
+}
+
+// === 라이브 패널 ===
+function updateLive() {
+    $('vDisp').textContent = state.V.toFixed(1);
+    $('vNum').textContent = state.V.toFixed(1);
+    $('dNum').textContent = state.d.toString();
+
+    // 1초 윈도우 통계
+    const N = state.qSum1s.length;
+    let qmax = 0;
+    state.qSum1s.forEach(e => { if (e.q > qmax) qmax = e.q; });
+    state.qMax = qmax;
+
+    $('qDisp').textContent = qmax > 0 ? (qmax >= 100 ? qmax.toFixed(0) : qmax.toFixed(1)) : '0';
+    $('nDisp').textContent = N.toString();
+
+    // 절연 등급
+    const gradeEl = $('gradeDisp');
+    const gradeChip = $('gradeChip');
+    const warn = $('warnBanner');
+    const danger = $('alarmBanner');
+    const dc = $('dangerCard');
+    const stTag = $('statusTag');
+    gradeChip.classList.remove('chip-grade-ok', 'chip-grade-warn', 'chip-grade-ng');
+
+    let band = 'A';
+    if (qmax >= 500) band = 'D';
+    else if (qmax >= 100) band = 'C';
+    else if (qmax >= 10) band = 'B';
+
+    if (band === 'A') {
+        gradeEl.innerHTML = '<span class="text-emerald-300">A · 양호</span>';
+        gradeChip.classList.add('chip-grade-ok');
+        warn.classList.add('hidden'); danger.classList.add('hidden');
+        dc.classList.add('hidden');
+    } else if (band === 'B') {
+        gradeEl.innerHTML = '<span class="text-cyan-300">B · 주의</span>';
+        gradeChip.classList.add('chip-grade-warn');
+        warn.classList.add('hidden'); danger.classList.add('hidden');
+        dc.classList.add('hidden');
+    } else if (band === 'C') {
+        gradeEl.innerHTML = '<span class="text-amber-300">C · 경계</span>';
+        gradeChip.classList.add('chip-grade-warn');
+        warn.classList.remove('hidden'); danger.classList.add('hidden');
+        dc.classList.remove('hidden');
+        $('dangerMsg').textContent = 'PD 활동이 진행 중입니다. 운전 환경(온도·습도) 점검, 정기 PD 모니터링 강화. 추세가 악화되면 정전 정비 일정 수립.';
+    } else {
+        gradeEl.innerHTML = '<span class="text-rose-300">D · 위험</span>';
+        gradeChip.classList.add('chip-grade-ng');
+        warn.classList.add('hidden'); danger.classList.remove('hidden');
+        dc.classList.remove('hidden');
+        $('dangerMsg').textContent = '절연 파괴 임박. 즉시 부하 정지·해당 기기 단로·교체. 통전 시 절연 파괴·아크 화재·기기 소손 위험.';
+    }
+
+    stTag.textContent = `PDIV ${state.pdivKV.toFixed(1)} kV · ${state.V >= state.pdivKV ? 'ABOVE' : 'BELOW'}`;
+    stTag.classList.remove('text-emerald-300', 'text-amber-300', 'text-rose-300');
+    if (state.V < state.pdivKV) stTag.classList.add('text-emerald-300');
+    else if (band === 'D' || band === 'C') stTag.classList.add('text-rose-300');
+    else stTag.classList.add('text-amber-300');
+
+    // 등급 표 하이라이트
+    document.querySelectorAll('#gradeTable .row-card').forEach(el => {
+        el.classList.toggle('highlight', el.dataset.band === band);
+    });
+}
+
+// === UI ===
+function updateUI() {
+    document.querySelectorAll('.freq-btn').forEach(b => {
+        b.classList.toggle('active', +b.dataset.freq === state.freq);
+    });
+    document.querySelectorAll('.state-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.state === state.insulState);
+    });
+    document.querySelectorAll('.mode-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === state.mode);
+    });
+}
+
+$('vRange').addEventListener('input', e => {
+    state.V = parseFloat(e.target.value);
+    updateLive();
+});
+$('dRange').addEventListener('input', e => {
+    state.d = parseInt(e.target.value, 10);
+    updateLive();
+});
+document.querySelectorAll('.freq-btn').forEach(b => {
+    b.addEventListener('click', () => { state.freq = +b.dataset.freq; updateUI(); });
+});
+document.querySelectorAll('.state-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        state.insulState = b.dataset.state;
+        updateUI();
+    });
+});
+document.querySelectorAll('.mode-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        state.mode = b.dataset.mode;
+        state.prpdHits = []; // 모드 바꾸면 PRPD 초기화 (시그니처 비교용)
+        updateUI();
+    });
+});
+
+$('clearPrpdBtn').addEventListener('click', () => {
+    state.prpdHits = [];
+});
+$('freezeBtn').addEventListener('click', e => {
+    state.prpdFrozen = !state.prpdFrozen;
+    e.currentTarget.classList.toggle('active', state.prpdFrozen);
+    e.currentTarget.textContent = state.prpdFrozen ? 'RESUME' : 'FREEZE';
+});
+
+// === 메인 루프 ===
+let lastTs = 0;
+function loop(ts) {
+    const dt = Math.min(0.05, (ts - lastTs) / 1000 || 0);
+    lastTs = ts;
+    step(dt);
+    drawScene();
+    drawPRPD();
+    // 라이브 갱신은 매 6프레임마다
+    if ((state.t * 60 | 0) % 6 === 0) updateLive();
+    requestAnimationFrame(loop);
+}
+
+window.onload = () => {
+    state.V = 10; state.d = 80; state.freq = 60;
+    state.insulState = 'good'; state.mode = 'internal';
+    resize();
+    updateUI();
+    updateLive();
+    requestAnimationFrame(loop);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연료전지 시뮬레이터 (Fuel Cell · PEM/SOFC · V-I 곡선 · 효율)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 197, 94, 0.10), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 211, 238, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(34,211,238,0.45), rgba(244,114,182,0.40));
+    box-shadow: 0 30px 100px -20px rgba(34, 211, 238, 0.40);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 540px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#curveCanvas {
+    display: block;
+    width: 100%;
+    height: 380px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,211,238,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #86efac, #67e8f9, #f9a8d4);
+    box-shadow: 0 0 22px rgba(110, 231, 183, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-i { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border-color: rgba(34,197,94,0.5); color: #86efac; }
+.chip-t { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-p { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-n { background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.5); color: #fcd34d; }
+.live-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.15); transition: border-color 220ms, box-shadow 220ms; }
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #86efac, #67e8f9, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(34,197,94,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+    font-variant-numeric: tabular-nums;
+}
+.preset-btn:hover {
+    border-color: rgba(110, 231, 183, 0.6);
+    color: #86efac;
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(34, 197, 94, 0.3);
+}
+.preset-btn.active {
+    background: linear-gradient(135deg, rgba(34,197,94,0.35), rgba(34,211,238,0.30));
+    border-color: rgba(110,231,183,0.8);
+    color: #86efac;
+    box-shadow: 0 0 22px rgba(34,197,94,0.45);
+}
+.type-toggle {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.type-toggle.on {
+    background: linear-gradient(135deg, rgba(110,231,183,0.30), rgba(34,211,238,0.30));
+    border-color: rgba(110,231,183,0.7);
+    color: #d1fae5;
+    box-shadow: 0 0 22px rgba(110,231,183,0.45);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.status-good { color: #6ee7b7; }
+.status-warn { color: #fcd34d; }
+.status-bad  { color: #fca5a5; }
+.eff-bar {
+    position: relative;
+    height: 8px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+}
+.eff-fill {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, #fca5a5, #fcd34d, #6ee7b7);
+    transition: width 220ms ease;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-emerald-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · FUEL CELL · PEM / SOFC · V-I CURVE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-300 via-cyan-200 to-pink-200 bg-clip-text text-transparent">
+            ⚡ 연료전지 시뮬레이터 (Fuel Cell)
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">수소(H₂) + 산소(O₂) → 물(H₂O) + 전기 + 열. PEM·SOFC 두 종류의 V-I 곡선(활성화·옴·농도 손실 3영역)과 셀 스택의 시스템 전압·전류·효율을 실시간으로 시뮬레이션합니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">셀 전압 V_cell</p>
+            <p class="mt-1 text-lg font-bold"><span id="vCellVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">스택 전압 V_stack</p>
+            <p class="mt-1 text-lg font-bold"><span id="vStackVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">출력 P_stack</p>
+            <p class="mt-1 text-lg font-bold"><span id="pStackVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">효율 η = V_cell / E_th</p>
+            <p class="mt-1 text-lg font-bold"><span id="effVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스: 셀 단면 (양극 → PEM/SOFC → 음극) + 입자/전자 흐름 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">셀 단면 · 양극(H₂) → 전해질막 → 음극(O₂) · 전자/이온/물 흐름</span>
+                    <span id="typeBadge" class="text-[10px] tracking-widest font-bold text-emerald-200">TYPE · PEM</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- V-I 곡선 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="curveCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">V-I 곡선 · 활성화 손실 · 옴 손실 · 농도 손실 3영역 · 현재 동작점</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#fca5a5;color:#fca5a5"></span>활성화</span>
+                        <span class="text-amber-300"><span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>옴</span>
+                        <span class="text-violet-300"><span class="legend-dot" style="background:#c4b5fd;color:#c4b5fd"></span>농도</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#6ee7b7;color:#6ee7b7"></span>P</span>
+                        <span class="text-pink-300"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>동작점</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="curveCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-emerald-300 to-cyan-200 bg-clip-text text-transparent">연료전지 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">전체 반응</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$\mathrm{H_2 + \tfrac{1}{2}O_2 \to H_2O} + \text{전기} + \text{열}$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">셀 전압 (3 손실)</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$V_{cell} = E_{Nernst} - \eta_{act} - \eta_{ohm} - \eta_{con}$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">전기효율</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$\eta = \dfrac{V_{cell}}{E_{th}} = \dfrac{V_{cell}}{1.482\,\text{V}}$</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-emerald-200">변수 조절</h2>
+
+            <div class="chip-i chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 밀도 i</span><span id="iDisp" class="font-mono text-base">0.60</span></label>
+                <input type="range" id="i" min="0.005" max="2" step="0.005" value="0.60" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A/cm² (0 ~ 2.0)</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>온도 T</span><span id="tDisp" class="font-mono text-base">80</span></label>
+                <input type="range" id="t" min="40" max="900" step="5" value="80" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">°C (PEM 60~90 / SOFC 600~900)</p>
+            </div>
+
+            <div class="chip-p chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>압력 P</span><span id="pDisp" class="font-mono text-base">2.0</span></label>
+                <input type="range" id="p" min="1" max="5" step="0.1" value="2.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">bar (H₂·O₂ 분압 ~ P)</p>
+            </div>
+
+            <div class="chip-n chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>스택 셀 수 N</span><span id="nDisp" class="font-mono text-base">60</span></label>
+                <input type="range" id="n" min="1" max="200" step="1" value="60" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">개 (직렬 스택)</p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3">
+                <p class="text-[10px] uppercase tracking-widest text-indigo-200 mb-2 font-bold">연료전지 종류</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="typePEM" class="type-toggle on rounded-md px-2 py-2 text-xs font-bold">PEM</button>
+                    <button id="typeSOFC" class="type-toggle rounded-md px-2 py-2 text-xs font-bold">SOFC</button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2" id="typeNote">PEM: 양성자(H⁺) 이동, 저온(60~90℃), 양극→음극으로 H⁺ 이동, 음극에서 H₂O 생성.</p>
+            </div>
+
+            <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">동작 프리셋</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="preset-btn active rounded-md px-2 py-2 text-xs font-bold" data-preset="rated">정격</button>
+                    <button class="preset-btn rounded-md px-2 py-2 text-xs font-bold" data-preset="light">경부하</button>
+                    <button class="preset-btn rounded-md px-2 py-2 text-xs font-bold" data-preset="peak">최대출력</button>
+                </div>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 space-y-1.5 text-[11px]">
+                <p class="text-slate-300"><span class="text-emerald-300 font-bold">셀</span> · V_cell=<span id="d_vc" class="font-mono">—</span> · i=<span id="d_i" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-cyan-300 font-bold">스택</span> · V=<span id="d_vs" class="font-mono">—</span> · I=<span id="d_is" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-pink-300 font-bold">손실</span> · η_act=<span id="d_act" class="font-mono">—</span> · η_ohm=<span id="d_ohm" class="font-mono">—</span> · η_con=<span id="d_con" class="font-mono">—</span></p>
+                <p class="text-slate-300">P_stack = <span id="d_p" class="font-mono">—</span> / 발열 Q = <span id="d_q" class="font-mono">—</span></p>
+                <div class="mt-2">
+                    <p class="text-[10px] text-slate-400">전기효율 η = V_cell / 1.482 V</p>
+                    <div class="eff-bar mt-1.5"><div id="effFill" class="eff-fill" style="width:0%"></div></div>
+                </div>
+                <p class="text-slate-400 text-[10px] pt-1 border-t border-white/5">상태: <span id="statusLabel" class="font-bold">대기 중</span></p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed">
+                <p class="text-emerald-200 font-bold mb-1">💡 학습 포인트</p>
+                <p id="learnNote" class="text-slate-300">V-I 곡선엔 3가지 손실 영역이 있습니다. 저전류(활성화) → 중전류(옴 손실, 직선 감소) → 고전류(농도 손실, 급강하). 효율은 V_cell/E_th(=1.482V)로, V_cell이 클수록 효율이 높습니다.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const curveCanvas = $('curveCanvas');
+const cctx = curveCanvas.getContext('2d');
+
+const TOTAL_H = 540;
+const CURVE_H = 380;
+
+// ===== 연료전지 상수 =====
+const E_TH = 1.482;          // 열역학 전압 (HHV 기준)
+const E_REV = 1.229;         // 표준 가역 전압 (25℃)
+// PEM 손실 파라미터 (대표값)
+const PEM = {
+    A_act: 0.06,             // 활성화 손실 Tafel slope (V/decade 근사)
+    i0: 1e-4,                // 교환 전류 밀도 (A/cm²)
+    R_ohm: 0.18,             // Ω·cm² (막 + 접촉 저항)
+    i_L: 1.6,                // 극한 전류 밀도 (A/cm²)
+    A_con: 0.04              // 농도 손실 계수
+};
+const SOFC = {
+    A_act: 0.03,
+    i0: 1e-2,
+    R_ohm: 0.10,
+    i_L: 2.0,
+    A_con: 0.025
+};
+
+let state = {
+    i: 0.60,        // 전류 밀도 A/cm²
+    T: 80,          // ℃
+    P: 2.0,         // bar
+    N: 60,          // 셀 수
+    type: 'PEM',
+    t: 0,           // 애니메이션 프레임
+    A_cell: 100     // 셀 활성면적 cm²
+};
+
+let layout = {};
+let curveLayout = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    curveCanvas.width = curveCanvas.parentElement.clientWidth - 2;
+    curveCanvas.height = CURVE_H;
+    computeLayout();
+    computeCurveLayout();
+}
+window.addEventListener('resize', resize);
+
+function computeLayout() {
+    const W = canvas.width;
+    const H = TOTAL_H;
+    // 셀 단면 박스
+    const cellW = Math.min(W * 0.60, 560);
+    const cellH = 280;
+    layout.cell = {
+        x: (W - cellW) / 2 - 30,
+        y: H * 0.18,
+        w: cellW,
+        h: cellH
+    };
+    // 양극(왼), 막(중앙), 음극(오)
+    const cw = cellW;
+    layout.anode    = { x: layout.cell.x,                y: layout.cell.y, w: cw * 0.30, h: cellH };
+    layout.electro  = { x: layout.cell.x + cw * 0.30,    y: layout.cell.y, w: cw * 0.20, h: cellH };
+    layout.cathode  = { x: layout.cell.x + cw * 0.50,    y: layout.cell.y, w: cw * 0.30, h: cellH };
+    layout.loadBox  = { x: layout.cell.x + cw * 0.85,    y: layout.cell.y + cellH * 0.40, w: 60, h: 60 };
+    // 외부 회로 (위쪽 우회)
+    layout.wireTop = {
+        x0: layout.anode.x + 30,
+        y0: layout.cell.y - 8,
+        x1: layout.cathode.x + layout.cathode.w - 30,
+        y1: layout.cell.y - 8,
+        yTop: layout.cell.y - 70
+    };
+}
+
+function computeCurveLayout() {
+    const W = curveCanvas.width;
+    const H = CURVE_H;
+    curveLayout = {
+        x0: 60,
+        y0: H - 50,
+        x1: W - 60,
+        y1: 30,
+        get plotW() { return this.x1 - this.x0; },
+        get plotH() { return this.y0 - this.y1; }
+    };
+}
+
+// ===== 연료전지 모델 =====
+function params() { return state.type === 'PEM' ? PEM : SOFC; }
+
+// Nernst 전압: 온도·압력 의존성
+function nernstV() {
+    const T_K = 273.15 + state.T;
+    // 단순화: E_Nernst = E_rev - 0.85e-3*(T-298) + (RT/2F)*ln(P_H2 * sqrt(P_O2))
+    // P_H2 ≈ state.P, P_O2 ≈ 0.21·state.P (공기) 가정
+    const RT_2F = (8.314 * T_K) / (2 * 96485);
+    const P_H2 = state.P;
+    const P_O2 = 0.21 * state.P;
+    let E = E_REV - 0.85e-3 * (T_K - 298.15) + RT_2F * Math.log(P_H2 * Math.sqrt(Math.max(P_O2, 1e-6)));
+    // SOFC는 고온이라 E가 더 낮음
+    if (state.type === 'SOFC') {
+        // 고온에서 E_rev 감소 (SOFC ≈ 1.0 V 근처)
+        E = 1.10 - 0.30e-3 * (T_K - 1073);
+        E += RT_2F * Math.log(P_H2 * Math.sqrt(Math.max(P_O2, 1e-6))) * 0.5;
+    }
+    return Math.max(0.6, E);
+}
+
+// 활성화 손실 (Tafel)
+function etaAct(i) {
+    const p = params();
+    if (i <= p.i0) return 0;
+    const T_K = 273.15 + state.T;
+    const slope = (8.314 * T_K) / (0.5 * 2 * 96485);  // RT/(αzF)
+    return Math.max(0, slope * Math.log(i / p.i0));
+}
+
+// 옴 손실
+function etaOhm(i) {
+    const p = params();
+    // 온도가 높을수록 막 저항 ↓ (간단 모델)
+    const tempFactor = state.type === 'PEM'
+        ? Math.max(0.6, 1.0 - (state.T - 60) / 200)
+        : Math.max(0.5, 1.0 - (state.T - 700) / 1200);
+    return p.R_ohm * tempFactor * i;
+}
+
+// 농도 손실 (극한 전류 i_L 부근에서 급증)
+function etaCon(i) {
+    const p = params();
+    if (i >= p.i_L * 0.999) return 1.0;   // 사실상 막힘
+    const x = i / p.i_L;
+    return p.A_con * (-Math.log(Math.max(1 - x, 1e-4)));
+}
+
+function cellVoltage(i) {
+    const E = nernstV();
+    const a = etaAct(i);
+    const o = etaOhm(i);
+    const c = etaCon(i);
+    return { V: Math.max(0, E - a - o - c), E, a, o, c };
+}
+
+function computeCurvePts() {
+    const p = params();
+    const N = 200;
+    const pts = [];
+    for (let k = 0; k <= N; k++) {
+        const ii = (p.i_L * k) / N;
+        const r = cellVoltage(Math.max(1e-5, ii));
+        pts.push({ i: ii, V: r.V, P: r.V * ii });
+    }
+    return pts;
+}
+
+// ===== 그리기 유틸 =====
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function badgeText(ctx, text, x, y, color, font = 'bold 11px ui-monospace, monospace', bg = 'rgba(15, 23, 42, 0.92)') {
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = bg;
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// ===== 메인 캔버스 그리기 =====
+function drawBg() {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
+    g.addColorStop(0, '#0a1024');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, TOTAL_H);
+    // 그리드
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TOTAL_H); ctx.stroke();
+    }
+    for (let i = 0; i < TOTAL_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`▮ FUEL CELL · ${state.type} · i=${state.i.toFixed(2)} A/cm² · T=${state.T}°C · P=${state.P.toFixed(1)} bar · N=${state.N}`, 12, 10);
+    ctx.restore();
+}
+
+function drawCell() {
+    const a = layout.anode;
+    const e = layout.electro;
+    const k = layout.cathode;
+
+    // 양극 (Anode)
+    ctx.save();
+    ctx.shadowBlur = 16; ctx.shadowColor = 'rgba(110, 231, 183, 0.45)';
+    const gA = ctx.createLinearGradient(a.x, a.y, a.x + a.w, a.y);
+    gA.addColorStop(0, '#064e3b'); gA.addColorStop(1, '#065f46');
+    ctx.fillStyle = gA;
+    roundRect(ctx, a.x, a.y, a.w, a.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.5)'; ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // 전해질 (PEM / SOFC)
+    ctx.save();
+    const gE = ctx.createLinearGradient(e.x, e.y, e.x + e.w, e.y);
+    if (state.type === 'PEM') {
+        gE.addColorStop(0, '#1e293b'); gE.addColorStop(0.5, '#312e81'); gE.addColorStop(1, '#1e293b');
+        ctx.shadowColor = 'rgba(168, 139, 250, 0.55)';
+    } else {
+        gE.addColorStop(0, '#1e293b'); gE.addColorStop(0.5, '#7c2d12'); gE.addColorStop(1, '#1e293b');
+        ctx.shadowColor = 'rgba(251, 146, 60, 0.55)';
+    }
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = gE;
+    roundRect(ctx, e.x, e.y, e.w, e.h, 6);
+    ctx.fill();
+    ctx.strokeStyle = state.type === 'PEM' ? 'rgba(196, 181, 253, 0.55)' : 'rgba(253, 186, 116, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 막 표면에 무늬 (membrane)
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 0.7;
+    for (let yy = e.y + 8; yy < e.y + e.h - 8; yy += 12) {
+        ctx.beginPath();
+        ctx.moveTo(e.x + 4, yy);
+        ctx.lineTo(e.x + e.w - 4, yy);
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // 음극 (Cathode)
+    ctx.save();
+    ctx.shadowBlur = 16; ctx.shadowColor = 'rgba(103, 232, 249, 0.45)';
+    const gK = ctx.createLinearGradient(k.x, k.y, k.x + k.w, k.y);
+    gK.addColorStop(0, '#155e75'); gK.addColorStop(1, '#0c4a6e');
+    ctx.fillStyle = gK;
+    roundRect(ctx, k.x, k.y, k.w, k.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(103, 232, 249, 0.5)'; ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // 라벨
+    badgeText(ctx, '양극 (Anode)', a.x + a.w / 2, a.y + a.h + 22, '#86efac');
+    badgeText(ctx, '음극 (Cathode)', k.x + k.w / 2, k.y + k.h + 22, '#67e8f9');
+    badgeText(ctx,
+        state.type === 'PEM' ? 'PEM (양성자교환막)' : 'SOFC (산소이온 전도성)',
+        e.x + e.w / 2, e.y + e.h + 22,
+        state.type === 'PEM' ? '#c4b5fd' : '#fdba74'
+    );
+    badgeText(ctx, 'H₂ →', a.x + a.w / 2, a.y - 14, '#fde68a', 'bold 12px ui-monospace, monospace');
+    badgeText(ctx, '← O₂ (공기)', k.x + k.w / 2, k.y - 14, '#fda4af', 'bold 12px ui-monospace, monospace');
+
+    // 반응식 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#86efac';
+    ctx.textAlign = 'center';
+    if (state.type === 'PEM') {
+        ctx.fillText('H₂ → 2H⁺ + 2e⁻', a.x + a.w / 2, a.y + a.h * 0.5 + 5);
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillText('½O₂ + 2H⁺ + 2e⁻ → H₂O', k.x + k.w / 2, k.y + k.h * 0.5 + 5);
+    } else {
+        ctx.fillText('H₂ + O²⁻ → H₂O + 2e⁻', a.x + a.w / 2, a.y + a.h * 0.5 + 5);
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillText('½O₂ + 2e⁻ → O²⁻', k.x + k.w / 2, k.y + k.h * 0.5 + 5);
+    }
+    ctx.restore();
+}
+
+function drawParticles() {
+    const a = layout.anode;
+    const e = layout.electro;
+    const k = layout.cathode;
+    const flow = Math.max(0.15, Math.min(1, state.i / 1.5));
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // H2 입자 (양극에 진입)
+    const NH2 = Math.floor(8 + flow * 14);
+    for (let n = 0; n < NH2; n++) {
+        const phase = ((state.t * 0.012 * (0.6 + flow) + n / NH2) % 1);
+        const px = a.x - 18 + phase * (a.w * 0.55 + 18);
+        const py = a.y + 18 + ((n * 53) % (a.h - 36));
+        // H2 입자 (작은 두 원)
+        ctx.shadowBlur = 10; ctx.shadowColor = '#fde68a';
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.92)';
+        ctx.beginPath(); ctx.arc(px - 3, py, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + 3, py, 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    // O2 입자 (음극에 진입, 반대 방향)
+    const NO2 = Math.floor(6 + flow * 10);
+    for (let n = 0; n < NO2; n++) {
+        const phase = ((state.t * 0.010 * (0.6 + flow) + n / NO2) % 1);
+        const px = (k.x + k.w + 18) - phase * (k.w * 0.55 + 18);
+        const py = k.y + 22 + ((n * 71) % (k.h - 44));
+        ctx.shadowBlur = 10; ctx.shadowColor = '#fda4af';
+        ctx.fillStyle = 'rgba(249, 168, 212, 0.92)';
+        ctx.beginPath(); ctx.arc(px - 3.2, py, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + 3.2, py, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    // 막 통과 입자: PEM (왼→오 H⁺), SOFC (오→왼 O²⁻)
+    const NM = Math.floor(8 + flow * 16);
+    for (let n = 0; n < NM; n++) {
+        const phase = ((state.t * 0.018 * (0.7 + flow) + n / NM) % 1);
+        if (state.type === 'PEM') {
+            const px = e.x + 4 + phase * (e.w - 8);
+            const py = e.y + 18 + ((n * 47) % (e.h - 36));
+            ctx.shadowBlur = 10; ctx.shadowColor = '#c4b5fd';
+            ctx.fillStyle = 'rgba(196, 181, 253, 0.95)';
+            ctx.beginPath(); ctx.arc(px, py, 2.6, 0, Math.PI * 2); ctx.fill();
+            // H+ 라벨용 작은 +
+            if (n === 0) {
+                ctx.fillStyle = '#ddd6fe';
+                ctx.font = 'bold 9px ui-monospace, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('H⁺ →', e.x + e.w / 2, e.y - 4);
+            }
+        } else {
+            const px = e.x + e.w - 4 - phase * (e.w - 8);
+            const py = e.y + 18 + ((n * 47) % (e.h - 36));
+            ctx.shadowBlur = 10; ctx.shadowColor = '#fdba74';
+            ctx.fillStyle = 'rgba(253, 186, 116, 0.95)';
+            ctx.beginPath(); ctx.arc(px, py, 2.8, 0, Math.PI * 2); ctx.fill();
+            if (n === 0) {
+                ctx.fillStyle = '#fed7aa';
+                ctx.font = 'bold 9px ui-monospace, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('← O²⁻', e.x + e.w / 2, e.y - 4);
+            }
+        }
+    }
+    // H2O 입자 (PEM: 음극 출구 / SOFC: 양극 출구)
+    const NW = Math.floor(4 + flow * 8);
+    for (let n = 0; n < NW; n++) {
+        const phase = ((state.t * 0.011 * (0.5 + flow) + n / NW) % 1);
+        let px, py;
+        if (state.type === 'PEM') {
+            px = (k.x + k.w * 0.55) + phase * (k.w * 0.45 + 30);
+            py = k.y + k.h - 18 - ((n * 37) % (k.h * 0.4));
+        } else {
+            px = (a.x + a.w * 0.45) - phase * (a.w * 0.45 + 30);
+            py = a.y + a.h - 18 - ((n * 37) % (a.h * 0.4));
+        }
+        ctx.shadowBlur = 12; ctx.shadowColor = '#67e8f9';
+        ctx.fillStyle = 'rgba(165, 243, 252, 0.95)';
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+        // 작은 두 H
+        ctx.fillStyle = 'rgba(165, 243, 252, 0.65)';
+        ctx.beginPath(); ctx.arc(px - 4, py - 3, 1.4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px + 4, py - 3, 1.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+
+    // H2O 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#a5f3fc';
+    ctx.textAlign = 'center';
+    if (state.type === 'PEM') {
+        ctx.fillText('H₂O →', k.x + k.w * 0.78, k.y + k.h - 8);
+    } else {
+        ctx.fillText('← H₂O', a.x + a.w * 0.22, a.y + a.h - 8);
+    }
+    ctx.restore();
+}
+
+function drawExternalCircuit() {
+    const a = layout.anode;
+    const k = layout.cathode;
+    const top = layout.cell.y - 60;
+    const ax = a.x + 30;
+    const kx = k.x + k.w - 30;
+    const ld = layout.loadBox;
+
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fbbf24';
+    ctx.strokeStyle = 'rgba(253, 224, 71, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    // 양극 → 위로
+    ctx.moveTo(ax, a.y);
+    ctx.lineTo(ax, top);
+    // 위쪽 가로선 (왼 → 오)
+    ctx.lineTo(kx, top);
+    // 음극 → 위로
+    ctx.lineTo(kx, k.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 부하 박스 (위 가운데)
+    const mid = (ax + kx) / 2;
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#67e8f9';
+    const gR = ctx.createLinearGradient(mid - 30, top - 18, mid + 30, top + 18);
+    gR.addColorStop(0, '#0891b2'); gR.addColorStop(0.5, '#22d3ee'); gR.addColorStop(1, '#0e7490');
+    ctx.fillStyle = gR;
+    roundRect(ctx, mid - 30, top - 16, 60, 32, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // zigzag
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const zs = mid - 22, ze = mid + 22;
+    for (let kk = 0; kk <= 6; kk++) {
+        const x = zs + ((ze - zs) * kk) / 6;
+        const y = top + (kk % 2 === 0 ? -5 : 5);
+        if (kk === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    badgeText(ctx, '부하', mid, top - 26, '#a5f3fc', 'bold 10px ui-monospace, monospace');
+
+    // 전자 흐름 입자 (양극 → 위 → 부하 → 음극)
+    const flow = Math.max(0.2, Math.min(1, state.i / 1.5));
+    const N = Math.floor(10 + flow * 16);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let n = 0; n < N; n++) {
+        const phase = ((state.t * 0.02 * (0.5 + flow) + n / N) % 1);
+        let px, py;
+        // 4 구간: 양극↑ / 위가로 / 음극↓
+        const seg1 = (a.y - top);
+        const seg2 = (kx - ax);
+        const seg3 = (k.y - top);
+        const total = seg1 + seg2 + seg3;
+        const d = phase * total;
+        if (d < seg1) {
+            px = ax; py = a.y - d;
+        } else if (d < seg1 + seg2) {
+            px = ax + (d - seg1); py = top;
+        } else {
+            const dd = d - seg1 - seg2;
+            px = kx; py = top + dd;
+        }
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#fde68a';
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+        ctx.beginPath();
+        ctx.arc(px, py, 2.6 + flow * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        // e⁻ 라벨 표시 (몇 개만)
+        if (n === 0) {
+            ctx.fillStyle = '#fef3c7';
+            ctx.font = 'bold 9px ui-monospace, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('e⁻', px + 10, py - 6);
+        }
+    }
+    ctx.restore();
+
+    // + / - 라벨
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fca5a5';
+    ctx.fillText('−', ax, a.y - 12);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillText('+', kx, k.y - 12);
+    ctx.restore();
+}
+
+function drawSummary() {
+    const W = canvas.width;
+    const H = TOTAL_H;
+    const r = cellVoltage(state.i);
+    const V_cell = r.V;
+    const V_stack = V_cell * state.N;
+    const I_stack = state.i * state.A_cell;     // A
+    const P_stack = V_stack * I_stack;
+    const eff = (V_cell / E_TH) * 100;
+    const Q_th = (E_TH - V_cell) * I_stack * state.N;    // 발열 W (대략)
+
+    const boxY = H - 90;
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.45)';
+    ctx.lineWidth = 1.2;
+    const bx = 16, bw = W - 32, bh = 76;
+    roundRect(ctx, bx, boxY, bw, bh, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#86efac';
+    ctx.fillText(`V_cell = ${V_cell.toFixed(3)} V`, bx + 16, boxY + 22);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillText(`V_stack = V_cell × N = ${V_cell.toFixed(3)} × ${state.N} = ${V_stack.toFixed(1)} V`, bx + 16, boxY + 42);
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillText(`I_stack = i × A_cell = ${state.i.toFixed(2)} × ${state.A_cell} = ${I_stack.toFixed(1)} A`, bx + 16, boxY + 62);
+
+    // 우측
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#f9a8d4';
+    ctx.fillText(`P_stack = ${(P_stack/1000).toFixed(2)} kW`, bx + bw - 16, boxY + 22);
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(`η_elec = ${eff.toFixed(1)} %`, bx + bw - 16, boxY + 42);
+    ctx.fillStyle = '#fdba74';
+    ctx.fillText(`Q_thermal ≈ ${(Q_th/1000).toFixed(2)} kW`, bx + bw - 16, boxY + 62);
+    ctx.restore();
+}
+
+// ===== V-I 곡선 캔버스 =====
+function drawCurveBg() {
+    cctx.save();
+    const g = cctx.createLinearGradient(0, 0, 0, CURVE_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    cctx.fillStyle = g;
+    cctx.fillRect(0, 0, curveCanvas.width, CURVE_H);
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+    cctx.lineWidth = 1;
+    const L = curveLayout;
+    for (let i = 0; i <= 10; i++) {
+        const x = L.x0 + (L.plotW * i) / 10;
+        cctx.beginPath(); cctx.moveTo(x, L.y1); cctx.lineTo(x, L.y0); cctx.stroke();
+    }
+    for (let i = 0; i <= 8; i++) {
+        const y = L.y1 + (L.plotH * i) / 8;
+        cctx.beginPath(); cctx.moveTo(L.x0, y); cctx.lineTo(L.x1, y); cctx.stroke();
+    }
+    cctx.restore();
+}
+
+function drawAxes(imax, Vmax, Pmax) {
+    const L = curveLayout;
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+    cctx.lineWidth = 1.5;
+    cctx.beginPath();
+    cctx.moveTo(L.x0, L.y1 - 6);
+    cctx.lineTo(L.x0, L.y0);
+    cctx.lineTo(L.x1, L.y0);
+    cctx.lineTo(L.x1, L.y1 - 6);
+    cctx.stroke();
+
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.fillStyle = '#94a3b8';
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'top';
+    for (let i = 0; i <= 5; i++) {
+        const v = (imax * i) / 5;
+        const x = L.x0 + (L.plotW * i) / 5;
+        cctx.fillText(v.toFixed(1), x, L.y0 + 6);
+    }
+    cctx.fillText('i (A/cm²)', (L.x0 + L.x1) / 2, L.y0 + 24);
+
+    cctx.textAlign = 'right';
+    cctx.textBaseline = 'middle';
+    cctx.fillStyle = '#86efac';
+    for (let i = 0; i <= 4; i++) {
+        const yV = (Vmax * i) / 4;
+        const y = L.y0 - (L.plotH * i) / 4;
+        cctx.fillText(yV.toFixed(2), L.x0 - 6, y);
+    }
+    cctx.save();
+    cctx.translate(L.x0 - 42, (L.y0 + L.y1) / 2);
+    cctx.rotate(-Math.PI / 2);
+    cctx.textAlign = 'center';
+    cctx.fillText('V_cell (V)', 0, 0);
+    cctx.restore();
+
+    cctx.textAlign = 'left';
+    cctx.fillStyle = '#fcd34d';
+    for (let i = 0; i <= 4; i++) {
+        const pV = (Pmax * i) / 4;
+        const y = L.y0 - (L.plotH * i) / 4;
+        cctx.fillText(pV.toFixed(2), L.x1 + 6, y);
+    }
+    cctx.save();
+    cctx.translate(L.x1 + 44, (L.y0 + L.y1) / 2);
+    cctx.rotate(Math.PI / 2);
+    cctx.textAlign = 'center';
+    cctx.fillText('P (W/cm²)', 0, 0);
+    cctx.restore();
+    cctx.restore();
+}
+
+function drawCurves() {
+    const L = curveLayout;
+    const p = params();
+    const imax = p.i_L;
+    const Vmax = 1.25;
+    const pts = computeCurvePts();
+    // Pmax: 곡선 위 최대
+    let Pmax = 0;
+    for (const pt of pts) Pmax = Math.max(Pmax, pt.P);
+    Pmax = Math.max(Pmax * 1.15, 0.4);
+
+    const X = ii => L.x0 + (ii / imax) * L.plotW;
+    const YV = v => L.y0 - (v / Vmax) * L.plotH;
+    const YP = pp => L.y0 - (pp / Pmax) * L.plotH;
+
+    drawCurveBg();
+    drawAxes(imax, Vmax, Pmax);
+
+    // 3영역 배경 색칠
+    const iAct = imax * 0.10;
+    const iCon = imax * 0.78;
+    cctx.save();
+    cctx.globalAlpha = 0.10;
+    cctx.fillStyle = '#fca5a5';
+    cctx.fillRect(X(0), L.y1, X(iAct) - X(0), L.plotH);
+    cctx.fillStyle = '#fbbf24';
+    cctx.fillRect(X(iAct), L.y1, X(iCon) - X(iAct), L.plotH);
+    cctx.fillStyle = '#c4b5fd';
+    cctx.fillRect(X(iCon), L.y1, X(imax) - X(iCon), L.plotH);
+    cctx.restore();
+
+    // 영역 라벨
+    cctx.save();
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.textAlign = 'center';
+    cctx.fillStyle = '#fca5a5';
+    cctx.fillText('활성화 손실', (X(0) + X(iAct)) / 2, L.y1 + 14);
+    cctx.fillStyle = '#fbbf24';
+    cctx.fillText('옴 손실 (직선)', (X(iAct) + X(iCon)) / 2, L.y1 + 14);
+    cctx.fillStyle = '#c4b5fd';
+    cctx.fillText('농도 손실', (X(iCon) + X(imax)) / 2, L.y1 + 14);
+    cctx.restore();
+
+    // 이상전압 가로선 (E_th, E_Nernst)
+    cctx.save();
+    cctx.strokeStyle = 'rgba(252, 165, 165, 0.55)';
+    cctx.setLineDash([6, 4]); cctx.lineWidth = 1.2;
+    cctx.beginPath();
+    cctx.moveTo(L.x0, YV(E_TH));
+    cctx.lineTo(L.x1, YV(E_TH));
+    cctx.stroke();
+    cctx.fillStyle = '#fca5a5';
+    cctx.font = 'bold 9px ui-monospace, monospace';
+    cctx.textAlign = 'left';
+    cctx.fillText('E_th = 1.482 V (열역학)', L.x0 + 8, YV(E_TH) - 4);
+
+    const E_n = nernstV();
+    cctx.strokeStyle = 'rgba(196, 181, 253, 0.55)';
+    cctx.beginPath();
+    cctx.moveTo(L.x0, YV(E_n));
+    cctx.lineTo(L.x1, YV(E_n));
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.fillStyle = '#c4b5fd';
+    cctx.fillText(`E_Nernst = ${E_n.toFixed(3)} V`, L.x0 + 8, YV(E_n) - 4);
+    cctx.restore();
+
+    // P 곡선 (오른쪽 축)
+    cctx.save();
+    cctx.shadowBlur = 14;
+    cctx.shadowColor = 'rgba(110, 231, 183, 0.55)';
+    cctx.strokeStyle = 'rgba(110, 231, 183, 0.9)';
+    cctx.lineWidth = 2.4;
+    cctx.beginPath();
+    for (let n = 0; n < pts.length; n++) {
+        const pt = pts[n];
+        const x = X(pt.i), y = YP(pt.P);
+        if (n === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+    }
+    cctx.stroke();
+    cctx.restore();
+
+    // V 곡선 (좌측 축)
+    cctx.save();
+    cctx.shadowBlur = 14;
+    cctx.shadowColor = 'rgba(34, 197, 94, 0.6)';
+    cctx.strokeStyle = 'rgba(134, 239, 172, 0.98)';
+    cctx.lineWidth = 2.6;
+    cctx.beginPath();
+    for (let n = 0; n < pts.length; n++) {
+        const pt = pts[n];
+        const x = X(pt.i), y = YV(pt.V);
+        if (n === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+    }
+    cctx.stroke();
+    cctx.restore();
+
+    // 동작점
+    const opR = cellVoltage(state.i);
+    const opV = opR.V;
+    const opP = opV * state.i;
+    cctx.save();
+    cctx.strokeStyle = 'rgba(244, 114, 182, 0.55)';
+    cctx.setLineDash([4, 4]); cctx.lineWidth = 1.2;
+    cctx.beginPath();
+    cctx.moveTo(X(state.i), L.y0);
+    cctx.lineTo(X(state.i), YV(opV));
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.shadowBlur = 18;
+    cctx.shadowColor = '#f472b6';
+    cctx.fillStyle = '#f9a8d4';
+    cctx.beginPath();
+    cctx.arc(X(state.i), YV(opV), 6, 0, Math.PI * 2);
+    cctx.fill();
+    cctx.fillStyle = '#fbcfe8';
+    cctx.beginPath();
+    cctx.arc(X(state.i), YP(opP), 5, 0, Math.PI * 2);
+    cctx.fill();
+    cctx.shadowBlur = 0;
+    cctx.font = 'bold 11px ui-monospace, monospace';
+    cctx.fillStyle = '#f472b6';
+    cctx.textAlign = 'left';
+    const label = `동작점 · i=${state.i.toFixed(2)} A/cm² · V=${opV.toFixed(3)} V · P=${opP.toFixed(3)} W/cm²`;
+    cctx.fillText(label, Math.min(X(state.i) + 10, L.x1 - 280), YV(opV) - 12);
+    cctx.restore();
+}
+
+// ===== 계산 / UI 업데이트 =====
+function compute() {
+    state.i = +$('i').value;
+    state.T = +$('t').value;
+    state.P = +$('p').value;
+    state.N = +$('n').value;
+
+    $('iDisp').textContent = state.i.toFixed(2);
+    $('tDisp').textContent = state.T;
+    $('pDisp').textContent = state.P.toFixed(1);
+    $('nDisp').textContent = state.N;
+
+    const r = cellVoltage(state.i);
+    const V_cell = r.V;
+    const V_stack = V_cell * state.N;
+    const I_stack = state.i * state.A_cell;
+    const P_stack = V_stack * I_stack;
+    const eff = (V_cell / E_TH) * 100;
+    const Q_th = (E_TH - V_cell) * I_stack * state.N;
+
+    // 라이브 4칩
+    $('vCellVal').textContent = `${V_cell.toFixed(3)} V`;
+    $('vStackVal').textContent = `${V_stack.toFixed(1)} V`;
+    $('pStackVal').textContent = `${(P_stack/1000).toFixed(2)} kW`;
+    $('effVal').textContent = `${eff.toFixed(1)} %`;
+
+    // 컨트롤 상세
+    $('d_vc').textContent = `${V_cell.toFixed(3)} V`;
+    $('d_i').textContent  = `${state.i.toFixed(2)} A/cm²`;
+    $('d_vs').textContent = `${V_stack.toFixed(1)} V`;
+    $('d_is').textContent = `${I_stack.toFixed(1)} A`;
+    $('d_act').textContent = `${r.a.toFixed(3)} V`;
+    $('d_ohm').textContent = `${r.o.toFixed(3)} V`;
+    $('d_con').textContent = `${r.c.toFixed(3)} V`;
+    $('d_p').textContent  = `${(P_stack/1000).toFixed(2)} kW`;
+    $('d_q').textContent  = `${(Q_th/1000).toFixed(2)} kW`;
+
+    $('effFill').style.width = `${Math.min(100, eff)}%`;
+
+    const sl = $('statusLabel');
+    const p = params();
+    if (state.i > p.i_L * 0.92) {
+        sl.textContent = '극한 전류 근접 (농도 손실 급증)';
+        sl.className = 'font-bold status-bad';
+    } else if (eff >= 55) {
+        sl.textContent = '정상 운전 (η ≥ 55%)';
+        sl.className = 'font-bold status-good';
+    } else if (eff >= 40) {
+        sl.textContent = '고부하 (η 40~55%)';
+        sl.className = 'font-bold status-warn';
+    } else {
+        sl.textContent = '저효율 (η < 40%)';
+        sl.className = 'font-bold status-bad';
+    }
+
+    $('typeBadge').textContent = `TYPE · ${state.type}`;
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(110, 231, 183, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(110, 231, 183, 0)', duration: 0.6 });
+}
+
+// ===== 이벤트 =====
+['i', 't', 'p', 'n'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        compute();
+        flashCard();
+    });
+});
+
+function setType(t) {
+    state.type = t;
+    $('typePEM').classList.toggle('on', t === 'PEM');
+    $('typeSOFC').classList.toggle('on', t === 'SOFC');
+    // 온도 슬라이더 기본값 조정
+    if (t === 'PEM') {
+        if (+$('t').value > 100) $('t').value = 80;
+        $('typeNote').textContent = 'PEM: 양성자(H⁺) 이동, 저온(60~90℃), 양극→음극으로 H⁺ 이동, 음극에서 H₂O 생성.';
+    } else {
+        if (+$('t').value < 500) $('t').value = 800;
+        $('typeNote').textContent = 'SOFC: 산소 이온(O²⁻) 이동, 고온(600~900℃), 음극→양극으로 O²⁻ 이동, 양극에서 H₂O 생성.';
+    }
+    compute();
+    flashCard();
+}
+$('typePEM').addEventListener('click', () => setType('PEM'));
+$('typeSOFC').addEventListener('click', () => setType('SOFC'));
+
+const presets = {
+    rated: { i: 0.60, p: 2.0 },
+    light: { i: 0.15, p: 1.5 },
+    peak:  { i: 1.20, p: 3.0 }
+};
+document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const k = btn.dataset.preset;
+        const pr = presets[k];
+        $('i').value = pr.i;
+        $('p').value = pr.p;
+        document.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('active', b === btn));
+        compute();
+        flashCard();
+    });
+});
+
+// ===== 메인 루프 =====
+function animate() {
+    state.t++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawCell();
+    drawParticles();
+    drawExternalCircuit();
+    drawSummary();
+
+    cctx.clearRect(0, 0, curveCanvas.width, CURVE_H);
+    drawCurves();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#curveCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SPARK DEPARTMENT STORE · 스파크 백화점 — 전기기능사 소식지</title>
+<meta name="description" content="가상 백화점 콘셉트의 전기기능사 학습 소식지. 층별 디렉토리 · 매장 가이드 · 시즌 이벤트." />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ivory:#faf7f2;
+    --pearl:#f3ede2;
+    --gold:#b8965a;
+    --gold-deep:#8a6d3b;
+    --gold-soft:#dcc9a2;
+    --ink:#171513;
+    --ink-soft:#3b342c;
+    --line:#e6dcc8;
+    --burgundy:#6b1d2a;
+  }
+  html,body{background:var(--ivory);color:var(--ink);}
+  body{
+    font-family:'Inter','Noto Serif KR',system-ui,sans-serif;
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgba(184,150,90,.08), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(107,29,42,.05), transparent 60%);
+  }
+  .serif{font-family:'Playfair Display','Noto Serif KR',serif;}
+  .korean-serif{font-family:'Noto Serif KR','Playfair Display',serif;}
+  .tracking-luxury{letter-spacing:.28em;}
+  .tracking-mid{letter-spacing:.12em;}
+  .gold-text{color:var(--gold-deep);}
+  .gold-line{background:linear-gradient(90deg,transparent,var(--gold) 20%,var(--gold) 80%,transparent);}
+  .hairline{border-color:var(--line);}
+  .panel{background:#fffdf8;border:1px solid var(--line);}
+  .panel-dark{background:#171513;color:#f6efdc;}
+  .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.18rem .55rem;border:1px solid var(--line);background:#fffdf8;font-size:11px;letter-spacing:.16em;text-transform:uppercase;}
+  .chip-gold{border-color:var(--gold);color:var(--gold-deep);}
+  .chip-burgundy{border-color:rgba(107,29,42,.5);color:var(--burgundy);}
+  .chip-ink{background:var(--ink);color:#f6efdc;border-color:var(--ink);}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+  /* Marquee */
+  .ticker{overflow:hidden;border-block:1px solid var(--line);background:#fffdf8;}
+  .ticker-track{display:flex;gap:3rem;white-space:nowrap;animation:scroll 38s linear infinite;}
+  @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  /* Directory board */
+  .board{
+    background:
+      linear-gradient(180deg,#1a1714 0%, #100e0c 100%);
+    color:#f6efdc;
+    border:1px solid #2a2520;
+    box-shadow:inset 0 0 0 1px rgba(220,201,162,.08), 0 30px 60px -30px rgba(0,0,0,.6);
+  }
+  .board-row{display:grid;grid-template-columns:84px 1fr 200px;gap:0;align-items:center;border-top:1px solid #2a2520;cursor:pointer;transition:background .2s;}
+  .board-row:first-child{border-top:0;}
+  .board-row:hover{background:rgba(220,201,162,.06);}
+  .board-row.is-open{background:rgba(220,201,162,.08);}
+  .floor-num{font-family:'Playfair Display',serif;font-size:34px;line-height:1;padding:18px 20px;color:var(--gold-soft);border-right:1px solid #2a2520;text-align:center;}
+  .floor-name{padding:18px 22px;}
+  .floor-meta{padding:18px 22px;color:#cdb98e;font-size:11px;letter-spacing:.18em;text-transform:uppercase;text-align:right;border-left:1px solid #2a2520;}
+  .floor-panel{display:none;background:#fffdf8;color:var(--ink);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+  .floor-panel.is-open{display:block;}
+  .store-card{border:1px solid var(--line);background:#fffdf8;padding:14px 14px 12px;transition:transform .18s, box-shadow .18s, border-color .18s;cursor:pointer;}
+  .store-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px -14px rgba(138,109,59,.4);border-color:var(--gold-soft);}
+  .store-card .name{font-family:'Playfair Display',serif;font-size:17px;line-height:1.15;}
+  .store-card .kor{font-family:'Noto Serif KR',serif;font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .store-card .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:#6a6055;letter-spacing:.08em;text-transform:uppercase;}
+  .sale-badge{position:absolute;top:8px;right:8px;background:var(--burgundy);color:#fff;font-size:10px;padding:2px 6px;letter-spacing:.18em;}
+  /* Floor plan svg */
+  .floorplan-store{fill:#f3ede2;stroke:#b8965a;stroke-width:1;cursor:pointer;transition:fill .15s;}
+  .floorplan-store:hover, .floorplan-store.is-active{fill:#dcc9a2;}
+  .floorplan-label{font-family:'Inter',sans-serif;font-size:9px;fill:#3b342c;pointer-events:none;letter-spacing:.04em;}
+  /* Carousel */
+  .car-slide{display:none;}
+  .car-slide.is-active{display:block;}
+  .car-dot{width:7px;height:7px;border-radius:999px;background:#dcc9a2;}
+  .car-dot.is-active{background:var(--gold-deep);width:22px;border-radius:4px;}
+  /* Modal */
+  .modal-back{position:fixed;inset:0;background:rgba(20,17,14,.62);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:1rem;}
+  .modal-back.is-open{display:flex;}
+  .modal{max-width:560px;width:100%;background:#fffdf8;border:1px solid var(--line);box-shadow:0 40px 80px -30px rgba(0,0,0,.4);}
+  /* Tier table */
+  .tier-row{display:grid;grid-template-columns:120px 1fr 140px;align-items:center;border-top:1px solid var(--line);padding:14px 0;}
+  .tier-row:first-of-type{border-top:0;}
+  /* Vertical divider gold */
+  .vline-gold{background:linear-gradient(180deg,transparent,var(--gold) 20%,var(--gold) 80%,transparent);width:1px;}
+  /* Subtle bg pattern for hero */
+  .hero-pattern{
+    background-image:
+      repeating-linear-gradient(45deg, rgba(184,150,90,.04) 0 1px, transparent 1px 12px),
+      radial-gradient(800px 300px at 50% 0%, rgba(184,150,90,.12), transparent 60%);
+  }
+  details>summary{list-style:none;cursor:pointer;}
+  details>summary::-webkit-details-marker{display:none;}
+  /* Print-ish hairline divider */
+  .deco-divider{display:flex;align-items:center;gap:14px;color:var(--gold-deep);}
+  .deco-divider::before,.deco-divider::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold) 50%,transparent);}
+  .ornament{font-family:'Playfair Display',serif;font-style:italic;font-size:13px;letter-spacing:.2em;}
+  /* Filter highlight */
+  mark{background:rgba(220,201,162,.6);color:inherit;padding:0 2px;}
+  /* Buttons */
+  .btn-line{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--gold);color:var(--gold-deep);padding:.55rem 1rem;font-size:11px;letter-spacing:.22em;text-transform:uppercase;background:#fffdf8;transition:background .15s,color .15s;}
+  .btn-line:hover{background:var(--gold);color:#fff;}
+  .btn-ink{display:inline-flex;align-items:center;gap:.5rem;background:var(--ink);color:#f6efdc;padding:.6rem 1.1rem;font-size:11px;letter-spacing:.22em;text-transform:uppercase;border:1px solid var(--ink);}
+  .btn-ink:hover{background:#000;}
+  /* Scrollbar slim for panels */
+  .scroll-thin::-webkit-scrollbar{height:6px;width:6px;}
+  .scroll-thin::-webkit-scrollbar-thumb{background:var(--gold-soft);border-radius:3px;}
+  /* Smooth focus ring for a11y */
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ============ TOP UTILITY BAR ============ -->
+<div class="border-b hairline text-[11px] tracking-mid uppercase" style="background:#fffdf8;color:var(--ink-soft);">
+  <div class="max-w-7xl mx-auto px-5 py-2 flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center gap-4">
+      <span class="gold-text">Open · 10:30 — 20:00</span>
+      <span class="hidden sm:inline opacity-70">B1 · 1F — 10F &amp; Rooftop</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span>Customer · 1588-0000 (가상)</span>
+      <span class="hidden sm:inline opacity-70">Today · <span id="todayDate" class="num"></span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HEADER / MASTHEAD ============ -->
+<header class="border-b hairline hero-pattern">
+  <div class="max-w-7xl mx-auto px-5 py-10 sm:py-14 text-center">
+    <div class="ornament gold-text mb-3">— Since 2026 · Vol. 12 —</div>
+    <h1 class="serif text-[42px] sm:text-[64px] leading-[0.95] tracking-tight">SPARK</h1>
+    <div class="serif italic text-[18px] sm:text-[22px] gold-text mt-1">Department Store</div>
+    <div class="korean-serif text-[15px] mt-3" style="color:var(--ink-soft);">스파크 백화점 · 전기기능사 학습 라이프스타일관</div>
+    <div class="deco-divider mt-6 max-w-md mx-auto"><span class="ornament">N · E · W · S</span></div>
+    <p class="mt-5 text-[13px] korean-serif max-w-2xl mx-auto leading-relaxed" style="color:var(--ink-soft);">
+      전류·전압·저항이 만드는 라이프스타일, 단 한 곳에서. 본 소식지는 가상의 백화점 디렉토리 형식으로 전기기능사 학습 콘텐츠를 안내합니다.
+    </p>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker">
+    <div class="ticker-track py-2 text-[11px] tracking-mid uppercase gold-text">
+      <span>◆ Spring Sale · 봄 정기 세일 — 최대 50% OFF</span>
+      <span>◆ 신규 멤버 가입 즉시 5,000P 적립</span>
+      <span>◆ 학습 합격 축하 이벤트 — 합격증 인증 시 골드 등급 승급</span>
+      <span>◆ 9F 문화센터 · 옴의 법칙 시그니처 클래스 5/20 개강</span>
+      <span>◆ B1 식품관 · 키르히호프 카페 신메뉴 출시</span>
+      <span>◆ Rooftop 정원 · 페이저 가든 5/18 리오픈</span>
+      <!-- duplicate for seamless -->
+      <span>◆ Spring Sale · 봄 정기 세일 — 최대 50% OFF</span>
+      <span>◆ 신규 멤버 가입 즉시 5,000P 적립</span>
+      <span>◆ 학습 합격 축하 이벤트 — 합격증 인증 시 골드 등급 승급</span>
+      <span>◆ 9F 문화센터 · 옴의 법칙 시그니처 클래스 5/20 개강</span>
+      <span>◆ B1 식품관 · 키르히호프 카페 신메뉴 출시</span>
+      <span>◆ Rooftop 정원 · 페이저 가든 5/18 리오픈</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ EVENT CAROUSEL ============ -->
+<section class="max-w-7xl mx-auto px-5 py-10">
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <span class="chip chip-gold">Now Showing</span>
+      <h2 class="serif text-[22px]">진행 중인 이벤트</h2>
+    </div>
+    <div id="carDots" class="flex items-center gap-2"></div>
+  </div>
+  <div class="panel relative overflow-hidden" id="carousel">
+    <!-- slides injected by JS -->
+  </div>
+</section>
+
+<!-- ============ SEARCH ============ -->
+<section class="max-w-7xl mx-auto px-5">
+  <div class="panel p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div class="flex-1">
+      <div class="text-[11px] tracking-luxury uppercase gold-text mb-1">Store Finder</div>
+      <h3 class="serif text-[20px]">매장 찾기</h3>
+      <p class="text-[12.5px] korean-serif mt-1" style="color:var(--ink-soft);">매장명·키워드·층을 입력하세요. 예) 옴 · 9F · 세일</p>
+    </div>
+    <div class="flex-[1.4] flex items-center gap-2 border hairline px-3 py-2 bg-white">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a6d3b" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="text" maxlength="40" placeholder="Search stores…" class="flex-1 outline-none text-[14px] bg-transparent" />
+      <button id="searchClear" class="text-[11px] tracking-mid uppercase gold-text hidden">Clear</button>
+    </div>
+    <div id="searchCount" class="text-[11px] tracking-mid uppercase" style="color:var(--ink-soft);"></div>
+  </div>
+</section>
+
+<!-- ============ DIRECTORY BOARD ============ -->
+<section class="max-w-7xl mx-auto px-5 py-10">
+  <div class="flex items-end justify-between mb-5">
+    <div>
+      <div class="chip chip-gold">Directory</div>
+      <h2 class="serif text-[28px] sm:text-[34px] mt-2">Floor Guide · 층별 안내</h2>
+      <p class="text-[12.5px] korean-serif mt-1" style="color:var(--ink-soft);">층을 클릭하면 매장 목록이 펼쳐집니다.</p>
+    </div>
+    <div class="hidden sm:flex items-center gap-2">
+      <button id="expandAll" class="btn-line">Expand All</button>
+      <button id="collapseAll" class="btn-line">Collapse</button>
+    </div>
+  </div>
+
+  <div id="board" class="board"></div>
+</section>
+
+<!-- ============ MEMBERSHIP ============ -->
+<section class="max-w-7xl mx-auto px-5 py-10">
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="panel p-6 sm:p-8">
+      <div class="chip chip-gold">Membership</div>
+      <h2 class="serif text-[28px] mt-2">SPARK Club</h2>
+      <p class="text-[12.5px] korean-serif mt-1" style="color:var(--ink-soft);">학습 마일리지를 적립하면 등급이 상승합니다. (가상 시뮬레이션)</p>
+      <div class="mt-5">
+        <div class="tier-row">
+          <div class="serif text-[18px]">Silver</div>
+          <div class="text-[12.5px] korean-serif" style="color:var(--ink-soft);">기본 적립 1% · 생일 쿠폰</div>
+          <div class="text-right num text-[12px] tracking-mid uppercase gold-text">0 — 30 W</div>
+        </div>
+        <div class="tier-row">
+          <div class="serif text-[18px]">Gold</div>
+          <div class="text-[12.5px] korean-serif" style="color:var(--ink-soft);">2% 적립 · 9F 클래스 10% · 발렛 우대</div>
+          <div class="text-right num text-[12px] tracking-mid uppercase gold-text">30 — 80 W</div>
+        </div>
+        <div class="tier-row">
+          <div class="serif text-[18px]">Platinum</div>
+          <div class="text-[12.5px] korean-serif" style="color:var(--ink-soft);">3% 적립 · VIP 라운지 · 사전 세일 초대</div>
+          <div class="text-right num text-[12px] tracking-mid uppercase gold-text">80 — 200 W</div>
+        </div>
+        <div class="tier-row">
+          <div class="serif text-[18px]">Black Edition</div>
+          <div class="text-[12.5px] korean-serif" style="color:var(--ink-soft);">5% 적립 · 전용 큐레이터 · 합격 보장 코치</div>
+          <div class="text-right num text-[12px] tracking-mid uppercase gold-text">200 W +</div>
+        </div>
+      </div>
+      <div class="mt-5 text-[11px] tracking-mid uppercase" style="color:#6a6055;">* W = Watt · 학습 마일리지 단위 (가상)</div>
+    </div>
+
+    <div class="panel-dark p-6 sm:p-8">
+      <div class="chip chip-gold" style="background:transparent;color:var(--gold-soft);border-color:var(--gold-soft);">Concierge</div>
+      <h2 class="serif text-[28px] mt-2" style="color:#f6efdc;">VIP 컨시어지</h2>
+      <p class="text-[13px] korean-serif mt-1" style="color:#cdb98e;">Platinum 이상 회원에게 제공되는 1:1 학습 큐레이션 서비스 (가상).</p>
+      <ul class="mt-5 space-y-3 text-[13px] korean-serif" style="color:#e9dfc4;">
+        <li class="flex gap-3"><span class="serif text-[var(--gold-soft)]">I.</span><span>1:1 학습 코치 매칭 — 약점 단원 진단부터 모의고사 풀이까지.</span></li>
+        <li class="flex gap-3"><span class="serif text-[var(--gold-soft)]">II.</span><span>사전 공개 — 신규 과목·교재 정식 출시 7일 전 우선 액세스.</span></li>
+        <li class="flex gap-3"><span class="serif text-[var(--gold-soft)]">III.</span><span>VIP 라운지 — 10F 옥상 정원 인접 전용 좌석과 음료.</span></li>
+        <li class="flex gap-3"><span class="serif text-[var(--gold-soft)]">IV.</span><span>합격 축하 패키지 — 합격 인증 시 시그니처 한정판 증정.</span></li>
+      </ul>
+      <div class="mt-6 pt-5 border-t" style="border-color:#2a2520;">
+        <div class="text-[11px] tracking-luxury uppercase" style="color:var(--gold-soft);">Reservation</div>
+        <div class="serif text-[18px] mt-1" style="color:#f6efdc;">concierge@spark-dept.invalid · 1588-0000 (가상)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FLOOR PLAN MAP ============ -->
+<section class="max-w-7xl mx-auto px-5 py-10">
+  <div class="panel p-5 sm:p-7">
+    <div class="flex items-end justify-between flex-wrap gap-3 mb-4">
+      <div>
+        <div class="chip chip-gold">Way-finding</div>
+        <h2 class="serif text-[26px] mt-2">길찾기 · 층별 평면도</h2>
+        <p class="text-[12.5px] korean-serif mt-1" style="color:var(--ink-soft);">탭을 눌러 층을 전환하세요. 매장 도형을 클릭하면 정보를 확인할 수 있습니다.</p>
+      </div>
+      <div id="planTabs" class="flex flex-wrap gap-1"></div>
+    </div>
+    <div class="grid lg:grid-cols-[1.6fr_1fr] gap-6 items-start">
+      <div class="border hairline bg-[#fffdf8] p-3 overflow-x-auto scroll-thin">
+        <svg id="planSvg" viewBox="0 0 520 320" width="100%" style="min-width:480px;display:block;">
+          <!-- injected by JS -->
+        </svg>
+      </div>
+      <div>
+        <div id="planLegend" class="text-[12.5px] korean-serif space-y-2"></div>
+        <div class="mt-4 pt-4 border-t hairline text-[11px] tracking-mid uppercase" style="color:#6a6055;">
+          <div class="flex items-center gap-2"><span class="inline-block w-3 h-3" style="background:#f3ede2;border:1px solid #b8965a;"></span>매장 / Boutique</div>
+          <div class="flex items-center gap-2 mt-1"><span class="inline-block w-3 h-3" style="background:#dcc9a2;border:1px solid #b8965a;"></span>강조 / Focus</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HOURS & ACCESS ============ -->
+<section class="max-w-7xl mx-auto px-5 py-10">
+  <div class="grid sm:grid-cols-3 gap-4">
+    <div class="panel p-5">
+      <div class="text-[11px] tracking-luxury uppercase gold-text">Opening Hours</div>
+      <div class="serif text-[20px] mt-1">10:30 — 20:00</div>
+      <div class="text-[12.5px] korean-serif mt-2" style="color:var(--ink-soft);">B1 식품관 10:30 — 21:00<br/>8F 식당가 11:00 — 22:00<br/>휴점일 매월 셋째 월요일 (가상)</div>
+    </div>
+    <div class="panel p-5">
+      <div class="text-[11px] tracking-luxury uppercase gold-text">Access</div>
+      <div class="serif text-[20px] mt-1">스파크 역 1번 출구 도보 2분</div>
+      <div class="text-[12.5px] korean-serif mt-2" style="color:var(--ink-soft);">가상의 위치 정보입니다. 주차장 B2 — B4 (3시간 무료)</div>
+    </div>
+    <div class="panel p-5">
+      <div class="text-[11px] tracking-luxury uppercase gold-text">Service</div>
+      <div class="serif text-[20px] mt-1">샤퍼 컨시어지 · 1F</div>
+      <div class="text-[12.5px] korean-serif mt-2" style="color:var(--ink-soft);">유모차·휠체어 대여, 외국어 통역, 쇼핑 백 보관, 발렛 파킹 (가상 서비스)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t hairline mt-6">
+  <div class="max-w-7xl mx-auto px-5 py-10">
+    <div class="grid sm:grid-cols-3 gap-6 items-start">
+      <div>
+        <div class="serif text-[24px]">SPARK</div>
+        <div class="serif italic gold-text text-[13px] -mt-1">Department Store</div>
+        <p class="text-[12.5px] korean-serif mt-3" style="color:var(--ink-soft);">전기기능사 학습 라이프스타일을 큐레이션하는 가상의 백화점.</p>
+      </div>
+      <div class="text-[12.5px] korean-serif space-y-1" style="color:var(--ink-soft);">
+        <div class="text-[11px] tracking-luxury uppercase gold-text mb-1">Customer Service</div>
+        <div>1588-0000 (가상) · 10:00 — 18:00</div>
+        <div>customer@spark-dept.invalid</div>
+        <div>주차 · 분실물 · 멤버십 문의</div>
+      </div>
+      <div class="text-[12.5px] korean-serif space-y-1" style="color:var(--ink-soft);">
+        <div class="text-[11px] tracking-luxury uppercase gold-text mb-1">Disclaimer</div>
+        <div>본 페이지는 가상 백화점 시뮬레이션입니다.</div>
+        <div>본 콘텐츠는 가상 백화점 시뮬레이션이며, 실재 백화점 및 명품 브랜드와 무관합니다.</div>
+        <div>매장명·이벤트·가격은 모두 학습 목적의 가상 데이터입니다.</div>
+      </div>
+    </div>
+    <div class="mt-8 pt-5 border-t hairline flex flex-wrap justify-between gap-2 text-[11px] tracking-mid uppercase" style="color:#6a6055;">
+      <div>© 2026 SPARK Department Store (Virtual)</div>
+      <div>Vol. 12 · Spring Edition · 전기기능사 소식지</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ MODAL ============ -->
+<div id="modal" class="modal-back" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal p-6 sm:p-8" role="document">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <div id="mdFloor" class="chip chip-gold"></div>
+        <h3 id="mdName" class="serif text-[26px] mt-2"></h3>
+        <div id="mdKor" class="korean-serif text-[13px]" style="color:var(--ink-soft);"></div>
+      </div>
+      <button id="mdClose" aria-label="Close" class="text-[20px] gold-text hover:text-[var(--ink)]">×</button>
+    </div>
+    <div class="gold-line h-px my-5"></div>
+    <p id="mdDesc" class="korean-serif text-[13.5px] leading-relaxed"></p>
+    <div class="grid sm:grid-cols-2 gap-4 mt-5">
+      <div>
+        <div class="text-[11px] tracking-luxury uppercase gold-text">Location</div>
+        <div id="mdLoc" class="serif text-[16px] mt-1"></div>
+      </div>
+      <div>
+        <div class="text-[11px] tracking-luxury uppercase gold-text">Hours</div>
+        <div id="mdHours" class="serif text-[16px] mt-1"></div>
+      </div>
+      <div>
+        <div class="text-[11px] tracking-luxury uppercase gold-text">Contact</div>
+        <div id="mdContact" class="serif text-[16px] mt-1"></div>
+      </div>
+      <div>
+        <div class="text-[11px] tracking-luxury uppercase gold-text">Sale &amp; Event</div>
+        <div id="mdSale" class="serif text-[16px] mt-1"></div>
+      </div>
+    </div>
+    <div class="mt-6 flex justify-end gap-2">
+      <button id="mdClose2" class="btn-line">Close</button>
+      <button class="btn-ink">Save to Wishlist</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== DATA (all virtual) ===================== */
+const FLOORS = [
+  {id:"10F", num:"10F", name:"Rooftop Garden", kor:"옥상 정원 · 휴게 공간", note:"Open Air"},
+  {id:"9F",  num:"9F",  name:"Culture Center", kor:"문화 센터 · 학습 클래스", note:"Class"},
+  {id:"8F",  num:"8F",  name:"Restaurants",    kor:"식당가 · 학습 카페",       note:"Dining"},
+  {id:"7F",  num:"7F",  name:"Kids",           kor:"키즈 · 어린이 학습관",     note:"Family"},
+  {id:"6F",  num:"6F",  name:"Books & Stationery", kor:"도서·문구 · 학습 자료", note:"Library"},
+  {id:"5F",  num:"5F",  name:"Home Appliances",kor:"가전 · 학습 디바이스",     note:"Tech"},
+  {id:"4F",  num:"4F",  name:"Sports",         kor:"스포츠 · 학습 피트니스",   note:"Active"},
+  {id:"3F",  num:"3F",  name:"Fashion",        kor:"패션 · 학습 룩",           note:"Style"},
+  {id:"2F",  num:"2F",  name:"Premium Hall",   kor:"프리미엄관 · 학습 도구",   note:"Premium"},
+  {id:"1F",  num:"1F",  name:"Cosmetics & Accessories", kor:"화장품·잡화 · 학습 액세서리", note:"Entrance"},
+  {id:"B1",  num:"B1",  name:"Food Hall",      kor:"식품관 · 학습 식음료",     note:"Gourmet"},
+];
+
+/* All store names are virtual; inspired by electrical concepts (Ohm, Kirchhoff, Faraday, Tesla, Watt, Ampere, RLC, etc.) */
+const STORES = {
+  "B1":[
+    {name:"Kirchhoff Café",  kor:"키르히호프 카페", loc:"B1-12", hours:"10:30-21:00", contact:"내선 1201", sale:"신메뉴 5,500원~", tag:"Café", desc:"전류 보존의 법칙처럼, 컵 안과 밖의 풍미가 균형을 이루는 카페. 합격 기원 ‘노드 라떼’가 시그니처."},
+    {name:"Ohm Bakery",      kor:"옴 베이커리",   loc:"B1-05", hours:"10:30-21:00", contact:"내선 1202", sale:"오후 6시 이후 30%", tag:"Bakery", desc:"저항이 낮아 부드럽게 풀리는 크루아상. 매일 옴(Ω) 모양 데니쉬를 굽습니다."},
+    {name:"Volt Deli",       kor:"볼트 델리",     loc:"B1-08", hours:"10:30-21:00", contact:"내선 1203", sale:"세트 메뉴 1+1", tag:"Deli", desc:"전압을 올리듯 풍미를 끌어올리는 샌드위치 셀렉션."},
+    {name:"Ampere Market",   kor:"암페어 마켓",   loc:"B1-22", hours:"10:30-21:00", contact:"내선 1204", sale:"신선식품 20%", tag:"Grocery", desc:"흐름이 끊이지 않는 신선식품관. 학습 도시락 코너 운영."},
+    {name:"Joule Patisserie",kor:"줄 파티세리",  loc:"B1-15", hours:"10:30-21:00", contact:"내선 1205", sale:"디저트 박스 15%", tag:"Dessert", desc:"열량과 단맛의 환산을 시연하는 디저트 매장."},
+    {name:"Capacitor Cellar",kor:"커패시터 셀러", loc:"B1-30", hours:"11:00-21:00", contact:"내선 1206", sale:"무알콜 음료 신상", tag:"Drinks", desc:"풍미를 저장했다가 한 번에 방출하는 콜드브루."},
+  ],
+  "1F":[
+    {name:"Faraday Atelier", kor:"패러데이 아트리에", loc:"1F-A1", hours:"10:30-20:00", contact:"내선 1101", sale:"신규 시즌 컬렉션", tag:"Beauty", desc:"전자기 유도처럼 표면에 빛을 끌어내는 메이크업 큐레이션."},
+    {name:"Tesla Glow",      kor:"테슬라 글로우",     loc:"1F-A2", hours:"10:30-20:00", contact:"내선 1102", sale:"인기 세럼 BOGO", tag:"Skincare", desc:"고주파 토닝 콘셉트의 가상 스킨케어 라인업."},
+    {name:"Henry Accessory", kor:"헨리 액세서리",    loc:"1F-B3", hours:"10:30-20:00", contact:"내선 1103", sale:"필기구 세트 15%", tag:"Accessory", desc:"인덕턴스 헨리(H)에서 영감을 받은 학습 액세서리."},
+    {name:"Phase Boutique",  kor:"페이즈 부티크",     loc:"1F-B5", hours:"10:30-20:00", contact:"내선 1104", sale:"시즌 스카프 30%", tag:"Accessory", desc:"위상 변화를 색으로 표현한 가상 스카프 컬렉션."},
+    {name:"Coulomb Jewelry", kor:"쿨롱 주얼리",      loc:"1F-C2", hours:"10:30-20:00", contact:"내선 1105", sale:"멤버 5% 추가", tag:"Jewelry", desc:"전하 단위에서 따온 가상 주얼리 셀렉트 숍."},
+    {name:"Diode Optical",   kor:"다이오드 옵티컬",   loc:"1F-C5", hours:"10:30-20:00", contact:"내선 1106", sale:"블루라이트 차단 20%", tag:"Eyewear", desc:"한 방향으로만 빛을 통과시키는 가상 아이웨어 브랜드."},
+  ],
+  "2F":[
+    {name:"Henry Premium",   kor:"헨리 프리미엄",     loc:"2F-P1", hours:"10:30-20:00", contact:"내선 1011", sale:"VIP 사전 초대", tag:"Premium Pen", desc:"가상 프리미엄 필기구 셀렉트. 합격 만년필 큐레이션."},
+    {name:"Watt & Co.",      kor:"와트 앤 코",       loc:"2F-P2", hours:"10:30-20:00", contact:"내선 1012", sale:"기획전 운영", tag:"Lifestyle", desc:"전력 단위에서 따온 가상 라이프스타일 편집숍."},
+    {name:"Reactance Salon", kor:"리액턴스 살롱",    loc:"2F-P3", hours:"10:30-20:00", contact:"내선 1013", sale:"신규 회원 가입 시 사은품", tag:"Salon", desc:"교류 회로의 리액턴스를 모티프로 한 가상 살롱 라운지."},
+    {name:"Impedance Suite", kor:"임피던스 스위트",  loc:"2F-P5", hours:"10:30-20:00", contact:"내선 1014", sale:"플래티넘 한정 라인", tag:"Premium", desc:"저항·리액턴스 합성처럼 다층적인 큐레이션을 제안하는 라운지형 매장."},
+    {name:"Maxwell Library", kor:"맥스웰 라이브러리", loc:"2F-P6", hours:"10:30-20:00", contact:"내선 1015", sale:"한정판 보드 입고", tag:"Books", desc:"전자기학 4대 방정식을 모티프로 한 가상 한정판 도서관."},
+  ],
+  "3F":[
+    {name:"Conductor Mode",  kor:"컨덕터 모드",       loc:"3F-F1", hours:"10:30-20:00", contact:"내선 0911", sale:"S/S 신상 10%", tag:"Fashion", desc:"흐름을 잘 전달하는 직류 라인의 캐주얼 룩."},
+    {name:"Insulator Wear",  kor:"인슐레이터 웨어",  loc:"3F-F2", hours:"10:30-20:00", contact:"내선 0912", sale:"기능성 라인 15%", tag:"Outdoor", desc:"단열·절연에서 영감을 얻은 가상 아우터."},
+    {name:"AC Closet",       kor:"AC 클로젯",         loc:"3F-F3", hours:"10:30-20:00", contact:"내선 0913", sale:"세트 코디 20%", tag:"Casual", desc:"교류 코디 — 매일 위상이 달라지는 셔츠 컬렉션."},
+    {name:"DC Tailoring",    kor:"DC 테일러링",       loc:"3F-F4", hours:"10:30-20:00", contact:"내선 0914", sale:"직류 슈트 5% 추가", tag:"Suit", desc:"직류의 단정함을 입은 가상 테일러드 라인."},
+    {name:"Harmonic Knit",   kor:"하모닉 니트",       loc:"3F-F5", hours:"10:30-20:00", contact:"내선 0915", sale:"베이직 니트 1+1", tag:"Knit", desc:"기본파 + 고조파를 조합한 패턴 니트 셀렉션."},
+    {name:"Polarity Denim",  kor:"폴라리티 데님",     loc:"3F-F6", hours:"10:30-20:00", contact:"내선 0916", sale:"신상 입고", tag:"Denim", desc:"극성을 컨셉으로 한 양면 데님 컬렉션."},
+  ],
+  "4F":[
+    {name:"Hertz Run Club",  kor:"헤르츠 런 클럽",    loc:"4F-S1", hours:"10:30-20:00", contact:"내선 0811", sale:"러닝화 15%", tag:"Running", desc:"주파수 60Hz의 안정된 페이스를 추구하는 러닝 셀렉트."},
+    {name:"Resonance Yoga",  kor:"레조넌스 요가",     loc:"4F-S2", hours:"10:30-20:00", contact:"내선 0812", sale:"멤버십 5% 적립", tag:"Yoga", desc:"공명을 통해 균형을 찾는 가상 요가·필라테스 셀렉트."},
+    {name:"Bandwidth Outdoor",kor:"밴드위드 아웃도어",loc:"4F-S3", hours:"10:30-20:00", contact:"내선 0813", sale:"백팩 30%", tag:"Outdoor", desc:"가용 대역만큼 다재다능한 캠핑·트레킹 라인."},
+    {name:"Pulse Bike",      kor:"펄스 바이크",       loc:"4F-S4", hours:"10:30-20:00", contact:"내선 0814", sale:"헬멧 30%", tag:"Cycling", desc:"펄스 신호처럼 리드미컬한 사이클링 셀렉트."},
+    {name:"Spectrum Climb",  kor:"스펙트럼 클라임",   loc:"4F-S5", hours:"10:30-20:00", contact:"내선 0815", sale:"입문 패키지 20%", tag:"Climbing", desc:"전 스펙트럼의 그립을 갖춘 클라이밍 가상 매장."},
+  ],
+  "5F":[
+    {name:"Solenoid Audio",  kor:"솔레노이드 오디오", loc:"5F-A1", hours:"10:30-20:00", contact:"내선 0711", sale:"헤드폰 12개월 무이자", tag:"Audio", desc:"코일에서 영감을 얻은 가상 하이엔드 오디오 셀렉트."},
+    {name:"Transformer Hub", kor:"트랜스포머 허브",   loc:"5F-A2", hours:"10:30-20:00", contact:"내선 0712", sale:"멀티탭 1+1", tag:"Power", desc:"변압의 미학 — 가상 전원·충전 라이프 솔루션."},
+    {name:"Rectifier Lab",   kor:"렉티파이어 랩",    loc:"5F-A3", hours:"10:30-20:00", contact:"내선 0713", sale:"학습 데스크 셋업 15%", tag:"DIY", desc:"교류를 직류로 — 가상 학습 데스크업 큐레이션."},
+    {name:"Inverter Studio", kor:"인버터 스튜디오",  loc:"5F-A4", hours:"10:30-20:00", contact:"내선 0714", sale:"공기청정기 20%", tag:"Home", desc:"인버터 가전 컨셉의 가상 라이프스타일 디바이스."},
+    {name:"Smart Grid Tech", kor:"스마트 그리드 테크", loc:"5F-A5", hours:"10:30-20:00", contact:"내선 0715", sale:"스마트홈 패키지 10%", tag:"Smart", desc:"분산형 학습 환경을 위한 가상 스마트홈 셀렉트."},
+    {name:"Magnetic Mac",    kor:"마그네틱 맥",       loc:"5F-A6", hours:"10:30-20:00", contact:"내선 0716", sale:"교육 할인 운영", tag:"Computer", desc:"자기 부상처럼 가벼운 학습 노트북 큐레이션 (가상)."},
+  ],
+  "6F":[
+    {name:"Frequency Books", kor:"프리퀀시 북스",     loc:"6F-B1", hours:"10:30-20:00", contact:"내선 0611", sale:"전공서 10%", tag:"Books", desc:"학습 주파수를 맞춰주는 가상 전공 서가."},
+    {name:"Wave Library",    kor:"웨이브 라이브러리", loc:"6F-B2", hours:"10:30-20:00", contact:"내선 0612", sale:"멤버 적립 2배", tag:"Books", desc:"진폭과 주기를 시각화한 가상 학습 도서 코너."},
+    {name:"Graphene Stationery",kor:"그래핀 문구",    loc:"6F-B3", hours:"10:30-20:00", contact:"내선 0613", sale:"전 품목 12%", tag:"Stationery", desc:"전도성 그래핀 모티프 — 학습 노트·필기구 셀렉트."},
+    {name:"Schematic Studio",kor:"스키매틱 스튜디오", loc:"6F-B4", hours:"10:30-20:00", contact:"내선 0614", sale:"제도 도구 신상", tag:"Drawing", desc:"회로도 작성에 필요한 가상 제도 도구 매장."},
+    {name:"Footprint Print", kor:"풋프린트 프린트",   loc:"6F-B5", hours:"10:30-20:00", contact:"내선 0615", sale:"문제집 인쇄 1매 50원", tag:"Print", desc:"PCB 풋프린트에서 영감을 받은 가상 인쇄 서비스."},
+    {name:"Annotation Café", kor:"애너테이션 카페",   loc:"6F-B6", hours:"10:30-20:00", contact:"내선 0616", sale:"음료 + 자리 9,900원", tag:"Café", desc:"필기·메모에 최적화된 가상 학습 카페 좌석."},
+  ],
+  "7F":[
+    {name:"Mini Circuit Land",kor:"미니 회로 랜드",   loc:"7F-K1", hours:"10:30-20:00", contact:"내선 0511", sale:"입장권 평일 30%", tag:"Play", desc:"어린이용 가상 회로 체험형 놀이 공간."},
+    {name:"Lemon Battery Lab",kor:"레몬 배터리 랩",  loc:"7F-K2", hours:"10:30-20:00", contact:"내선 0512", sale:"키트 1+1", tag:"Workshop", desc:"안전한 저전압 가상 워크숍 — 레몬 배터리 만들기."},
+    {name:"Tiny Robot Workshop",kor:"타이니 로봇 워크숍",loc:"7F-K3", hours:"10:30-20:00", contact:"내선 0513", sale:"코딩 키트 15%", tag:"STEM", desc:"가상 로봇 코딩 체험 — 학부모 동반 권장."},
+    {name:"Kids Library K7", kor:"키즈 라이브러리 K7", loc:"7F-K4", hours:"10:30-20:00", contact:"내선 0514", sale:"월 회원권 출시", tag:"Books", desc:"전기 친화형 동화책을 모은 가상 키즈 도서관."},
+    {name:"Stroller Park",   kor:"스트롤러 파크",     loc:"7F-K5", hours:"10:30-20:00", contact:"내선 0515", sale:"렌탈 50%", tag:"Family", desc:"가족 단위 휴식 — 가상 유모차 라운지."},
+  ],
+  "8F":[
+    {name:"Node Noodle",     kor:"노드 누들",         loc:"8F-D1", hours:"11:00-22:00", contact:"내선 0411", sale:"세트 9,900원", tag:"Noodle", desc:"분기점이 만드는 깊은 국물 — 가상 누들 바."},
+    {name:"Loop Sushi",      kor:"루프 스시",         loc:"8F-D2", hours:"11:00-22:00", contact:"내선 0412", sale:"평일 점심 20%", tag:"Sushi", desc:"폐회로처럼 끊이지 않는 컨베이어 — 가상 스시 다이닝."},
+    {name:"Mesh Grill",      kor:"메쉬 그릴",         loc:"8F-D3", hours:"11:00-22:00", contact:"내선 0413", sale:"디너 세트 한정", tag:"Grill", desc:"키르히호프 메쉬 해석에서 영감을 얻은 가상 그릴 다이닝."},
+    {name:"Series Salad",    kor:"시리즈 샐러드",     loc:"8F-D4", hours:"11:00-22:00", contact:"내선 0414", sale:"7,900원 균일", tag:"Healthy", desc:"직렬 연결처럼 순서대로 쌓는 가상 샐러드 바."},
+    {name:"Parallel Pizza",  kor:"패럴렐 피자",       loc:"8F-D5", hours:"11:00-22:00", contact:"내선 0415", sale:"라지 1+1", tag:"Pizza", desc:"병렬 토핑 — 골라 담는 가상 피자 키친."},
+    {name:"Wattage Steak",   kor:"와티지 스테이크",   loc:"8F-D6", hours:"11:00-22:00", contact:"내선 0416", sale:"VIP 코스 신메뉴", tag:"Steak", desc:"열량을 정밀하게 관리하는 가상 스테이크 하우스."},
+  ],
+  "9F":[
+    {name:"Ohm Academy",     kor:"옴 아카데미",       loc:"9F-C1", hours:"10:00-21:00", contact:"내선 0311", sale:"5월 개강 10%", tag:"Class", desc:"옴의 법칙부터 키르히호프까지 — 가상 시그니처 클래스."},
+    {name:"Tesla Studio",    kor:"테슬라 스튜디오",  loc:"9F-C2", hours:"10:00-21:00", contact:"내선 0312", sale:"무료 시범 강의", tag:"Class", desc:"교류 분야 심화 — 가상 라이브 클래스 운영."},
+    {name:"Kirchhoff Hall",  kor:"키르히호프 홀",     loc:"9F-C3", hours:"10:00-21:00", contact:"내선 0313", sale:"모의고사 무료 응시", tag:"Class", desc:"노드·메쉬 해석 집중 트랙 — 가상 강의실."},
+    {name:"Maxwell Lab",     kor:"맥스웰 랩",         loc:"9F-C4", hours:"10:00-21:00", contact:"내선 0314", sale:"전자기 특강", tag:"Class", desc:"전자기학 4 방정식 심화 — 가상 실습 랩."},
+    {name:"Faraday Forum",   kor:"패러데이 포럼",     loc:"9F-C5", hours:"10:00-21:00", contact:"내선 0315", sale:"세미나 무료 입장", tag:"Forum", desc:"전기기능사 합격 수기 공유 — 가상 포럼 공간."},
+  ],
+  "10F":[
+    {name:"Phasor Garden",   kor:"페이저 가든",       loc:"10F-R1", hours:"10:30-20:00", contact:"내선 0211", sale:"피크닉 세트 1+1", tag:"Park", desc:"위상자 화살표 조형이 어우러진 가상 옥상 정원."},
+    {name:"Equipotential Lounge",kor:"이퀴포텐셜 라운지",loc:"10F-R2", hours:"10:30-20:00", contact:"내선 0212", sale:"무료 좌석 운영", tag:"Lounge", desc:"높이 차 없이 평평한 — 가상 등전위 휴게 라운지."},
+    {name:"Magnetic Pond",   kor:"마그네틱 폰드",     loc:"10F-R3", hours:"10:30-20:00", contact:"내선 0213", sale:"포토 스팟", tag:"Photo", desc:"자기력선을 형상화한 가상 연못 산책로."},
+    {name:"Solar Pergola",   kor:"솔라 페르골라",     loc:"10F-R4", hours:"10:30-20:00", contact:"내선 0214", sale:"음료 30%", tag:"Energy", desc:"태양광 컨셉의 가상 페르골라 카페테리아."},
+  ],
+};
+
+const EVENTS = [
+  {tag:"Spring Sale", title:"봄 정기 세일 — 최대 50% OFF",
+   desc:"전 층 시즌 상품을 가상 50% 할인으로 만나보세요. 멤버는 추가 5% 적립.",
+   period:"2026.05.10 — 2026.05.31", floor:"전 층 · All Floors", accent:"#6b1d2a"},
+  {tag:"New Member", title:"신규 멤버 가입 즉시 5,000P 적립",
+   desc:"앱 가입 후 첫 학습 콘텐츠 열람 시, 가상 SPARK Club 포인트 5,000P가 자동 적립됩니다.",
+   period:"상시 운영", floor:"1F 컨시어지", accent:"#8a6d3b"},
+  {tag:"Pass Celebration", title:"학습 합격 축하 이벤트 — 골드 등급 즉시 승급",
+   desc:"전기기능사 가상 합격증을 인증한 회원에게 골드 등급, 시그니처 핀, 그리고 9F 클래스 한 회 무료 수강권을 드립니다.",
+   period:"연중 상시", floor:"9F 문화센터 · 1F 컨시어지", accent:"#b8965a"},
+  {tag:"Class Launch", title:"옴의 법칙 시그니처 클래스 5/20 개강",
+   desc:"9F 옴 아카데미에서 4주 단기 집중 클래스를 가상 개강합니다. 정원 12명 한정.",
+   period:"2026.05.20 — 2026.06.14", floor:"9F · Ohm Academy", accent:"#171513"},
+];
+
+/* ===================== UTIL ===================== */
+function escapeHTML(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+function highlight(text, q){
+  if(!q) return escapeHTML(text);
+  const safe = escapeHTML(text);
+  const safeQ = escapeHTML(q).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  return safe.replace(new RegExp(safeQ, "gi"), m => `<mark>${m}</mark>`);
+}
+
+/* ===================== TODAY ===================== */
+(function setToday(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  const el = document.getElementById("todayDate");
+  if(el) el.textContent = `${yyyy}.${mm}.${dd}`;
+})();
+
+/* ===================== DIRECTORY BOARD ===================== */
+const board = document.getElementById("board");
+
+function renderBoard(filter){
+  const q = (filter||"").trim().toLowerCase();
+  board.innerHTML = "";
+  FLOORS.forEach((f) => {
+    const stores = STORES[f.id] || [];
+    // filter stores
+    const matched = q
+      ? stores.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.kor.toLowerCase().includes(q) ||
+          (s.tag||"").toLowerCase().includes(q) ||
+          f.id.toLowerCase().includes(q) ||
+          f.name.toLowerCase().includes(q) ||
+          f.kor.toLowerCase().includes(q) ||
+          (s.sale||"").toLowerCase().includes(q)
+        )
+      : stores;
+    if(q && matched.length===0) return; // hide floor if no match while filtering
+
+    const row = document.createElement("div");
+    row.className = "board-row" + (q ? " is-open" : "");
+    row.setAttribute("role","button");
+    row.setAttribute("tabindex","0");
+    row.setAttribute("aria-expanded", q ? "true" : "false");
+    row.innerHTML = `
+      <div class="floor-num serif">${escapeHTML(f.num)}</div>
+      <div class="floor-name">
+        <div class="serif text-[20px] sm:text-[22px]" style="color:#f6efdc;">${escapeHTML(f.name)}</div>
+        <div class="korean-serif text-[13px]" style="color:#cdb98e;">${escapeHTML(f.kor)}</div>
+      </div>
+      <div class="floor-meta">${escapeHTML(f.note)} · ${matched.length} <span class="opacity-60">stores</span></div>
+    `;
+    board.appendChild(row);
+
+    const panel = document.createElement("div");
+    panel.className = "floor-panel" + (q ? " is-open" : "");
+    panel.innerHTML = `
+      <div class="p-5 sm:p-6">
+        <div class="flex items-end justify-between mb-3">
+          <div class="text-[11px] tracking-luxury uppercase gold-text">${escapeHTML(f.num)} · ${escapeHTML(f.name)}</div>
+          <div class="text-[11px] tracking-mid uppercase" style="color:#6a6055;">${matched.length} stores</div>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          ${matched.map(s => `
+            <div class="store-card relative" data-floor="${escapeHTML(f.id)}" data-name="${escapeHTML(s.name)}">
+              ${s.sale && /(\\d+%|1\\+1|BOGO|\\d+,?\\d* ?원)/i.test(s.sale) ? `<span class="sale-badge">Sale</span>` : ``}
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="name">${highlight(s.name,q)}</div>
+                  <div class="kor">${highlight(s.kor,q)}</div>
+                </div>
+                <span class="chip" style="white-space:nowrap;">${escapeHTML(s.tag||"")}</span>
+              </div>
+              <div class="meta">
+                <span class="num">${escapeHTML(s.loc)}</span>
+                <span>${escapeHTML(s.hours)}</span>
+              </div>
+              <div class="mt-2 text-[12px] korean-serif" style="color:var(--ink-soft);">${highlight(s.sale||"",q)}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+    board.appendChild(panel);
+
+    // toggle
+    function toggle(){
+      const isOpen = panel.classList.toggle("is-open");
+      row.classList.toggle("is-open", isOpen);
+      row.setAttribute("aria-expanded", isOpen ? "true":"false");
+    }
+    row.addEventListener("click", toggle);
+    row.addEventListener("keydown",(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+  });
+
+  // store card click -> modal
+  board.querySelectorAll(".store-card").forEach(card => {
+    card.addEventListener("click",(e)=>{
+      e.stopPropagation();
+      const fid = card.getAttribute("data-floor");
+      const name = card.getAttribute("data-name");
+      const s = (STORES[fid]||[]).find(x => x.name===name);
+      const f = FLOORS.find(x => x.id===fid);
+      if(s && f) openModal(s,f);
+    });
+  });
+
+  // search count
+  const total = q ? board.querySelectorAll(".store-card").length : Object.values(STORES).reduce((a,b)=>a+b.length,0);
+  const countEl = document.getElementById("searchCount");
+  if(countEl) countEl.textContent = q ? `${total} 매장 검색됨` : `총 ${total} 매장 운영중`;
+}
+renderBoard("");
+
+/* ===================== EXPAND / COLLAPSE ===================== */
+document.getElementById("expandAll").addEventListener("click", ()=>{
+  document.querySelectorAll(".floor-panel").forEach(p=>p.classList.add("is-open"));
+  document.querySelectorAll(".board-row").forEach(r=>{r.classList.add("is-open");r.setAttribute("aria-expanded","true");});
+});
+document.getElementById("collapseAll").addEventListener("click", ()=>{
+  document.querySelectorAll(".floor-panel").forEach(p=>p.classList.remove("is-open"));
+  document.querySelectorAll(".board-row").forEach(r=>{r.classList.remove("is-open");r.setAttribute("aria-expanded","false");});
+});
+
+/* ===================== SEARCH ===================== */
+const searchInput = document.getElementById("searchInput");
+const searchClear = document.getElementById("searchClear");
+let searchTimer = null;
+searchInput.addEventListener("input", ()=>{
+  clearTimeout(searchTimer);
+  const v = searchInput.value;
+  searchClear.classList.toggle("hidden", !v);
+  searchTimer = setTimeout(()=> renderBoard(v), 100);
+});
+searchClear.addEventListener("click", ()=>{
+  searchInput.value = "";
+  searchClear.classList.add("hidden");
+  renderBoard("");
+  searchInput.focus();
+});
+
+/* ===================== EVENT CAROUSEL ===================== */
+const carousel = document.getElementById("carousel");
+const carDots = document.getElementById("carDots");
+let carIdx = 0; let carTimer = null;
+
+function renderCarousel(){
+  carousel.innerHTML = EVENTS.map((e,i) => `
+    <div class="car-slide ${i===0?"is-active":""}" data-idx="${i}">
+      <div class="grid lg:grid-cols-[1.3fr_1fr]">
+        <div class="p-7 sm:p-10">
+          <div class="chip chip-burgundy" style="border-color:${e.accent};color:${e.accent};">${escapeHTML(e.tag)}</div>
+          <h3 class="serif text-[26px] sm:text-[34px] mt-3 leading-tight">${escapeHTML(e.title)}</h3>
+          <p class="korean-serif text-[13.5px] mt-3 leading-relaxed" style="color:var(--ink-soft);">${escapeHTML(e.desc)}</p>
+          <div class="mt-5 grid grid-cols-2 gap-4 text-[12.5px]">
+            <div>
+              <div class="text-[11px] tracking-luxury uppercase gold-text">Period</div>
+              <div class="serif text-[16px] mt-1 num">${escapeHTML(e.period)}</div>
+            </div>
+            <div>
+              <div class="text-[11px] tracking-luxury uppercase gold-text">Location</div>
+              <div class="serif text-[16px] mt-1">${escapeHTML(e.floor)}</div>
+            </div>
+          </div>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <button class="btn-ink" data-evt-cta="${i}">자세히 보기</button>
+            <button class="btn-line" data-evt-prev="1">이전 이벤트</button>
+            <button class="btn-line" data-evt-next="1">다음 이벤트</button>
+          </div>
+        </div>
+        <div class="hidden lg:block relative" style="background:linear-gradient(135deg,${e.accent}15, transparent 60%),#f3ede2;">
+          <!-- decorative SVG poster -->
+          <svg viewBox="0 0 320 320" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <pattern id="grid${i}" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${e.accent}" stroke-opacity="0.08" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="320" height="320" fill="url(#grid${i})"/>
+            <circle cx="160" cy="160" r="90" fill="none" stroke="${e.accent}" stroke-opacity=".35"/>
+            <circle cx="160" cy="160" r="55" fill="none" stroke="${e.accent}" stroke-opacity=".5"/>
+            <text x="160" y="155" text-anchor="middle" font-family="Playfair Display, serif" font-size="32" fill="${e.accent}">SPARK</text>
+            <text x="160" y="180" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" letter-spacing="4" fill="${e.accent}">VOL · 12</text>
+            <path d="M40 280 L60 240 L80 280 L100 200 L120 280 L140 220 L160 280" fill="none" stroke="${e.accent}" stroke-width="1.4" opacity=".55"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  `).join("");
+  carDots.innerHTML = EVENTS.map((_,i)=>`<button class="car-dot ${i===0?"is-active":""}" data-dot="${i}" aria-label="slide ${i+1}"></button>`).join("");
+
+  carDots.querySelectorAll("[data-dot]").forEach(b => b.addEventListener("click", ()=>{
+    carIdx = parseInt(b.getAttribute("data-dot"),10); updateCarousel(); resetCarTimer();
+  }));
+  carousel.querySelectorAll("[data-evt-next]").forEach(b=>b.addEventListener("click",()=>{carIdx=(carIdx+1)%EVENTS.length;updateCarousel();resetCarTimer();}));
+  carousel.querySelectorAll("[data-evt-prev]").forEach(b=>b.addEventListener("click",()=>{carIdx=(carIdx-1+EVENTS.length)%EVENTS.length;updateCarousel();resetCarTimer();}));
+}
+function updateCarousel(){
+  carousel.querySelectorAll(".car-slide").forEach(s=>s.classList.toggle("is-active", parseInt(s.dataset.idx,10)===carIdx));
+  carDots.querySelectorAll("[data-dot]").forEach(d=>d.classList.toggle("is-active", parseInt(d.dataset.dot,10)===carIdx));
+}
+function resetCarTimer(){
+  clearInterval(carTimer);
+  carTimer = setInterval(()=>{ carIdx=(carIdx+1)%EVENTS.length; updateCarousel(); }, 5500);
+}
+renderCarousel(); resetCarTimer();
+// Pause on hover
+carousel.addEventListener("mouseenter", ()=>clearInterval(carTimer));
+carousel.addEventListener("mouseleave", resetCarTimer);
+
+/* ===================== MODAL ===================== */
+const modal = document.getElementById("modal");
+function openModal(s,f){
+  document.getElementById("mdFloor").textContent = `${f.id} · ${f.name}`;
+  document.getElementById("mdName").textContent = s.name;
+  document.getElementById("mdKor").textContent = s.kor;
+  document.getElementById("mdDesc").textContent = s.desc || "가상 매장 정보 — 상세 설명 준비 중입니다.";
+  document.getElementById("mdLoc").textContent = s.loc;
+  document.getElementById("mdHours").textContent = s.hours;
+  document.getElementById("mdContact").textContent = s.contact;
+  document.getElementById("mdSale").textContent = s.sale || "—";
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden","false");
+}
+function closeModal(){
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden","true");
+}
+document.getElementById("mdClose").addEventListener("click", closeModal);
+document.getElementById("mdClose2").addEventListener("click", closeModal);
+modal.addEventListener("click",(e)=>{ if(e.target===modal) closeModal(); });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeModal(); });
+
+/* ===================== FLOOR PLAN ===================== */
+const planTabs = document.getElementById("planTabs");
+const planSvg  = document.getElementById("planSvg");
+const planLegend = document.getElementById("planLegend");
+let currentPlan = "1F";
+
+/* Pre-defined floor-plan layouts (svg rect positions for up to 8 stores) */
+const PLAN_LAYOUTS = {
+  default: [
+    {x:30,y:30,w:140,h:90},
+    {x:180,y:30,w:140,h:90},
+    {x:330,y:30,w:160,h:90},
+    {x:30,y:140,w:90,h:150},
+    {x:130,y:140,w:130,h:150},
+    {x:270,y:140,w:110,h:150},
+    {x:390,y:140,w:100,h:70},
+    {x:390,y:220,w:100,h:70},
+  ],
+};
+
+function renderPlanTabs(){
+  planTabs.innerHTML = FLOORS.slice().reverse().map(f=>`
+    <button class="btn-line ${f.id===currentPlan?"":"opacity-60"}" data-plan="${escapeHTML(f.id)}" style="${f.id===currentPlan?"background:var(--gold);color:#fff;":""}">${escapeHTML(f.num)}</button>
+  `).join("");
+  planTabs.querySelectorAll("[data-plan]").forEach(b => b.addEventListener("click", ()=>{
+    currentPlan = b.getAttribute("data-plan");
+    renderPlanTabs(); renderPlan();
+  }));
+}
+function renderPlan(){
+  const stores = (STORES[currentPlan]||[]).slice(0, PLAN_LAYOUTS.default.length);
+  const layout = PLAN_LAYOUTS.default;
+  const f = FLOORS.find(x=>x.id===currentPlan);
+
+  let svg = `
+    <rect x="0" y="0" width="520" height="320" fill="#fffdf8"/>
+    <!-- elevator -->
+    <rect x="240" y="305" width="40" height="15" fill="#171513" opacity=".85"/>
+    <text x="260" y="316" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#dcc9a2" letter-spacing="2">ELEV</text>
+    <!-- escalator -->
+    <rect x="200" y="305" width="35" height="15" fill="#8a6d3b" opacity=".4"/>
+    <text x="217.5" y="316" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#3b342c" letter-spacing="2">ESC</text>
+    <rect x="285" y="305" width="35" height="15" fill="#8a6d3b" opacity=".4"/>
+    <text x="302.5" y="316" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#3b342c" letter-spacing="2">ESC</text>
+    <!-- floor label -->
+    <text x="20" y="22" font-family="Playfair Display,serif" font-size="18" fill="#8a6d3b">${escapeHTML(f.num)} · ${escapeHTML(f.name)}</text>
+    <text x="20" y="312" font-family="Inter,sans-serif" font-size="9" fill="#6a6055" letter-spacing="2">N ↑   ENTRANCE ↓</text>
+  `;
+  stores.forEach((s,i) => {
+    const r = layout[i];
+    svg += `
+      <g class="planG" data-name="${escapeHTML(s.name)}">
+        <rect class="floorplan-store" data-name="${escapeHTML(s.name)}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}"/>
+        <text class="floorplan-label" x="${r.x+r.w/2}" y="${r.y+r.h/2-2}" text-anchor="middle">${escapeHTML(s.name.length>16?s.name.slice(0,15)+"…":s.name)}</text>
+        <text class="floorplan-label" x="${r.x+r.w/2}" y="${r.y+r.h/2+12}" text-anchor="middle" style="font-family:'Noto Serif KR',serif;">${escapeHTML(s.kor.length>12?s.kor.slice(0,11)+"…":s.kor)}</text>
+      </g>
+    `;
+  });
+  planSvg.innerHTML = svg;
+
+  // Legend
+  planLegend.innerHTML = stores.map((s,i) => `
+    <div class="flex items-start justify-between gap-3 py-1.5 border-b hairline cursor-pointer plan-legend-item" data-name="${escapeHTML(s.name)}">
+      <div class="flex items-start gap-2">
+        <span class="num text-[11px] gold-text" style="min-width:18px;">${String(i+1).padStart(2,"0")}</span>
+        <div>
+          <div class="serif text-[14px]">${escapeHTML(s.name)}</div>
+          <div class="text-[11.5px]" style="color:var(--ink-soft);">${escapeHTML(s.kor)}</div>
+        </div>
+      </div>
+      <span class="num text-[11px] tracking-mid uppercase" style="color:#6a6055;">${escapeHTML(s.loc)}</span>
+    </div>
+  `).join("");
+
+  // Click handlers
+  planSvg.querySelectorAll(".floorplan-store").forEach(rect => {
+    rect.addEventListener("click", ()=>{
+      const name = rect.getAttribute("data-name");
+      highlightPlan(name);
+      const s = (STORES[currentPlan]||[]).find(x => x.name===name);
+      if(s) openModal(s, f);
+    });
+  });
+  planLegend.querySelectorAll(".plan-legend-item").forEach(item => {
+    item.addEventListener("click", ()=>{
+      const name = item.getAttribute("data-name");
+      highlightPlan(name);
+      const s = (STORES[currentPlan]||[]).find(x => x.name===name);
+      if(s) openModal(s, f);
+    });
+  });
+}
+function highlightPlan(name){
+  planSvg.querySelectorAll(".floorplan-store").forEach(r => r.classList.toggle("is-active", r.getAttribute("data-name")===name));
+}
+renderPlanTabs(); renderPlan();
+</script>
+</body>
+</html>

@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>장거리 송전 손실 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(168,139,250,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(99, 102, 241, 0.45),
+        0 0 40px rgba(244, 114, 182, 0.12);
+}
+canvas#gridCanvas {
+    display: block;
+    width: 100%;
+    height: 480px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#compareCanvas {
+    display: block;
+    width: 100%;
+    height: 280px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.chip-l { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-p { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-cos { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-pill.warn {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.4);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.preset-btn {
+    background: rgba(34, 211, 238, 0.18);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+    font-size: 11px;
+}
+.preset-btn:hover {
+    background: rgba(34, 211, 238, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.4);
+}
+.preset-btn.active {
+    background: rgba(168, 139, 250, 0.32);
+    border-color: rgba(168, 139, 250, 0.7);
+    color: #e0e7ff;
+    box-shadow: 0 0 22px rgba(168, 139, 250, 0.5);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · TRANSMISSION LOSS · HV vs UHV
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            ⚡ 장거리 송전 손실 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">발전소 → 송전선 → 변전소 → 수용가. 전압을 높이면 같은 전력을 더 작은 전류로 보내 손실 P_loss = I²R 이 급감.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-i">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">송전 전류 I</p>
+            <p class="mt-1 text-lg font-bold"><span id="iVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-loss">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">송전 손실 P_loss</p>
+            <p class="mt-1 text-lg font-bold"><span id="lossVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-eta">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">송전 효율 η</p>
+            <p class="mt-1 text-lg font-bold"><span id="etaVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-dv">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">전압강하 ΔV</p>
+            <p class="mt-1 text-lg font-bold"><span id="dvVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인: 발전소→송전탑→변전소→수용가 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="gridCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">위 — 송전 계통 단면 · 전압별 송전탑/와이어/입자 흐름</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-amber-300"><span class="legend-dot" style="background:#fbbf24;color:#fbbf24"></span>발전소</span>
+                        <span class="text-cyan-300"><span class="legend-dot" style="background:#67e8f9;color:#67e8f9"></span>전류 입자</span>
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#fca5a5;color:#fca5a5"></span>열 손실</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#6ee7b7;color:#6ee7b7"></span>수용가</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="gridCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 전압별 비교 막대 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="compareCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">아래 — 전압별 손실 비교 (현재 조건 고정 · P, L, cosθ 동일)</span>
+                    <div class="flex items-center gap-2">
+                        <button class="preset-btn rounded-md px-3 py-1.5 font-bold" data-v="22">22 kV</button>
+                        <button class="preset-btn rounded-md px-3 py-1.5 font-bold" data-v="154">154 kV</button>
+                        <button class="preset-btn rounded-md px-3 py-1.5 font-bold" data-v="345">345 kV</button>
+                        <button class="preset-btn rounded-md px-3 py-1.5 font-bold" data-v="765">765 kV</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="compareCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">장거리 송전 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">송전 전류</p>
+                        <div class="math-container mt-2">\(I = \dfrac{P}{\sqrt{3}\,V\cos\theta}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">송전 손실</p>
+                        <div class="math-container mt-2">\(P_{loss} = 3I^2 R \propto \dfrac{1}{V^2}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">전압강하 / 효율</p>
+                        <div class="math-container mt-2">\(\Delta V = \sqrt{3}\,I(R\cos\theta + X\sin\theta)\)</div>
+                        <div class="math-container mt-1">\(\eta = \dfrac{P-P_{loss}}{P}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">전압 ×2</span> · 전류 ½ → 손실 ¼ <span class="text-slate-500">— 전압이 가장 결정적</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">거리 ×2</span> · R 2배 → 손실 2배 <span class="text-slate-500">— 거리는 비례</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">P 부하 ×2</span> · 전류 2배 → 손실 4배 <span class="text-slate-500">— 부하는 제곱</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">cos θ ↑</span> · 같은 P에 I 감소 <span class="text-slate-500">— 역률 개선과 연동</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>송전 전압 V</span><span id="vDisp" class="font-mono text-base">154</span></label>
+                <input type="range" id="v" min="22" max="765" step="1" value="154" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kV (선간)</p>
+            </div>
+
+            <div class="chip-l chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>송전 거리 L</span><span id="lDisp" class="font-mono text-base">200</span></label>
+                <input type="range" id="l" min="10" max="800" step="5" value="200" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">km</p>
+            </div>
+
+            <div class="chip-p chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전력 P</span><span id="pDisp" class="font-mono text-base">100</span></label>
+                <input type="range" id="p" min="10" max="1000" step="5" value="100" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">MW</p>
+            </div>
+
+            <div class="chip-cos chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>역률 cos θ</span><span id="cosDisp" class="font-mono text-base">0.90</span></label>
+                <input type="range" id="cos" min="0.70" max="1.00" step="0.01" value="0.90" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">(지상)</p>
+            </div>
+
+            <button id="resetBtn" class="preset-btn rounded-md px-3 py-2 w-full font-bold">↺ 초기화</button>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-indigo-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">같은 전력 P를 보낼 때 V↑ → <span class="text-cyan-300 font-bold">I = P/(√3·V·cos θ)</span> 감소</p>
+                <p class="feature-row rounded-md p-2">손실은 <span class="text-rose-300 font-bold">I²에 비례</span> → V의 제곱에 반비례</p>
+                <p class="feature-row rounded-md p-2">그래서 장거리 송전엔 <span class="text-indigo-300 font-bold">765 kV급 초고압</span> 사용</p>
+                <p class="feature-row rounded-md p-2">22 kV 배전 → 154/345 kV 송전 → 22.9 kV 배전 → 220/380 V 수용가</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const gCv = $('gridCanvas');
+const gctx = gCv.getContext('2d');
+const cCv = $('compareCanvas');
+const cctx = cCv.getContext('2d');
+
+// 단위계
+// V: kV (선간)
+// L: km
+// P: MW
+// 도체: ACSR 등가 — 단위 저항 r = 0.08 Ω/km, 리액턴스 x = 0.4 Ω/km (3상 1회선 가정)
+const R_PER_KM = 0.08;   // Ω/km
+const X_PER_KM = 0.40;   // Ω/km
+const VOLTAGES = [22, 154, 345, 765];  // kV preset
+
+let state = {
+    V: 154,    // kV
+    L: 200,    // km
+    P: 100,    // MW
+    cos: 0.90,
+    t: 0,
+    // 계산값
+    R: 0, X: 0,
+    I: 0,         // A
+    Ploss: 0,     // MW
+    eta: 0,       // %
+    dV: 0,        // kV
+    dVpct: 0,     // %
+};
+let particles = [];
+
+function resize() {
+    gCv.width = gCv.parentElement.clientWidth - 2;
+    gCv.height = 480;
+    cCv.width = cCv.parentElement.clientWidth - 2;
+    cCv.height = 280;
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function drawLabel(ctx, text, x, y, color, font) {
+    ctx.save();
+    ctx.font = font || 'bold 11px ui-monospace, monospace';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// 입자: 발전소 → 수용가 방향으로 흐름. 전류 크면 입자 많고 빠름.
+function seedParticles() {
+    particles = [];
+    // 갯수는 compute()에서 갱신
+}
+function reseedParticles(count) {
+    particles = [];
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            progress: Math.random(),
+            speed: 0.0025 + Math.random() * 0.0015,
+            line: Math.floor(Math.random() * 2), // 0 또는 1 (상선/하선)
+        });
+    }
+}
+
+// 전압별 송전탑 높이/와이어 굵기
+function towerScale(V) {
+    if (V <= 22) return { h: 30, wireW: 1.6, color: '#94a3b8', gloW: 0.25 };
+    if (V <= 154) return { h: 55, wireW: 2.4, color: '#a5b4fc', gloW: 0.45 };
+    if (V <= 345) return { h: 80, wireW: 3.4, color: '#c4b5fd', gloW: 0.65 };
+    return { h: 110, wireW: 4.6, color: '#f9a8d4', gloW: 0.95 };
+}
+function towerScaleInterp(V) {
+    // 보간 (점진적 변화)
+    const t = Math.min(1, Math.max(0, (V - 22) / (765 - 22)));
+    const h = 28 + t * 90;
+    const wireW = 1.5 + t * 3.5;
+    // 색상: indigo → pink
+    const r = Math.round(148 + t * (244 - 148));
+    const g = Math.round(163 + t * (114 - 163));
+    const b = Math.round(184 + t * (182 - 184));
+    return { h, wireW, color: `rgb(${r},${g},${b})`, glow: 0.25 + t * 0.7, t };
+}
+
+// ====================================================
+// 메인: 송전 계통
+// ====================================================
+function drawGrid() {
+    const W = gCv.width, H = gCv.height;
+    gctx.clearRect(0, 0, W, H);
+
+    // 배경 (위: 하늘색 톤, 아래: 어두운 지면)
+    const bg = gctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(0.55, '#08101f');
+    bg.addColorStop(0.78, '#070d18');
+    bg.addColorStop(1, '#050a14');
+    gctx.fillStyle = bg;
+    gctx.fillRect(0, 0, W, H);
+
+    // 격자
+    gctx.save();
+    gctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    gctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        gctx.beginPath(); gctx.moveTo(i, 0); gctx.lineTo(i, H); gctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        gctx.beginPath(); gctx.moveTo(0, i); gctx.lineTo(W, i); gctx.stroke();
+    }
+    gctx.restore();
+
+    // 좌상 라벨
+    gctx.save();
+    gctx.font = 'bold 10px ui-monospace, monospace';
+    gctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    gctx.textAlign = 'left'; gctx.textBaseline = 'top';
+    gctx.fillText('▮ TRANSMISSION LINE · 발전소 ▸ 송전탑 ▸ 변전소 ▸ 수용가', 12, 10);
+    gctx.restore();
+
+    // 지면
+    const groundY = H - 60;
+    gctx.save();
+    const gg = gctx.createLinearGradient(0, groundY, 0, H);
+    gg.addColorStop(0, 'rgba(30, 41, 59, 0.5)');
+    gg.addColorStop(1, 'rgba(15, 23, 42, 0.9)');
+    gctx.fillStyle = gg;
+    gctx.fillRect(0, groundY, W, H - groundY);
+    gctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    gctx.lineWidth = 1;
+    gctx.beginPath();
+    gctx.moveTo(0, groundY); gctx.lineTo(W, groundY);
+    gctx.stroke();
+    gctx.restore();
+
+    // 좌표
+    const plantX = 60;
+    const subX = W - 180;
+    const houseX = W - 60;
+    // 송전선 통과 구간 (송전탑들)
+    const lineStartX = plantX + 80;
+    const lineEndX = subX - 60;
+
+    // 전압에 따른 송전탑 스케일
+    const ts = towerScaleInterp(state.V);
+    const towerCount = Math.max(4, Math.min(10, Math.floor((lineEndX - lineStartX) / 110)));
+    const towers = [];
+    for (let i = 0; i < towerCount; i++) {
+        const x = lineStartX + ((lineEndX - lineStartX) * (i + 0.5)) / towerCount;
+        towers.push({ x, h: ts.h });
+    }
+
+    // 와이어 (송전탑 꼭대기 연결, sag — 미세 처짐)
+    const wireY = groundY - 30; // 송전선 기준선 (송전탑 꼭대기 부근)
+    gctx.save();
+    gctx.shadowBlur = 12;
+    gctx.shadowColor = ts.color;
+    gctx.strokeStyle = ts.color;
+    gctx.globalAlpha = 0.75 + ts.glow * 0.2;
+    gctx.lineWidth = ts.wireW;
+    gctx.lineCap = 'round';
+    // 두 회선 (위/아래 약간 차이)
+    const lines = [
+        { dy: -8 },
+        { dy: +6 },
+    ];
+    // 송전탑 꼭대기 좌표 = groundY - h
+    const topY = groundY - ts.h;
+    // 발전소 → 첫 탑
+    for (const ln of lines) {
+        gctx.beginPath();
+        // 발전소 출력단 (가공 케이블)
+        gctx.moveTo(plantX + 30, groundY - 70 + ln.dy);
+        gctx.lineTo(towers[0].x, topY + ln.dy);
+        // 탑 사이 (sag)
+        for (let i = 0; i < towers.length - 1; i++) {
+            const a = towers[i], b = towers[i + 1];
+            const mx = (a.x + b.x) / 2;
+            const my = topY + ln.dy + 10; // sag
+            gctx.quadraticCurveTo(mx, my, b.x, topY + ln.dy);
+        }
+        // 마지막 탑 → 변전소
+        gctx.lineTo(subX - 8, groundY - 70 + ln.dy);
+        gctx.stroke();
+    }
+    gctx.restore();
+
+    // 송전탑 그리기
+    for (const tw of towers) {
+        drawTower(gctx, tw.x, groundY, ts.h, ts.color);
+    }
+
+    // 입자 (전류 흐름) — 와이어 따라 흐름
+    drawCurrentParticles(gctx, towers, groundY, plantX, subX, topY, ts);
+
+    // 발전소
+    drawPlant(gctx, plantX, groundY);
+
+    // 변전소
+    drawSubstation(gctx, subX, groundY, ts.color);
+
+    // 수용가 (집)
+    drawHouse(gctx, houseX, groundY);
+    // 변전소 → 집 (배전선)
+    gctx.save();
+    gctx.shadowBlur = 8;
+    gctx.shadowColor = '#6ee7b7';
+    gctx.strokeStyle = 'rgba(110, 231, 183, 0.7)';
+    gctx.lineWidth = 1.6;
+    gctx.beginPath();
+    gctx.moveTo(subX + 30, groundY - 40);
+    gctx.lineTo(houseX - 22, groundY - 30);
+    gctx.stroke();
+    gctx.restore();
+
+    // 라벨 (각 구간)
+    drawLabel(gctx, `발전소`, plantX, groundY - 95, '#fcd34d', 'bold 11px ui-monospace, monospace');
+    drawLabel(gctx, `${state.V.toFixed(0)} kV · L=${state.L.toFixed(0)} km`, (lineStartX + lineEndX) / 2, 32, '#c4b5fd', 'bold 11px ui-monospace, monospace');
+    drawLabel(gctx, `변전소`, subX, groundY - 95, '#a5b4fc', 'bold 11px ui-monospace, monospace');
+    drawLabel(gctx, `수용가`, houseX, groundY - 70, '#6ee7b7', 'bold 11px ui-monospace, monospace');
+
+    // 열 손실 시각화 (와이어 따라 빨간 안개 — Ploss/P 비율에 따라 강도)
+    drawHeatLoss(gctx, towers, topY, groundY, plantX, subX);
+
+    // 좌측 상단 상태 박스
+    const bx = 14, by = H - 130, bw = 240, bh = 110;
+    gctx.save();
+    gctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+    roundRect(gctx, bx, by, bw, bh, 10);
+    gctx.fill();
+    gctx.strokeStyle = 'rgba(168, 139, 250, 0.4)';
+    gctx.lineWidth = 1;
+    gctx.stroke();
+
+    gctx.font = 'bold 10px ui-monospace, monospace';
+    gctx.textAlign = 'left'; gctx.textBaseline = 'top';
+    gctx.fillStyle = '#c4b5fd';
+    gctx.fillText('[ 송전선 임피던스 ]', bx + 12, by + 10);
+    gctx.font = '10px ui-monospace, monospace';
+    let yy = by + 30;
+    const line = (lab, val, color) => {
+        gctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+        gctx.fillText(lab, bx + 12, yy);
+        gctx.fillStyle = color;
+        gctx.textAlign = 'right';
+        gctx.fillText(val, bx + bw - 12, yy);
+        gctx.textAlign = 'left';
+        yy += 17;
+    };
+    line('단위 저항 r', `${R_PER_KM} Ω/km`, '#fcd34d');
+    line('단위 리액턴스 x', `${X_PER_KM} Ω/km`, '#67e8f9');
+    line('총 저항 R', `${state.R.toFixed(2)} Ω`, '#fca5a5');
+    line('총 리액턴스 X', `${state.X.toFixed(2)} Ω`, '#a5b4fc');
+    gctx.restore();
+}
+
+function drawTower(ctx, x, groundY, h, color) {
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    const topY = groundY - h;
+    const baseW = Math.max(12, h * 0.35);
+    const topW = Math.max(8, h * 0.18);
+    // 좌우 다리
+    ctx.beginPath();
+    ctx.moveTo(x - baseW / 2, groundY);
+    ctx.lineTo(x - topW / 2, topY);
+    ctx.moveTo(x + baseW / 2, groundY);
+    ctx.lineTo(x + topW / 2, topY);
+    // 가로살 (트러스)
+    const steps = Math.max(3, Math.floor(h / 14));
+    for (let i = 1; i <= steps; i++) {
+        const tt = i / steps;
+        const ly = groundY - tt * h;
+        const lw = baseW + (topW - baseW) * tt;
+        ctx.moveTo(x - lw / 2, ly); ctx.lineTo(x + lw / 2, ly);
+        // 대각선
+        if (i % 2 === 0 && i < steps) {
+            const prevT = (i - 1) / steps;
+            const prevY = groundY - prevT * h;
+            const prevLw = baseW + (topW - baseW) * prevT;
+            ctx.moveTo(x - prevLw / 2, prevY); ctx.lineTo(x + lw / 2, ly);
+            ctx.moveTo(x + prevLw / 2, prevY); ctx.lineTo(x - lw / 2, ly);
+        }
+    }
+    // 상단 가로 암 (애자 위치)
+    const armW = topW * 2.4;
+    ctx.moveTo(x - armW / 2, topY); ctx.lineTo(x + armW / 2, topY);
+    // 상단 짧은 첨탑
+    ctx.moveTo(x, topY); ctx.lineTo(x, topY - 6);
+    ctx.stroke();
+    ctx.restore();
+
+    // 애자
+    ctx.save();
+    ctx.fillStyle = 'rgba(226, 232, 240, 0.7)';
+    ctx.beginPath();
+    ctx.arc(x - armW / 2 - 2, topY + 4, 1.8, 0, Math.PI * 2);
+    ctx.arc(x + armW / 2 + 2, topY + 4, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawPlant(ctx, x, groundY) {
+    // 발전소 (굴뚝 + 건물)
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#fbbf24';
+    // 건물 본체
+    const bx = x - 38, by = groundY - 60, bw = 76, bh = 60;
+    const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, '#1e293b');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, bw, bh, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    // 굴뚝 (두 개)
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(bx + 8, by - 32, 10, 36);
+    ctx.fillRect(bx + 28, by - 38, 10, 42);
+    // 연기 (애니메이션)
+    const tt = (state.t * 0.6) % 60;
+    for (let s = 0; s < 4; s++) {
+        const phase = (tt + s * 16) % 60;
+        const sy = by - 38 - phase;
+        const sx = bx + 33 + Math.sin(phase * 0.1) * 4;
+        const rad = 4 + phase * 0.18;
+        ctx.beginPath();
+        ctx.globalAlpha = Math.max(0, 0.4 - phase / 100);
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+        ctx.arc(sx, sy, rad, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // 발전기 심볼 (G)
+    ctx.fillStyle = '#fcd34d';
+    ctx.font = 'bold 16px ui-serif, serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('G', bx + bw / 2, by + bh / 2 + 10);
+    // 출력 케이블 (위로)
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#fbbf24';
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx + 60, by);
+    ctx.lineTo(bx + 60, by - 12);
+    ctx.lineTo(x + 30, groundY - 70);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawSubstation(ctx, x, groundY, accentColor) {
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#a5b4fc';
+    // 변전소 건물
+    const bx = x - 36, by = groundY - 50, bw = 72, bh = 50;
+    const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, '#1e1b4b');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, bw, bh, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(165, 180, 252, 0.6)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // 변압기 심볼 (두 원)
+    ctx.fillStyle = accentColor;
+    ctx.strokeStyle = '#e0e7ff';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(bx + 26, by + 28, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(bx + 46, by + 28, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    // 핀
+    ctx.beginPath();
+    ctx.moveTo(bx + 36, by + 14); ctx.lineTo(bx + 36, by + 42);
+    ctx.stroke();
+    // T 표기
+    ctx.fillStyle = '#c4b5fd';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('T/F', bx + bw / 2, by + 2);
+
+    // 입력 케이블 (위 — 송전선 연결)
+    ctx.strokeStyle = 'rgba(165, 180, 252, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(bx - 8, groundY - 70);
+    ctx.lineTo(bx + 12, by);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawHouse(ctx, x, groundY) {
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#6ee7b7';
+    const bx = x - 16, by = groundY - 30, bw = 32, bh = 30;
+    // 본체
+    const g = ctx.createLinearGradient(bx, by, bx, by + bh);
+    g.addColorStop(0, '#064e3b');
+    g.addColorStop(1, '#022c22');
+    ctx.fillStyle = g;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.7)';
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(bx, by, bw, bh);
+    // 지붕
+    ctx.beginPath();
+    ctx.moveTo(bx - 3, by);
+    ctx.lineTo(bx + bw / 2, by - 12);
+    ctx.lineTo(bx + bw + 3, by);
+    ctx.closePath();
+    ctx.fillStyle = '#10b981';
+    ctx.fill();
+    ctx.stroke();
+    // 창문
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.85)';
+    ctx.fillRect(bx + 4, by + 8, 8, 8);
+    ctx.fillRect(bx + bw - 12, by + 8, 8, 8);
+    // 문
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(bx + bw / 2 - 4, by + bh - 14, 8, 14);
+    ctx.restore();
+}
+
+function drawCurrentParticles(ctx, towers, groundY, plantX, subX, topY, ts) {
+    if (particles.length === 0) return;
+    // 경로 점들 (발전소 → 첫 탑 → 마지막 탑 → 변전소)
+    const linePoints = [];
+    linePoints.push({ x: plantX + 30, y: groundY - 70 });
+    for (const t of towers) linePoints.push({ x: t.x, y: topY });
+    linePoints.push({ x: subX - 8, y: groundY - 70 });
+
+    // 누적 길이
+    let totalLen = 0;
+    const segs = [];
+    for (let i = 0; i < linePoints.length - 1; i++) {
+        const a = linePoints[i], b = linePoints[i + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, len, start: totalLen });
+        totalLen += len;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of particles) {
+        // 속도: 전류 클수록 빠름. 전류 ∝ P/V
+        const baseSpeed = 0.0018 + (state.I / 1500) * 0.004;
+        p.progress = (p.progress + baseSpeed) % 1;
+        const dist = p.progress * totalLen;
+        let pt = null;
+        for (const s of segs) {
+            if (dist <= s.start + s.len) {
+                const tt = (dist - s.start) / s.len;
+                pt = { x: s.a.x + (s.b.x - s.a.x) * tt, y: s.a.y + (s.b.y - s.a.y) * tt };
+                break;
+            }
+        }
+        if (!pt) continue;
+        const dy = p.line === 0 ? -8 : 6;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#67e8f9';
+        ctx.fillStyle = `rgba(103, 232, 249, ${0.7 + ts.glow * 0.2})`;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y + dy, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawHeatLoss(ctx, towers, topY, groundY, plantX, subX) {
+    // 손실 비율
+    const pct = Math.min(0.3, state.Ploss / Math.max(0.001, state.P));
+    if (pct < 0.001) return;
+    // 와이어를 따라 작은 붉은 발열 점 — Ploss/P 비율에 비례
+    const count = Math.floor(8 + pct * 80);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const startX = plantX + 30;
+    const endX = subX - 8;
+    for (let i = 0; i < count; i++) {
+        const tt = (i / count) + Math.sin(state.t * 0.04 + i) * 0.02;
+        const x = startX + (endX - startX) * tt;
+        const baseY = topY + (Math.sin(tt * Math.PI * 4) * 8);
+        const dy = -4 - Math.sin(state.t * 0.06 + i * 0.6) * 6;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ef4444';
+        ctx.fillStyle = `rgba(248, 113, 113, ${0.25 + pct * 1.8})`;
+        ctx.beginPath();
+        ctx.arc(x, baseY + dy, 1.6 + pct * 6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 와이어 위쪽으로 열 안개 (overall)
+    if (pct > 0.005) {
+        ctx.save();
+        const g = ctx.createLinearGradient(0, topY - 60, 0, topY + 20);
+        g.addColorStop(0, 'rgba(248, 113, 113, 0)');
+        g.addColorStop(1, `rgba(248, 113, 113, ${Math.min(0.18, pct * 1.2)})`);
+        ctx.fillStyle = g;
+        ctx.fillRect(plantX + 30, topY - 60, endX - startX, 80);
+        ctx.restore();
+    }
+}
+
+// ====================================================
+// 전압별 비교 막대
+// ====================================================
+function drawCompare() {
+    const W = cCv.width, H = cCv.height;
+    cctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = cctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    cctx.fillStyle = bg;
+    cctx.fillRect(0, 0, W, H);
+
+    // 격자
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    cctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        cctx.beginPath(); cctx.moveTo(i, 0); cctx.lineTo(i, H); cctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        cctx.beginPath(); cctx.moveTo(0, i); cctx.lineTo(W, i); cctx.stroke();
+    }
+    cctx.restore();
+
+    cctx.save();
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    cctx.textAlign = 'left'; cctx.textBaseline = 'top';
+    cctx.fillText('▮ LOSS COMPARISON · 22/154/345/765 kV (동일 P·L·cosθ)', 12, 10);
+    cctx.restore();
+
+    // 각 전압별 손실 계산 (현재 P, L, cos 기준)
+    const data = VOLTAGES.map(V => {
+        const I = (state.P * 1e6) / (Math.sqrt(3) * V * 1000 * state.cos);  // A
+        const Ploss = 3 * I * I * state.R / 1e6;  // MW
+        const eta = ((state.P - Ploss) / state.P) * 100;
+        return { V, I, Ploss, eta };
+    });
+    const maxLoss = Math.max(...data.map(d => d.Ploss), 0.01);
+
+    // 막대
+    const plotTop = 50;
+    const plotBot = H - 50;
+    const plotH = plotBot - plotTop;
+    const barCount = data.length;
+    const innerW = W - 80;
+    const barW = (innerW / barCount) * 0.55;
+    const gap = (innerW - barW * barCount) / (barCount + 1);
+
+    for (let i = 0; i < barCount; i++) {
+        const d = data[i];
+        const bx = 40 + gap + i * (barW + gap);
+        const ratio = d.Ploss / maxLoss;
+        const bh = Math.max(2, ratio * plotH * 0.95);
+        const by = plotBot - bh;
+        const ts = towerScaleInterp(d.V);
+
+        // 막대 (현재 선택 강조)
+        const isCurrent = Math.abs(d.V - state.V) < 1;
+        cctx.save();
+        cctx.shadowBlur = isCurrent ? 22 : 10;
+        cctx.shadowColor = ts.color;
+        const g = cctx.createLinearGradient(bx, by, bx, plotBot);
+        if (isCurrent) {
+            g.addColorStop(0, 'rgba(110, 231, 183, 0.95)');
+            g.addColorStop(1, 'rgba(110, 231, 183, 0.35)');
+        } else {
+            g.addColorStop(0, ts.color);
+            g.addColorStop(1, 'rgba(15, 23, 42, 0.6)');
+        }
+        cctx.fillStyle = g;
+        roundRect(cctx, bx, by, barW, bh, 6);
+        cctx.fill();
+        if (isCurrent) {
+            cctx.strokeStyle = '#6ee7b7';
+            cctx.lineWidth = 2;
+            cctx.stroke();
+        } else {
+            cctx.strokeStyle = 'rgba(255,255,255,0.18)';
+            cctx.lineWidth = 1;
+            cctx.stroke();
+        }
+        cctx.restore();
+
+        // 막대 위 손실 값
+        cctx.save();
+        cctx.font = 'bold 10px ui-monospace, monospace';
+        cctx.textAlign = 'center'; cctx.textBaseline = 'bottom';
+        cctx.fillStyle = isCurrent ? '#6ee7b7' : '#e0e7ff';
+        const lossText = d.Ploss < 0.1 ? `${d.Ploss.toFixed(3)} MW` : d.Ploss < 10 ? `${d.Ploss.toFixed(2)} MW` : `${d.Ploss.toFixed(1)} MW`;
+        cctx.fillText(lossText, bx + barW / 2, by - 4);
+        cctx.font = '9px ui-monospace, monospace';
+        cctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+        cctx.fillText(`η ${d.eta.toFixed(2)}%`, bx + barW / 2, by - 18);
+        cctx.restore();
+
+        // 막대 아래 전압 라벨
+        cctx.save();
+        cctx.font = 'bold 11px ui-monospace, monospace';
+        cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+        cctx.fillStyle = isCurrent ? '#a5f3fc' : '#c4b5fd';
+        cctx.fillText(`${d.V} kV`, bx + barW / 2, plotBot + 8);
+        cctx.font = '9px ui-monospace, monospace';
+        cctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        cctx.fillText(`I=${d.I.toFixed(0)} A`, bx + barW / 2, plotBot + 24);
+        cctx.restore();
+    }
+
+    // y축 (왼쪽)
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    cctx.lineWidth = 1;
+    cctx.beginPath();
+    cctx.moveTo(36, plotTop); cctx.lineTo(36, plotBot);
+    cctx.lineTo(W - 24, plotBot);
+    cctx.stroke();
+    cctx.restore();
+}
+
+// ====================================================
+// 계산
+// ====================================================
+function compute() {
+    state.V = +$('v').value;
+    state.L = +$('l').value;
+    state.P = +$('p').value;
+    state.cos = +$('cos').value;
+
+    // 임피던스
+    state.R = R_PER_KM * state.L;   // Ω
+    state.X = X_PER_KM * state.L;   // Ω
+
+    // 송전 전류 (3상 평형): I = P / (√3 · V · cosθ)
+    // P[W], V[V]
+    state.I = (state.P * 1e6) / (Math.sqrt(3) * state.V * 1000 * state.cos);  // A
+
+    // 송전 손실: P_loss = 3·I²·R (3상)
+    state.Ploss = 3 * state.I * state.I * state.R / 1e6;  // MW
+
+    // 효율
+    state.eta = Math.max(0, ((state.P - state.Ploss) / state.P) * 100);
+
+    // 전압강하: ΔV = √3·I·(R·cosθ + X·sinθ)
+    const sinTh = Math.sqrt(Math.max(0, 1 - state.cos * state.cos));
+    state.dV = Math.sqrt(3) * state.I * (state.R * state.cos + state.X * sinTh) / 1000; // kV
+    state.dVpct = (state.dV / state.V) * 100;
+
+    // UI 갱신
+    $('vDisp').textContent = state.V.toFixed(0);
+    $('lDisp').textContent = state.L.toFixed(0);
+    $('pDisp').textContent = state.P.toFixed(0);
+    $('cosDisp').textContent = state.cos.toFixed(2);
+
+    // I 단위 (A or kA)
+    const iText = state.I >= 1000 ? `${(state.I / 1000).toFixed(2)} kA` : `${state.I.toFixed(1)} A`;
+    $('iVal').textContent = iText;
+
+    const lossText = state.Ploss < 0.1 ? `${state.Ploss.toFixed(3)} MW` :
+        state.Ploss < 10 ? `${state.Ploss.toFixed(2)} MW` : `${state.Ploss.toFixed(1)} MW`;
+    $('lossVal').textContent = lossText;
+    $('etaVal').textContent = `${state.eta.toFixed(2)} %`;
+    $('dvVal').textContent = `${state.dV.toFixed(2)} kV (${state.dVpct.toFixed(1)}%)`;
+
+    // 입자 갯수: 전류 비례
+    const targetCount = Math.max(8, Math.min(50, Math.floor(8 + (state.I / 500) * 40)));
+    if (Math.abs(particles.length - targetCount) > 3) {
+        reseedParticles(targetCount);
+    }
+
+    // 플래시 / 경고
+    const pillLoss = $('pill-loss');
+    const pillEta = $('pill-eta');
+    const pillDv = $('pill-dv');
+    pillLoss.classList.toggle('warn', state.Ploss / state.P > 0.05);
+    pillLoss.classList.toggle('flash', state.Ploss / state.P < 0.01);
+    pillEta.classList.toggle('flash', state.eta > 99);
+    pillEta.classList.toggle('warn', state.eta < 95);
+    pillDv.classList.toggle('warn', state.dVpct > 10);
+
+    // 프리셋 버튼 active
+    document.querySelectorAll('[data-v]').forEach(btn => {
+        const v = +btn.dataset.v;
+        btn.classList.toggle('active', Math.abs(v - state.V) < 1);
+    });
+}
+
+function flashCard(id) {
+    if (window.gsap) gsap.fromTo(`#${id}`,
+        { boxShadow: '0 0 0 0 rgba(110,231,183,0.5)' },
+        { boxShadow: '0 0 60px 4px rgba(110,231,183,0)', duration: 0.6 });
+}
+
+['v', 'l', 'p', 'cos'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); });
+});
+
+document.querySelectorAll('[data-v]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const v = +btn.dataset.v;
+        if (window.gsap) {
+            gsap.to($('v'), { value: v, duration: 0.8, ease: 'power3.out',
+                onUpdate: () => { compute(); },
+                onComplete: () => { flashCard('gridCard'); flashCard('compareCard'); }
+            });
+        } else {
+            $('v').value = v;
+            compute();
+        }
+    });
+});
+
+$('resetBtn').addEventListener('click', () => {
+    $('v').value = 154;
+    $('l').value = 200;
+    $('p').value = 100;
+    $('cos').value = 0.90;
+    compute();
+    flashCard('gridCard');
+});
+
+// ====================================================
+// 메인 루프
+// ====================================================
+function animate() {
+    state.t++;
+    drawGrid();
+    drawCompare();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    reseedParticles(20);
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#gridCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#compareCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.32, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

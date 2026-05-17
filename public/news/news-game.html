@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기기능사 RPG — 전공의 여정 (Lv.42 김전공)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Noto+Serif+KR:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root {
+    --bg-deep: #0a0e14;
+    --bg-panel: #141821;
+    --bg-panel-2: #1c2230;
+    --bg-stone: #1a1d26;
+    --border-rune: #3a2f1f;
+    --gold: #d4a64a;
+    --gold-bright: #f5cf6b;
+    --gold-dark: #8a6a2a;
+    --copper: #b97a3a;
+    --copper-dark: #6a4220;
+    --ink-parch: #e8d8b0;
+    --ink-sub: #a89678;
+    --ink-dim: #6e5f48;
+    --hp-red: #c93a3a;
+    --mp-blue: #4a7ad4;
+    --xp-gold: #e0b842;
+    --skill-locked: #2a2d36;
+    --rune-glow: #ffd87a;
+    --legendary: #ff8a2a;
+    --epic: #b462ff;
+    --rare: #4aa3ff;
+    --uncommon: #6ad06a;
+  }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(212,166,74,0.06), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(74,122,212,0.04), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 60%, rgba(185,122,58,0.04), transparent 60%),
+      #07090d;
+    color: var(--ink-parch);
+    min-height: 100vh;
+    image-rendering: crisp-edges;
+  }
+  .font-rune { font-family: 'Cinzel', serif; letter-spacing: 0.06em; }
+  .font-serif-ko { font-family: 'Noto Serif KR', serif; }
+  .font-pixel { font-family: 'VT323', monospace; letter-spacing: 0.04em; }
+
+  /* === 양피지 / 돌 패널 === */
+  .panel-stone {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(212,166,74,0.04) 0%, transparent 30%),
+      linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-2) 100%);
+    border: 1px solid var(--gold-dark);
+    box-shadow:
+      inset 0 1px 0 rgba(245,207,107,0.18),
+      inset 0 0 0 1px rgba(0,0,0,0.4),
+      0 0 0 1px rgba(0,0,0,0.6),
+      0 12px 24px rgba(0,0,0,0.55);
+    border-radius: 4px;
+  }
+  .panel-stone::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(212,166,74,0.18);
+    pointer-events: none;
+    border-radius: 2px;
+  }
+  /* 4귀퉁이 장식 */
+  .panel-stone::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 8px 8px, var(--gold) 0 2px, transparent 2.5px),
+      radial-gradient(circle at calc(100% - 8px) 8px, var(--gold) 0 2px, transparent 2.5px),
+      radial-gradient(circle at 8px calc(100% - 8px), var(--gold) 0 2px, transparent 2.5px),
+      radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), var(--gold) 0 2px, transparent 2.5px);
+    opacity: 0.85;
+  }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--gold-bright);
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(245,207,107,0.35), 0 1px 0 rgba(0,0,0,0.8);
+    font-size: 11px;
+  }
+  .panel-title-ko {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 700;
+    color: var(--ink-parch);
+    letter-spacing: 0.04em;
+  }
+
+  /* 헤더 띠 */
+  .panel-head {
+    background:
+      linear-gradient(180deg, rgba(212,166,74,0.18) 0%, rgba(212,166,74,0.04) 100%);
+    border-bottom: 1px solid rgba(212,166,74,0.35);
+    padding: 8px 14px 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+  }
+  .panel-head::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.6;
+  }
+  .panel-head-icon {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    color: var(--gold-bright);
+    filter: drop-shadow(0 0 4px rgba(245,207,107,0.5));
+  }
+
+  /* 룬 구분선 */
+  .rune-divider {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--gold-dark);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin: 14px 0 10px;
+  }
+  .rune-divider::before, .rune-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+  }
+
+  /* === 능력치 바 === */
+  .stat-bar {
+    height: 10px;
+    background: #0c0f15;
+    border: 1px solid rgba(212,166,74,0.35);
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.7);
+  }
+  .stat-bar-fill {
+    height: 100%;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 50%),
+      linear-gradient(90deg, var(--copper) 0%, var(--gold) 100%);
+    position: relative;
+    box-shadow: 0 0 8px rgba(212,166,74,0.6);
+  }
+  .stat-bar-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 8px, rgba(0,0,0,0.18) 8px 9px);
+  }
+  .hp-fill { background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 50%), linear-gradient(90deg, #8b1a1a 0%, var(--hp-red) 100%); }
+  .mp-fill { background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 50%), linear-gradient(90deg, #2a4a8a 0%, var(--mp-blue) 100%); }
+  .xp-fill { background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 50%), linear-gradient(90deg, #8a6a2a 0%, var(--xp-gold) 100%); }
+
+  /* === 인벤토리 / 장비 슬롯 === */
+  .slot {
+    aspect-ratio: 1 / 1;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.06), transparent 60%),
+      linear-gradient(180deg, #1a1f2a 0%, #0e1118 100%);
+    border: 1px solid rgba(212,166,74,0.25);
+    position: relative;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: all .15s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(245,207,107,0.05);
+  }
+  .slot:hover {
+    border-color: var(--gold-bright);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 0 12px rgba(245,207,107,0.4);
+    transform: translateY(-1px);
+  }
+  .slot-empty { opacity: 0.55; }
+  .slot-icon {
+    width: 78%; height: 78%;
+    display: grid; place-items: center;
+    font-size: 24px;
+  }
+  /* 등급 테두리 */
+  .rarity-legendary { border-color: var(--legendary); box-shadow: inset 0 0 0 1px rgba(255,138,42,0.4), 0 0 14px rgba(255,138,42,0.35); }
+  .rarity-epic      { border-color: var(--epic);      box-shadow: inset 0 0 0 1px rgba(180,98,255,0.4), 0 0 12px rgba(180,98,255,0.3); }
+  .rarity-rare      { border-color: var(--rare);      box-shadow: inset 0 0 0 1px rgba(74,163,255,0.4), 0 0 10px rgba(74,163,255,0.25); }
+  .rarity-uncommon  { border-color: var(--uncommon);  box-shadow: inset 0 0 0 1px rgba(106,208,106,0.4); }
+  .rarity-common    { border-color: rgba(212,166,74,0.3); }
+
+  /* 슬롯 우상단 수량 */
+  .slot-qty {
+    position: absolute;
+    bottom: 2px; right: 4px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: var(--ink-parch);
+    text-shadow: 1px 1px 0 #000, 0 0 4px #000;
+    line-height: 1;
+  }
+
+  /* 등급 색 텍스트 */
+  .text-legendary { color: var(--legendary); }
+  .text-epic      { color: var(--epic); }
+  .text-rare      { color: var(--rare); }
+  .text-uncommon  { color: var(--uncommon); }
+  .text-gold      { color: var(--gold-bright); }
+  .text-parch     { color: var(--ink-parch); }
+  .text-sub       { color: var(--ink-sub); }
+  .text-dim       { color: var(--ink-dim); }
+
+  /* === 퀘스트 카드 === */
+  .quest-card {
+    background:
+      linear-gradient(90deg, rgba(212,166,74,0.08) 0%, transparent 30%),
+      linear-gradient(180deg, #1a1f2a 0%, #131720 100%);
+    border-left: 3px solid var(--gold-dark);
+    padding: 10px 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .quest-card:hover {
+    border-left-color: var(--gold-bright);
+    background:
+      linear-gradient(90deg, rgba(245,207,107,0.14) 0%, transparent 40%),
+      linear-gradient(180deg, #1f2531 0%, #161a24 100%);
+    transform: translateX(2px);
+  }
+  .quest-main {
+    border-left-color: var(--legendary);
+    background:
+      linear-gradient(90deg, rgba(255,138,42,0.12) 0%, transparent 35%),
+      linear-gradient(180deg, #1f1a18 0%, #14110f 100%);
+  }
+  .quest-main:hover { border-left-color: #ffb070; }
+
+  .quest-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    display: inline-block;
+    line-height: 1.4;
+  }
+
+  /* === 스킬 트리 노드 === */
+  .skill-node {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15), transparent 50%),
+      linear-gradient(180deg, #1c2230 0%, #0c0f15 100%);
+    border: 2px solid var(--gold-dark);
+    display: grid; place-items: center;
+    position: relative;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.6);
+  }
+  .skill-node-icon { font-size: 24px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8)); }
+  .skill-node.unlocked {
+    border-color: var(--gold-bright);
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,0.4),
+      0 0 16px rgba(245,207,107,0.6),
+      0 4px 8px rgba(0,0,0,0.6);
+  }
+  .skill-node.unlocked::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 1px solid rgba(245,207,107,0.4);
+    animation: pulse-ring 2.4s ease-in-out infinite;
+  }
+  .skill-node.active {
+    border-color: var(--legendary);
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255,200,120,0.3), transparent 50%),
+      linear-gradient(180deg, #3a2410 0%, #1a0e05 100%);
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,0.3),
+      0 0 22px rgba(255,138,42,0.7),
+      0 4px 8px rgba(0,0,0,0.6);
+  }
+  .skill-node.locked { opacity: 0.4; cursor: not-allowed; }
+  .skill-node.locked .skill-node-icon { filter: grayscale(1) brightness(0.5); }
+  .skill-node:hover:not(.locked) { transform: scale(1.08); }
+
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 0; }
+  }
+
+  /* 스킬 연결선 */
+  .skill-line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
+    transform-origin: left center;
+    pointer-events: none;
+    box-shadow: 0 0 4px rgba(245,207,107,0.4);
+  }
+  .skill-line.locked { background: #2a2d36; box-shadow: none; opacity: 0.5; }
+
+  /* === 미니맵 === */
+  .minimap-bg {
+    background:
+      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(212,166,74,0.06), transparent 70%),
+      repeating-linear-gradient(45deg, transparent 0 18px, rgba(212,166,74,0.025) 18px 19px),
+      repeating-linear-gradient(-45deg, transparent 0 18px, rgba(212,166,74,0.025) 18px 19px),
+      linear-gradient(180deg, #0e1118 0%, #1a1d26 100%);
+    position: relative;
+  }
+  .map-node {
+    position: absolute;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--gold-bright) 0%, var(--gold-dark) 60%, transparent 75%);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: transform .2s;
+    box-shadow: 0 0 12px rgba(245,207,107,0.7);
+  }
+  .map-node::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid rgba(245,207,107,0.5);
+    animation: pulse-ring 2s infinite;
+  }
+  .map-node:hover { transform: scale(1.2); z-index: 10; }
+  .map-node-cleared { background: radial-gradient(circle, #4aa3ff 0%, #2a4a8a 60%, transparent 75%); box-shadow: 0 0 8px rgba(74,163,255,0.5); }
+  .map-node-cleared::after { display: none; }
+  .map-node-boss { background: radial-gradient(circle, #ff5050 0%, #8b1a1a 60%, transparent 75%); box-shadow: 0 0 14px rgba(255,80,80,0.7); }
+  .map-node-locked { background: radial-gradient(circle, #6e5f48 0%, #2a2d36 60%, transparent 75%); box-shadow: none; }
+  .map-node-locked::after { display: none; }
+  .map-label {
+    position: absolute;
+    top: 28px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-parch);
+    white-space: nowrap;
+    text-shadow: 1px 1px 0 #000;
+    pointer-events: none;
+  }
+
+  /* 플레이어 위치 */
+  .map-player {
+    position: absolute;
+    width: 14px; height: 14px;
+    background: var(--legendary);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--legendary), 0 0 24px var(--legendary);
+    animation: blink 1.2s infinite;
+    z-index: 5;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* === NPC 카드 === */
+  .npc-card {
+    background:
+      linear-gradient(180deg, rgba(212,166,74,0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #1a1f2a 0%, #0e1118 100%);
+    border: 1px solid rgba(212,166,74,0.3);
+    padding: 10px;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+  }
+  .npc-card:hover {
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 16px rgba(245,207,107,0.25);
+  }
+  .npc-portrait {
+    width: 48px; height: 48px;
+    border: 1px solid var(--gold-dark);
+    background: radial-gradient(circle at 35% 30%, rgba(245,207,107,0.2), transparent 60%), #14181f;
+    display: grid; place-items: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  /* === 랭킹 === */
+  .rank-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-bottom: 1px dashed rgba(212,166,74,0.15);
+    transition: background .15s;
+  }
+  .rank-row:hover { background: rgba(212,166,74,0.06); }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-num { font-family: 'Cinzel', serif; font-weight: 700; text-align: center; }
+  .rank-1 { color: var(--legendary); text-shadow: 0 0 8px rgba(255,138,42,0.5); }
+  .rank-2 { color: #c0c0c0; text-shadow: 0 0 6px rgba(192,192,192,0.4); }
+  .rank-3 { color: #cd7f32; text-shadow: 0 0 6px rgba(205,127,50,0.4); }
+  .rank-me { background: rgba(74,163,255,0.08); border-left: 2px solid var(--rare); }
+
+  /* === D-DAY 카운트다운 === */
+  .dday-glow {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(201,58,58,0.18), transparent 70%),
+      linear-gradient(180deg, #2a1010 0%, #160808 100%);
+    border: 1px solid rgba(201,58,58,0.5);
+    box-shadow: inset 0 0 24px rgba(201,58,58,0.18), 0 0 24px rgba(201,58,58,0.15);
+  }
+
+  /* === 툴팁 === */
+  .tooltip {
+    position: absolute;
+    z-index: 100;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    min-width: 200px;
+    background: linear-gradient(180deg, #1a1f2a 0%, #0a0e14 100%);
+    border: 1px solid var(--gold-bright);
+    padding: 10px 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .15s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.8), 0 0 18px rgba(245,207,107,0.2);
+  }
+  .slot:hover .tooltip,
+  .equip-slot:hover .tooltip { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--gold-bright);
+  }
+
+  /* === 캐릭터 일러스트 === */
+  .character-frame {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    background:
+      radial-gradient(ellipse 60% 80% at 50% 60%, rgba(245,207,107,0.12), transparent 75%),
+      radial-gradient(ellipse 70% 50% at 50% 100%, rgba(74,122,212,0.1), transparent 70%),
+      linear-gradient(180deg, #2a3142 0%, #0a0e14 100%);
+    border: 1px solid var(--gold-dark);
+    overflow: hidden;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(245,207,107,0.15);
+  }
+  .character-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,0.08) 3px 4px);
+    pointer-events: none;
+  }
+
+  /* SVG 캐릭터 컨테이너 */
+  .char-svg {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 75%;
+    height: 90%;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.7));
+  }
+
+  /* 장비 슬롯 (캐릭터 주변) */
+  .equip-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .equip-slot {
+    position: absolute;
+    width: 44px; height: 44px;
+    pointer-events: auto;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.08), transparent 60%),
+      linear-gradient(180deg, #1a1f2a 0%, #0a0e14 100%);
+    border: 1px solid rgba(212,166,74,0.4);
+    display: grid; place-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.5);
+    transition: all .15s;
+  }
+  .equip-slot:hover {
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 14px rgba(245,207,107,0.5);
+  }
+
+  /* === 버튼 === */
+  .btn-rune {
+    background:
+      linear-gradient(180deg, rgba(245,207,107,0.18) 0%, rgba(138,106,42,0.1) 100%);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold-bright);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: all .15s;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+    box-shadow: inset 0 1px 0 rgba(245,207,107,0.2), inset 0 -1px 0 rgba(0,0,0,0.4);
+  }
+  .btn-rune:hover {
+    background: linear-gradient(180deg, rgba(245,207,107,0.32) 0%, rgba(138,106,42,0.16) 100%);
+    border-color: var(--gold-bright);
+    box-shadow: inset 0 1px 0 rgba(245,207,107,0.3), 0 0 12px rgba(245,207,107,0.3);
+  }
+  .btn-rune-primary {
+    background: linear-gradient(180deg, var(--gold) 0%, var(--copper) 100%);
+    color: #1a0e05;
+    border-color: var(--gold-bright);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .btn-rune-primary:hover {
+    background: linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 100%);
+    box-shadow: 0 0 18px rgba(245,207,107,0.6);
+  }
+
+  /* === 토스트 / 알림 === */
+  .toast {
+    position: fixed;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .level-up-toast {
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    opacity: 0;
+  }
+  .level-up-text {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 72px;
+    letter-spacing: 0.18em;
+    background: linear-gradient(180deg, #fff5d0 0%, var(--gold-bright) 40%, var(--copper) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px rgba(245,207,107,0.6);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+  }
+
+  /* === 모달 === */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(20,15,5,0.7) 0%, rgba(0,0,0,0.92) 100%);
+    backdrop-filter: blur(4px);
+    z-index: 150;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-frame {
+    max-width: 540px;
+    width: 100%;
+    background:
+      linear-gradient(180deg, #1a1f2a 0%, #0e1118 100%);
+    border: 1px solid var(--gold-bright);
+    box-shadow:
+      0 0 40px rgba(245,207,107,0.3),
+      0 24px 60px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(245,207,107,0.2);
+    padding: 0;
+    position: relative;
+  }
+  .modal-frame::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(212,166,74,0.3);
+    pointer-events: none;
+  }
+
+  /* === 헤더(상단 바) === */
+  .topbar {
+    background:
+      linear-gradient(180deg, rgba(212,166,74,0.12) 0%, transparent 100%),
+      linear-gradient(180deg, #1a1f2a 0%, #0a0e14 100%);
+    border-bottom: 1px solid var(--gold-dark);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .topbar::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 5%, var(--gold) 50%, transparent 95%);
+    opacity: 0.5;
+  }
+
+  /* 골드 코인 */
+  .coin {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffe8a0 0%, var(--gold) 50%, var(--copper-dark) 100%);
+    box-shadow: inset 0 -1px 2px rgba(0,0,0,0.5), 0 0 6px rgba(245,207,107,0.4);
+    vertical-align: -3px;
+    margin-right: 4px;
+  }
+
+  /* 파티클 (배경 먼지) */
+  .dust {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: var(--gold-bright);
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 4px rgba(245,207,107,0.8);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0a0e14; }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--gold-dark), var(--copper-dark));
+    border: 1px solid #0a0e14;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  /* 작은 글씨 */
+  .micro { font-size: 10px; letter-spacing: 0.05em; }
+
+  /* 진행 체크 */
+  .check-box {
+    display: inline-grid; place-items: center;
+    width: 14px; height: 14px;
+    border: 1px solid var(--gold-dark);
+    margin-right: 6px;
+    vertical-align: -2px;
+    flex-shrink: 0;
+  }
+  .check-box.checked {
+    background: var(--gold);
+    border-color: var(--gold-bright);
+    color: #1a0e05;
+    font-weight: 900;
+    font-size: 10px;
+  }
+
+  /* 채팅 풍선 (NPC 대화) */
+  .speech {
+    position: relative;
+    background: linear-gradient(180deg, #1c2230 0%, #131720 100%);
+    border: 1px solid var(--gold-dark);
+    padding: 10px 12px;
+    margin-top: 8px;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink-parch);
+  }
+  .speech::before {
+    content: "";
+    position: absolute;
+    top: -7px; left: 18px;
+    width: 12px; height: 12px;
+    background: #1c2230;
+    border-left: 1px solid var(--gold-dark);
+    border-top: 1px solid var(--gold-dark);
+    transform: rotate(45deg);
+  }
+</style>
+</head>
+<body class="overflow-x-hidden">
+
+<!-- ===== 배경 먼지 파티클 ===== -->
+<div id="dust-layer"></div>
+
+<!-- ===== 상단 바 (HUD) ===== -->
+<header class="topbar sticky top-0 z-40">
+  <div class="max-w-[1400px] mx-auto px-5 py-3 flex items-center gap-6 flex-wrap">
+    <!-- 로고 -->
+    <div class="flex items-center gap-3">
+      <div class="relative w-10 h-10 grid place-items-center">
+        <svg viewBox="0 0 40 40" class="w-full h-full">
+          <defs>
+            <radialGradient id="logoGlow" cx="50%" cy="40%">
+              <stop offset="0%" stop-color="#ffe8a0"/>
+              <stop offset="100%" stop-color="#8a6a2a"/>
+            </radialGradient>
+          </defs>
+          <polygon points="20,2 38,12 38,28 20,38 2,28 2,12" fill="none" stroke="#d4a64a" stroke-width="1.5"/>
+          <polygon points="20,7 33,14 33,26 20,33 7,26 7,14" fill="url(#logoGlow)"/>
+          <path d="M16 12 L24 12 L20 22 L24 22 L14 30 L18 20 L14 20 Z" fill="#1a0e05" stroke="#8a6a2a" stroke-width="0.5"/>
+        </svg>
+      </div>
+      <div class="leading-tight">
+        <div class="font-rune text-[15px] font-bold text-gold">ELECTRICUM</div>
+        <div class="text-[10px] text-sub tracking-widest uppercase">전기기능사 RPG · MMO</div>
+      </div>
+    </div>
+
+    <!-- 캐릭터 HUD -->
+    <div class="flex items-center gap-3 ml-2">
+      <div class="w-9 h-9 border border-[var(--gold-bright)] grid place-items-center text-lg" style="background: radial-gradient(circle at 35% 30%, rgba(245,207,107,0.25), transparent 60%), #14181f;">🧑‍🔧</div>
+      <div>
+        <div class="flex items-center gap-2 leading-tight">
+          <span class="font-serif-ko font-bold text-parch text-sm">김전공</span>
+          <span class="quest-badge text-uncommon">Lv.42</span>
+        </div>
+        <div class="text-[10px] text-sub tracking-wide">전기 견습공 · 옴 신전 길드</div>
+      </div>
+    </div>
+
+    <!-- HP / MP / XP 미니바 -->
+    <div class="flex-1 min-w-[260px] grid gap-1.5 max-w-[420px]">
+      <div class="flex items-center gap-2">
+        <span class="font-pixel text-[var(--hp-red)] text-xs w-5">HP</span>
+        <div class="stat-bar flex-1"><div class="stat-bar-fill hp-fill" style="width: 78%"></div></div>
+        <span class="font-pixel text-[var(--ink-parch)] text-xs w-16 text-right">312 / 400</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-pixel text-[var(--mp-blue)] text-xs w-5">MP</span>
+        <div class="stat-bar flex-1"><div class="stat-bar-fill mp-fill" style="width: 64%"></div></div>
+        <span class="font-pixel text-[var(--ink-parch)] text-xs w-16 text-right">128 / 200</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-pixel text-[var(--xp-gold)] text-xs w-5">XP</span>
+        <div class="stat-bar flex-1"><div class="stat-bar-fill xp-fill" style="width: 62%"></div></div>
+        <span class="font-pixel text-[var(--ink-parch)] text-xs w-16 text-right">8,420 / 13,500</span>
+      </div>
+    </div>
+
+    <!-- 골드 / 시간 -->
+    <div class="flex items-center gap-4 ml-auto">
+      <div class="text-right">
+        <div class="micro text-sub tracking-widest uppercase">Gold</div>
+        <div class="font-pixel text-gold text-lg leading-none"><span class="coin"></span>14,283</div>
+      </div>
+      <div class="text-right hidden md:block">
+        <div class="micro text-sub tracking-widest uppercase">Realm Time</div>
+        <div class="font-pixel text-parch text-lg leading-none" id="clock">--:--:--</div>
+      </div>
+      <button class="btn-rune">⚙ 설정</button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 메인 그리드 ===== -->
+<main class="max-w-[1400px] mx-auto px-5 py-6">
+
+  <!-- 헤드라인 띠 -->
+  <div class="rune-divider">
+    <span>◈ Newsletter Vol.42 · 전공의 여정 · 제 7장 ◈</span>
+  </div>
+
+  <div class="grid grid-cols-12 gap-4">
+
+    <!-- ===== LEFT: 캐릭터 + 능력치 ===== -->
+    <section class="col-span-12 lg:col-span-3 space-y-4">
+
+      <!-- 캐릭터 패널 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">⚔</span>
+          <span class="panel-title">Character</span>
+          <span class="panel-title-ko text-xs ml-auto">캐릭터</span>
+        </div>
+        <div class="p-4">
+          <!-- 캐릭터 일러스트 -->
+          <div class="character-frame">
+            <!-- SVG 캐릭터: 작업복 + 안전모 견습공 -->
+            <svg class="char-svg" viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#3a8eb5"/>
+                  <stop offset="100%" stop-color="#1a4a6b"/>
+                </linearGradient>
+                <linearGradient id="helmetGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#f5cf6b"/>
+                  <stop offset="60%" stop-color="#d4a64a"/>
+                  <stop offset="100%" stop-color="#8a6a2a"/>
+                </linearGradient>
+                <radialGradient id="auraGlow" cx="50%" cy="80%">
+                  <stop offset="0%" stop-color="rgba(245,207,107,0.5)"/>
+                  <stop offset="100%" stop-color="rgba(245,207,107,0)"/>
+                </radialGradient>
+              </defs>
+
+              <!-- 발 밑 오라 -->
+              <ellipse cx="100" cy="250" rx="70" ry="14" fill="url(#auraGlow)"/>
+
+              <!-- 다리 -->
+              <rect x="78" y="180" width="18" height="70" fill="#2a2620" stroke="#1a1610" stroke-width="1"/>
+              <rect x="104" y="180" width="18" height="70" fill="#2a2620" stroke="#1a1610" stroke-width="1"/>
+              <!-- 부츠 -->
+              <rect x="74" y="244" width="24" height="10" fill="#3a2410" stroke="#1a0e05" stroke-width="1"/>
+              <rect x="102" y="244" width="24" height="10" fill="#3a2410" stroke="#1a0e05" stroke-width="1"/>
+
+              <!-- 몸통 (작업복) -->
+              <path d="M65 100 L65 190 L135 190 L135 100 Q135 88 100 88 Q65 88 65 100 Z" fill="url(#bodyGrad)" stroke="#0a2a40" stroke-width="1.5"/>
+              <!-- 작업복 단추 -->
+              <circle cx="100" cy="120" r="2.5" fill="#d4a64a"/>
+              <circle cx="100" cy="140" r="2.5" fill="#d4a64a"/>
+              <circle cx="100" cy="160" r="2.5" fill="#d4a64a"/>
+              <!-- 가슴 패치 (번개 마크) -->
+              <path d="M75 110 L82 110 L78 122 L83 122 L73 138 L77 124 L72 124 Z" fill="#f5cf6b" stroke="#1a0e05" stroke-width="0.6"/>
+
+              <!-- 벨트 -->
+              <rect x="63" y="178" width="74" height="10" fill="#3a2410" stroke="#1a0e05" stroke-width="1"/>
+              <rect x="94" y="178" width="12" height="10" fill="#d4a64a" stroke="#8a6a2a" stroke-width="1"/>
+
+              <!-- 팔 (왼쪽 - 망치) -->
+              <rect x="48" y="100" width="18" height="60" fill="url(#bodyGrad)" stroke="#0a2a40" stroke-width="1.5"/>
+              <circle cx="57" cy="168" r="9" fill="#e8c89a" stroke="#8a6a2a" stroke-width="1"/>
+              <!-- 망치 -->
+              <rect x="38" y="118" width="6" height="60" fill="#5a3a20" stroke="#1a0e05" stroke-width="0.8"/>
+              <rect x="28" y="108" width="26" height="16" fill="#888888" stroke="#1a0e05" stroke-width="1"/>
+              <rect x="30" y="110" width="4" height="12" fill="#aaaaaa"/>
+
+              <!-- 팔 (오른쪽 - 멀티미터) -->
+              <rect x="134" y="100" width="18" height="60" fill="url(#bodyGrad)" stroke="#0a2a40" stroke-width="1.5"/>
+              <circle cx="143" cy="168" r="9" fill="#e8c89a" stroke="#8a6a2a" stroke-width="1"/>
+              <!-- 멀티미터 -->
+              <rect x="148" y="158" width="22" height="18" rx="2" fill="#f5cf6b" stroke="#1a0e05" stroke-width="1"/>
+              <rect x="151" y="161" width="16" height="6" fill="#0a2a14" stroke="#1a0e05" stroke-width="0.5"/>
+              <text x="159" y="166" text-anchor="middle" font-family="VT323" font-size="6" fill="#6ad06a">220V</text>
+              <circle cx="153" cy="172" r="1.5" fill="#c93a3a"/>
+              <circle cx="158" cy="172" r="1.5" fill="#1a1a1a"/>
+              <circle cx="163" cy="172" r="1.5" fill="#1a1a1a"/>
+
+              <!-- 목 -->
+              <rect x="92" y="78" width="16" height="14" fill="#e8c89a" stroke="#8a6a2a" stroke-width="1"/>
+
+              <!-- 얼굴 -->
+              <ellipse cx="100" cy="62" rx="22" ry="26" fill="#f0d4a8" stroke="#8a6a2a" stroke-width="1.5"/>
+              <!-- 눈 -->
+              <ellipse cx="92" cy="62" rx="2" ry="3" fill="#1a0e05"/>
+              <ellipse cx="108" cy="62" rx="2" ry="3" fill="#1a0e05"/>
+              <circle cx="92.5" cy="61" r="0.6" fill="#fff"/>
+              <circle cx="108.5" cy="61" r="0.6" fill="#fff"/>
+              <!-- 눈썹 -->
+              <path d="M86 56 L96 54" stroke="#1a0e05" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M104 54 L114 56" stroke="#1a0e05" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- 입 -->
+              <path d="M94 74 Q100 78 106 74" stroke="#1a0e05" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+              <!-- 볼 -->
+              <ellipse cx="86" cy="70" rx="3" ry="2" fill="#ff9a8a" opacity="0.5"/>
+              <ellipse cx="114" cy="70" rx="3" ry="2" fill="#ff9a8a" opacity="0.5"/>
+
+              <!-- 안전모 (전설 등급) -->
+              <path d="M72 50 Q72 28 100 26 Q128 28 128 50 L132 50 L132 56 L68 56 L68 50 Z" fill="url(#helmetGrad)" stroke="#5a3a20" stroke-width="1.5"/>
+              <!-- 안전모 띠 -->
+              <rect x="68" y="48" width="64" height="3" fill="#8a6a2a" opacity="0.6"/>
+              <!-- 안전모 번개 엠블럼 -->
+              <path d="M96 32 L104 32 L100 42 L106 42 L94 52 L98 42 L92 42 Z" fill="#1a0e05" stroke="#5a3a20" stroke-width="0.5"/>
+              <!-- 헬멧 빛 -->
+              <ellipse cx="90" cy="38" rx="6" ry="3" fill="#fff" opacity="0.4"/>
+
+              <!-- 작업복 어깨 패드 (장식) -->
+              <path d="M62 96 Q68 92 75 96 L75 108 L62 108 Z" fill="#d4a64a" stroke="#5a3a20" stroke-width="1"/>
+              <path d="M138 96 Q132 92 125 96 L125 108 L138 108 Z" fill="#d4a64a" stroke="#5a3a20" stroke-width="1"/>
+            </svg>
+
+            <!-- 장비 슬롯 4개 (캐릭터 양옆) -->
+            <div class="equip-grid">
+              <div class="equip-slot rarity-legendary" style="top: 10px; left: 8px;" data-equip="helmet">
+                <span>⛑️</span>
+                <div class="tooltip text-left">
+                  <div class="font-rune text-legendary text-[11px] font-bold mb-1">RUNE-FORGED HARD HAT</div>
+                  <div class="font-serif-ko text-[11px] text-parch mb-1">룬 각인 안전모 +5</div>
+                  <div class="micro text-sub">전설 · 머리</div>
+                  <div class="micro text-uncommon mt-1.5">+ 절연 저항 +30</div>
+                  <div class="micro text-uncommon">+ 집중력 +15%</div>
+                </div>
+              </div>
+              <div class="equip-slot rarity-epic" style="top: 10px; right: 8px;" data-equip="weapon">
+                <span>🔧</span>
+                <div class="tooltip text-left">
+                  <div class="font-rune text-epic text-[11px] font-bold mb-1">SPANNER OF VOLTAGE</div>
+                  <div class="font-serif-ko text-[11px] text-parch mb-1">전압의 스패너 +4</div>
+                  <div class="micro text-sub">에픽 · 주무기</div>
+                  <div class="micro text-uncommon mt-1.5">+ 작업 효율 +25</div>
+                  <div class="micro text-uncommon">+ 크리티컬 +8%</div>
+                </div>
+              </div>
+              <div class="equip-slot rarity-rare" style="bottom: 80px; left: 8px;" data-equip="armor">
+                <span>🦺</span>
+                <div class="tooltip text-left">
+                  <div class="font-rune text-rare text-[11px] font-bold mb-1">SAPPHIRE WORK COAT</div>
+                  <div class="font-serif-ko text-[11px] text-parch mb-1">사파이어 작업복 +3</div>
+                  <div class="micro text-sub">레어 · 갑옷</div>
+                  <div class="micro text-uncommon mt-1.5">+ 방어 +18</div>
+                  <div class="micro text-uncommon">+ HP +60</div>
+                </div>
+              </div>
+              <div class="equip-slot rarity-rare" style="bottom: 80px; right: 8px;" data-equip="meter">
+                <span>📟</span>
+                <div class="tooltip text-left">
+                  <div class="font-rune text-rare text-[11px] font-bold mb-1">FLUKE-87 MULTIMETER</div>
+                  <div class="font-serif-ko text-[11px] text-parch mb-1">플루크-87 멀티미터</div>
+                  <div class="micro text-sub">레어 · 보조도구</div>
+                  <div class="micro text-uncommon mt-1.5">+ 회로 분석 +20</div>
+                  <div class="micro text-uncommon">+ MP 재생 +5/턴</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 클래스 라벨 -->
+            <div class="absolute bottom-2 left-2 right-2 text-center">
+              <div class="font-rune text-[10px] text-gold tracking-widest" style="text-shadow: 0 0 8px rgba(0,0,0,1);">CLASS</div>
+              <div class="font-serif-ko text-parch text-sm font-bold" style="text-shadow: 0 1px 4px rgba(0,0,0,1);">전기 견습공</div>
+              <div class="micro text-sub" style="text-shadow: 0 1px 4px rgba(0,0,0,1);">→ 다음 전직: <span class="text-rare">전기 기능사 (Lv.50)</span></div>
+            </div>
+          </div>
+
+          <!-- 길드 / 칭호 -->
+          <div class="mt-3 grid grid-cols-2 gap-2 text-center">
+            <div class="border border-[var(--gold-dark)] py-1.5">
+              <div class="micro text-sub tracking-wider uppercase">Guild</div>
+              <div class="font-serif-ko text-xs text-parch">⚡ 옴 신전</div>
+            </div>
+            <div class="border border-[var(--gold-dark)] py-1.5">
+              <div class="micro text-sub tracking-wider uppercase">Title</div>
+              <div class="font-serif-ko text-xs text-gold">『 옴의 제자 』</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 능력치 패널 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">✦</span>
+          <span class="panel-title">Attributes</span>
+          <span class="panel-title-ko text-xs ml-auto">능력치</span>
+        </div>
+        <div class="p-4 space-y-2.5">
+          <!-- 옴의 지혜 -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-xs text-parch flex items-center gap-1.5"><span class="text-gold">⚡</span> 옴의 지혜</span>
+              <span class="font-pixel text-sm text-gold">80<span class="text-sub text-xs">/100</span></span>
+            </div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: 80%"></div></div>
+          </div>
+          <!-- 변압기 숙련도 -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-xs text-parch flex items-center gap-1.5"><span class="text-gold">🔄</span> 변압기 숙련도</span>
+              <span class="font-pixel text-sm text-gold">65<span class="text-sub text-xs">/100</span></span>
+            </div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: 65%"></div></div>
+          </div>
+          <!-- 회로 분석 -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-xs text-parch flex items-center gap-1.5"><span class="text-gold">🧭</span> 회로 분석</span>
+              <span class="font-pixel text-sm text-gold">72<span class="text-sub text-xs">/100</span></span>
+            </div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: 72%"></div></div>
+          </div>
+          <!-- 3상 통찰 -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-xs text-parch flex items-center gap-1.5"><span class="text-gold">▲</span> 3상 통찰</span>
+              <span class="font-pixel text-sm text-gold">58<span class="text-sub text-xs">/100</span></span>
+            </div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: 58%"></div></div>
+          </div>
+          <!-- 안전 의식 -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-xs text-parch flex items-center gap-1.5"><span class="text-gold">🛡</span> 안전 의식</span>
+              <span class="font-pixel text-sm text-gold">91<span class="text-sub text-xs">/100</span></span>
+            </div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: 91%"></div></div>
+          </div>
+          <!-- 실기 손재주 -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1">
+              <span class="text-xs text-parch flex items-center gap-1.5"><span class="text-gold">✋</span> 실기 손재주</span>
+              <span class="font-pixel text-sm text-gold">47<span class="text-sub text-xs">/100</span></span>
+            </div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: 47%"></div></div>
+          </div>
+
+          <div class="rune-divider" style="margin: 8px 0 4px;"><span>총 전투력</span></div>
+          <div class="text-center">
+            <div class="font-rune text-3xl font-bold text-gold" style="text-shadow: 0 0 12px rgba(245,207,107,0.5);">12,847</div>
+            <div class="micro text-uncommon">▲ +320 (지난 주 대비)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- D-DAY -->
+      <div class="panel-stone dday-glow">
+        <div class="panel-head" style="border-bottom-color: rgba(201,58,58,0.5);">
+          <span class="panel-head-icon" style="color: var(--hp-red); filter: drop-shadow(0 0 4px rgba(201,58,58,0.7));">⚔</span>
+          <span class="panel-title" style="color: #ff8a8a;">Final Trial</span>
+          <span class="panel-title-ko text-xs ml-auto" style="color: #ff8a8a;">최종 시험</span>
+        </div>
+        <div class="p-4 text-center">
+          <div class="micro text-sub tracking-widest uppercase mb-1">전기기능사 필기 시험</div>
+          <div class="font-rune text-[11px] text-parch tracking-widest mb-3">2026 · 02 · 04</div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <div class="border border-[rgba(201,58,58,0.4)] py-2 bg-black/30">
+              <div class="font-pixel text-2xl text-[#ff8a8a] leading-none">85</div>
+              <div class="micro text-sub tracking-wider uppercase mt-1">Days</div>
+            </div>
+            <div class="border border-[rgba(201,58,58,0.4)] py-2 bg-black/30">
+              <div class="font-pixel text-2xl text-[#ff8a8a] leading-none">12</div>
+              <div class="micro text-sub tracking-wider uppercase mt-1">Hrs</div>
+            </div>
+            <div class="border border-[rgba(201,58,58,0.4)] py-2 bg-black/30">
+              <div class="font-pixel text-2xl text-[#ff8a8a] leading-none">47</div>
+              <div class="micro text-sub tracking-wider uppercase mt-1">Min</div>
+            </div>
+            <div class="border border-[rgba(201,58,58,0.4)] py-2 bg-black/30">
+              <div class="font-pixel text-2xl text-[#ff8a8a] leading-none" id="dday-sec">22</div>
+              <div class="micro text-sub tracking-wider uppercase mt-1">Sec</div>
+            </div>
+          </div>
+          <div class="mt-3 text-[11px] text-parch font-serif-ko">
+            『 어둠의 보스, <span class="text-[#ff8a8a]">시험관</span>이 깨어난다 』
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== CENTER: 퀘스트 + 미니맵 + 스킬 트리 ===== -->
+    <section class="col-span-12 lg:col-span-6 space-y-4">
+
+      <!-- 퀘스트 패널 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">📜</span>
+          <span class="panel-title">Quest Log</span>
+          <span class="panel-title-ko text-xs ml-auto">퀘스트 일지</span>
+          <span class="micro text-sub ml-2">3 / 5 활성</span>
+        </div>
+        <div class="p-4 space-y-2">
+
+          <!-- 메인 퀘스트 -->
+          <div class="quest-card quest-main" data-quest="main">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl mt-0.5">👑</div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="quest-badge text-legendary">Main · Epic</span>
+                  <span class="font-serif-ko font-bold text-parch text-sm">전기기능사 자격증 획득</span>
+                </div>
+                <div class="text-[11px] text-sub mb-2 font-serif-ko">
+                  스승 옴은 말했다 — "전압과 전류, 저항의 삼위일체를 깨우치고 시험관을 쓰러뜨려라."
+                </div>
+                <div class="space-y-1 text-[11px] text-parch">
+                  <div><span class="check-box checked">✓</span> 옴의 법칙 던전 클리어</div>
+                  <div><span class="check-box checked">✓</span> 키르히호프 미궁 통과</div>
+                  <div><span class="check-box checked">✓</span> 직류회로 마스터 (Lv.5)</div>
+                  <div><span class="check-box"></span> 교류회로 정복 <span class="text-sub">(7/10 챕터)</span></div>
+                  <div><span class="check-box"></span> 변압기 탑 클리어</div>
+                  <div><span class="check-box"></span> 최종 보스 『시험관』 격파</div>
+                </div>
+                <div class="mt-2.5 flex items-center justify-between text-[11px]">
+                  <div class="flex items-center gap-3 text-sub">
+                    <span>보상: <span class="text-gold">+25,000 XP</span></span>
+                    <span><span class="coin"></span><span class="text-gold">100,000</span></span>
+                    <span class="text-legendary">+ 칭호『합격자』</span>
+                  </div>
+                  <span class="text-uncommon">진행 50%</span>
+                </div>
+                <div class="stat-bar mt-1.5"><div class="stat-bar-fill xp-fill" style="width: 50%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 일일 퀘스트 1 -->
+          <div class="quest-card" data-quest="daily1">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl mt-0.5">⚡</div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="quest-badge text-uncommon">Daily</span>
+                  <span class="font-serif-ko font-bold text-parch text-sm">옴의 법칙 10문제 격파</span>
+                  <span class="micro text-sub ml-auto">⏱ 18:42 남음</span>
+                </div>
+                <div class="text-[11px] text-sub mb-2 font-serif-ko">옴 신전의 사제가 말했다 — "어린 견습공이여, 매일의 수련만이 너를 강하게 만든다."</div>
+                <div class="flex items-center gap-2">
+                  <div class="stat-bar flex-1"><div class="stat-bar-fill" style="width: 70%"></div></div>
+                  <span class="font-pixel text-xs text-gold">7 / 10</span>
+                </div>
+                <div class="mt-1.5 text-[11px] text-sub">보상: <span class="text-gold">+850 XP</span> · <span class="coin"></span><span class="text-gold">320</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 일일 퀘스트 2 -->
+          <div class="quest-card" data-quest="daily2">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl mt-0.5">🔄</div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="quest-badge text-uncommon">Daily</span>
+                  <span class="font-serif-ko font-bold text-parch text-sm">변압기 단원 강의 1편 완주</span>
+                  <span class="micro text-sub ml-auto">⏱ 18:42 남음</span>
+                </div>
+                <div class="text-[11px] text-sub mb-2 font-serif-ko">"권수비의 비밀을 파헤쳐라. 1차와 2차의 균형을 깨우쳐라."</div>
+                <div class="flex items-center gap-2">
+                  <div class="stat-bar flex-1"><div class="stat-bar-fill" style="width: 100%"></div></div>
+                  <span class="font-pixel text-xs text-uncommon">✓ 완료</span>
+                </div>
+                <div class="mt-1.5 text-[11px] text-sub">보상 수령 대기: <span class="text-gold">+1,200 XP</span> · <span class="coin"></span><span class="text-gold">500</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 주간 퀘스트 -->
+          <div class="quest-card" data-quest="weekly">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl mt-0.5">🏰</div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="quest-badge text-rare">Weekly · Raid</span>
+                  <span class="font-serif-ko font-bold text-parch text-sm">CBT 모의고사 80점 돌파</span>
+                  <span class="micro text-sub ml-auto">⏱ 3일 12시간 남음</span>
+                </div>
+                <div class="text-[11px] text-sub mb-2 font-serif-ko">길드 사제의 부탁 — "60문항의 시련을 80점 이상으로 통과하라. 길드의 명예가 걸렸다."</div>
+                <div class="flex items-center gap-2">
+                  <div class="stat-bar flex-1"><div class="stat-bar-fill" style="width: 84%"></div></div>
+                  <span class="font-pixel text-xs text-gold">현재 최고점 73점</span>
+                </div>
+                <div class="mt-1.5 text-[11px] text-sub">보상: <span class="text-gold">+4,500 XP</span> · <span class="text-rare">레어 카드 상자 ×1</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 히든 퀘스트 -->
+          <div class="quest-card" data-quest="hidden" style="border-left-color: var(--epic); background: linear-gradient(90deg, rgba(180,98,255,0.1) 0%, transparent 35%), linear-gradient(180deg, #1a1820 0%, #110f16 100%);">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl mt-0.5">❓</div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="quest-badge text-epic">Hidden</span>
+                  <span class="font-serif-ko font-bold text-parch text-sm">??? 사라진 콘덴서의 비밀</span>
+                </div>
+                <div class="text-[11px] text-sub font-serif-ko italic">"전기설비 동굴 깊은 곳에서 누군가의 흐느낌이 들린다…"</div>
+                <div class="mt-1.5 text-[11px] text-epic">조건: 회로 분석 Lv.75 도달 시 해금</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 미니맵 + 스킬 트리 (2단) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- 미니맵 -->
+        <div class="panel-stone">
+          <div class="panel-head">
+            <span class="panel-head-icon">🗺</span>
+            <span class="panel-title">World Map</span>
+            <span class="panel-title-ko text-xs ml-auto">학습 던전 지도</span>
+          </div>
+          <div class="p-3">
+            <div class="minimap-bg relative" style="height: 240px;">
+              <!-- 경로 (SVG 선) -->
+              <svg class="absolute inset-0 w-full h-full" style="pointer-events: none;" viewBox="0 0 320 240" preserveAspectRatio="none">
+                <path d="M 60 200 Q 90 150 130 130 Q 170 110 200 80 Q 230 60 270 50" stroke="rgba(245,207,107,0.4)" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+                <path d="M 130 130 Q 150 170 100 180" stroke="rgba(245,207,107,0.25)" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+                <path d="M 200 80 Q 240 100 250 140" stroke="rgba(110,95,72,0.4)" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+              </svg>
+
+              <!-- 던전 노드 -->
+              <div class="map-node map-node-cleared" style="left: 12%; top: 78%;" data-dungeon="ohm">
+                <span style="font-size: 12px;">⚡</span>
+                <div class="map-label">옴의 동굴</div>
+              </div>
+              <div class="map-node map-node-cleared" style="left: 35%; top: 50%;" data-dungeon="kirchhoff">
+                <span style="font-size: 12px;">🌀</span>
+                <div class="map-label">키르히호프 미궁</div>
+              </div>
+              <div class="map-node" style="left: 60%; top: 28%;" data-dungeon="transformer">
+                <span style="font-size: 12px;">🔄</span>
+                <div class="map-label" style="color: var(--gold-bright);">변압기 탑 ★</div>
+              </div>
+              <div class="map-node map-node-locked" style="left: 82%; top: 18%;" data-dungeon="machine">
+                <span style="font-size: 12px;">🔒</span>
+                <div class="map-label">전기기기 성채</div>
+              </div>
+              <div class="map-node map-node-locked" style="left: 30%; top: 78%;" data-dungeon="install">
+                <span style="font-size: 12px;">🔒</span>
+                <div class="map-label">전기설비 동굴</div>
+              </div>
+              <div class="map-node map-node-boss" style="left: 75%; top: 60%;" data-dungeon="boss">
+                <span style="font-size: 12px;">👹</span>
+                <div class="map-label" style="color: #ff8a8a;">시험관 신전 (BOSS)</div>
+              </div>
+
+              <!-- 플레이어 위치 -->
+              <div class="map-player" style="left: 58%; top: 27%;"></div>
+
+              <!-- 좌표 표기 -->
+              <div class="absolute top-2 left-2 font-pixel text-[10px] text-sub">[ X:58 Y:27 ]</div>
+              <div class="absolute top-2 right-2 font-pixel text-[10px] text-gold">현위치: 변압기 탑</div>
+            </div>
+
+            <!-- 범례 -->
+            <div class="grid grid-cols-3 gap-2 mt-3 text-[10px]">
+              <div class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: var(--rare);"></span><span class="text-sub">클리어</span></div>
+              <div class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: var(--gold-bright);"></span><span class="text-sub">진행중</span></div>
+              <div class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: var(--hp-red);"></span><span class="text-sub">보스</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스킬 트리 -->
+        <div class="panel-stone">
+          <div class="panel-head">
+            <span class="panel-head-icon">✦</span>
+            <span class="panel-title">Skill Tree</span>
+            <span class="panel-title-ko text-xs ml-auto">스킬 트리</span>
+            <span class="micro text-gold ml-2">SP 3 잔여</span>
+          </div>
+          <div class="p-4">
+            <div class="relative" style="height: 240px;">
+              <!-- 연결선 -->
+              <div class="skill-line" style="top: 56px; left: 92px; width: 70px;"></div>
+              <div class="skill-line" style="top: 56px; left: 218px; width: 70px;"></div>
+              <div class="skill-line locked" style="top: 156px; left: 92px; width: 70px;"></div>
+              <div class="skill-line locked" style="top: 156px; left: 218px; width: 70px;"></div>
+              <div class="skill-line" style="top: 28px; left: 154px; width: 80px; transform: rotate(38deg); transform-origin: left;"></div>
+              <div class="skill-line locked" style="top: 128px; left: 154px; width: 80px; transform: rotate(38deg); transform-origin: left;"></div>
+
+              <!-- Lv.1 직류회로 (해제) -->
+              <div class="skill-node unlocked active" style="position: absolute; top: 28px; left: 36px;" data-skill="dc" title="직류회로 마스터">
+                <span class="skill-node-icon">⚡</span>
+              </div>
+              <div class="absolute" style="top: 90px; left: 26px; width: 76px; text-align: center;">
+                <div class="font-rune text-[9px] text-gold tracking-wider">DC</div>
+                <div class="font-serif-ko text-[10px] text-parch">직류회로</div>
+                <div class="micro text-uncommon">Lv.5 MAX</div>
+              </div>
+
+              <!-- Lv.2 교류회로 (진행중) -->
+              <div class="skill-node unlocked" style="position: absolute; top: 28px; left: 162px;" data-skill="ac" title="교류회로 통달">
+                <span class="skill-node-icon">〰️</span>
+              </div>
+              <div class="absolute" style="top: 90px; left: 152px; width: 76px; text-align: center;">
+                <div class="font-rune text-[9px] text-gold tracking-wider">AC</div>
+                <div class="font-serif-ko text-[10px] text-parch">교류회로</div>
+                <div class="micro text-gold">Lv.3 / 5</div>
+              </div>
+
+              <!-- Lv.3 3상 (해제, 미투자) -->
+              <div class="skill-node unlocked" style="position: absolute; top: 28px; left: 288px;" data-skill="three">
+                <span class="skill-node-icon">▲</span>
+              </div>
+              <div class="absolute" style="top: 90px; left: 278px; width: 76px; text-align: center;">
+                <div class="font-rune text-[9px] text-gold tracking-wider">3Φ</div>
+                <div class="font-serif-ko text-[10px] text-parch">3상교류</div>
+                <div class="micro text-sub">Lv.1 / 5</div>
+              </div>
+
+              <!-- Lv.4 전기기기 (잠금) -->
+              <div class="skill-node locked" style="position: absolute; top: 128px; left: 100px;" data-skill="machine">
+                <span class="skill-node-icon">⚙️</span>
+              </div>
+              <div class="absolute" style="top: 190px; left: 90px; width: 76px; text-align: center;">
+                <div class="font-rune text-[9px] text-dim tracking-wider">MACH</div>
+                <div class="font-serif-ko text-[10px] text-dim">전기기기</div>
+                <div class="micro text-dim">🔒 잠김</div>
+              </div>
+
+              <!-- Lv.5 전기설비 (잠금) -->
+              <div class="skill-node locked" style="position: absolute; top: 128px; left: 226px;" data-skill="install">
+                <span class="skill-node-icon">🏗️</span>
+              </div>
+              <div class="absolute" style="top: 190px; left: 216px; width: 76px; text-align: center;">
+                <div class="font-rune text-[9px] text-dim tracking-wider">INST</div>
+                <div class="font-serif-ko text-[10px] text-dim">전기설비</div>
+                <div class="micro text-dim">🔒 잠김</div>
+              </div>
+            </div>
+            <div class="mt-2 text-[10px] text-sub font-serif-ko text-center border-t border-[var(--gold-dark)]/40 pt-2">
+              💡 노드를 클릭해 스킬 포인트를 투자하라
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- NPC 대화 패널 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">💬</span>
+          <span class="panel-title">NPCs Nearby</span>
+          <span class="panel-title-ko text-xs ml-auto">근처의 NPC</span>
+        </div>
+        <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+          <div class="npc-card" data-npc="master">
+            <div class="flex items-start gap-3">
+              <div class="npc-portrait">🧙‍♂️</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-serif-ko font-bold text-parch text-sm">옴 신전의 대사제</div>
+                <div class="micro text-gold tracking-wider">『 강사 NPC · Lv.99 』</div>
+                <div class="speech micro">
+                  "V는 IR이니라. 이 단순한 진리를 명심하라, 어린 견습공이여…"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="npc-card" data-npc="mentor">
+            <div class="flex items-start gap-3">
+              <div class="npc-portrait">🧑‍🎓</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-serif-ko font-bold text-parch text-sm">합격자 박정훈 (2025년)</div>
+                <div class="micro text-uncommon tracking-wider">『 멘토 NPC · Lv.50 』</div>
+                <div class="speech micro">
+                  "기출 5개년 3회 돌리면 합격한다. 그게 정답이야."
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="npc-card" data-npc="merchant">
+            <div class="flex items-start gap-3">
+              <div class="npc-portrait">🧝‍♀️</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-serif-ko font-bold text-parch text-sm">학습 도구 상인</div>
+                <div class="micro text-rare tracking-wider">『 상인 NPC · Lv.42 』</div>
+                <div class="speech micro">
+                  "오늘만 30% 할인! 합격 부적이 단돈 500골드…!"
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="npc-card" data-npc="guildmaster">
+            <div class="flex items-start gap-3">
+              <div class="npc-portrait">👨‍🏫</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-serif-ko font-bold text-parch text-sm">길드장 김기능</div>
+                <div class="micro text-legendary tracking-wider">『 길드장 NPC · Lv.80 』</div>
+                <div class="speech micro">
+                  "이번 주 길드 레이드는 CBT 모의고사다. 다 같이 80점!"
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== RIGHT: 인벤토리 + 랭킹 ===== -->
+    <section class="col-span-12 lg:col-span-3 space-y-4">
+
+      <!-- 인벤토리 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">🎒</span>
+          <span class="panel-title">Inventory</span>
+          <span class="panel-title-ko text-xs ml-auto">소지품</span>
+          <span class="micro text-sub ml-2">24 / 36</span>
+        </div>
+        <div class="p-3">
+          <!-- 4 × 6 = 24 슬롯 (12개 채움) -->
+          <div class="grid grid-cols-4 gap-1.5">
+            <!-- 1. 공식 두루마리 -->
+            <div class="slot rarity-legendary">
+              <div class="slot-icon">📜</div>
+              <div class="slot-qty">3</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-legendary text-[11px] font-bold mb-1">SCROLL OF FORMULAE</div>
+                <div class="font-serif-ko text-[11px] text-parch">전기 공식 두루마리</div>
+                <div class="micro text-sub">전설 · 소비형</div>
+                <div class="micro text-uncommon mt-1.5">사용 시 30분간 공식 자동 표시</div>
+              </div>
+            </div>
+            <!-- 2. 기출문제집 -->
+            <div class="slot rarity-epic">
+              <div class="slot-icon">📚</div>
+              <div class="slot-qty">5</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-epic text-[11px] font-bold mb-1">TOME OF PAST EXAMS</div>
+                <div class="font-serif-ko text-[11px] text-parch">5개년 기출문제집</div>
+                <div class="micro text-sub">에픽 · 영구</div>
+                <div class="micro text-uncommon mt-1.5">+ XP 획득량 +50%</div>
+              </div>
+            </div>
+            <!-- 3. 합격 부적 -->
+            <div class="slot rarity-legendary">
+              <div class="slot-icon">🪬</div>
+              <div class="slot-qty">1</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-legendary text-[11px] font-bold mb-1">AMULET OF VICTORY</div>
+                <div class="font-serif-ko text-[11px] text-parch">합격 부적</div>
+                <div class="micro text-sub">전설 · 액세서리</div>
+                <div class="micro text-uncommon mt-1.5">치명적 실수 1회 무효</div>
+              </div>
+            </div>
+            <!-- 4. 에너지 드링크 -->
+            <div class="slot rarity-uncommon">
+              <div class="slot-icon">⚡</div>
+              <div class="slot-qty">12</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-uncommon text-[11px] font-bold mb-1">ENERGY POTION</div>
+                <div class="font-serif-ko text-[11px] text-parch">에너지 드링크</div>
+                <div class="micro text-sub">언커먼 · 소비형</div>
+                <div class="micro text-uncommon mt-1.5">MP +50 즉시 회복</div>
+              </div>
+            </div>
+            <!-- 5. 옴 결정 -->
+            <div class="slot rarity-rare">
+              <div class="slot-icon">💎</div>
+              <div class="slot-qty">8</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-rare text-[11px] font-bold mb-1">OHM CRYSTAL</div>
+                <div class="font-serif-ko text-[11px] text-parch">옴 결정</div>
+                <div class="micro text-sub">레어 · 재료</div>
+                <div class="micro text-uncommon mt-1.5">강화 재료 (저항 계열)</div>
+              </div>
+            </div>
+            <!-- 6. 회복 포션 -->
+            <div class="slot rarity-common">
+              <div class="slot-icon">🧪</div>
+              <div class="slot-qty">15</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-gold text-[11px] font-bold mb-1">HEALING DRAUGHT</div>
+                <div class="font-serif-ko text-[11px] text-parch">집중력 회복 포션</div>
+                <div class="micro text-sub">커먼 · 소비형</div>
+                <div class="micro text-uncommon mt-1.5">HP +100 회복</div>
+              </div>
+            </div>
+            <!-- 7. 변압기 코어 -->
+            <div class="slot rarity-epic">
+              <div class="slot-icon">🔋</div>
+              <div class="slot-qty">2</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-epic text-[11px] font-bold mb-1">TRANSFORMER CORE</div>
+                <div class="font-serif-ko text-[11px] text-parch">변압기 코어</div>
+                <div class="micro text-sub">에픽 · 재료</div>
+                <div class="micro text-uncommon mt-1.5">변압기 탑 보스 드롭</div>
+              </div>
+            </div>
+            <!-- 8. 키르히호프의 열쇠 -->
+            <div class="slot rarity-rare">
+              <div class="slot-icon">🗝️</div>
+              <div class="slot-qty">1</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-rare text-[11px] font-bold mb-1">KIRCHHOFF'S KEY</div>
+                <div class="font-serif-ko text-[11px] text-parch">키르히호프의 열쇠</div>
+                <div class="micro text-sub">레어 · 퀘스트템</div>
+                <div class="micro text-uncommon mt-1.5">전기기기 성채 입장 가능</div>
+              </div>
+            </div>
+            <!-- 9. 전선 묶음 -->
+            <div class="slot rarity-common">
+              <div class="slot-icon">🪢</div>
+              <div class="slot-qty">42</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-gold text-[11px] font-bold mb-1">COPPER WIRE BUNDLE</div>
+                <div class="font-serif-ko text-[11px] text-parch">동선 묶음</div>
+                <div class="micro text-sub">커먼 · 재료</div>
+              </div>
+            </div>
+            <!-- 10. 노트북 룬 -->
+            <div class="slot rarity-uncommon">
+              <div class="slot-icon">📓</div>
+              <div class="slot-qty">1</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-uncommon text-[11px] font-bold mb-1">RUNE NOTEBOOK</div>
+                <div class="font-serif-ko text-[11px] text-parch">오답 노트 (룬판)</div>
+                <div class="micro text-sub">언커먼 · 도구</div>
+                <div class="micro text-uncommon mt-1.5">틀린 문제 자동 기록</div>
+              </div>
+            </div>
+            <!-- 11. 황금 휘장 -->
+            <div class="slot rarity-legendary">
+              <div class="slot-icon">🏅</div>
+              <div class="slot-qty">1</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-legendary text-[11px] font-bold mb-1">GOLDEN INSIGNIA</div>
+                <div class="font-serif-ko text-[11px] text-parch">황금 휘장 (출석 7일)</div>
+                <div class="micro text-sub">전설 · 칭호템</div>
+              </div>
+            </div>
+            <!-- 12. 정체불명 알 -->
+            <div class="slot rarity-epic">
+              <div class="slot-icon">🥚</div>
+              <div class="slot-qty">1</div>
+              <div class="tooltip text-left">
+                <div class="font-rune text-epic text-[11px] font-bold mb-1">??? EGG</div>
+                <div class="font-serif-ko text-[11px] text-parch">정체불명 알</div>
+                <div class="micro text-sub">에픽 · 미식별</div>
+                <div class="micro text-epic mt-1.5">100문제 풀이 시 부화</div>
+              </div>
+            </div>
+            <!-- 빈 슬롯 -->
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+            <div class="slot slot-empty"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 길드 랭킹 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">🏆</span>
+          <span class="panel-title">Guild Ranking</span>
+          <span class="panel-title-ko text-xs ml-auto">길드 랭킹</span>
+        </div>
+        <div class="p-2">
+          <div class="text-[10px] text-sub px-3 py-1.5 flex justify-between font-rune tracking-widest uppercase">
+            <span>옴 신전 · 주간 Top 10</span>
+            <span class="text-gold">XP 기준</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num rank-1">1</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">전기왕_민수</div>
+              <div class="micro text-sub">전기 마스터 · Lv.78</div>
+            </div>
+            <span class="font-pixel text-xs text-legendary">42,180</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num rank-2">2</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">옴신_지영</div>
+              <div class="micro text-sub">전기 기능사 · Lv.62</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">38,910</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num rank-3">3</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">감전주의_혁</div>
+              <div class="micro text-sub">전기 기능사 · Lv.58</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">34,220</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num text-sub">4</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">변압기마법사</div>
+              <div class="micro text-sub">전기 마법사 · Lv.55</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">29,840</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num text-sub">5</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">3상의기사_준호</div>
+              <div class="micro text-sub">전기 기사 · Lv.51</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">26,510</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num text-sub">6</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">키르히호프킬러</div>
+              <div class="micro text-sub">전기 견습공 · Lv.48</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">22,300</span>
+          </div>
+          <div class="rank-row rank-me">
+            <span class="rank-num text-rare">7</span>
+            <div>
+              <div class="font-serif-ko text-xs text-rare">👉 김전공 (나)</div>
+              <div class="micro text-sub">전기 견습공 · Lv.42</div>
+            </div>
+            <span class="font-pixel text-xs text-rare">18,920</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num text-sub">8</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">컨덴서워리어</div>
+              <div class="micro text-sub">전기 견습공 · Lv.40</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">17,420</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num text-sub">9</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">번개아처_세영</div>
+              <div class="micro text-sub">전기 견습공 · Lv.38</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">15,810</span>
+          </div>
+          <div class="rank-row">
+            <span class="rank-num text-sub">10</span>
+            <div>
+              <div class="font-serif-ko text-xs text-parch">멀티미터러브</div>
+              <div class="micro text-sub">전기 견습공 · Lv.35</div>
+            </div>
+            <span class="font-pixel text-xs text-parch">13,290</span>
+          </div>
+        </div>
+        <div class="p-3 border-t border-[var(--gold-dark)]/40 text-center">
+          <button class="btn-rune w-full">⚔ 결투 신청</button>
+        </div>
+      </div>
+
+      <!-- 일일 보상 -->
+      <div class="panel-stone">
+        <div class="panel-head">
+          <span class="panel-head-icon">🎁</span>
+          <span class="panel-title">Daily Login</span>
+          <span class="panel-title-ko text-xs ml-auto">출석 보상</span>
+        </div>
+        <div class="p-3">
+          <div class="grid grid-cols-7 gap-1.5">
+            <div class="aspect-square border border-[var(--gold-dark)] grid place-items-center bg-black/30" title="Day 1">
+              <div class="text-center"><div class="text-base">✓</div><div class="micro text-uncommon">D1</div></div>
+            </div>
+            <div class="aspect-square border border-[var(--gold-dark)] grid place-items-center bg-black/30">
+              <div class="text-center"><div class="text-base">✓</div><div class="micro text-uncommon">D2</div></div>
+            </div>
+            <div class="aspect-square border border-[var(--gold-dark)] grid place-items-center bg-black/30">
+              <div class="text-center"><div class="text-base">✓</div><div class="micro text-uncommon">D3</div></div>
+            </div>
+            <div class="aspect-square border-2 border-[var(--gold-bright)] grid place-items-center" style="background: radial-gradient(circle, rgba(245,207,107,0.25), transparent); animation: pulse-ring 2s infinite;">
+              <div class="text-center"><div class="text-base">🎁</div><div class="micro text-gold">오늘</div></div>
+            </div>
+            <div class="aspect-square border border-[var(--gold-dark)]/50 grid place-items-center bg-black/30 opacity-60">
+              <div class="text-center"><div class="text-base">🔒</div><div class="micro text-sub">D5</div></div>
+            </div>
+            <div class="aspect-square border border-[var(--gold-dark)]/50 grid place-items-center bg-black/30 opacity-60">
+              <div class="text-center"><div class="text-base">🔒</div><div class="micro text-sub">D6</div></div>
+            </div>
+            <div class="aspect-square border border-[var(--legendary)] grid place-items-center bg-black/30 opacity-60">
+              <div class="text-center"><div class="text-base">👑</div><div class="micro text-legendary">D7</div></div>
+            </div>
+          </div>
+          <button class="btn-rune btn-rune-primary w-full mt-3">🎁 4일차 보상 수령</button>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- 하단 게임 컨트롤 띠 -->
+  <div class="rune-divider mt-8">
+    <span>◈ Press [F] to interact · [I] inventory · [M] map · [Q] quest log ◈</span>
+  </div>
+
+  <!-- 게임 알림 로그 -->
+  <div class="panel-stone mt-4">
+    <div class="panel-head">
+      <span class="panel-head-icon">📯</span>
+      <span class="panel-title">Combat Log</span>
+      <span class="panel-title-ko text-xs ml-auto">최근 알림</span>
+    </div>
+    <div class="p-4 font-pixel text-sm space-y-1 leading-tight" style="background: rgba(0,0,0,0.4);">
+      <div><span class="text-sub">[14:23]</span> <span class="text-uncommon">+850 XP</span> <span class="text-parch">획득 — 옴의 법칙 던전 클리어!</span></div>
+      <div><span class="text-sub">[14:19]</span> <span class="text-gold">⚡ CRITICAL HIT!</span> <span class="text-parch">3상 교류 보스에게 1,250 데미지</span></div>
+      <div><span class="text-sub">[14:15]</span> <span class="text-rare">[아이템]</span> <span class="text-parch">『키르히호프의 열쇠』 획득</span></div>
+      <div><span class="text-sub">[14:08]</span> <span class="text-legendary">🏆 길드원 전기왕_민수님</span> <span class="text-parch">레벨 78 달성!</span></div>
+      <div><span class="text-sub">[13:55]</span> <span class="text-epic">[업적]</span> <span class="text-parch">『100문제 연속 정답』 달성 — +2,000 XP</span></div>
+      <div><span class="text-sub">[13:42]</span> <span class="text-uncommon">+1,200 XP</span> <span class="text-parch">변압기 단원 강의 완주</span></div>
+      <div><span class="text-sub">[13:30]</span> <span class="text-hp-red" style="color: var(--hp-red);">⚠ 경고</span> <span class="text-parch">키르히호프 미궁에서 -120 HP</span></div>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <footer class="mt-8 pt-6 border-t border-[var(--gold-dark)]/40 text-center">
+    <div class="font-rune text-gold text-sm tracking-widest mb-2">◇ ELECTRICUM · ANNO 2026 ◇</div>
+    <div class="font-serif-ko text-xs text-sub">
+      전기기능사 RPG · 전공의 여정 · <span class="text-gold">개발: 옴 신전 길드</span> · 무단 복제 시 시험관의 저주가 내립니다
+    </div>
+    <div class="mt-3 flex justify-center gap-4 text-[11px] text-sub">
+      <span>v4.2.0 - 변압기 패치</span>
+      <span>·</span>
+      <span>온라인 유저: <span class="text-uncommon">12,847</span>명</span>
+      <span>·</span>
+      <span>서버: <span class="text-gold">옴-1 (정상)</span></span>
+    </div>
+  </footer>
+
+</main>
+
+<!-- ===== 모달: 퀘스트 상세 ===== -->
+<div class="modal-backdrop" id="quest-modal">
+  <div class="modal-frame">
+    <div class="panel-head" style="border-bottom-color: var(--gold-bright);">
+      <span class="panel-head-icon">📜</span>
+      <span class="panel-title" id="modal-quest-type">Quest Detail</span>
+      <button class="ml-auto text-gold hover:text-[var(--gold-bright)] text-xl leading-none modal-close px-2">×</button>
+    </div>
+    <div class="p-6" id="quest-modal-body">
+      <!-- 동적 채움 -->
+    </div>
+  </div>
+</div>
+
+<!-- ===== 모달: 던전 입장 ===== -->
+<div class="modal-backdrop" id="dungeon-modal">
+  <div class="modal-frame">
+    <div class="panel-head" style="border-bottom-color: var(--gold-bright);">
+      <span class="panel-head-icon">🗺</span>
+      <span class="panel-title">Dungeon Entry</span>
+      <button class="ml-auto text-gold hover:text-[var(--gold-bright)] text-xl leading-none modal-close px-2">×</button>
+    </div>
+    <div class="p-6" id="dungeon-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== 모달: NPC 대화 ===== -->
+<div class="modal-backdrop" id="npc-modal">
+  <div class="modal-frame">
+    <div class="panel-head" style="border-bottom-color: var(--gold-bright);">
+      <span class="panel-head-icon">💬</span>
+      <span class="panel-title">Dialogue</span>
+      <button class="ml-auto text-gold hover:text-[var(--gold-bright)] text-xl leading-none modal-close px-2">×</button>
+    </div>
+    <div class="p-6" id="npc-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== 모달: 스킬 노드 ===== -->
+<div class="modal-backdrop" id="skill-modal">
+  <div class="modal-frame">
+    <div class="panel-head" style="border-bottom-color: var(--gold-bright);">
+      <span class="panel-head-icon">✦</span>
+      <span class="panel-title">Skill Node</span>
+      <button class="ml-auto text-gold hover:text-[var(--gold-bright)] text-xl leading-none modal-close px-2">×</button>
+    </div>
+    <div class="p-6" id="skill-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== 토스트: LEVEL UP ===== -->
+<div class="toast level-up-toast" id="level-up-toast">
+  <div class="level-up-text">LEVEL UP!</div>
+  <div class="font-rune text-gold text-xl tracking-widest mt-2" style="text-shadow: 0 0 20px rgba(245,207,107,0.7);">Lv.42 → Lv.43</div>
+  <div class="font-serif-ko text-parch mt-2 text-base">『 모든 스탯 +3, HP/MP 최대치 증가 』</div>
+</div>
+
+<script>
+  // ===== 시계 =====
+  function tick() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const el = document.getElementById('clock');
+    if (el) el.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    // D-DAY 초
+    const sec = document.getElementById('dday-sec');
+    if (sec) sec.textContent = pad(59 - d.getSeconds());
+  }
+  setInterval(tick, 1000); tick();
+
+  // ===== 배경 먼지 (gsap) =====
+  const dustLayer = document.getElementById('dust-layer');
+  for (let i = 0; i < 30; i++) {
+    const dust = document.createElement('div');
+    dust.className = 'dust';
+    dust.style.left = Math.random() * 100 + 'vw';
+    dust.style.top = Math.random() * 100 + 'vh';
+    dustLayer.appendChild(dust);
+    gsap.to(dust, {
+      y: '-=' + (60 + Math.random() * 80),
+      x: '+=' + (Math.random() * 40 - 20),
+      opacity: 0.7,
+      duration: 4 + Math.random() * 4,
+      delay: Math.random() * 4,
+      repeat: -1,
+      yoyo: false,
+      ease: 'sine.inOut',
+      onRepeat: () => {
+        dust.style.left = Math.random() * 100 + 'vw';
+        dust.style.top = (100 + Math.random() * 10) + 'vh';
+      }
+    });
+  }
+
+  // ===== 모달 공통 =====
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeAllModals() {
+    document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('open'));
+  }
+  document.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeAllModals));
+  document.querySelectorAll('.modal-backdrop').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) closeAllModals(); });
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
+
+  // ===== 퀘스트 클릭 → 모달 =====
+  const QUESTS = {
+    main: {
+      type: 'Main Quest · Epic',
+      typeColor: 'var(--legendary)',
+      title: '전기기능사 자격증 획득',
+      icon: '👑',
+      lore: '스승 옴은 말했다 — "전압과 전류, 저항의 삼위일체를 깨우치고 시험관을 쓰러뜨려라. 너의 운명은 동선 끝에 있다."',
+      tasks: [
+        ['✓', '옴의 법칙 던전 클리어', true],
+        ['✓', '키르히호프 미궁 통과', true],
+        ['✓', '직류회로 마스터 (Lv.5)', true],
+        ['', '교류회로 정복 (7/10 챕터)', false],
+        ['', '변압기 탑 클리어', false],
+        ['', '최종 보스 시험관 격파', false],
+      ],
+      rewards: ['+25,000 XP', '+100,000 골드', '칭호 『합격자』', '전설 등급 졸업장 ×1']
+    },
+    daily1: {
+      type: 'Daily · 일일 퀘스트',
+      typeColor: 'var(--uncommon)',
+      title: '옴의 법칙 10문제 격파',
+      icon: '⚡',
+      lore: '"어린 견습공이여, 매일의 수련만이 너를 강하게 만든다. V는 I 곱하기 R, 잊지 말거라." — 옴 신전 사제',
+      tasks: [['', '옴의 법칙 문제 풀이 (7/10)', false]],
+      rewards: ['+850 XP', '+320 골드', '경험치 부스트 +5분']
+    },
+    daily2: {
+      type: 'Daily · 완료',
+      typeColor: 'var(--uncommon)',
+      title: '변압기 단원 강의 1편 완주',
+      icon: '🔄',
+      lore: '"권수비의 비밀을 파헤쳐라. 1차와 2차의 균형이 곧 변압기의 영혼이다."',
+      tasks: [['✓', '변압기 강의 1편 시청', true]],
+      rewards: ['+1,200 XP', '+500 골드']
+    },
+    weekly: {
+      type: 'Weekly Raid',
+      typeColor: 'var(--rare)',
+      title: 'CBT 모의고사 80점 돌파',
+      icon: '🏰',
+      lore: '"60문항의 시련을 80점 이상으로 통과하라. 길드의 명예가 너의 어깨에 달렸다." — 길드장',
+      tasks: [
+        ['', '모의고사 1회 응시 (현재 최고점 73점)', false],
+        ['', '80점 이상 달성', false]
+      ],
+      rewards: ['+4,500 XP', '레어 카드 상자 ×1', '길드 명성 +50']
+    },
+    hidden: {
+      type: 'Hidden · 미식별',
+      typeColor: 'var(--epic)',
+      title: '??? 사라진 콘덴서의 비밀',
+      icon: '❓',
+      lore: '전기설비 동굴 깊은 곳에서 누군가의 흐느낌이 들린다… "내가… 내 정전 용량을… 잃어버렸어…"',
+      tasks: [['🔒', '회로 분석 Lv.75 도달 시 해금', false]],
+      rewards: ['??? · ???']
+    }
+  };
+
+  document.querySelectorAll('[data-quest]').forEach(q => {
+    q.addEventListener('click', () => {
+      const id = q.dataset.quest;
+      const d = QUESTS[id];
+      const body = document.getElementById('quest-modal-body');
+      document.getElementById('modal-quest-type').textContent = d.type;
+      body.innerHTML = `
+        <div class="flex items-start gap-4 mb-4">
+          <div class="text-5xl">${d.icon}</div>
+          <div class="flex-1">
+            <div class="quest-badge mb-2" style="color: ${d.typeColor}; border-color: ${d.typeColor};">${d.type}</div>
+            <h2 class="font-serif-ko text-2xl font-bold text-parch">${d.title}</h2>
+          </div>
+        </div>
+        <div class="speech mb-4" style="margin-top: 0;">${d.lore}</div>
+        <div class="rune-divider"><span>목표</span></div>
+        <div class="space-y-1.5 mb-4">
+          ${d.tasks.map(([m, t, done]) =>
+            `<div class="text-sm text-parch flex items-start gap-2"><span class="check-box ${done?'checked':''}">${done?'✓':''}</span><span class="${done?'text-sub line-through':''}">${t}</span></div>`
+          ).join('')}
+        </div>
+        <div class="rune-divider"><span>보상</span></div>
+        <div class="flex flex-wrap gap-2 mb-5">
+          ${d.rewards.map(r => `<span class="quest-badge text-gold">${r}</span>`).join('')}
+        </div>
+        <button class="btn-rune btn-rune-primary w-full" onclick="acceptQuest()">⚔ 수락하고 전장으로</button>
+      `;
+      openModal('quest-modal');
+    });
+  });
+  window.acceptQuest = () => {
+    closeAllModals();
+    triggerLevelUp();
+  };
+
+  // ===== 던전 클릭 =====
+  const DUNGEONS = {
+    ohm:        { name: '옴의 동굴',         icon: '⚡', lv: '권장 Lv.10',  status: 'cleared', desc: '저항의 신이 거주하는 빛나는 동굴. V=IR의 진리가 벽에 새겨져 있다.', boss: '옴 골렘 (격파 완료)' },
+    kirchhoff:  { name: '키르히호프 미궁',    icon: '🌀', lv: '권장 Lv.20',  status: 'cleared', desc: '들어오는 것과 나가는 것이 같다. 미궁의 법칙이다.', boss: '미궁의 수호자 (격파 완료)' },
+    transformer:{ name: '변압기 탑',         icon: '🔄', lv: '권장 Lv.40',  status: 'active',  desc: '7층 높이의 강철 탑. 1차와 2차 코일이 영원히 공명한다.', boss: '권수비의 마왕 ★ 도전 가능' },
+    machine:    { name: '전기기기 성채',     icon: '⚙️', lv: '권장 Lv.55',  status: 'locked',  desc: '발전기와 전동기의 군대가 지키는 거대한 성채.', boss: '동기기 사령관 (잠금)' },
+    install:    { name: '전기설비 동굴',     icon: '🏗️', lv: '권장 Lv.45',  status: 'locked',  desc: '배선, 분전반, 접지의 미궁. 안전모 필수.', boss: '누전 차단기 군주 (잠금)' },
+    boss:       { name: '시험관 신전 (BOSS)', icon: '👹', lv: '권장 Lv.50',  status: 'final',   desc: '60문항의 시련. 모든 던전을 클리어한 자만 입장 가능.', boss: '시험관 (최종 보스 · HP 99,999)' }
+  };
+  document.querySelectorAll('[data-dungeon]').forEach(n => {
+    n.addEventListener('click', e => {
+      e.stopPropagation();
+      const d = DUNGEONS[n.dataset.dungeon];
+      const statusBadge = {
+        cleared: ['<span class="quest-badge text-rare">✓ 클리어</span>', '#4aa3ff'],
+        active:  ['<span class="quest-badge text-gold">★ 진행중</span>',  '#f5cf6b'],
+        locked:  ['<span class="quest-badge text-dim">🔒 잠금</span>',    '#6e5f48'],
+        final:   ['<span class="quest-badge" style="color:#ff8a8a;border-color:#ff8a8a;">⚠ 최종</span>', '#ff8a8a']
+      }[d.status];
+      document.getElementById('dungeon-modal-body').innerHTML = `
+        <div class="text-center mb-4">
+          <div class="text-7xl mb-2">${d.icon}</div>
+          <h2 class="font-serif-ko text-2xl font-bold text-parch">${d.name}</h2>
+          <div class="mt-2 flex items-center gap-2 justify-center">
+            ${statusBadge[0]}
+            <span class="quest-badge text-sub">${d.lv}</span>
+          </div>
+        </div>
+        <div class="speech" style="margin-top:0;">${d.desc}</div>
+        <div class="rune-divider"><span>보스</span></div>
+        <div class="text-center font-serif-ko text-lg text-parch mb-5">${d.boss}</div>
+        ${d.status === 'locked'
+          ? `<button class="btn-rune w-full opacity-50 cursor-not-allowed">🔒 입장 불가 — 선행 던전 필요</button>`
+          : `<button class="btn-rune btn-rune-primary w-full" onclick="closeAllModals();triggerLevelUp();">⚔ 입장하기</button>`}
+      `;
+      openModal('dungeon-modal');
+    });
+  });
+
+  // ===== NPC 클릭 =====
+  const NPCS = {
+    master: {
+      name: '옴 신전의 대사제',
+      icon: '🧙‍♂️',
+      role: '강사 NPC · Lv.99',
+      lines: [
+        'V는 IR이니라. 이 단순한 진리를 명심하라, 어린 견습공이여…',
+        '저항이 두 배가 되면? 그렇다, 전류는 반으로. 단순하지 않으냐.',
+        '내 가르침이 부족하다 느껴진다면, "옴의 법칙 마스터 강의"를 청강하라.'
+      ],
+      action: '강의 수강하기'
+    },
+    mentor: {
+      name: '합격자 박정훈 (2025년)',
+      icon: '🧑‍🎓',
+      role: '멘토 NPC · Lv.50',
+      lines: [
+        '기출 5개년 3회 돌리면 합격한다. 그게 정답이야.',
+        '내가 작년에 75점으로 합격했어. 너도 할 수 있어.',
+        '실기는 단자대 결선이 핵심이야. 손에 익을 때까지 반복!'
+      ],
+      action: '합격 후기 받기'
+    },
+    merchant: {
+      name: '학습 도구 상인',
+      icon: '🧝‍♀️',
+      role: '상인 NPC · Lv.42',
+      lines: [
+        '오늘만 30% 할인! 합격 부적이 단돈 500골드…!',
+        '에너지 드링크 1+1 행사 중이야. 사갈래?',
+        '특별 메뉴: 황금 휘장 (출석 7일 전용). 한정 수량!'
+      ],
+      action: '상점 열기'
+    },
+    guildmaster: {
+      name: '길드장 김기능',
+      icon: '👨‍🏫',
+      role: '길드장 NPC · Lv.80',
+      lines: [
+        '이번 주 길드 레이드는 CBT 모의고사다. 다 같이 80점!',
+        '길드원들이 너를 보고 있어. 책임감을 가져라.',
+        '실력보다 끈기가 중요해. 매일 한 챕터씩만 가자.'
+      ],
+      action: '길드 임무 수령'
+    }
+  };
+  document.querySelectorAll('[data-npc]').forEach(n => {
+    n.addEventListener('click', () => {
+      const d = NPCS[n.dataset.npc];
+      const lineIdx = Math.floor(Math.random() * d.lines.length);
+      document.getElementById('npc-modal-body').innerHTML = `
+        <div class="flex items-start gap-4 mb-4">
+          <div class="npc-portrait" style="width:80px; height:80px; font-size:42px;">${d.icon}</div>
+          <div>
+            <h2 class="font-serif-ko text-xl font-bold text-parch">${d.name}</h2>
+            <div class="micro text-gold tracking-wider mt-1">『 ${d.role} 』</div>
+          </div>
+        </div>
+        <div class="speech" style="margin-top: 0; padding: 16px;">
+          <span class="font-serif-ko text-base">${d.lines[lineIdx]}</span>
+        </div>
+        <div class="flex gap-2 mt-5">
+          <button class="btn-rune flex-1" onclick="closeAllModals()">대화 종료</button>
+          <button class="btn-rune btn-rune-primary flex-1" onclick="closeAllModals();triggerLevelUp();">${d.action}</button>
+        </div>
+      `;
+      openModal('npc-modal');
+    });
+  });
+
+  // ===== 스킬 노드 클릭 =====
+  const SKILLS = {
+    dc:      { name: '직류회로 마스터',   icon: '⚡', lv: 'Lv.5 / 5 (MAX)',     state: 'maxed',    desc: '저항·전류·전압의 기초. 모든 전기 마법의 근간.',     effect: '+ 옴의 지혜 +15 (영구)' },
+    ac:      { name: '교류회로 통달',     icon: '〰️', lv: 'Lv.3 / 5',           state: 'progress', desc: '사인파의 흐름을 읽는 자. 위상의 비밀을 파헤친다.', effect: '+ 회로 분석 +12 (현재)' },
+    three:   { name: '3상교류 통찰',     icon: '▲', lv: 'Lv.1 / 5',           state: 'available',desc: '세 개의 위상이 만드는 완벽한 균형. Y-Δ 변환의 비술.', effect: '+ 3상 통찰 +5 → +25' },
+    machine: { name: '전기기기 정복',     icon: '⚙️', lv: '🔒 잠김',             state: 'locked',   desc: '발전기와 전동기를 조종하는 전설의 기술.',           effect: '교류회로 Lv.5 도달 시 해금' },
+    install: { name: '전기설비 마스터리', icon: '🏗️', lv: '🔒 잠김',             state: 'locked',   desc: '배선·접지·분전반을 손가락 하나로 설계.',             effect: '3상교류 Lv.3 도달 시 해금' }
+  };
+  document.querySelectorAll('[data-skill]').forEach(n => {
+    n.addEventListener('click', () => {
+      const d = SKILLS[n.dataset.skill];
+      const stateBadge = {
+        maxed:     '<span class="quest-badge text-legendary">★ MAX</span>',
+        progress:  '<span class="quest-badge text-gold">진행 중</span>',
+        available: '<span class="quest-badge text-uncommon">투자 가능</span>',
+        locked:    '<span class="quest-badge text-dim">🔒 잠금</span>'
+      }[d.state];
+      document.getElementById('skill-modal-body').innerHTML = `
+        <div class="text-center mb-4">
+          <div class="skill-node ${d.state === 'locked' ? 'locked' : 'unlocked active'}" style="position: static; margin: 0 auto 12px; width: 80px; height: 80px;">
+            <span class="skill-node-icon" style="font-size: 36px;">${d.icon}</span>
+          </div>
+          <h2 class="font-serif-ko text-2xl font-bold text-parch">${d.name}</h2>
+          <div class="mt-2 flex items-center gap-2 justify-center">
+            ${stateBadge}
+            <span class="quest-badge text-sub">${d.lv}</span>
+          </div>
+        </div>
+        <div class="speech" style="margin-top:0;">${d.desc}</div>
+        <div class="rune-divider"><span>효과</span></div>
+        <div class="text-center font-serif-ko text-uncommon text-base mb-5">${d.effect}</div>
+        ${d.state === 'available' || d.state === 'progress'
+          ? `<button class="btn-rune btn-rune-primary w-full" onclick="investSP(this)">✦ 스킬 포인트 1 투자 (잔여 3)</button>`
+          : `<button class="btn-rune w-full opacity-50 cursor-not-allowed">${d.state === 'maxed' ? '✓ 마스터 완료' : '🔒 조건 미달'}</button>`
+        }
+      `;
+      openModal('skill-modal');
+    });
+  });
+  window.investSP = (btn) => {
+    btn.textContent = '✦ 투자 완료! (잔여 2)';
+    btn.style.background = 'linear-gradient(180deg, var(--uncommon) 0%, #2a8a2a 100%)';
+    btn.style.color = '#0a0e14';
+    setTimeout(() => { closeAllModals(); triggerLevelUp(); }, 900);
+  };
+
+  // ===== LEVEL UP 토스트 =====
+  function triggerLevelUp() {
+    const toast = document.getElementById('level-up-toast');
+    gsap.fromTo(toast,
+      { opacity: 0, scale: 0.4, y: -40 },
+      { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: 'back.out(2)' }
+    );
+    // 빛 폭발 (가벼운 파티클)
+    for (let i = 0; i < 20; i++) {
+      const p = document.createElement('div');
+      p.className = 'dust';
+      p.style.left = '50vw';
+      p.style.top = '30vh';
+      p.style.width = '4px'; p.style.height = '4px';
+      p.style.opacity = '1';
+      document.body.appendChild(p);
+      const angle = (i / 20) * Math.PI * 2;
+      gsap.to(p, {
+        x: Math.cos(angle) * 200,
+        y: Math.sin(angle) * 200,
+        opacity: 0,
+        duration: 1.2,
+        ease: 'power2.out',
+        onComplete: () => p.remove()
+      });
+    }
+    gsap.to(toast, { opacity: 0, scale: 1.1, duration: 0.5, delay: 1.6, ease: 'power2.in' });
+  }
+
+  // ===== 호버 시 슬롯 사운드 텍스트 (장식 효과) =====
+  document.querySelectorAll('.slot:not(.slot-empty)').forEach(s => {
+    s.addEventListener('mouseenter', () => {
+      gsap.fromTo(s, { y: 0 }, { y: -2, duration: 0.15, yoyo: true, repeat: 1 });
+    });
+  });
+
+  // ===== 패널 입장 애니메이션 =====
+  gsap.from('.panel-stone', {
+    opacity: 0, y: 16, duration: 0.6, stagger: 0.06, ease: 'power2.out'
+  });
+  gsap.from('.topbar', { opacity: 0, y: -16, duration: 0.5, ease: 'power2.out' });
+
+  // ===== 첫 진입 LEVEL UP 데모 (3초 후) =====
+  setTimeout(triggerLevelUp, 1800);
+</script>
+
+</body>
+</html>

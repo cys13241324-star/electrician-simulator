@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK ASTROLOGY · 전기 학습 호로스코프</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Cormorant+Unicase:wght@400;500;600;700&family=Noto+Serif+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cosmos: {
+            950: '#050216',
+            900: '#0a0625',
+            800: '#110a35',
+            700: '#1a1148',
+            600: '#241a5e',
+            500: '#332674'
+          },
+          gold: {
+            50:  '#fffbeb',
+            100: '#fff3c4',
+            200: '#ffe7a3',
+            300: '#f7d56d',
+            400: '#e9bd45',
+            500: '#caa12a',
+            600: '#a17e15',
+            700: '#7a5d0a'
+          },
+          indigo2: {
+            300: '#a5b4fc',
+            400: '#818cf8',
+            500: '#6366f1',
+            600: '#4f46e5',
+            700: '#4338ca'
+          },
+          violet2: {
+            400: '#a78bfa',
+            500: '#8b5cf6',
+            600: '#7c3aed'
+          }
+        },
+        fontFamily: {
+          cinzel:  ['"Cinzel"', 'serif'],
+          unicase: ['"Cormorant Unicase"', 'serif'],
+          corm:    ['"Cormorant Garamond"', 'serif'],
+          kr:      ['"Noto Serif KR"', 'serif']
+        },
+        boxShadow: {
+          natal:  '0 0 80px rgba(139,92,246,.35), 0 0 40px rgba(247,213,109,.18) inset',
+          card:   '0 20px 50px -20px rgba(0,0,0,.7), 0 0 30px rgba(247,213,109,.18)',
+          glow:   '0 0 30px rgba(247,213,109,.6)'
+        }
+      }
+    }
+  };
+</script>
+<style>
+  html, body { background:#050216; color:#efe9d8; }
+  body { font-family:'Noto Serif KR','Cormorant Garamond',serif; letter-spacing:.01em; }
+  .ff-title   { font-family:'Cinzel',serif; letter-spacing:.22em; }
+  .ff-unicase { font-family:'Cormorant Unicase',serif; letter-spacing:.06em; }
+  .ff-italic  { font-family:'Cormorant Garamond',serif; font-style:italic; }
+
+  /* Cosmic background */
+  .cosmos-bg {
+    position:fixed; inset:0; z-index:-3;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,.35) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(139,92,246,.25) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 70%, rgba(202,161,42,.12) 0%, transparent 65%),
+      linear-gradient(180deg,#050216 0%, #0a0625 35%, #110a35 70%, #0a0625 100%);
+  }
+  .star-layer { position:fixed; inset:0; z-index:-2; pointer-events:none; }
+  .stars-a { background-image:
+              radial-gradient(1px 1px at 20px 30px,  rgba(255,255,255,.9), transparent),
+              radial-gradient(1px 1px at 80px 120px, rgba(255,245,214,.7), transparent),
+              radial-gradient(1.5px 1.5px at 160px 60px, rgba(255,255,255,.9), transparent),
+              radial-gradient(1px 1px at 240px 220px, rgba(247,213,109,.6), transparent),
+              radial-gradient(1px 1px at 310px 90px,  rgba(255,255,255,.8), transparent);
+            background-size:340px 340px;
+            animation: drift 80s linear infinite; }
+  .stars-b { background-image:
+              radial-gradient(1.2px 1.2px at 50px 200px, rgba(255,255,255,.55), transparent),
+              radial-gradient(2px 2px at 220px 80px,     rgba(247,213,109,.7),  transparent),
+              radial-gradient(1px 1px at 140px 260px,    rgba(255,255,255,.6),  transparent),
+              radial-gradient(1px 1px at 380px 340px,    rgba(165,180,252,.7),  transparent);
+            background-size:440px 440px;
+            animation: drift 120s linear infinite reverse;
+            opacity:.75; }
+  .stars-c { background-image:
+              radial-gradient(1.5px 1.5px at 100px 50px,  rgba(240,171,252,.5),  transparent),
+              radial-gradient(1px 1px at 300px 180px,     rgba(99,102,241,.7),   transparent),
+              radial-gradient(1.3px 1.3px at 500px 400px, rgba(255,255,255,.7),  transparent);
+            background-size:560px 560px;
+            animation: twinkle 5s ease-in-out infinite; }
+  @keyframes drift   { from { transform:translateY(0); } to { transform:translateY(-340px); } }
+  @keyframes twinkle { 0%,100% { opacity:.4; } 50% { opacity:.9; } }
+  @keyframes spinSlow{ from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+  @keyframes pulse   { 0%,100% { opacity:.7; } 50% { opacity:1; } }
+  @keyframes shimmer { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+
+  /* Gold gradient text */
+  .text-gold-grad {
+    background:linear-gradient(135deg,#fff3c4 0%, #f7d56d 30%, #caa12a 55%, #fff3c4 100%);
+    background-size:200% 200%;
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation: shimmer 7s ease-in-out infinite;
+  }
+
+  /* Ornaments */
+  .h-divider { display:flex; align-items:center; gap:1rem; color:#caa12a; }
+  .h-divider::before, .h-divider::after {
+    content:""; flex:1; height:1px;
+    background:linear-gradient(90deg,transparent,#caa12a,transparent);
+  }
+
+  /* Sigil bullet */
+  .sigil { display:inline-block; width:.55rem; height:.55rem; transform:rotate(45deg);
+           background:#e9bd45; box-shadow:0 0 10px rgba(247,213,109,.7); margin:0 .35rem;
+           vertical-align:middle; }
+
+  /* Natal chart */
+  .natal-wrap { position:relative; }
+  .natal-rotor { animation: spinSlow 240s linear infinite; transform-origin:center; }
+  .natal-rotor:hover { animation-play-state:paused; }
+
+  /* Zodiac segment hover */
+  .zodiac-seg { transition: all .25s ease; cursor:pointer; }
+  .zodiac-seg:hover .seg-bg { fill:rgba(247,213,109,.18); }
+  .zodiac-seg.active .seg-bg { fill:rgba(247,213,109,.32); stroke:#f7d56d; }
+  .zodiac-seg .seg-glyph { transition: all .25s ease; }
+  .zodiac-seg:hover .seg-glyph,
+  .zodiac-seg.active .seg-glyph { fill:#fff3c4; filter:drop-shadow(0 0 6px #f7d56d); }
+
+  /* Cards */
+  .zcard {
+    position:relative;
+    background:linear-gradient(160deg, rgba(36,26,94,.55) 0%, rgba(10,6,37,.85) 100%);
+    border:1px solid rgba(247,213,109,.28);
+    box-shadow:0 18px 40px -22px rgba(0,0,0,.8), 0 0 22px rgba(247,213,109,.08);
+    overflow:hidden;
+    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+  }
+  .zcard:hover { transform: translateY(-6px); border-color:rgba(247,213,109,.6);
+                 box-shadow:0 30px 60px -25px rgba(0,0,0,.9), 0 0 36px rgba(247,213,109,.25); }
+  .zcard.is-me { border-color:#f7d56d; box-shadow:0 0 0 1px #f7d56d inset, 0 0 30px rgba(247,213,109,.35); }
+  .zcard::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(circle at 50% -10%, rgba(247,213,109,.18) 0%, transparent 55%);
+  }
+  .zcard-glyph {
+    width:64px; height:64px;
+    filter: drop-shadow(0 0 8px rgba(247,213,109,.6));
+  }
+
+  /* Modal */
+  .modal-mask { background:rgba(5,2,22,.85); backdrop-filter: blur(6px); }
+  .modal-card {
+    background:linear-gradient(160deg, rgba(36,26,94,.92) 0%, rgba(10,6,37,.98) 100%);
+    border:1px solid rgba(247,213,109,.45);
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.9), 0 0 40px rgba(247,213,109,.25);
+  }
+
+  /* Inputs */
+  .field {
+    background:rgba(10,6,37,.6);
+    border:1px solid rgba(247,213,109,.35);
+    color:#fff3c4;
+    padding:.65rem .9rem;
+    border-radius:.4rem;
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.05rem;
+  }
+  .field:focus { outline:none; border-color:#f7d56d; box-shadow:0 0 0 3px rgba(247,213,109,.18); }
+  .btn-gold {
+    background:linear-gradient(180deg,#f7d56d 0%,#caa12a 100%);
+    color:#0a0625;
+    font-family:'Cinzel',serif; letter-spacing:.18em;
+    padding:.7rem 1.4rem; border-radius:.4rem; font-weight:700;
+    box-shadow:0 0 24px rgba(247,213,109,.45);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn-gold:hover { transform:translateY(-1px); box-shadow:0 0 32px rgba(247,213,109,.7); }
+
+  /* Compatibility ring */
+  .compat-bar {
+    height:8px; border-radius:9999px; overflow:hidden;
+    background:rgba(255,243,196,.08);
+    border:1px solid rgba(247,213,109,.2);
+  }
+  .compat-bar > div {
+    height:100%;
+    background:linear-gradient(90deg,#caa12a,#f7d56d,#fff3c4);
+    box-shadow:0 0 10px rgba(247,213,109,.6);
+  }
+
+  /* Planet table */
+  .planet-row { border-bottom:1px dashed rgba(247,213,109,.18); }
+  .planet-row:last-child { border-bottom:none; }
+  .planet-glyph { display:inline-block; width:1.5rem; text-align:center; color:#f7d56d;
+                  text-shadow:0 0 8px rgba(247,213,109,.6); font-family:'Cormorant Unicase',serif; }
+
+  /* Pulse dot */
+  .pulse-dot { animation: pulse 2.2s ease-in-out infinite; }
+
+  /* Selection */
+  ::selection { background:rgba(247,213,109,.35); color:#fff3c4; }
+
+  /* Scrollbar inside modal */
+  .modal-card::-webkit-scrollbar { width:8px; }
+  .modal-card::-webkit-scrollbar-thumb { background:rgba(247,213,109,.35); border-radius:4px; }
+</style>
+</head>
+<body class="font-kr">
+
+<div class="cosmos-bg"></div>
+<div class="star-layer stars-a"></div>
+<div class="star-layer stars-b"></div>
+<div class="star-layer stars-c"></div>
+
+<!-- ============================ HEADER ============================ -->
+<header class="relative pt-12 pb-8">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <div class="ff-italic text-gold-300 text-lg tracking-widest">~ Vol. MMXXVI · No. V ~</div>
+    <h1 class="ff-title text-gold-grad text-4xl md:text-6xl font-black mt-2">SPARK&nbsp;ASTROLOGY</h1>
+    <div class="h-divider mt-4 max-w-xl mx-auto">
+      <span class="ff-unicase text-sm">Sidereal Calendar of Electrical Studies</span>
+    </div>
+    <p class="ff-italic text-gold-200/85 mt-4 max-w-2xl mx-auto text-lg leading-relaxed">
+      별과 행성이 그리는 학습의 길.<br />
+      당신의 별자리가 오늘의 과목과 합격선을 속삭입니다.
+    </p>
+    <p class="mt-3 text-xs ff-unicase text-gold-400/70 tracking-widest">
+      Established Anno Domini 2026 &nbsp;·&nbsp; Observatorium Spark
+    </p>
+  </div>
+</header>
+
+<!-- ============================ NATAL CHART ============================ -->
+<section class="relative max-w-6xl mx-auto px-6 py-10">
+  <div class="grid lg:grid-cols-5 gap-10 items-center">
+
+    <!-- Left: chart -->
+    <div class="lg:col-span-3 natal-wrap flex justify-center">
+      <div class="relative" style="width:min(640px,92vw); aspect-ratio:1/1;">
+        <!-- Outer glow -->
+        <div class="absolute inset-0 rounded-full" style="box-shadow: 0 0 100px 10px rgba(139,92,246,.25), 0 0 60px rgba(247,213,109,.18) inset; background: radial-gradient(circle at 50% 50%, rgba(247,213,109,.04) 0%, transparent 60%);"></div>
+
+        <svg id="natalChart" viewBox="0 0 600 600" class="relative w-full h-full">
+          <defs>
+            <radialGradient id="gradCore" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#241a5e" stop-opacity=".9" />
+              <stop offset="60%" stop-color="#0a0625" stop-opacity="1" />
+              <stop offset="100%" stop-color="#050216" stop-opacity="1" />
+            </radialGradient>
+            <linearGradient id="goldRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"  stop-color="#fff3c4" />
+              <stop offset="50%" stop-color="#caa12a" />
+              <stop offset="100%" stop-color="#f7d56d" />
+            </linearGradient>
+            <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- Core disk -->
+          <circle cx="300" cy="300" r="288" fill="url(#gradCore)" stroke="url(#goldRing)" stroke-width="1.2" opacity=".95" />
+
+          <!-- Rotor (slow spin) -->
+          <g class="natal-rotor">
+
+            <!-- Outer ring -->
+            <circle cx="300" cy="300" r="280" fill="none" stroke="#caa12a" stroke-width="1.4" opacity=".85" />
+            <circle cx="300" cy="300" r="262" fill="none" stroke="#caa12a" stroke-width=".6" opacity=".55" />
+
+            <!-- Zodiac band (between r=220 and r=262) generated by JS -->
+            <g id="zodiacBand"></g>
+
+            <!-- Degree ticks (360 ticks on r≈258) -->
+            <g id="degreeTicks" stroke="#f7d56d" stroke-opacity=".55"></g>
+
+            <!-- Inner ring -->
+            <circle cx="300" cy="300" r="220" fill="none" stroke="#caa12a" stroke-width=".8" opacity=".7" />
+            <circle cx="300" cy="300" r="170" fill="none" stroke="#a17e15" stroke-width=".5" opacity=".5" stroke-dasharray="2 3" />
+
+            <!-- House lines (12 spokes from r=170 to r=220) -->
+            <g id="houseLines" stroke="#caa12a" stroke-width=".6" opacity=".5"></g>
+
+            <!-- Planets layer -->
+            <g id="planetsLayer"></g>
+
+            <!-- Aspect lines (chords inside core) -->
+            <g id="aspectLines" stroke="#8b5cf6" stroke-opacity=".55" stroke-width=".7" fill="none"></g>
+
+          </g>
+
+          <!-- Center sigil (does not rotate) -->
+          <g transform="translate(300 300)">
+            <circle r="58" fill="rgba(10,6,37,.85)" stroke="#caa12a" stroke-width="1" />
+            <circle r="50" fill="none" stroke="#f7d56d" stroke-width=".4" stroke-dasharray="1 3" />
+            <text y="-6" text-anchor="middle" class="ff-title" fill="#f7d56d" font-size="11" letter-spacing="3">SPARK</text>
+            <text y="10" text-anchor="middle" class="ff-italic" fill="#fff3c4" font-size="12" font-style="italic">Natalis</text>
+            <text y="26" text-anchor="middle" fill="#caa12a" font-size="9" letter-spacing="2">★ MMXXVI ★</text>
+          </g>
+
+          <!-- Compass marks (N E S W) outside rotor -->
+          <g fill="#f7d56d" font-size="10" font-family="Cinzel,serif" letter-spacing="2">
+            <text x="300" y="14"  text-anchor="middle">ASC</text>
+            <text x="588" y="304" text-anchor="end">MC</text>
+            <text x="300" y="594" text-anchor="middle">DSC</text>
+            <text x="12"  y="304">IC</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Right: today's reading -->
+    <div class="lg:col-span-2 space-y-6">
+      <div>
+        <div class="ff-unicase text-gold-300 text-sm tracking-widest">★ Daily Aether ★</div>
+        <h2 class="ff-title text-gold-grad text-3xl font-bold mt-2">오늘의 천체 동향</h2>
+        <p class="ff-italic text-gold-200/80 mt-1" id="todayDate">MMXXVI · Maius · XVI</p>
+      </div>
+
+      <article class="zcard p-6 rounded-md">
+        <div class="ff-unicase text-gold-300 text-xs tracking-widest">Sun · Sol</div>
+        <p class="ff-title text-gold-100 text-lg mt-1">황소자리 24°에서 직진 운행</p>
+        <p class="mt-3 leading-relaxed text-gold-100/90">
+          <span class="sigil"></span>오늘 태양은 <strong class="text-gold-300">저항(R)</strong>의 궁에서 황혼을 맞이합니다.
+          끈기 있는 암기와 단위 환산이 빛을 발하는 날.
+          <em class="ff-italic text-gold-200">옴의 법칙</em>을 세 번 되뇌면 운이 트입니다.
+        </p>
+      </article>
+
+      <article class="zcard p-6 rounded-md">
+        <div class="ff-unicase text-gold-300 text-xs tracking-widest">Mercury · Mercurius</div>
+        <p class="ff-title text-gold-100 text-lg mt-1">쌍둥이자리에서 역행 종료</p>
+        <p class="mt-3 leading-relaxed text-gold-100/90">
+          <span class="sigil"></span><strong class="text-gold-300">단상-3상 변환</strong>의 혼란이 가라앉습니다.
+          오늘 정오 이후 계산 실수가 줄어들 것.
+          <em class="ff-italic text-gold-200">결선 다이어그램</em>을 한 번 더 그려보세요.
+        </p>
+      </article>
+
+      <div class="flex items-center gap-3 text-xs ff-unicase text-gold-400/80 tracking-widest">
+        <span class="inline-block w-2 h-2 rounded-full bg-gold-300 pulse-dot"></span>
+        Lunar Phase &nbsp;·&nbsp; 상현 (Crescent Waxing)
+        <span class="ml-2">★</span>
+        <span>Sidereal Time 21:14</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================ INPUT: BIRTHDAY ============================ -->
+<section class="relative max-w-4xl mx-auto px-6 py-10">
+  <div class="zcard rounded-lg p-8 md:p-10">
+    <div class="text-center">
+      <div class="ff-unicase text-gold-300 text-xs tracking-widest">★ Consult the Stars ★</div>
+      <h3 class="ff-title text-gold-grad text-2xl md:text-3xl font-bold mt-2">당신의 별을 찾으세요</h3>
+      <p class="ff-italic text-gold-200/80 mt-2">생년월일을 입력하면 본인 별자리와 오늘의 학습 운세가 펼쳐집니다.</p>
+    </div>
+
+    <form id="birthForm" class="mt-6 flex flex-col md:flex-row gap-3 items-center justify-center" autocomplete="off" novalidate>
+      <label class="ff-unicase text-gold-300 text-sm tracking-widest hidden md:block">DOB</label>
+      <input id="birthInput" type="date" class="field w-full md:w-auto" min="1900-01-01" max="2026-12-31" />
+      <button type="submit" class="btn-gold">▸ Reveal My Sign</button>
+    </form>
+
+    <div id="birthResult" class="mt-8 hidden">
+      <div class="h-divider"><span class="ff-unicase text-sm">★ Your Natal Sign ★</span></div>
+      <div class="mt-6 grid md:grid-cols-3 gap-6 items-center">
+        <div class="flex justify-center">
+          <svg id="userGlyph" viewBox="0 0 100 100" class="zcard-glyph" style="width:120px;height:120px;"></svg>
+        </div>
+        <div class="md:col-span-2">
+          <p class="ff-unicase text-gold-300 text-xs tracking-widest" id="userLatin">—</p>
+          <h4 class="ff-title text-gold-grad text-3xl font-bold mt-1" id="userName">—</h4>
+          <p class="ff-italic text-gold-200/80 mt-1" id="userRange">—</p>
+          <p class="mt-3 text-gold-100/90 leading-relaxed" id="userReading">—</p>
+          <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
+            <div class="text-center">
+              <div class="ff-unicase text-gold-400/80 text-xs tracking-widest">Lucky Subject</div>
+              <div class="ff-title text-gold-200 mt-1" id="userLucky">—</div>
+            </div>
+            <div class="text-center">
+              <div class="ff-unicase text-gold-400/80 text-xs tracking-widest">Lucky Number</div>
+              <div class="ff-title text-gold-200 mt-1" id="userNum">—</div>
+            </div>
+            <div class="text-center">
+              <div class="ff-unicase text-gold-400/80 text-xs tracking-widest">Element</div>
+              <div class="ff-title text-gold-200 mt-1" id="userElem">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 12 ZODIAC CARDS ============================ -->
+<section class="relative max-w-6xl mx-auto px-6 py-10">
+  <div class="text-center">
+    <div class="ff-unicase text-gold-300 text-sm tracking-widest">★ The Twelve Constellations ★</div>
+    <h3 class="ff-title text-gold-grad text-3xl md:text-4xl font-bold mt-2">전기 학습 12궁도</h3>
+    <p class="ff-italic text-gold-200/80 mt-2 max-w-2xl mx-auto">
+      각 별자리는 전기 개념의 화신. 카드를 클릭하면 더 깊은 운세가 펼쳐집니다.
+    </p>
+  </div>
+
+  <div id="zGrid" class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+</section>
+
+<!-- ============================ COMPATIBILITY ============================ -->
+<section class="relative max-w-5xl mx-auto px-6 py-12">
+  <div class="text-center">
+    <div class="ff-unicase text-gold-300 text-sm tracking-widest">★ Synastry ★</div>
+    <h3 class="ff-title text-gold-grad text-3xl md:text-4xl font-bold mt-2">호환성 별자리</h3>
+    <p class="ff-italic text-gold-200/80 mt-2">함께 공부하면 시너지가 폭발하는 별자리 조합.</p>
+  </div>
+
+  <div class="mt-10 grid md:grid-cols-2 gap-6" id="compatGrid"></div>
+</section>
+
+<!-- ============================ PLANETARY HOURS ============================ -->
+<section class="relative max-w-5xl mx-auto px-6 py-12">
+  <div class="zcard rounded-lg p-8 md:p-10">
+    <div class="text-center">
+      <div class="ff-unicase text-gold-300 text-sm tracking-widest">★ Horae Planetariae ★</div>
+      <h3 class="ff-title text-gold-grad text-3xl font-bold mt-2">행성 시간표</h3>
+      <p class="ff-italic text-gold-200/80 mt-2">행성이 지배하는 시간대에 해당 과목을 공부하면 능률이 두 배.</p>
+    </div>
+
+    <div class="mt-8 grid md:grid-cols-2 gap-x-12 gap-y-2 text-sm md:text-base">
+      <div id="planetTableA"></div>
+      <div id="planetTableB"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MODAL ============================ -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="absolute inset-0 modal-mask" data-modal-close></div>
+  <div class="relative modal-card rounded-lg max-w-2xl w-full max-h-[88vh] overflow-y-auto p-8 md:p-10">
+    <button data-modal-close class="absolute top-3 right-3 text-gold-300 hover:text-gold-100 ff-title text-xl w-9 h-9 rounded-full border border-gold-500/40 hover:border-gold-300 transition" aria-label="닫기">×</button>
+
+    <div class="flex items-center gap-5">
+      <svg id="mGlyph" viewBox="0 0 100 100" style="width:88px;height:88px;" class="zcard-glyph flex-shrink-0"></svg>
+      <div>
+        <p class="ff-unicase text-gold-300 text-xs tracking-widest" id="mLatin">—</p>
+        <h4 class="ff-title text-gold-grad text-3xl font-bold mt-1" id="mName">—</h4>
+        <p class="ff-italic text-gold-200/80 mt-1" id="mRange">—</p>
+      </div>
+    </div>
+
+    <div class="h-divider my-6"><span class="ff-unicase text-xs tracking-widest" id="mTagline">—</span></div>
+
+    <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+      <div class="zcard rounded-md p-3">
+        <div class="ff-unicase text-gold-400/80 text-[10px] tracking-widest">Element</div>
+        <div class="ff-title text-gold-200 mt-1 text-sm" id="mElem">—</div>
+      </div>
+      <div class="zcard rounded-md p-3">
+        <div class="ff-unicase text-gold-400/80 text-[10px] tracking-widest">Ruling Planet</div>
+        <div class="ff-title text-gold-200 mt-1 text-sm" id="mPlanet">—</div>
+      </div>
+      <div class="zcard rounded-md p-3">
+        <div class="ff-unicase text-gold-400/80 text-[10px] tracking-widest">Lucky No.</div>
+        <div class="ff-title text-gold-200 mt-1 text-sm" id="mNum">—</div>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <div class="ff-unicase text-gold-300 text-xs tracking-widest mb-2">★ Today's Reading</div>
+      <p class="text-gold-100/90 leading-relaxed" id="mReading">—</p>
+    </div>
+
+    <div class="mb-5">
+      <div class="ff-unicase text-gold-300 text-xs tracking-widest mb-2">★ Lucky Subject</div>
+      <p class="text-gold-100/90" id="mLucky">—</p>
+    </div>
+
+    <div>
+      <div class="ff-unicase text-gold-300 text-xs tracking-widest mb-2">★ Best Match</div>
+      <p class="text-gold-100/90" id="mMatch">—</p>
+    </div>
+
+    <div class="mt-8 text-center">
+      <button data-modal-close class="btn-gold">▸ Return to Stars</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="relative mt-12 py-12 border-t border-gold-500/20">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <div class="ff-title text-gold-grad text-2xl tracking-widest">SPARK · OBSERVATORIUM</div>
+    <div class="h-divider mt-4 max-w-md mx-auto">
+      <span class="ff-italic text-gold-300">★ Sub specie aeternitatis ★</span>
+    </div>
+    <p class="ff-italic text-gold-200/70 mt-5 leading-relaxed">
+      본 페이지는 <strong class="text-gold-300">가상 호로스코프 시뮬레이션</strong>이며,
+      오직 <em>학습 동기 부여</em>를 목적으로 작성되었습니다.<br />
+      실제 천문학적 계산이나 점성술 해석을 제공하지 않습니다.
+    </p>
+    <p class="mt-5 text-xs ff-unicase text-gold-400/60 tracking-widest">
+      © MMXXVI · Spark Astrology · Vol. V · No. III
+    </p>
+  </div>
+</footer>
+
+<!-- ============================ SCRIPTS ============================ -->
+<script>
+'use strict';
+
+// ---------- Utility ----------
+const $  = (s, p=document) => p.querySelector(s);
+const $$ = (s, p=document) => Array.from(p.querySelectorAll(s));
+const escapeHTML = (v) => String(v == null ? '' : v).replace(/[&<>"'`]/g, (c) => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'
+}[c]));
+
+// ---------- Zodiac data ----------
+// Each glyph is hand-traced as an SVG path inside a 100x100 viewBox.
+const ZODIAC = [
+  {
+    key:'aries', name:'양자리', latin:'Aries',
+    range:'3.21 – 4.19', from:[3,21], to:[4,19],
+    element:'불 (火)', planet:'화성 · Mars',
+    concept:'전류 (Current)',
+    tagline:'Ignis Primus · The First Spark',
+    glyph:'M30 70 Q50 30 70 70 M30 70 Q22 60 26 50 Q34 40 40 48 M70 70 Q78 60 74 50 Q66 40 60 48',
+    reading:'직류처럼 곧게 뻗는 추진력의 날. 망설임 없이 첫 단원의 첫 문제로 돌진하라. 다만 단락 사고를 조심.',
+    lucky:'직류 회로 · 전류의 작용 · 키르히호프 제1법칙',
+    num:[1,7,21], match:'사자자리 · 궁수자리'
+  },
+  {
+    key:'taurus', name:'황소자리', latin:'Taurus',
+    range:'4.20 – 5.20', from:[4,20], to:[5,20],
+    element:'흙 (土)', planet:'금성 · Venus',
+    concept:'저항 (Resistance)',
+    tagline:'Stabilitas Aurea · Steady Ohm',
+    glyph:'M50 70 m -22 0 a 22 18 0 1 0 44 0 a 22 18 0 1 0 -44 0 M28 52 Q22 30 36 28 M72 52 Q78 30 64 28',
+    reading:'끈기와 인내가 황금으로 환원되는 날. 옴의 법칙 단원을 30분 더 붙들고 있으라. 그 30분이 합격을 가른다.',
+    lucky:'저항 · 옴의 법칙 · 컬러코드 암기',
+    num:[2,6,15], match:'처녀자리 · 염소자리'
+  },
+  {
+    key:'gemini', name:'쌍둥이자리', latin:'Gemini',
+    range:'5.21 – 6.21', from:[5,21], to:[6,21],
+    element:'바람 (風)', planet:'수성 · Mercurius',
+    concept:'단상-3상 (Phases)',
+    tagline:'Geminitas Phasium · Two Become Three',
+    glyph:'M30 25 L30 75 M70 25 L70 75 M22 25 L38 25 M22 75 L38 75 M62 25 L78 25 M62 75 L78 75',
+    reading:'단상과 3상 사이를 가볍게 오가는 별의 날. Y-Δ 변환이 머릿속에서 춤춘다. 결선도를 손으로 그리면 즉시 깨달음.',
+    lucky:'3상 교류 · Y-Δ 결선 · 상전압/선전압',
+    num:[3,5,12], match:'천칭자리 · 물병자리'
+  },
+  {
+    key:'cancer', name:'게자리', latin:'Cancer',
+    range:'6.22 – 7.22', from:[6,22], to:[7,22],
+    element:'물 (水)', planet:'달 · Luna',
+    concept:'공진 (Resonance)',
+    tagline:'Lunaris Resonantia · Tidal Tune',
+    glyph:'M35 45 a 12 12 0 1 1 0 20 M65 55 a 12 12 0 1 1 0 -20 M35 45 a 4 4 0 1 0 8 0 a 4 4 0 1 0 -8 0 M65 55 a 4 4 0 1 0 -8 0 a 4 4 0 1 0 8 0',
+    reading:'주파수가 맞아떨어지는 날. RLC 직렬·병렬 공진 문제가 손에 척척 붙는다. 감성적 암기보다 식 유도가 효율적.',
+    lucky:'공진 회로 · 임피던스 · 주파수 응답',
+    num:[2,4,11], match:'전갈자리 · 물고기자리'
+  },
+  {
+    key:'leo', name:'사자자리', latin:'Leo',
+    range:'7.23 – 8.22', from:[7,23], to:[8,22],
+    element:'불 (火)', planet:'태양 · Sol',
+    concept:'출력 (Output Power)',
+    tagline:'Regalis Potentia · The Golden Watt',
+    glyph:'M50 30 a 18 18 0 1 0 0.01 0 M50 30 Q35 22 30 35 Q28 45 40 48 M50 30 Q65 22 70 35 Q72 45 60 48 M60 60 Q70 70 70 80',
+    reading:'발전기처럼 빛나는 날. 모터·발전기 출력 단원을 정복하라. 효율과 손실 계산에서 빛난다.',
+    lucky:'전동기 · 발전기 · 출력·효율 계산',
+    num:[5,9,19], match:'양자리 · 궁수자리'
+  },
+  {
+    key:'virgo', name:'처녀자리', latin:'Virgo',
+    range:'8.23 – 9.22', from:[8,23], to:[9,22],
+    element:'흙 (土)', planet:'수성 · Mercurius',
+    concept:'정밀 측정 (Precision)',
+    tagline:'Mensura Pura · The Clean Reading',
+    glyph:'M28 30 L28 70 M28 30 L40 50 M40 30 L40 70 M40 30 L52 50 M52 30 L52 75 Q60 80 65 70 M52 75 Q44 80 38 70 M65 30 L72 70',
+    reading:'유효숫자와 단위가 모두 맞아떨어지는 날. 측정 기기 단원에서 만점에 가까운 점수가 보인다. 검산은 반드시.',
+    lucky:'전기 계측 · 오차론 · 단위 환산',
+    num:[6,15,24], match:'황소자리 · 염소자리'
+  },
+  {
+    key:'libra', name:'천칭자리', latin:'Libra',
+    range:'9.23 – 10.22', from:[9,23], to:[10,22],
+    element:'바람 (風)', planet:'금성 · Venus',
+    concept:'역률 (Power Factor)',
+    tagline:'Aequilibrium Phaseos · Cos θ Balance',
+    glyph:'M20 65 Q50 50 80 65 M50 30 L50 55 M30 70 L70 70',
+    reading:'유효전력과 무효전력의 균형이 완벽한 날. 역률 개선 콘덴서 계산 문제가 별처럼 빛난다. cos θ 한 번 더.',
+    lucky:'역률 · 무효전력 · 콘덴서 보상',
+    num:[6,7,18], match:'쌍둥이자리 · 물병자리'
+  },
+  {
+    key:'scorpio', name:'전갈자리', latin:'Scorpius',
+    range:'10.23 – 11.22', from:[10,23], to:[11,22],
+    element:'물 (水)', planet:'명왕성 · Pluto',
+    concept:'단락 (Short Circuit)',
+    tagline:'Cursus Brevis · The Shadow Arc',
+    glyph:'M20 35 L20 65 M20 35 L35 35 M35 35 L35 65 M35 35 Q50 35 50 50 L50 65 M50 50 Q65 50 65 65 L72 65 L80 55',
+    reading:'단락 사고와 보호 계전기의 별자리. 위험을 직시하고 보호 협조 곡선을 외우면 깊은 안목이 열린다.',
+    lucky:'단락 전류 · 보호 계전기 · 차단기',
+    num:[4,9,22], match:'게자리 · 물고기자리'
+  },
+  {
+    key:'sagittarius', name:'궁수자리', latin:'Sagittarius',
+    range:'11.23 – 12.21', from:[11,23], to:[12,21],
+    element:'불 (火)', planet:'목성 · Jupiter',
+    concept:'송전선 (Transmission)',
+    tagline:'Sagitta Longa · Long Distance Volt',
+    glyph:'M25 75 L75 25 M75 25 L60 25 M75 25 L75 40 M25 75 L40 60 M40 60 L25 60 M40 60 L40 75',
+    reading:'송전선처럼 멀리 뻗어가는 학습의 날. 송전 손실·전압강하 단원에서 깊은 통찰이 온다.',
+    lucky:'송전선로 · 코로나 손실 · 전압강하',
+    num:[3,8,21], match:'양자리 · 사자자리'
+  },
+  {
+    key:'capricorn', name:'염소자리', latin:'Capricornus',
+    range:'12.22 – 1.19', from:[12,22], to:[1,19],
+    element:'흙 (土)', planet:'토성 · Saturnus',
+    concept:'변압기 (Transformer)',
+    tagline:'Caput Ferri · Iron Core',
+    glyph:'M25 35 L35 35 L35 65 M25 65 L45 65 M45 35 Q60 35 60 50 Q60 65 50 70 Q40 75 45 65',
+    reading:'1차·2차 권선이 완벽히 결합되는 날. 변압기 시험과 등가회로가 머릿속에서 명료히 정렬된다.',
+    lucky:'변압기 · 권수비 · 단락/무부하 시험',
+    num:[8,10,17], match:'황소자리 · 처녀자리'
+  },
+  {
+    key:'aquarius', name:'물병자리', latin:'Aquarius',
+    range:'1.20 – 2.18', from:[1,20], to:[2,18],
+    element:'바람 (風)', planet:'천왕성 · Uranus',
+    concept:'신재생 (Renewables)',
+    tagline:'Aqua Nova · The New Current',
+    glyph:'M25 40 Q30 35 35 40 Q40 45 45 40 Q50 35 55 40 Q60 45 65 40 Q70 35 75 40 M25 55 Q30 50 35 55 Q40 60 45 55 Q50 50 55 55 Q60 60 65 55 Q70 50 75 55',
+    reading:'태양광·풍력의 신호가 강하게 닿는 날. 인버터·계통연계 개념을 한 발 더 깊이 파고들면 미래의 합격선이 보인다.',
+    lucky:'태양광 발전 · 인버터 · 계통연계',
+    num:[4,11,22], match:'쌍둥이자리 · 천칭자리'
+  },
+  {
+    key:'pisces', name:'물고기자리', latin:'Pisces',
+    range:'2.19 – 3.20', from:[2,19], to:[3,20],
+    element:'물 (水)', planet:'해왕성 · Neptunus',
+    concept:'자속 (Magnetic Flux)',
+    tagline:'Flumen Magneticum · Silent Field',
+    glyph:'M28 30 Q40 50 28 70 M72 30 Q60 50 72 70 M28 50 L72 50',
+    reading:'자기력선이 잔잔히 흐르는 날. 전자기 유도·자속·인덕턴스 단원에서 시야가 트인다. 우측 손 법칙을 다시 손으로.',
+    lucky:'전자기 유도 · 자속 · 인덕턴스',
+    num:[3,7,12], match:'게자리 · 전갈자리'
+  }
+];
+
+// ---------- Compatibility list ----------
+const COMPAT_PAIRS = [
+  { a:'taurus', b:'capricorn', score:96,
+    text:'저항과 변압기 — 끈기 있는 암기와 회로 해석의 절묘한 안정 결합. 함께 모의고사를 풀면 평균이 8점 오른다.' },
+  { a:'leo', b:'sagittarius', score:93,
+    text:'출력과 송전선 — 발전소에서 변전소까지의 흐름. 큰 그림과 추진력으로 단원 전체를 완주한다.' },
+  { a:'gemini', b:'aquarius', score:91,
+    text:'단상-3상과 신재생 — 미래의 계통을 함께 그리는 한 쌍. 토론하며 외우는 방식이 가장 잘 맞는다.' },
+  { a:'cancer', b:'pisces', score:89,
+    text:'공진과 자속 — 보이지 않는 파동의 동맹. RLC와 전자기 유도를 묶어서 정리하면 시너지가 폭발한다.' }
+];
+
+// ---------- Planetary hours ----------
+const PLANETS_HOURS = [
+  { glyph:'☉', name:'태양 · Sol',       time:'06:00 – 08:00', subject:'발전기·전동기 출력' },
+  { glyph:'☽', name:'달 · Luna',         time:'22:00 – 24:00', subject:'공진·주파수 응답' },
+  { glyph:'☿', name:'수성 · Mercurius',  time:'08:00 – 10:00', subject:'3상 교류·결선' },
+  { glyph:'♀', name:'금성 · Venus',      time:'10:00 – 12:00', subject:'역률·콘덴서' },
+  { glyph:'♂', name:'화성 · Mars',       time:'14:00 – 16:00', subject:'직류 회로·전류' },
+  { glyph:'♃', name:'목성 · Iuppiter',   time:'16:00 – 18:00', subject:'송전·배전' },
+  { glyph:'♄', name:'토성 · Saturnus',   time:'12:00 – 14:00', subject:'변압기·권선' },
+  { glyph:'♅', name:'천왕성 · Uranus',   time:'18:00 – 20:00', subject:'신재생·인버터' },
+  { glyph:'♆', name:'해왕성 · Neptunus', time:'20:00 – 22:00', subject:'전자기 유도·자속' },
+  { glyph:'♇', name:'명왕성 · Pluto',    time:'00:00 – 02:00', subject:'단락·보호 계전' }
+];
+
+// ---------- Date → sign ----------
+function signForDate(month, day) {
+  // month: 1-12, day: 1-31
+  for (const z of ZODIAC) {
+    const [fm, fd] = z.from, [tm, td] = z.to;
+    if (fm === tm) {
+      if (month === fm && day >= fd && day <= td) return z;
+    } else {
+      // crosses month boundary
+      if ((month === fm && day >= fd) || (month === tm && day <= td)) return z;
+    }
+  }
+  return null;
+}
+
+// ---------- Render: Natal chart band ----------
+function deg2xy(cx, cy, r, deg) {
+  // 0° at top (astrological ASC), going counterclockwise traditionally,
+  // but we'll go clockwise from left (9 o'clock = Aries start) for classic look.
+  // For visual cleanliness: place Aries at 9 o'clock (180°), then clockwise.
+  const a = ((180 - deg) * Math.PI) / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+
+function arcPath(cx, cy, rOuter, rInner, startDeg, endDeg) {
+  const [x1, y1] = deg2xy(cx, cy, rOuter, startDeg);
+  const [x2, y2] = deg2xy(cx, cy, rOuter, endDeg);
+  const [x3, y3] = deg2xy(cx, cy, rInner, endDeg);
+  const [x4, y4] = deg2xy(cx, cy, rInner, startDeg);
+  const large = (endDeg - startDeg) > 180 ? 1 : 0;
+  // sweep flag = 0 (we placed Aries CCW in math terms because of y-flip)
+  return `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${large} 0 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${large} 1 ${x4} ${y4} Z`;
+}
+
+function buildNatal() {
+  const band  = document.getElementById('zodiacBand');
+  const ticks = document.getElementById('degreeTicks');
+  const houses= document.getElementById('houseLines');
+  const planetsLayer = document.getElementById('planetsLayer');
+  const aspects = document.getElementById('aspectLines');
+
+  const cx=300, cy=300, rOut=262, rIn=220;
+
+  // Zodiac segments
+  ZODIAC.forEach((z, i) => {
+    const start = i * 30;
+    const end   = (i+1) * 30;
+    const midDeg = start + 15;
+    const [tx, ty] = deg2xy(cx, cy, (rOut+rIn)/2, midDeg);
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'zodiac-seg');
+    g.setAttribute('data-key', z.key);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', arcPath(cx, cy, rOut, rIn, start, end));
+    path.setAttribute('class', 'seg-bg');
+    path.setAttribute('fill', 'rgba(247,213,109,.05)');
+    path.setAttribute('stroke', 'rgba(202,161,42,.55)');
+    path.setAttribute('stroke-width', '.6');
+
+    // Glyph inside segment (mini)
+    const gly = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    gly.setAttribute('class', 'seg-glyph');
+    gly.setAttribute('transform', `translate(${tx-10},${ty-10}) scale(.2)`);
+    gly.setAttribute('fill', '#f7d56d');
+    gly.setAttribute('stroke', '#f7d56d');
+    gly.setAttribute('stroke-width', '4');
+    gly.setAttribute('stroke-linecap', 'round');
+    gly.setAttribute('stroke-linejoin', 'round');
+    gly.innerHTML = `<path d="${z.glyph}" fill="none" />`;
+
+    // Latin label outside (in outer band area) — small
+    const [lx, ly] = deg2xy(cx, cy, rOut + 12, midDeg);
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', lx); label.setAttribute('y', ly);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-family', 'Cinzel,serif');
+    label.setAttribute('font-size', '8');
+    label.setAttribute('letter-spacing', '1.5');
+    label.setAttribute('fill', '#caa12a');
+    label.textContent = z.latin.toUpperCase();
+
+    g.appendChild(path);
+    g.appendChild(gly);
+    g.appendChild(label);
+    band.appendChild(g);
+
+    g.addEventListener('click', () => openModal(z.key));
+  });
+
+  // Degree ticks
+  for (let d = 0; d < 360; d++) {
+    const isMajor = d % 30 === 0;
+    const isMid = d % 10 === 0;
+    const r1 = 262;
+    const r2 = isMajor ? 250 : (isMid ? 254 : 257);
+    const [x1, y1] = deg2xy(cx, cy, r1, d);
+    const [x2, y2] = deg2xy(cx, cy, r2, d);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke-width', isMajor ? '1.1' : (isMid ? '.6' : '.35'));
+    line.setAttribute('opacity', isMajor ? '.9' : (isMid ? '.55' : '.35'));
+    ticks.appendChild(line);
+  }
+
+  // House lines (12 spokes inside)
+  for (let i = 0; i < 12; i++) {
+    const d = i * 30;
+    const [x1, y1] = deg2xy(cx, cy, 170, d);
+    const [x2, y2] = deg2xy(cx, cy, 220, d);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    houses.appendChild(line);
+  }
+
+  // Planets (fake but plausible degrees)
+  const PLANETS = [
+    { sym:'☉', name:'Sol',       deg: 54 },   // Taurus 24°
+    { sym:'☽', name:'Luna',      deg: 322 },  // Aquarius 22°
+    { sym:'☿', name:'Mercurius', deg: 78 },   // Gemini 18°
+    { sym:'♀', name:'Venus',     deg: 196 },  // Libra 16°
+    { sym:'♂', name:'Mars',      deg: 12 },   // Aries 12°
+    { sym:'♃', name:'Iuppiter',  deg: 250 },  // Sagittarius 10°
+    { sym:'♄', name:'Saturnus',  deg: 285 },  // Capricorn 15°
+    { sym:'♅', name:'Uranus',    deg: 138 },  // Leo 18°
+    { sym:'♆', name:'Neptunus',  deg: 352 },  // Pisces 22°
+    { sym:'♇', name:'Pluto',     deg: 218 }   // Scorpio 8°
+  ];
+
+  PLANETS.forEach((p, i) => {
+    const ring = 200 - (i % 3) * 14; // stagger so they don't overlap
+    const [px, py] = deg2xy(cx, cy, ring, p.deg);
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${px} ${py})`);
+
+    const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    halo.setAttribute('r', '9'); halo.setAttribute('fill', 'rgba(10,6,37,.85)');
+    halo.setAttribute('stroke', '#f7d56d'); halo.setAttribute('stroke-width', '.6');
+    g.appendChild(halo);
+
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('dy', '4');
+    t.setAttribute('fill', '#f7d56d');
+    t.setAttribute('font-family', 'Cormorant Unicase,serif');
+    t.setAttribute('font-size', '12');
+    t.setAttribute('filter', 'url(#softGlow)');
+    t.textContent = p.sym;
+    g.appendChild(t);
+
+    // tick from outer to planet
+    const [tx1, ty1] = deg2xy(cx, cy, 220, p.deg);
+    const tline = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    tline.setAttribute('x1', tx1); tline.setAttribute('y1', ty1);
+    tline.setAttribute('x2', px); tline.setAttribute('y2', py);
+    tline.setAttribute('stroke', '#caa12a'); tline.setAttribute('stroke-width', '.4');
+    tline.setAttribute('stroke-dasharray', '1 2');
+    planetsLayer.appendChild(tline);
+
+    planetsLayer.appendChild(g);
+  });
+
+  // Aspect lines (trines / squares / oppositions among a few planets)
+  const aspectPairs = [
+    [PLANETS[0], PLANETS[3]], // Sol-Venus
+    [PLANETS[2], PLANETS[1]], // Mercurius-Luna
+    [PLANETS[4], PLANETS[6]], // Mars-Saturnus
+    [PLANETS[7], PLANETS[9]], // Uranus-Pluto
+    [PLANETS[5], PLANETS[8]]  // Jupiter-Neptune
+  ];
+  aspectPairs.forEach(([a, b]) => {
+    const [ax, ay] = deg2xy(cx, cy, 170, a.deg);
+    const [bx, by] = deg2xy(cx, cy, 170, b.deg);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', ax); line.setAttribute('y1', ay);
+    line.setAttribute('x2', bx); line.setAttribute('y2', by);
+    aspects.appendChild(line);
+  });
+}
+
+// ---------- Render: zodiac cards ----------
+function buildZodiacGrid() {
+  const grid = document.getElementById('zGrid');
+  ZODIAC.forEach((z) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'zcard rounded-lg p-6 text-left';
+    card.setAttribute('data-key', z.key);
+    card.innerHTML = `
+      <div class="flex items-start gap-4">
+        <svg viewBox="0 0 100 100" class="zcard-glyph flex-shrink-0">
+          <path d="${escapeHTML(z.glyph)}" fill="none" stroke="#f7d56d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div class="flex-1 min-w-0">
+          <div class="ff-unicase text-gold-400/85 text-[10px] tracking-widest">${escapeHTML(z.latin.toUpperCase())} · ${escapeHTML(z.range)}</div>
+          <div class="ff-title text-gold-grad text-xl font-bold mt-1">${escapeHTML(z.name)}</div>
+          <div class="ff-italic text-gold-200/80 text-sm mt-0.5">${escapeHTML(z.tagline)}</div>
+        </div>
+      </div>
+
+      <div class="h-divider my-4"><span class="ff-unicase text-[10px] tracking-widest">${escapeHTML(z.concept)}</span></div>
+
+      <p class="text-gold-100/90 text-sm leading-relaxed line-clamp-3">${escapeHTML(z.reading)}</p>
+
+      <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+        <div>
+          <div class="ff-unicase text-gold-400/70 text-[10px] tracking-widest">Lucky Subject</div>
+          <div class="text-gold-200 mt-0.5">${escapeHTML(z.lucky.split('·')[0].trim())}</div>
+        </div>
+        <div>
+          <div class="ff-unicase text-gold-400/70 text-[10px] tracking-widest">Lucky No.</div>
+          <div class="text-gold-200 mt-0.5 ff-title">${escapeHTML(z.num.join(' · '))}</div>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => openModal(z.key));
+    grid.appendChild(card);
+  });
+}
+
+// ---------- Render: compatibility ----------
+function buildCompat() {
+  const grid = document.getElementById('compatGrid');
+  COMPAT_PAIRS.forEach((c) => {
+    const a = ZODIAC.find(z => z.key === c.a);
+    const b = ZODIAC.find(z => z.key === c.b);
+    const div = document.createElement('div');
+    div.className = 'zcard rounded-lg p-6';
+    div.innerHTML = `
+      <div class="flex items-center gap-3">
+        <svg viewBox="0 0 100 100" style="width:48px;height:48px;" class="zcard-glyph flex-shrink-0">
+          <path d="${escapeHTML(a.glyph)}" fill="none" stroke="#f7d56d" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="ff-title text-gold-200 text-2xl">×</span>
+        <svg viewBox="0 0 100 100" style="width:48px;height:48px;" class="zcard-glyph flex-shrink-0">
+          <path d="${escapeHTML(b.glyph)}" fill="none" stroke="#f7d56d" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <div class="ml-auto text-right">
+          <div class="ff-unicase text-gold-400/70 text-[10px] tracking-widest">Synastry</div>
+          <div class="ff-title text-gold-grad text-2xl font-bold">${c.score}%</div>
+        </div>
+      </div>
+      <div class="ff-title text-gold-100 mt-3">${escapeHTML(a.name)} · ${escapeHTML(b.name)}</div>
+      <div class="compat-bar mt-3"><div style="width:${c.score}%"></div></div>
+      <p class="text-gold-100/85 text-sm leading-relaxed mt-3">${escapeHTML(c.text)}</p>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+// ---------- Render: planetary hours ----------
+function buildPlanetTable() {
+  const a = document.getElementById('planetTableA');
+  const b = document.getElementById('planetTableB');
+  PLANETS_HOURS.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'planet-row flex items-center gap-3 py-3';
+    row.innerHTML = `
+      <span class="planet-glyph text-xl">${escapeHTML(p.glyph)}</span>
+      <div class="flex-1">
+        <div class="ff-title text-gold-100">${escapeHTML(p.name)}</div>
+        <div class="ff-italic text-gold-300/80 text-xs">${escapeHTML(p.subject)}</div>
+      </div>
+      <div class="ff-unicase text-gold-200 text-sm tracking-widest">${escapeHTML(p.time)}</div>
+    `;
+    if (i < 5) a.appendChild(row); else b.appendChild(row);
+  });
+}
+
+// ---------- Modal ----------
+const modal = document.getElementById('modal');
+function openModal(key) {
+  const z = ZODIAC.find(x => x.key === key);
+  if (!z) return;
+
+  $('#mLatin').textContent   = z.latin.toUpperCase() + ' · ' + z.range;
+  $('#mName').textContent    = z.name;
+  $('#mRange').textContent   = z.concept;
+  $('#mTagline').textContent = z.tagline;
+  $('#mElem').textContent    = z.element;
+  $('#mPlanet').textContent  = z.planet;
+  $('#mNum').textContent     = z.num.join(' · ');
+  $('#mReading').textContent = z.reading;
+  $('#mLucky').textContent   = z.lucky;
+  $('#mMatch').textContent   = z.match;
+
+  $('#mGlyph').innerHTML = `<path d="${escapeHTML(z.glyph)}" fill="none" stroke="#f7d56d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />`;
+
+  // Highlight in natal chart
+  $$('#zodiacBand .zodiac-seg').forEach(g => g.classList.toggle('active', g.getAttribute('data-key') === key));
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+  $$('#zodiacBand .zodiac-seg').forEach(g => g.classList.remove('active'));
+}
+modal.addEventListener('click', (e) => {
+  if (e.target.hasAttribute('data-modal-close')) closeModal();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+// ---------- Birth form ----------
+const birthForm = document.getElementById('birthForm');
+const birthInput = document.getElementById('birthInput');
+const birthResult = document.getElementById('birthResult');
+
+birthForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const v = birthInput.value;
+  if (!v) {
+    birthInput.focus();
+    return;
+  }
+  // ISO yyyy-mm-dd
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return;
+  const month = parseInt(m[2], 10);
+  const day   = parseInt(m[3], 10);
+  if (!(month >= 1 && month <= 12 && day >= 1 && day <= 31)) return;
+
+  const z = signForDate(month, day);
+  if (!z) return;
+
+  $('#userLatin').textContent = z.latin.toUpperCase() + ' · ' + z.range;
+  $('#userName').textContent  = z.name;
+  $('#userRange').textContent = z.tagline + ' — ' + z.concept;
+  $('#userReading').textContent = z.reading;
+  $('#userLucky').textContent = z.lucky.split('·')[0].trim();
+  $('#userNum').textContent   = z.num.join(' · ');
+  $('#userElem').textContent  = z.element;
+  $('#userGlyph').innerHTML   = `<path d="${escapeHTML(z.glyph)}" fill="none" stroke="#f7d56d" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />`;
+
+  birthResult.classList.remove('hidden');
+
+  // Highlight my card and chart segment
+  $$('#zGrid > button').forEach(b => b.classList.toggle('is-me', b.getAttribute('data-key') === z.key));
+  $$('#zodiacBand .zodiac-seg').forEach(g => g.classList.toggle('active', g.getAttribute('data-key') === z.key));
+
+  // Scroll to result
+  setTimeout(() => {
+    birthResult.scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 60);
+});
+
+// ---------- Daily date (cosmetic) ----------
+(function setToday(){
+  const d = new Date();
+  const romanMonth = ['Ianuarius','Februarius','Martius','Aprilis','Maius','Iunius','Iulius','Augustus','September','October','November','December'][d.getMonth()];
+  const roman = (n) => {
+    const map = [['M',1000],['CM',900],['D',500],['CD',400],['C',100],['XC',90],['L',50],['XL',40],['X',10],['IX',9],['V',5],['IV',4],['I',1]];
+    let r = ''; for (const [s,v] of map) { while (n >= v) { r += s; n -= v; } } return r;
+  };
+  $('#todayDate').textContent = `${roman(d.getFullYear())} · ${romanMonth} · ${roman(d.getDate())}`;
+})();
+
+// ---------- Init ----------
+buildNatal();
+buildZodiacGrid();
+buildCompat();
+buildPlanetTable();
+</script>
+</body>
+</html>

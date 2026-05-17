@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK GAME PASS · 스파크 게임 패스</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Audiowide&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #05060c;
+    --bg-panel: #0c0d18;
+    --bg-panel-2: #141627;
+    --bg-card: #181a2e;
+    --line: #232645;
+    --line-2: #2d3158;
+    --cyan: #00e5ff;
+    --cyan-dim: #0096a8;
+    --pink: #ff2bd6;
+    --pink-dim: #b41896;
+    --lime: #b8ff2b;
+    --lime-dim: #7ab800;
+    --amber: #ffb547;
+    --violet: #8b5cf6;
+    --red: #ff4a6e;
+    --ink: #e8ecff;
+    --ink-dim: #8a90b8;
+    --ink-mute: #5a607f;
+  }
+  html, body { background: var(--bg-deep); }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,43,214,0.10), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 0% 60%, rgba(0,229,255,0.08), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 100% 90%, rgba(184,255,43,0.06), transparent 60%),
+      var(--bg-deep);
+  }
+  .font-display { font-family: 'Orbitron', sans-serif; letter-spacing: 0.04em; }
+  .font-brand { font-family: 'Audiowide', cursive; letter-spacing: 0.06em; }
+
+  .neon-cyan { color: var(--cyan); text-shadow: 0 0 6px rgba(0,229,255,0.7), 0 0 14px rgba(0,229,255,0.4); }
+  .neon-pink { color: var(--pink); text-shadow: 0 0 6px rgba(255,43,214,0.7), 0 0 14px rgba(255,43,214,0.4); }
+  .neon-lime { color: var(--lime); text-shadow: 0 0 6px rgba(184,255,43,0.7), 0 0 14px rgba(184,255,43,0.4); }
+
+  .panel { background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-2) 100%); border: 1px solid var(--line); border-radius: 14px; }
+  .card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+  .card:hover { transform: translateY(-3px); border-color: var(--cyan-dim); box-shadow: 0 10px 30px -10px rgba(0,229,255,0.25); }
+
+  .chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.18rem 0.55rem; border-radius: 999px; font-size: 0.7rem; border: 1px solid var(--line-2); background: rgba(255,255,255,0.02); color: var(--ink-dim); }
+  .chip-cyan { color: var(--cyan); border-color: rgba(0,229,255,0.4); background: rgba(0,229,255,0.08); }
+  .chip-pink { color: var(--pink); border-color: rgba(255,43,214,0.4); background: rgba(255,43,214,0.08); }
+  .chip-lime { color: var(--lime); border-color: rgba(184,255,43,0.4); background: rgba(184,255,43,0.08); }
+  .chip-amber { color: var(--amber); border-color: rgba(255,181,71,0.4); background: rgba(255,181,71,0.08); }
+  .chip-violet { color: var(--violet); border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.08); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.55rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--line-2); background: var(--bg-panel-2); color: var(--ink); cursor: pointer; transition: all .15s ease; }
+  .btn:hover { border-color: var(--cyan-dim); }
+  .btn-primary { background: linear-gradient(90deg, var(--cyan), var(--pink)); color: #06070d; border: none; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-ghost { background: transparent; }
+
+  .tab { padding: 0.55rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; color: var(--ink-dim); cursor: pointer; border: 1px solid transparent; }
+  .tab.active { color: #06070d; background: linear-gradient(90deg, var(--cyan), var(--lime)); }
+  .tab:not(.active):hover { color: var(--ink); background: rgba(255,255,255,0.03); border-color: var(--line); }
+
+  .progress { height: 6px; background: var(--bg-deep); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+  .progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--lime)); }
+
+  .hero-glow {
+    background:
+      radial-gradient(ellipse 60% 80% at 80% 50%, rgba(255,43,214,0.30), transparent 70%),
+      radial-gradient(ellipse 50% 80% at 20% 50%, rgba(0,229,255,0.25), transparent 70%),
+      linear-gradient(135deg, #0a0a1f 0%, #1a0a2e 100%);
+  }
+
+  .star { color: var(--amber); }
+  .star-empty { color: var(--ink-mute); }
+
+  /* modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(5,6,12,0.85); backdrop-filter: blur(8px); z-index: 60; display: none; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-bg.open { display: flex; }
+  .modal { width: 100%; max-width: 920px; max-height: 92vh; overflow-y: auto; background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-2) 100%); border: 1px solid var(--line-2); border-radius: 16px; }
+
+  /* scrollbar */
+  .modal::-webkit-scrollbar { width: 10px; }
+  .modal::-webkit-scrollbar-track { background: var(--bg-deep); }
+  .modal::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 999px; }
+
+  /* pulse for live badge */
+  @keyframes livePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,74,110,0.7); } 50% { box-shadow: 0 0 0 6px rgba(255,74,110,0); } }
+  .live-dot { animation: livePulse 1.6s ease-in-out infinite; }
+
+  @keyframes ach {
+    0% { transform: translateY(20px); opacity: 0; }
+    10%, 90% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-10px); opacity: 0; }
+  }
+  .ach-toast { position: fixed; right: 1.2rem; bottom: 1.2rem; z-index: 80; animation: ach 3.4s ease forwards; }
+
+  .ring-tier {
+    background: conic-gradient(var(--cyan) 0deg, var(--pink) 180deg, var(--lime) 360deg);
+    padding: 2px;
+    border-radius: 999px;
+  }
+
+  /* SVG corner accents */
+  .corner-tl, .corner-br { position: absolute; width: 14px; height: 14px; border-color: var(--cyan); }
+  .corner-tl { top: 6px; left: 6px; border-top: 2px solid; border-left: 2px solid; }
+  .corner-br { bottom: 6px; right: 6px; border-bottom: 2px solid; border-right: 2px solid; }
+
+  .cover-wrap { position: relative; overflow: hidden; border-radius: 10px; aspect-ratio: 16/9; }
+  .cover-wrap svg { width: 100%; height: 100%; display: block; }
+
+  .scanline::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 4px);
+  }
+
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP NAV ============ -->
+<header class="sticky top-0 z-40 border-b border-[color:var(--line)] backdrop-blur" style="background: rgba(5,6,12,0.78);">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <!-- logo -->
+      <svg width="34" height="34" viewBox="0 0 64 64" fill="none">
+        <defs>
+          <linearGradient id="lg-logo" x1="0" y1="0" x2="64" y2="64">
+            <stop offset="0%" stop-color="#00e5ff"/>
+            <stop offset="60%" stop-color="#ff2bd6"/>
+            <stop offset="100%" stop-color="#b8ff2b"/>
+          </linearGradient>
+        </defs>
+        <rect x="3" y="3" width="58" height="58" rx="14" fill="url(#lg-logo)" opacity="0.18"/>
+        <path d="M22 8 L42 8 L36 28 L48 28 L24 58 L30 36 L18 36 Z" fill="url(#lg-logo)"/>
+      </svg>
+      <div>
+        <div class="font-brand text-lg leading-none">SPARK <span class="neon-pink">GAME</span> PASS</div>
+        <div class="text-[10px] tracking-[0.25em] text-[color:var(--ink-mute)] uppercase">전기기능사 학습 게임 구독</div>
+      </div>
+    </div>
+
+    <nav class="hidden md:flex items-center gap-1 ml-6">
+      <button class="tab active" data-tab="library">라이브러리</button>
+      <button class="tab" data-tab="new">신작</button>
+      <button class="tab" data-tab="popular">인기</button>
+      <button class="tab" data-tab="achievements">도전과제</button>
+    </nav>
+
+    <div class="ml-auto flex items-center gap-2">
+      <span class="chip chip-lime hidden sm:inline-flex">
+        <span class="w-1.5 h-1.5 rounded-full bg-[color:var(--lime)]"></span>
+        ULTIMATE 회원
+      </span>
+      <div class="ring-tier">
+        <div class="w-9 h-9 rounded-full bg-[color:var(--bg-panel-2)] flex items-center justify-center text-xs font-bold neon-cyan">SY</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- subnav stats -->
+  <div class="border-t border-[color:var(--line)]">
+    <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-[color:var(--ink-dim)]">
+      <span>라이브러리 <strong class="text-[color:var(--ink)]">142</strong>개</span>
+      <span class="hidden sm:inline">이번 달 신작 <strong class="neon-pink">7</strong>개</span>
+      <span class="hidden md:inline">총 플레이 <strong class="neon-cyan">84시간 12분</strong></span>
+      <span class="hidden lg:inline">도전과제 <strong class="neon-lime">128</strong> / 412</span>
+      <span class="ml-auto flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-[color:var(--red)] live-dot"></span>
+        <strong class="text-[color:var(--red)]">LIVE</strong> 친구 <span class="text-[color:var(--ink)]">3명</span> 접속 중
+      </span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="max-w-7xl mx-auto px-4 mt-6">
+  <div class="relative hero-glow rounded-2xl overflow-hidden border border-[color:var(--line-2)] scanline">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-0">
+      <!-- left text -->
+      <div class="lg:col-span-2 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
+        <span class="chip chip-pink w-fit mb-3">
+          <svg width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="3" fill="currentColor"/></svg>
+          이번 달 신작 · 5월
+        </span>
+        <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl font-black leading-tight mb-3">
+          <span class="neon-cyan">옴 인베이더스</span><br>
+          <span class="neon-pink">II : 저항의 역습</span>
+        </h1>
+        <p class="text-[color:var(--ink-dim)] text-sm sm:text-base mb-5 leading-relaxed">
+          1편의 직렬·병렬 회로 침공에 이어, 이번엔 합성저항이 살아 움직인다.<br>
+          R₁·R₂·R₃를 정확히 조합해 함대를 격추하라.
+        </p>
+        <div class="flex flex-wrap gap-2 mb-5">
+          <span class="chip chip-cyan">슈팅</span>
+          <span class="chip chip-violet">교육</span>
+          <span class="chip chip-amber">싱글 / 협동</span>
+          <span class="chip">한국어 풀더빙</span>
+        </div>
+        <div class="flex items-center gap-3 mb-6 text-sm">
+          <span class="font-bold neon-lime">★ 4.8</span>
+          <span class="text-[color:var(--ink-mute)]">|</span>
+          <span class="text-[color:var(--ink-dim)]">평가 2,418개</span>
+          <span class="text-[color:var(--ink-mute)]">|</span>
+          <span class="text-[color:var(--ink-dim)]">평균 6.4시간</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="btn btn-primary" data-open="ohm2">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 2 L11 7 L3 12 Z"/></svg>
+            지금 플레이
+          </button>
+          <button class="btn" data-action="download" data-title="옴 인베이더스 II">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 2v8M3.5 7L7 10.5L10.5 7M2 12h10"/></svg>
+            설치
+          </button>
+          <button class="btn btn-ghost like-btn" data-id="hero">
+            <span class="heart">♡</span> <span class="like-count">3,182</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- right hero art -->
+      <div class="lg:col-span-3 relative min-h-[260px] lg:min-h-[420px]">
+        <svg viewBox="0 0 600 420" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 w-full h-full">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1a0a3a"/>
+              <stop offset="60%" stop-color="#0a0a1f"/>
+              <stop offset="100%" stop-color="#000"/>
+            </linearGradient>
+            <radialGradient id="planet" cx="0.3" cy="0.3" r="0.8">
+              <stop offset="0%" stop-color="#ff2bd6"/>
+              <stop offset="60%" stop-color="#7a0c66"/>
+              <stop offset="100%" stop-color="#1a0418"/>
+            </radialGradient>
+            <linearGradient id="shipBody" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#00e5ff"/>
+              <stop offset="100%" stop-color="#0066a8"/>
+            </linearGradient>
+            <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
+          </defs>
+          <rect width="600" height="420" fill="url(#sky)"/>
+          <!-- stars -->
+          <g fill="#fff">
+            <circle cx="50" cy="60" r="1"/><circle cx="120" cy="40" r="0.7"/><circle cx="200" cy="80" r="1.2"/>
+            <circle cx="320" cy="50" r="0.8"/><circle cx="430" cy="90" r="1"/><circle cx="540" cy="40" r="1.2"/>
+            <circle cx="80" cy="150" r="0.7"/><circle cx="270" cy="160" r="1"/><circle cx="500" cy="200" r="0.9"/>
+            <circle cx="40" cy="240" r="1"/><circle cx="380" cy="260" r="0.7"/><circle cx="560" cy="290" r="1"/>
+          </g>
+          <!-- planet -->
+          <circle cx="470" cy="120" r="80" fill="url(#planet)"/>
+          <ellipse cx="470" cy="125" rx="120" ry="14" fill="none" stroke="#ff2bd6" stroke-opacity="0.5" stroke-width="2" transform="rotate(-18 470 125)"/>
+          <!-- enemy formation: resistor ships -->
+          <g>
+            <g transform="translate(120,150)">
+              <rect x="-22" y="-8" width="44" height="16" rx="3" fill="#b8ff2b" stroke="#7ab800" stroke-width="2"/>
+              <rect x="-30" y="-3" width="8" height="6" fill="#7ab800"/>
+              <rect x="22" y="-3" width="8" height="6" fill="#7ab800"/>
+              <rect x="-12" y="-8" width="3" height="16" fill="#ff2bd6"/>
+              <rect x="-4" y="-8" width="3" height="16" fill="#ff2bd6"/>
+              <rect x="6" y="-8" width="3" height="16" fill="#ffb547"/>
+            </g>
+            <g transform="translate(240,130)">
+              <rect x="-22" y="-8" width="44" height="16" rx="3" fill="#00e5ff" stroke="#0096a8" stroke-width="2"/>
+              <rect x="-30" y="-3" width="8" height="6" fill="#0096a8"/>
+              <rect x="22" y="-3" width="8" height="6" fill="#0096a8"/>
+              <rect x="-12" y="-8" width="3" height="16" fill="#ff2bd6"/>
+              <rect x="-4" y="-8" width="3" height="16" fill="#b8ff2b"/>
+              <rect x="6" y="-8" width="3" height="16" fill="#ffb547"/>
+            </g>
+            <g transform="translate(360,170)">
+              <rect x="-22" y="-8" width="44" height="16" rx="3" fill="#ffb547" stroke="#a36e1d" stroke-width="2"/>
+              <rect x="-30" y="-3" width="8" height="6" fill="#a36e1d"/>
+              <rect x="22" y="-3" width="8" height="6" fill="#a36e1d"/>
+              <rect x="-12" y="-8" width="3" height="16" fill="#ff2bd6"/>
+              <rect x="-4" y="-8" width="3" height="16" fill="#00e5ff"/>
+              <rect x="6" y="-8" width="3" height="16" fill="#b8ff2b"/>
+            </g>
+          </g>
+          <!-- lasers -->
+          <g filter="url(#glow)">
+            <rect x="298" y="240" width="4" height="60" fill="#00e5ff"/>
+            <rect x="180" y="220" width="4" height="40" fill="#ff2bd6"/>
+            <rect x="420" y="240" width="4" height="60" fill="#b8ff2b"/>
+          </g>
+          <!-- player ship: capacitor -->
+          <g transform="translate(300,340)">
+            <path d="M-40 20 L0 -25 L40 20 Z" fill="url(#shipBody)" stroke="#00e5ff" stroke-width="2"/>
+            <rect x="-10" y="-5" width="3" height="20" fill="#fff"/>
+            <rect x="7" y="-5" width="3" height="20" fill="#fff"/>
+            <circle cx="0" cy="10" r="4" fill="#ffb547"/>
+          </g>
+          <!-- HUD -->
+          <g font-family="Orbitron" font-weight="700">
+            <text x="20" y="36" fill="#00e5ff" font-size="14">SCORE 04:218,400</text>
+            <text x="20" y="56" fill="#ff2bd6" font-size="12">WAVE 12 / 24</text>
+            <text x="20" y="76" fill="#b8ff2b" font-size="12">HP ████████░░</text>
+            <text x="500" y="36" fill="#b8ff2b" font-size="12" text-anchor="end">x3</text>
+          </g>
+        </svg>
+
+        <!-- next-up overlay -->
+        <div class="absolute bottom-3 right-3 panel px-3 py-2 text-xs hidden sm:block">
+          <div class="text-[color:var(--ink-mute)] uppercase tracking-widest mb-0.5">NEXT UP</div>
+          <div class="font-bold">키르히호프 미스터리 디럭스</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAIN GRID ============ -->
+<main class="max-w-7xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-4 gap-6 pb-12">
+
+  <!-- left: game library -->
+  <section class="lg:col-span-3 space-y-8">
+
+    <!-- LIBRARY -->
+    <div data-pane="library" class="pane">
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <h2 class="font-display text-2xl font-bold">내 <span class="neon-cyan">라이브러리</span></h2>
+          <p class="text-xs text-[color:var(--ink-dim)] mt-1">설치된 게임 · 평점 4.0 이상으로 필터링됨</p>
+        </div>
+        <div class="hidden sm:flex items-center gap-1 text-xs text-[color:var(--ink-dim)]">
+          <button class="tab text-xs px-2 py-1 active" data-sort="recent">최근</button>
+          <button class="tab text-xs px-2 py-1" data-sort="rating">평점</button>
+          <button class="tab text-xs px-2 py-1" data-sort="playtime">플레이</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="game-grid">
+        <!-- cards injected by JS -->
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS -->
+    <div>
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <h2 class="font-display text-2xl font-bold">최근 <span class="neon-lime">도전과제</span></h2>
+          <p class="text-xs text-[color:var(--ink-dim)] mt-1">전체 412개 중 128개 해금 · 31%</p>
+        </div>
+        <span class="chip chip-amber">+24 이번 주</span>
+      </div>
+
+      <div class="panel p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- ach 1 -->
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-[color:var(--bg-card)] border border-[color:var(--line)]">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--cyan), var(--lime));">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#06070d"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm truncate">합성저항 마스터</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">옴 인베이더스 II · 어제 22:18</div>
+            </div>
+            <span class="chip chip-lime">+50 XP</span>
+          </div>
+          <!-- ach 2 -->
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-[color:var(--bg-card)] border border-[color:var(--line)]">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--pink), var(--violet));">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#06070d"><path d="M12 2L2 7v6c0 5 4 9 10 9s10-4 10-9V7z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm truncate">키르히호프 1법칙 통달</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">키르히호프 미스터리 · 2일 전</div>
+            </div>
+            <span class="chip chip-pink">+80 XP</span>
+          </div>
+          <!-- ach 3 -->
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-[color:var(--bg-card)] border border-[color:var(--line)]">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, var(--amber), var(--red));">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#06070d"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm truncate">번개의 속도</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">RLC 리듬 게임 · 3일 전</div>
+            </div>
+            <span class="chip chip-amber">+120 XP</span>
+          </div>
+          <!-- ach 4 locked -->
+          <div class="flex items-center gap-3 p-3 rounded-lg bg-[color:var(--bg-card)] border border-[color:var(--line)] opacity-60">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center bg-[color:var(--bg-panel-2)] border border-[color:var(--line-2)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5a607f" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-sm truncate text-[color:var(--ink-dim)]">3상 결선 전설</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">진행 64 / 100 · 36개 남음</div>
+              <div class="progress mt-1.5"><span style="width:64%"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAYTIME STATS -->
+    <div>
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <h2 class="font-display text-2xl font-bold">플레이 <span class="neon-pink">통계</span></h2>
+          <p class="text-xs text-[color:var(--ink-dim)] mt-1">최근 7일 · 평균 1시간 12분 / 일</p>
+        </div>
+        <span class="chip">주간 +18%</span>
+      </div>
+
+      <div class="panel p-4 sm:p-5">
+        <div class="flex items-end justify-between gap-2 h-32">
+          <!-- 7 bars -->
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 30%; background: linear-gradient(180deg, var(--cyan), var(--cyan-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-mute)]">월</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 55%; background: linear-gradient(180deg, var(--cyan), var(--cyan-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-mute)]">화</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 42%; background: linear-gradient(180deg, var(--cyan), var(--cyan-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-mute)]">수</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 70%; background: linear-gradient(180deg, var(--pink), var(--pink-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-mute)]">목</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 88%; background: linear-gradient(180deg, var(--lime), var(--lime-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-dim)]">금</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 60%; background: linear-gradient(180deg, var(--cyan), var(--cyan-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-mute)]">토</span>
+          </div>
+          <div class="flex-1 flex flex-col items-center gap-1.5">
+            <div class="w-full rounded-t" style="height: 38%; background: linear-gradient(180deg, var(--cyan), var(--cyan-dim));"></div>
+            <span class="text-[10px] text-[color:var(--ink-mute)]">일</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-5">
+          <div class="text-center">
+            <div class="font-display text-xl font-bold neon-cyan">8시간 24분</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] mt-1">총 플레이</div>
+          </div>
+          <div class="text-center border-x border-[color:var(--line)]">
+            <div class="font-display text-xl font-bold neon-pink">4종</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] mt-1">플레이 게임</div>
+          </div>
+          <div class="text-center">
+            <div class="font-display text-xl font-bold neon-lime">+780 XP</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] mt-1">획득 경험치</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIER COMPARISON -->
+    <div>
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <h2 class="font-display text-2xl font-bold">구독 <span class="neon-cyan">등급</span> 비교</h2>
+          <p class="text-xs text-[color:var(--ink-dim)] mt-1">현재: ULTIMATE · 다음 결제 2026.06.14</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- FREE -->
+        <div class="panel p-4 flex flex-col">
+          <div class="text-xs text-[color:var(--ink-mute)] uppercase tracking-widest mb-1">Tier 01</div>
+          <div class="font-display font-bold text-lg mb-1">FREE</div>
+          <div class="text-2xl font-black mb-3">₩ 0<span class="text-xs font-normal text-[color:var(--ink-mute)]">/월</span></div>
+          <ul class="text-xs text-[color:var(--ink-dim)] space-y-1.5 mb-4 flex-1">
+            <li>· 라이브러리 5개 게임</li>
+            <li>· 광고 포함</li>
+            <li>· 클라우드 저장 X</li>
+            <li>· 도전과제 일부</li>
+          </ul>
+          <button class="btn text-xs">체험</button>
+        </div>
+        <!-- BASIC -->
+        <div class="panel p-4 flex flex-col">
+          <div class="text-xs neon-cyan uppercase tracking-widest mb-1">Tier 02</div>
+          <div class="font-display font-bold text-lg mb-1 neon-cyan">BASIC</div>
+          <div class="text-2xl font-black mb-3">₩ 4,900<span class="text-xs font-normal text-[color:var(--ink-mute)]">/월</span></div>
+          <ul class="text-xs text-[color:var(--ink-dim)] space-y-1.5 mb-4 flex-1">
+            <li>· 라이브러리 40개</li>
+            <li>· 광고 제거</li>
+            <li>· 클라우드 저장 1GB</li>
+            <li>· 도전과제 전부</li>
+          </ul>
+          <button class="btn text-xs">선택</button>
+        </div>
+        <!-- PRO -->
+        <div class="panel p-4 flex flex-col border-[color:var(--pink-dim)]" style="background: linear-gradient(180deg, rgba(255,43,214,0.08) 0%, var(--bg-panel-2) 100%);">
+          <div class="text-xs neon-pink uppercase tracking-widest mb-1">Tier 03</div>
+          <div class="font-display font-bold text-lg mb-1 neon-pink">PRO</div>
+          <div class="text-2xl font-black mb-3">₩ 9,900<span class="text-xs font-normal text-[color:var(--ink-mute)]">/월</span></div>
+          <ul class="text-xs text-[color:var(--ink-dim)] space-y-1.5 mb-4 flex-1">
+            <li>· 라이브러리 142개</li>
+            <li>· 신작 우선 액세스</li>
+            <li>· 클라우드 50GB</li>
+            <li>· 친구 협동 플레이</li>
+          </ul>
+          <button class="btn text-xs">선택</button>
+        </div>
+        <!-- ULTIMATE -->
+        <div class="panel p-4 flex flex-col relative" style="background: linear-gradient(180deg, rgba(184,255,43,0.08) 0%, var(--bg-panel-2) 100%); border-color: var(--lime-dim);">
+          <span class="absolute -top-2 right-3 chip chip-lime text-[10px]">현재</span>
+          <div class="text-xs neon-lime uppercase tracking-widest mb-1">Tier 04</div>
+          <div class="font-display font-bold text-lg mb-1 neon-lime">ULTIMATE</div>
+          <div class="text-2xl font-black mb-3">₩ 14,900<span class="text-xs font-normal text-[color:var(--ink-mute)]">/월</span></div>
+          <ul class="text-xs text-[color:var(--ink-dim)] space-y-1.5 mb-4 flex-1">
+            <li>· 라이브러리 142+ 전체</li>
+            <li>· 신작 출시일 액세스</li>
+            <li>· 클라우드 무제한</li>
+            <li>· 4K HDR · 60fps</li>
+            <li>· AI 학습 코치 포함</li>
+          </ul>
+          <button class="btn btn-primary text-xs" disabled style="opacity:0.7;">사용 중</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- right: sidebar -->
+  <aside class="space-y-6">
+    <!-- FRIENDS -->
+    <div class="panel p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-display font-bold text-sm uppercase tracking-widest">친구 활동</h3>
+        <span class="chip text-[10px]">3 / 12</span>
+      </div>
+      <ul class="space-y-3 text-sm">
+        <li class="flex items-center gap-2.5">
+          <div class="relative">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs" style="background: linear-gradient(135deg, var(--cyan), var(--violet));">JH</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[color:var(--lime)] border-2 border-[color:var(--bg-panel)]"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-xs truncate">jihoon_99</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] truncate">옴 인베이더스 II · 1시간 22분</div>
+          </div>
+          <button class="btn btn-ghost text-[10px] px-2 py-1">참여</button>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <div class="relative">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs" style="background: linear-gradient(135deg, var(--pink), var(--amber));">MY</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[color:var(--lime)] border-2 border-[color:var(--bg-panel)]"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-xs truncate">minyoung_2402</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] truncate">키르히호프 미스터리 · 33분</div>
+          </div>
+          <button class="btn btn-ghost text-[10px] px-2 py-1">참여</button>
+        </li>
+        <li class="flex items-center gap-2.5">
+          <div class="relative">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs" style="background: linear-gradient(135deg, var(--lime), var(--cyan));">DH</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[color:var(--lime)] border-2 border-[color:var(--bg-panel)]"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-xs truncate">donghyun_lab</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] truncate">변압기 시뮬레이터 2026 · 2시간</div>
+          </div>
+          <button class="btn btn-ghost text-[10px] px-2 py-1">관전</button>
+        </li>
+        <li class="flex items-center gap-2.5 opacity-60">
+          <div class="relative">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs bg-[color:var(--bg-panel-2)] border border-[color:var(--line-2)]">SR</div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[color:var(--ink-mute)] border-2 border-[color:var(--bg-panel)]"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-xs truncate">soora_kim</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] truncate">오프라인 · 3일 전</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- COMING SOON -->
+    <div class="panel p-4">
+      <h3 class="font-display font-bold text-sm uppercase tracking-widest mb-3">출시 예정</h3>
+      <ul class="space-y-3">
+        <li class="flex gap-3">
+          <div class="w-14 h-14 rounded-lg flex-none flex items-center justify-center" style="background: linear-gradient(135deg, var(--violet), var(--pink));">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#06070d"><path d="M12 2l9 16H3z"/></svg>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-sm truncate">정전 미스터리 EX</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)]">호러 · 6월 12일</div>
+            <span class="chip chip-violet text-[10px] mt-1">예약</span>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="w-14 h-14 rounded-lg flex-none flex items-center justify-center" style="background: linear-gradient(135deg, var(--amber), var(--red));">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#06070d"><circle cx="12" cy="12" r="9"/></svg>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-sm truncate">3상 결선 카드 II</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)]">카드 · 7월 03일</div>
+            <span class="chip chip-amber text-[10px] mt-1">예약</span>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="w-14 h-14 rounded-lg flex-none flex items-center justify-center" style="background: linear-gradient(135deg, var(--cyan), var(--lime));">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#06070d"><path d="M3 12h6l3-8 3 16 3-8h3"/></svg>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-sm truncate">고조파 헌터</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)]">액션 · 7월 28일</div>
+            <span class="chip chip-cyan text-[10px] mt-1">예약</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- WEEKLY MISSION -->
+    <div class="panel p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-display font-bold text-sm uppercase tracking-widest">주간 미션</h3>
+        <span class="chip chip-pink text-[10px]">3일 남음</span>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span>전기 회로 게임 5회 클리어</span>
+            <span class="neon-lime font-bold">3 / 5</span>
+          </div>
+          <div class="progress"><span style="width:60%"></span></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span>도전과제 10개 해금</span>
+            <span class="neon-lime font-bold">7 / 10</span>
+          </div>
+          <div class="progress"><span style="width:70%"></span></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span>친구와 협동 플레이 2시간</span>
+            <span class="neon-lime font-bold">1h 14m</span>
+          </div>
+          <div class="progress"><span style="width:62%"></span></div>
+        </div>
+        <div class="pt-2 border-t border-[color:var(--line)] flex items-center justify-between text-[11px] text-[color:var(--ink-dim)]">
+          <span>보상</span>
+          <span class="neon-pink font-bold">+250 XP · 한정 테마</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t border-[color:var(--line)] mt-4">
+  <div class="max-w-7xl mx-auto px-4 py-8 text-xs text-[color:var(--ink-dim)] space-y-3">
+    <div class="flex flex-wrap gap-x-4 gap-y-1">
+      <span class="font-brand text-sm text-[color:var(--ink)]">SPARK GAME PASS</span>
+      <span>v 2026.5.r3</span>
+      <span class="ml-auto">전기기능사 학습 소식지 · 게임 패스 콘셉트</span>
+    </div>
+    <p class="leading-relaxed text-[color:var(--ink-mute)]">
+      본 페이지는 <strong>가상의 게임 구독 서비스 시뮬레이션</strong>입니다.
+      등장하는 모든 게임명·스튜디오명·이미지는 학습 콘텐츠 시각화를 위한 창작물이며,
+      실재하는 게임·플랫폼·퍼블리셔·콘솔 제조사와는 무관합니다.
+      가격·등급·도전과제·친구 활동 데이터는 모두 예시입니다.
+    </p>
+    <p class="text-[color:var(--ink-mute)]">© 2026 스파크 게임 패스 (가상) · 옴라이브 스튜디오 (가상) · 패러데이 워크스 (가상)</p>
+  </div>
+</footer>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- ============ ACH TOAST CONTAINER ============ -->
+<div id="toast-host"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- ESCAPE ----------
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+
+  // ---------- GAME DATA ----------
+  const games = [
+    {
+      id: 'ohm2',
+      title: '옴 인베이더스 II',
+      subtitle: '저항의 역습',
+      studio: '옴라이브 스튜디오',
+      genre: '슈팅', genreColor: 'cyan',
+      rating: 4.8, reviews: 2418,
+      playtime: '6h 24m', achievements: '18 / 24',
+      tags: ['직렬·병렬', '한국어 더빙', '협동'],
+      installed: true, new: true, hot: true,
+      desc: '저항이 함대를 이끌고 침공한다. R₁·R₂·R₃를 합성해 격추하라. 회로 슈팅 장르의 정수.',
+      art: 'space'
+    },
+    {
+      id: 'kirch',
+      title: '키르히호프 미스터리 디럭스',
+      subtitle: '폐회로의 비밀',
+      studio: '패러데이 워크스',
+      genre: '추리 RPG', genreColor: 'pink',
+      rating: 4.6, reviews: 1892,
+      playtime: '14h 02m', achievements: '22 / 48',
+      tags: ['1·2법칙', '미스터리', '싱글'],
+      installed: true, new: false, hot: true,
+      desc: '폐회로에서 사라진 전류를 찾아라. 노드와 메쉬를 추적해 범인을 검거하는 본격 추리 RPG.',
+      art: 'mystery'
+    },
+    {
+      id: 'trans',
+      title: '변압기 시뮬레이터 2026',
+      subtitle: '권선비의 예술',
+      studio: '맥스웰 게임즈',
+      genre: '시뮬레이션', genreColor: 'amber',
+      rating: 4.4, reviews: 612,
+      playtime: '9h 47m', achievements: '15 / 32',
+      tags: ['1차·2차', '하드코어', '샌드박스'],
+      installed: true, new: false, hot: false,
+      desc: 'Y결선, △결선, 단권변압기까지. 권선비를 직접 감아 효율 99%에 도전하라.',
+      art: 'transformer'
+    },
+    {
+      id: 'rlc',
+      title: 'RLC 리듬 게임',
+      subtitle: '공명의 비트',
+      studio: '리액턴스 사운드',
+      genre: '음악', genreColor: 'pink',
+      rating: 4.7, reviews: 3104,
+      playtime: '11h 18m', achievements: '24 / 30',
+      tags: ['공진 주파수', '리듬', 'BPM 180'],
+      installed: true, new: true, hot: true,
+      desc: 'R·L·C가 그리는 사인파에 맞춰 비트를 친다. 공진 주파수에서 콤보가 폭발한다.',
+      art: 'rhythm'
+    },
+    {
+      id: 'wye',
+      title: '3상 결선 카드',
+      subtitle: 'Y와 △의 전쟁',
+      studio: '델타 카드 클럽',
+      genre: '카드', genreColor: 'lime',
+      rating: 4.3, reviews: 988,
+      playtime: '5h 11m', achievements: '11 / 28',
+      tags: ['Y결선', '△결선', '덱빌딩'],
+      installed: false, new: false, hot: false,
+      desc: 'Y와 △ 두 진영의 덱을 짜서 대전하는 전략 카드 게임. 선간·상전압의 차이가 승부를 가른다.',
+      art: 'cards'
+    },
+    {
+      id: 'faraday',
+      title: '패러데이 어드벤처',
+      subtitle: '전자기 유도의 모험',
+      studio: '맥스웰 게임즈',
+      genre: '액션', genreColor: 'cyan',
+      rating: 4.5, reviews: 1546,
+      playtime: '8h 33m', achievements: '17 / 35',
+      tags: ['유도전압', '오픈월드', '액션'],
+      installed: true, new: false, hot: false,
+      desc: '자기력선을 끊어 전류를 만들고, 만들어진 전류로 마법을 쓴다. 오픈월드 액션 어드벤처.',
+      art: 'adventure'
+    },
+    {
+      id: 'versus',
+      title: '테슬라 vs 에디슨 격투기',
+      subtitle: 'AC/DC 결투',
+      studio: '하이볼트 파이트',
+      genre: '격투', genreColor: 'red',
+      rating: 4.2, reviews: 2102,
+      playtime: '4h 52m', achievements: '9 / 24',
+      tags: ['AC vs DC', '대전', '8캐릭터'],
+      installed: false, new: false, hot: true,
+      desc: '교류와 직류가 격돌한다. 사인파 어퍼컷, DC 직격 펀치, 변압 콤보까지. 본격 전기 격투 게임.',
+      art: 'fight'
+    },
+    {
+      id: 'safety',
+      title: '안전 수칙 퀴즈',
+      subtitle: '감전 회피 마스터',
+      studio: '코드워크 스튜디오',
+      genre: '퀴즈', genreColor: 'lime',
+      rating: 4.0, reviews: 412,
+      playtime: '2h 18m', achievements: '8 / 20',
+      tags: ['KEC', '실전 퀴즈', '5분 플레이'],
+      installed: true, new: false, hot: false,
+      desc: '현장에서 만날 수 있는 위험 상황 100개를 5분 안에 판단하라. 짧고 굵은 학습용 퀴즈.',
+      art: 'quiz'
+    },
+    {
+      id: 'rpg',
+      title: '전기기능사 합격 RPG',
+      subtitle: '필기 던전',
+      studio: '옴라이브 스튜디오',
+      genre: 'RPG', genreColor: 'violet',
+      rating: 4.9, reviews: 5821,
+      playtime: '32h 04m', achievements: '41 / 60',
+      tags: ['필기', '실기', '40시간+'],
+      installed: true, new: false, hot: true,
+      desc: '60문항 던전을 정복하고 자격증 보스를 잡아라. 합격까지의 여정을 RPG로.',
+      art: 'rpg'
+    },
+    {
+      id: 'maxwell',
+      title: '맥스웰 방정식 퍼즐',
+      subtitle: '4차원 회로',
+      studio: '필드 퍼즐 코퍼레이션',
+      genre: '퍼즐', genreColor: 'cyan',
+      rating: 4.4, reviews: 738,
+      playtime: '7h 08m', achievements: '14 / 30',
+      tags: ['div·rot', '120 스테이지', '두뇌'],
+      installed: false, new: true, hot: false,
+      desc: '4개의 방정식, 120개의 회로 퍼즐. 발산과 회전을 직관적으로 깨달아라.',
+      art: 'puzzle'
+    },
+    {
+      id: 'resonance',
+      title: '공명 드라이브',
+      subtitle: '서킷 레이스',
+      studio: '리액턴스 사운드',
+      genre: '레이싱', genreColor: 'amber',
+      rating: 4.5, reviews: 1244,
+      playtime: '6h 41m', achievements: '13 / 28',
+      tags: ['LC 회로', '8 트랙', '아케이드'],
+      installed: false, new: true, hot: false,
+      desc: 'LC 회로의 공진을 가속에 활용하는 미래형 레이싱. 8개 서킷, 24대의 차량.',
+      art: 'race'
+    },
+    {
+      id: 'wire',
+      title: '배선 마스터',
+      subtitle: '실기 시뮬레이션',
+      studio: '코드워크 스튜디오',
+      genre: '시뮬레이션', genreColor: 'amber',
+      rating: 4.6, reviews: 1832,
+      playtime: '12h 50m', achievements: '20 / 40',
+      tags: ['실기', '결선도', '시간 단축'],
+      installed: true, new: false, hot: true,
+      desc: '실기 시험 13개 작업형 과제를 그대로 가상화. 시간 안에 결선도를 완성하라.',
+      art: 'wire'
+    }
+  ];
+
+  // ---------- COVER SVGs ----------
+  const cover = (g) => {
+    // tiny inline SVGs by art type — no external assets
+    const palettes = {
+      cyan: ['#00e5ff','#0096a8'],
+      pink: ['#ff2bd6','#b41896'],
+      lime: ['#b8ff2b','#7ab800'],
+      amber:['#ffb547','#a36e1d'],
+      violet:['#8b5cf6','#5b3ec4'],
+      red:  ['#ff4a6e','#a01b3a'],
+    };
+    const [c1, c2] = palettes[g.genreColor] || palettes.cyan;
+    let inner = '';
+    switch (g.art) {
+      case 'space':
+        inner = `
+          <rect width="320" height="180" fill="#0a0a1f"/>
+          <g fill="#fff" opacity="0.7"><circle cx="40" cy="30" r="1"/><circle cx="80" cy="60" r="0.6"/><circle cx="160" cy="40" r="1"/><circle cx="240" cy="70" r="0.8"/><circle cx="280" cy="30" r="1"/></g>
+          <circle cx="240" cy="60" r="40" fill="${c1}" opacity="0.7"/>
+          <g transform="translate(60,90)"><rect x="-18" y="-7" width="36" height="14" rx="3" fill="${c2}"/><rect x="-8" y="-7" width="2" height="14" fill="${c1}"/><rect x="-2" y="-7" width="2" height="14" fill="#fff"/><rect x="4" y="-7" width="2" height="14" fill="${c1}"/></g>
+          <g transform="translate(150,110)"><rect x="-18" y="-7" width="36" height="14" rx="3" fill="${c1}"/></g>
+          <g transform="translate(160,160)"><path d="M-22 10 L0 -14 L22 10 Z" fill="${c1}" stroke="#fff" stroke-width="1.5"/></g>
+        `;
+        break;
+      case 'mystery':
+        inner = `
+          <rect width="320" height="180" fill="#13072a"/>
+          <g stroke="${c1}" stroke-width="1.5" fill="none">
+            <rect x="40" y="40" width="240" height="100" rx="6"/>
+            <line x1="40" y1="70" x2="280" y2="70"/>
+            <line x1="40" y1="100" x2="280" y2="100"/>
+            <line x1="110" y1="40" x2="110" y2="140"/>
+            <line x1="200" y1="40" x2="200" y2="140"/>
+          </g>
+          <circle cx="155" cy="100" r="22" fill="none" stroke="${c2}" stroke-width="2"/>
+          <line x1="170" y1="115" x2="195" y2="140" stroke="${c2}" stroke-width="3"/>
+          <text x="160" y="30" fill="${c1}" font-family="Audiowide" font-size="14" text-anchor="middle">CASE #07</text>
+        `;
+        break;
+      case 'transformer':
+        inner = `
+          <rect width="320" height="180" fill="#1a0e07"/>
+          <g stroke="${c1}" stroke-width="2.5" fill="none">
+            <path d="M70 50 L70 130"/>
+            <path d="M250 50 L250 130"/>
+            <circle cx="120" cy="90" r="14"/><circle cx="120" cy="60" r="14"/><circle cx="120" cy="120" r="14"/>
+            <circle cx="200" cy="90" r="14"/><circle cx="200" cy="60" r="14"/><circle cx="200" cy="120" r="14"/>
+            <rect x="155" y="40" width="10" height="100" fill="${c2}" stroke="none"/>
+          </g>
+          <text x="160" y="170" fill="${c1}" font-size="11" text-anchor="middle" font-family="Orbitron">N₁ : N₂ = 1 : 4</text>
+        `;
+        break;
+      case 'rhythm':
+        inner = `
+          <rect width="320" height="180" fill="#1a062a"/>
+          <path d="M0 90 Q40 30 80 90 T160 90 T240 90 T320 90" fill="none" stroke="${c1}" stroke-width="3"/>
+          <path d="M0 90 Q40 150 80 90 T160 90 T240 90 T320 90" fill="none" stroke="${c2}" stroke-width="2" opacity="0.6"/>
+          <g fill="${c1}"><circle cx="40" cy="60" r="6"/><circle cx="120" cy="60" r="6"/><circle cx="200" cy="60" r="6"/><circle cx="280" cy="60" r="6"/></g>
+          <g fill="${c2}"><circle cx="40" cy="120" r="6"/><circle cx="120" cy="120" r="6"/><circle cx="200" cy="120" r="6"/><circle cx="280" cy="120" r="6"/></g>
+        `;
+        break;
+      case 'cards':
+        inner = `
+          <rect width="320" height="180" fill="#0c1f0a"/>
+          <g>
+            <rect x="60" y="40" width="80" height="110" rx="6" fill="${c1}" transform="rotate(-8 100 95)"/>
+            <rect x="120" y="50" width="80" height="110" rx="6" fill="${c2}"/>
+            <rect x="180" y="40" width="80" height="110" rx="6" fill="${c1}" transform="rotate(8 220 95)"/>
+          </g>
+          <text x="160" y="110" fill="#0c1f0a" font-family="Orbitron" font-weight="900" font-size="36" text-anchor="middle">Δ</text>
+        `;
+        break;
+      case 'adventure':
+        inner = `
+          <rect width="320" height="180" fill="#06192a"/>
+          <g stroke="${c1}" stroke-width="2" fill="none">
+            <path d="M0 130 Q60 80 120 130 T240 130 T320 130"/>
+            <path d="M0 150 Q60 100 120 150 T240 150 T320 150" opacity="0.5"/>
+          </g>
+          <g transform="translate(160,90)">
+            <circle r="20" fill="${c2}"/>
+            <path d="M-8 -4 L4 -4 L0 4 L8 4 L-4 18 L0 6 L-8 6 Z" fill="${c1}"/>
+          </g>
+          <g fill="${c1}"><circle cx="50" cy="40" r="3"/><circle cx="270" cy="50" r="3"/><circle cx="100" cy="30" r="2"/></g>
+        `;
+        break;
+      case 'fight':
+        inner = `
+          <rect width="320" height="180" fill="#2a0612"/>
+          <g transform="translate(100,90)">
+            <circle r="20" fill="${c1}"/>
+            <rect x="-6" y="20" width="12" height="40" fill="${c1}"/>
+            <rect x="-20" y="40" width="40" height="6" fill="${c2}"/>
+          </g>
+          <g transform="translate(220,90)">
+            <circle r="20" fill="${c2}"/>
+            <rect x="-6" y="20" width="12" height="40" fill="${c2}"/>
+            <rect x="-20" y="40" width="40" height="6" fill="${c1}"/>
+          </g>
+          <path d="M120 90 Q160 60 200 90" stroke="${c1}" stroke-width="3" fill="none"/>
+          <text x="160" y="40" fill="${c1}" font-family="Audiowide" font-size="20" text-anchor="middle">VS</text>
+        `;
+        break;
+      case 'quiz':
+        inner = `
+          <rect width="320" height="180" fill="#06180a"/>
+          <text x="160" y="80" fill="${c1}" font-family="Orbitron" font-weight="900" font-size="60" text-anchor="middle">?</text>
+          <rect x="40" y="110" width="100" height="36" rx="8" fill="${c2}"/>
+          <rect x="180" y="110" width="100" height="36" rx="8" fill="${c1}" opacity="0.8"/>
+          <text x="90" y="134" fill="#06180a" font-family="Orbitron" font-weight="900" font-size="16" text-anchor="middle">A</text>
+          <text x="230" y="134" fill="#06180a" font-family="Orbitron" font-weight="900" font-size="16" text-anchor="middle">B</text>
+        `;
+        break;
+      case 'rpg':
+        inner = `
+          <rect width="320" height="180" fill="#180828"/>
+          <g transform="translate(160,100)">
+            <polygon points="0,-50 30,30 -30,30" fill="${c1}"/>
+            <circle r="14" cy="-20" fill="${c2}"/>
+          </g>
+          <text x="160" y="160" fill="${c1}" font-family="Orbitron" font-weight="900" font-size="13" text-anchor="middle">LV 99 · 합격!</text>
+        `;
+        break;
+      case 'puzzle':
+        inner = `
+          <rect width="320" height="180" fill="#062028"/>
+          <g stroke="${c1}" stroke-width="2" fill="none">
+            <rect x="60" y="40" width="60" height="60" rx="4"/>
+            <rect x="120" y="40" width="60" height="60" rx="4"/>
+            <rect x="180" y="40" width="60" height="60" rx="4"/>
+            <rect x="60" y="100" width="60" height="60" rx="4"/>
+            <rect x="120" y="100" width="60" height="60" rx="4" fill="${c2}" opacity="0.6"/>
+          </g>
+          <text x="150" y="138" fill="#fff" font-family="Orbitron" font-weight="900" font-size="20" text-anchor="middle">∇×E</text>
+        `;
+        break;
+      case 'race':
+        inner = `
+          <rect width="320" height="180" fill="#291606"/>
+          <g stroke="${c1}" stroke-width="3" fill="none">
+            <path d="M0 130 L120 130 L160 80 L200 130 L320 130"/>
+          </g>
+          <rect x="140" y="100" width="40" height="20" rx="4" fill="${c2}"/>
+          <circle cx="148" cy="124" r="5" fill="#222"/>
+          <circle cx="172" cy="124" r="5" fill="#222"/>
+          <g stroke="${c1}" stroke-width="2"><line x1="60" y1="100" x2="80" y2="100"/><line x1="240" y1="100" x2="260" y2="100"/></g>
+        `;
+        break;
+      case 'wire':
+        inner = `
+          <rect width="320" height="180" fill="#0a1a06"/>
+          <g stroke="${c1}" stroke-width="2.5" fill="none">
+            <path d="M40 60 L120 60 L120 140 L200 140 L200 60 L280 60"/>
+            <circle cx="120" cy="60" r="5" fill="${c2}"/>
+            <circle cx="200" cy="60" r="5" fill="${c2}"/>
+            <circle cx="120" cy="140" r="5" fill="${c2}"/>
+            <circle cx="200" cy="140" r="5" fill="${c2}"/>
+          </g>
+          <rect x="155" y="92" width="30" height="20" rx="3" fill="${c2}"/>
+        `;
+        break;
+      default:
+        inner = `<rect width="320" height="180" fill="${c1}"/>`;
+    }
+    return `<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">${inner}</svg>`;
+  };
+
+  // ---------- STARS ----------
+  const stars = (n) => {
+    const full = Math.round(n);
+    let h = '';
+    for (let i = 0; i < 5; i++) {
+      h += `<span class="${i < full ? 'star' : 'star-empty'}">★</span>`;
+    }
+    return h;
+  };
+
+  // ---------- RENDER GAME GRID ----------
+  let likes = JSON.parse('{"hero":3182}');
+  let liked = {};
+
+  const renderGrid = (filter) => {
+    const grid = document.getElementById('game-grid');
+    let list = games.slice();
+    if (filter === 'new') list = list.filter(g => g.new);
+    else if (filter === 'popular') list = list.filter(g => g.hot);
+    else if (filter === 'achievements') list = list.slice().sort((a,b) => {
+      const [a1] = a.achievements.split('/').map(s => parseInt(s.trim()));
+      const [b1] = b.achievements.split('/').map(s => parseInt(s.trim()));
+      return b1 - a1;
+    });
+
+    grid.innerHTML = list.map(g => `
+      <article class="card overflow-hidden cursor-pointer" data-open="${esc(g.id)}">
+        <div class="cover-wrap relative">
+          ${cover(g)}
+          ${g.new ? '<span class="absolute top-2 left-2 chip chip-pink text-[10px]">NEW</span>' : ''}
+          ${g.hot && !g.new ? '<span class="absolute top-2 left-2 chip chip-amber text-[10px]">HOT</span>' : ''}
+          ${g.installed ? '<span class="absolute top-2 right-2 chip chip-lime text-[10px]">설치됨</span>' : '<span class="absolute top-2 right-2 chip text-[10px]">미설치</span>'}
+        </div>
+        <div class="p-3">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="chip chip-${esc(g.genreColor)} text-[10px]">${esc(g.genre)}</span>
+            <span class="text-[10px] text-[color:var(--ink-mute)] truncate">${esc(g.studio)}</span>
+          </div>
+          <h3 class="font-bold text-sm leading-tight truncate">${esc(g.title)}</h3>
+          <p class="text-[11px] text-[color:var(--ink-dim)] truncate">${esc(g.subtitle)}</p>
+          <div class="flex items-center justify-between mt-2 text-[11px]">
+            <span class="flex items-center gap-1"><span class="text-[color:var(--amber)] text-sm leading-none">★</span> <strong>${g.rating}</strong></span>
+            <span class="text-[color:var(--ink-mute)]">${esc(g.playtime)}</span>
+            <span class="text-[color:var(--ink-mute)]">${esc(g.achievements)}</span>
+          </div>
+        </div>
+      </article>
+    `).join('');
+  };
+  renderGrid('library');
+
+  // ---------- TAB SWITCH ----------
+  document.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderGrid(btn.dataset.tab);
+    });
+  });
+
+  // ---------- SORT (visual only) ----------
+  document.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // ---------- LIKE BUTTONS ----------
+  const bindLike = (root) => {
+    root.querySelectorAll('.like-btn').forEach(btn => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        liked[id] = !liked[id];
+        if (likes[id] === undefined) likes[id] = 0;
+        likes[id] += liked[id] ? 1 : -1;
+        const heart = btn.querySelector('.heart');
+        const count = btn.querySelector('.like-count');
+        if (heart) { heart.textContent = liked[id] ? '♥' : '♡'; heart.style.color = liked[id] ? '#ff2bd6' : ''; }
+        if (count) count.textContent = likes[id].toLocaleString();
+      });
+    });
+  };
+  bindLike(document);
+
+  // ---------- MODAL ----------
+  const modalBg = document.getElementById('modal-bg');
+  const modalContent = document.getElementById('modal-content');
+
+  const openModal = (id) => {
+    const g = games.find(x => x.id === id);
+    if (!g) return;
+    if (likes[id] === undefined) likes[id] = Math.floor(g.reviews * 0.35);
+
+    modalContent.innerHTML = `
+      <div class="relative">
+        <div class="cover-wrap" style="aspect-ratio: 21/9; border-radius: 16px 16px 0 0;">${cover(g)}</div>
+        <button class="absolute top-3 right-3 w-9 h-9 rounded-full bg-[color:var(--bg-deep)] border border-[color:var(--line-2)] flex items-center justify-center text-lg" id="modal-close" aria-label="닫기">×</button>
+      </div>
+      <div class="p-6 sm:p-8">
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+          <span class="chip chip-${esc(g.genreColor)}">${esc(g.genre)}</span>
+          ${g.new ? '<span class="chip chip-pink">NEW</span>' : ''}
+          ${g.hot ? '<span class="chip chip-amber">HOT</span>' : ''}
+          <span class="text-xs text-[color:var(--ink-mute)]">${esc(g.studio)}</span>
+        </div>
+        <h2 class="font-display text-2xl sm:text-3xl font-black mb-1">${esc(g.title)}</h2>
+        <p class="text-sm text-[color:var(--ink-dim)] mb-4">${esc(g.subtitle)}</p>
+        <p class="text-sm leading-relaxed mb-5">${esc(g.desc)}</p>
+
+        <!-- screenshots strip -->
+        <div class="grid grid-cols-3 gap-2 mb-5">
+          <div class="cover-wrap">${cover(g)}</div>
+          <div class="cover-wrap" style="filter: hue-rotate(40deg);">${cover(g)}</div>
+          <div class="cover-wrap" style="filter: hue-rotate(-30deg) saturate(1.3);">${cover(g)}</div>
+        </div>
+
+        <!-- stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div class="panel p-3">
+            <div class="text-[10px] uppercase tracking-widest text-[color:var(--ink-mute)]">평점</div>
+            <div class="font-display font-bold text-lg neon-lime">${g.rating} <span class="text-xs text-[color:var(--ink-dim)]">/ 5</span></div>
+            <div class="text-[10px] mt-0.5">${stars(g.rating)}</div>
+          </div>
+          <div class="panel p-3">
+            <div class="text-[10px] uppercase tracking-widest text-[color:var(--ink-mute)]">평가</div>
+            <div class="font-display font-bold text-lg">${g.reviews.toLocaleString()}</div>
+            <div class="text-[10px] text-[color:var(--ink-dim)]">유저 리뷰</div>
+          </div>
+          <div class="panel p-3">
+            <div class="text-[10px] uppercase tracking-widest text-[color:var(--ink-mute)]">플레이 시간</div>
+            <div class="font-display font-bold text-lg neon-cyan">${esc(g.playtime)}</div>
+            <div class="text-[10px] text-[color:var(--ink-dim)]">내 기록</div>
+          </div>
+          <div class="panel p-3">
+            <div class="text-[10px] uppercase tracking-widest text-[color:var(--ink-mute)]">도전과제</div>
+            <div class="font-display font-bold text-lg neon-pink">${esc(g.achievements)}</div>
+            <div class="text-[10px] text-[color:var(--ink-dim)]">해금 / 전체</div>
+          </div>
+        </div>
+
+        <!-- achievements preview -->
+        <h3 class="font-display font-bold text-sm uppercase tracking-widest mb-2">최근 해금된 도전과제</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
+          <div class="card p-3 flex items-center gap-2">
+            <div class="w-9 h-9 rounded-md flex items-center justify-center" style="background: linear-gradient(135deg, var(--cyan), var(--lime));">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#06070d"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-xs truncate">첫 클리어</div>
+              <div class="text-[10px] text-[color:var(--ink-mute)]">+10 XP</div>
+            </div>
+          </div>
+          <div class="card p-3 flex items-center gap-2">
+            <div class="w-9 h-9 rounded-md flex items-center justify-center" style="background: linear-gradient(135deg, var(--pink), var(--violet));">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#06070d"><path d="M12 2L2 7v6c0 5 4 9 10 9s10-4 10-9V7z"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-xs truncate">노 데미지</div>
+              <div class="text-[10px] text-[color:var(--ink-mute)]">+50 XP</div>
+            </div>
+          </div>
+          <div class="card p-3 flex items-center gap-2 opacity-60">
+            <div class="w-9 h-9 rounded-md flex items-center justify-center bg-[color:var(--bg-panel-2)] border border-[color:var(--line-2)]">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5a607f" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-xs truncate text-[color:var(--ink-dim)]">올 클리어</div>
+              <div class="text-[10px] text-[color:var(--ink-mute)]">+200 XP · 잠김</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- download progress -->
+        <div class="panel p-4 mb-5" id="dl-panel">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-xs">다운로드 · <strong>${esc(g.title)}</strong></div>
+            <div class="text-xs text-[color:var(--ink-dim)]" id="dl-status">대기 중</div>
+          </div>
+          <div class="progress"><span id="dl-bar" style="width:0%"></span></div>
+        </div>
+
+        <!-- action row -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button class="btn btn-primary" id="dl-start" data-title="${esc(g.title)}">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 2 L11 7 L3 12 Z"/></svg>
+            ${g.installed ? '플레이' : '다운로드'}
+          </button>
+          <button class="btn">위시리스트</button>
+          <button class="btn btn-ghost like-btn" data-id="${esc(g.id)}">
+            <span class="heart" style="${liked[g.id] ? 'color:#ff2bd6':''}">${liked[g.id] ? '♥' : '♡'}</span>
+            <span class="like-count">${likes[g.id].toLocaleString()}</span>
+          </button>
+          <span class="ml-auto text-[11px] text-[color:var(--ink-mute)]">
+            ${esc(g.tags.join(' · '))}
+          </span>
+        </div>
+      </div>
+    `;
+
+    modalBg.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    bindLike(modalContent);
+
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('dl-start').addEventListener('click', runDownload);
+  };
+
+  const closeModal = () => {
+    modalBg.classList.remove('open');
+    document.body.style.overflow = '';
+    modalContent.innerHTML = '';
+  };
+
+  modalBg.addEventListener('click', (e) => {
+    if (e.target === modalBg) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalBg.classList.contains('open')) closeModal();
+  });
+
+  // ---------- DOWNLOAD ----------
+  let dlTimer = null;
+  const runDownload = (e) => {
+    const btn = e.currentTarget;
+    const title = btn.dataset.title || '게임';
+    const bar = document.getElementById('dl-bar');
+    const status = document.getElementById('dl-status');
+    if (!bar) return;
+    if (dlTimer) clearInterval(dlTimer);
+    let pct = 0;
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    status.textContent = '다운로드 중...';
+    status.classList.add('neon-cyan');
+    dlTimer = setInterval(() => {
+      pct += Math.random() * 9 + 3;
+      if (pct >= 100) {
+        pct = 100;
+        bar.style.width = '100%';
+        status.textContent = '설치 완료';
+        status.classList.remove('neon-cyan');
+        status.classList.add('neon-lime');
+        btn.disabled = false;
+        btn.style.opacity = '';
+        clearInterval(dlTimer);
+        showAch(`${title} 설치 완료`);
+        return;
+      }
+      bar.style.width = pct.toFixed(1) + '%';
+    }, 220);
+  };
+
+  // ---------- ACH TOAST ----------
+  const showAch = (text) => {
+    const host = document.getElementById('toast-host');
+    const div = document.createElement('div');
+    div.className = 'ach-toast panel p-3 flex items-center gap-3';
+    div.style.maxWidth = '320px';
+    div.innerHTML = `
+      <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-none" style="background: linear-gradient(135deg, var(--cyan), var(--lime));">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#06070d"><path d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="text-[10px] uppercase tracking-widest text-[color:var(--ink-mute)]">도전과제 해금</div>
+        <div class="font-bold text-sm truncate">${esc(text)}</div>
+      </div>
+    `;
+    host.appendChild(div);
+    setTimeout(() => div.remove(), 3500);
+  };
+
+  // ---------- GLOBAL: open buttons ----------
+  document.addEventListener('click', (e) => {
+    const opener = e.target.closest('[data-open]');
+    if (opener) {
+      openModal(opener.dataset.open);
+      return;
+    }
+    const dl = e.target.closest('[data-action="download"]');
+    if (dl) {
+      const title = dl.dataset.title || '게임';
+      showAch(title + ' 설치 시작');
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>

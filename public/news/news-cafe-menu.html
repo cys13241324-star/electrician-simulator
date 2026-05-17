@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK CAFE · 스파크 카페 — 전기기능사 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Noto+Serif+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cf-cream: #f6efe2;
+    --cf-cream-2: #ece2cc;
+    --cf-paper: #fbf6ea;
+    --cf-paper-2: #f0e6cf;
+    --cf-mocha: #5b3a22;
+    --cf-mocha-deep: #3d2614;
+    --cf-mocha-soft: #8a6a4b;
+    --cf-mocha-warm: #6b4427;
+    --cf-cocoa: #2a1a0e;
+    --cf-leaf: #3f5a3a;
+    --cf-leaf-deep: #2b3f27;
+    --cf-leaf-soft: #6b8462;
+    --cf-sage: #aebca0;
+    --cf-gold: #b88a3a;
+    --cf-gold-soft: #d4a85f;
+    --cf-rust: #a35a2d;
+    --cf-line: #d9c9a9;
+    --cf-line-soft: #e7dcc4;
+    --cf-muted: #8a7a60;
+    --cf-ink: #2a1a0e;
+  }
+  html, body {
+    font-family: 'Inter', 'Noto Serif KR', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(circle at 12% 8%, #ecdfc2 0%, transparent 38%),
+      radial-gradient(circle at 88% 92%, #e1d0a8 0%, transparent 42%),
+      linear-gradient(180deg, #f4ead2 0%, #e8d9b4 100%);
+    color: var(--cf-ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .serif-display { font-family: 'Playfair Display', 'Noto Serif KR', serif; letter-spacing: -0.01em; }
+  .serif-body { font-family: 'Cormorant Garamond', 'Noto Serif KR', serif; }
+  .han-serif { font-family: 'Noto Serif KR', serif; }
+
+  /* 카페 무대 — 원목 테이블 */
+  .cafe-stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 28px 16px 80px;
+    position: relative;
+  }
+  .cafe-stage::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 75% 18%, rgba(184,138,58,0.10), transparent 50%),
+      radial-gradient(circle at 22% 80%, rgba(91,58,34,0.08), transparent 55%);
+    pointer-events:none;
+  }
+  /* 종이 메뉴판 */
+  .menu-paper {
+    width: 100%;
+    max-width: 920px;
+    background:
+      linear-gradient(180deg, #fbf6ea 0%, #f3ead2 100%);
+    border-radius: 4px;
+    box-shadow:
+      0 30px 80px rgba(60,30,10,0.22),
+      0 8px 18px rgba(60,30,10,0.10),
+      inset 0 0 0 1px rgba(91,58,34,0.10),
+      inset 0 0 80px rgba(91,58,34,0.04);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .menu-paper::before {
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(91,58,34,0.04) 0.6px, transparent 1.2px),
+      radial-gradient(circle at 80% 70%, rgba(91,58,34,0.03) 0.6px, transparent 1.2px),
+      radial-gradient(circle at 50% 50%, rgba(91,58,34,0.02) 0.6px, transparent 1.2px);
+    background-size: 18px 18px, 22px 22px, 14px 14px;
+    pointer-events:none;
+    opacity:0.6;
+  }
+  /* 커피 얼룩 */
+  .stain {
+    position:absolute;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(91,58,34,0.10) 0%, rgba(91,58,34,0.05) 40%, transparent 70%);
+    pointer-events:none;
+  }
+  .stain.s1 { top: 60px; right: 40px; transform: rotate(15deg); }
+  .stain.s2 { bottom: 200px; left: 30px; width: 90px; height: 90px; }
+
+  /* 헤더 */
+  .cafe-header {
+    text-align:center;
+    padding: 56px 32px 28px;
+    border-bottom: 2px solid var(--cf-mocha);
+    position:relative;
+  }
+  .cafe-header::after {
+    content:"";
+    position:absolute;
+    bottom:-6px; left:50%; transform:translateX(-50%);
+    width: 60%;
+    border-bottom: 1px solid var(--cf-mocha-soft);
+  }
+  .cafe-logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 48px;
+    letter-spacing: 0.18em;
+    color: var(--cf-mocha-deep);
+    line-height: 1;
+  }
+  .cafe-logo-sub {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.4em;
+    color: var(--cf-mocha-warm);
+    margin-top: 10px;
+  }
+  .cafe-tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--cf-mocha-soft);
+    margin-top: 14px;
+  }
+  .est-badge {
+    display:inline-block;
+    margin-top: 16px;
+    padding: 6px 18px;
+    border: 1px solid var(--cf-mocha-soft);
+    border-radius: 999px;
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--cf-mocha-warm);
+  }
+
+  /* 인포 바 */
+  .info-bar {
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--cf-line);
+    margin: 0 32px;
+    border: 1px solid var(--cf-line);
+  }
+  .info-cell {
+    background: var(--cf-paper);
+    padding: 18px 16px;
+    text-align:center;
+  }
+  .info-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--cf-mocha-soft);
+    text-transform: uppercase;
+  }
+  .info-value {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--cf-mocha-deep);
+    margin-top: 6px;
+  }
+
+  /* 카테고리 탭 */
+  .cat-tabs {
+    display:flex;
+    flex-wrap:wrap;
+    gap: 4px;
+    padding: 24px 32px 0;
+    border-bottom: 1px solid var(--cf-line-soft);
+    justify-content: center;
+  }
+  .cat-tab {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 18px;
+    padding: 10px 18px;
+    color: var(--cf-mocha-soft);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .cat-tab .ko {
+    font-family:'Noto Serif KR', serif;
+    font-size: 12px;
+    display:block;
+    color: var(--cf-mocha-soft);
+    letter-spacing: 0.15em;
+    margin-top: 2px;
+  }
+  .cat-tab:hover { color: var(--cf-mocha-deep); }
+  .cat-tab.active {
+    color: var(--cf-mocha-deep);
+    border-bottom-color: var(--cf-mocha-deep);
+  }
+  .cat-tab.active .ko { color: var(--cf-mocha-warm); }
+
+  /* 메뉴 섹션 헤더 */
+  .section-head {
+    text-align:center;
+    padding: 36px 32px 12px;
+    position:relative;
+  }
+  .section-head .deco {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    letter-spacing: 0.6em;
+    color: var(--cf-mocha-soft);
+    text-transform: uppercase;
+  }
+  .section-head h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 38px;
+    color: var(--cf-mocha-deep);
+    margin-top: 6px;
+    letter-spacing: -0.01em;
+  }
+  .section-head .ko {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--cf-mocha-soft);
+    margin-top: 8px;
+    letter-spacing: 0.25em;
+  }
+  .section-head .rule {
+    display:flex; align-items:center; justify-content:center;
+    gap: 12px;
+    margin: 16px auto 0;
+    max-width: 220px;
+  }
+  .section-head .rule::before,
+  .section-head .rule::after {
+    content:""; flex:1; height:1px; background: var(--cf-mocha-soft);
+  }
+  .section-head .rule span { color: var(--cf-mocha-soft); font-size: 12px; }
+
+  /* 메뉴 그리드 */
+  .menu-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+    padding: 18px 32px 8px;
+  }
+  .menu-card {
+    background: var(--cf-paper);
+    border: 1px solid var(--cf-line);
+    border-radius: 6px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position:relative;
+    overflow:hidden;
+  }
+  .menu-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--cf-mocha-soft);
+    box-shadow: 0 10px 24px rgba(60,30,10,0.10);
+  }
+  .menu-illust {
+    width: 100%; height: 130px;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(circle at 50% 60%, #f5ead0 0%, #ebdfc1 100%);
+    border-radius: 4px;
+    margin-bottom: 14px;
+    border: 1px solid var(--cf-line-soft);
+  }
+  .menu-name-en {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--cf-mocha-deep);
+    line-height: 1.2;
+  }
+  .menu-name-ko {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--cf-mocha-warm);
+    margin-top: 3px;
+  }
+  .menu-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--cf-mocha-soft);
+    margin-top: 8px;
+    line-height: 1.45;
+    min-height: 38px;
+  }
+  .menu-meta {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--cf-line);
+  }
+  .menu-price {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cf-mocha-deep);
+  }
+  .menu-kcal {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--cf-mocha-soft);
+    text-transform: uppercase;
+  }
+  .new-tag {
+    position:absolute;
+    top: 12px; right: 12px;
+    background: var(--cf-leaf);
+    color: #f6efe2;
+    font-family: 'Playfair Display', serif;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .signature-tag {
+    position:absolute;
+    top: 12px; right: 12px;
+    background: var(--cf-gold);
+    color: #f6efe2;
+    font-family: 'Playfair Display', serif;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  /* 디저트 섹션 */
+  .dessert-row {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    padding: 18px 32px 0;
+  }
+  .dessert-card {
+    background: var(--cf-paper);
+    border: 1px solid var(--cf-line);
+    border-radius: 6px;
+    padding: 14px;
+    text-align:center;
+    cursor:pointer;
+    transition: all 0.2s;
+  }
+  .dessert-card:hover {
+    border-color: var(--cf-mocha-soft);
+    transform: translateY(-2px);
+  }
+  .dessert-illust {
+    width: 100%; height: 90px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom: 10px;
+  }
+
+  /* 라떼 아트 갤러리 */
+  .latte-gallery {
+    padding: 0 32px;
+  }
+  .latte-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .latte-item {
+    background:
+      radial-gradient(circle at 50% 55%, #c89766 0%, #8a5a30 75%, #5b3a22 100%);
+    border-radius: 50%;
+    aspect-ratio: 1;
+    border: 6px solid #fbf6ea;
+    box-shadow: 0 10px 24px rgba(60,30,10,0.18), inset 0 0 0 1px rgba(91,58,34,0.3);
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .latte-caption {
+    text-align:center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--cf-mocha-warm);
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  /* 멤버십 */
+  .membership {
+    margin: 30px 32px 0;
+    padding: 28px 24px;
+    background: linear-gradient(135deg, #3d2614 0%, #5b3a22 50%, #6b4427 100%);
+    color: #f6efe2;
+    border-radius: 6px;
+    position:relative;
+    overflow:hidden;
+  }
+  .membership::before{
+    content:"";
+    position:absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 90% 10%, rgba(212,168,95,0.18), transparent 40%),
+      radial-gradient(circle at 10% 90%, rgba(212,168,95,0.10), transparent 45%);
+    pointer-events:none;
+  }
+  .mem-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    position:relative;
+    z-index:1;
+  }
+  .mem-tier {
+    background: rgba(246,239,226,0.06);
+    border: 1px solid rgba(212,168,95,0.30);
+    border-radius: 4px;
+    padding: 16px 12px;
+    text-align:center;
+  }
+  .mem-tier .tier-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--cf-gold-soft);
+    letter-spacing: 0.12em;
+  }
+  .mem-tier .tier-cond {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: rgba(246,239,226,0.7);
+    margin-top: 4px;
+  }
+  .mem-tier .tier-perk {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 12px;
+    color: rgba(246,239,226,0.85);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  /* 점주 인사 */
+  .owner-note {
+    margin: 36px 32px 0;
+    padding: 32px 28px;
+    background: var(--cf-paper);
+    border-left: 3px solid var(--cf-mocha-deep);
+    border-right: 1px solid var(--cf-line);
+    border-top: 1px solid var(--cf-line);
+    border-bottom: 1px solid var(--cf-line);
+    position:relative;
+  }
+  .owner-quote {
+    font-family: 'Playfair Display', serif;
+    font-size: 64px;
+    line-height: 1;
+    color: var(--cf-mocha-soft);
+    position:absolute;
+    top: 16px; left: 14px;
+    opacity: 0.25;
+  }
+  .owner-body {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    line-height: 1.85;
+    color: var(--cf-mocha-deep);
+    padding-left: 26px;
+  }
+  .owner-sign {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--cf-mocha-warm);
+    margin-top: 14px;
+    padding-left: 26px;
+  }
+
+  /* 운영시간 */
+  .hours {
+    margin: 36px 32px 0;
+    text-align:center;
+  }
+  .hours-head {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    letter-spacing: 0.5em;
+    color: var(--cf-mocha-soft);
+  }
+  .hours-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+    max-width: 600px;
+    margin-left:auto; margin-right:auto;
+  }
+  .hours-cell {
+    border: 1px solid var(--cf-line);
+    border-radius: 4px;
+    padding: 12px;
+    background: var(--cf-paper);
+  }
+  .hours-day {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--cf-mocha-deep);
+    letter-spacing: 0.15em;
+  }
+  .hours-time {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--cf-mocha-warm);
+    margin-top: 4px;
+  }
+
+  /* 푸터 */
+  .cafe-footer {
+    margin-top: 50px;
+    padding: 26px 32px 36px;
+    border-top: 2px solid var(--cf-mocha);
+    text-align:center;
+    position:relative;
+  }
+  .cafe-footer::before {
+    content:"";
+    position:absolute;
+    top: -6px; left:50%; transform:translateX(-50%);
+    width: 60%;
+    border-bottom: 1px solid var(--cf-mocha-soft);
+  }
+  .footer-mark {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.4em;
+    color: var(--cf-mocha-deep);
+  }
+  .footer-note {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--cf-mocha-soft);
+    font-size: 13px;
+    margin-top: 8px;
+  }
+
+  /* 카트 */
+  .cart-fab {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--cf-mocha-deep);
+    color: var(--cf-cream);
+    border-radius: 999px;
+    padding: 14px 22px;
+    box-shadow: 0 14px 30px rgba(60,30,10,0.30);
+    display:flex; align-items:center; gap: 10px;
+    cursor:pointer;
+    z-index: 60;
+    transition: transform 0.2s;
+  }
+  .cart-fab:hover { transform: translateY(-2px); }
+  .cart-fab .badge {
+    background: var(--cf-gold);
+    color: var(--cf-cocoa);
+    border-radius: 999px;
+    min-width: 22px; height: 22px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 0 6px;
+  }
+
+  /* 모달 */
+  .modal-backdrop {
+    position: fixed; inset:0;
+    background: rgba(42,26,14,0.55);
+    backdrop-filter: blur(4px);
+    display:none; align-items:center; justify-content:center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display:flex; }
+  .modal-card {
+    background: var(--cf-paper);
+    border-radius: 8px;
+    max-width: 520px; width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(60,30,10,0.40);
+    border: 1px solid var(--cf-line);
+  }
+  .modal-illust {
+    width: 100%; height: 220px;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(circle at 50% 55%, #f5ead0 0%, #ebdfc1 100%);
+    border-bottom: 1px solid var(--cf-line);
+    position:relative;
+  }
+  .modal-close {
+    position:absolute;
+    top: 12px; right: 12px;
+    background: rgba(42,26,14,0.85);
+    color: var(--cf-cream);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    border:0;
+    font-size:16px;
+  }
+  .modal-body { padding: 24px; }
+  .modal-title-en {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--cf-mocha-deep);
+  }
+  .modal-title-ko {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 14px;
+    color: var(--cf-mocha-warm);
+    margin-top: 4px;
+  }
+  .modal-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--cf-mocha-soft);
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+  .modal-section-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--cf-mocha-soft);
+    text-transform: uppercase;
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+  .opt-row {
+    display:flex; flex-wrap:wrap; gap: 8px;
+  }
+  .opt-chip {
+    border: 1px solid var(--cf-line);
+    background: #fff;
+    padding: 8px 14px;
+    border-radius: 4px;
+    cursor:pointer;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 13px;
+    color: var(--cf-mocha-deep);
+    transition: all 0.15s;
+  }
+  .opt-chip:hover { border-color: var(--cf-mocha-soft); }
+  .opt-chip.on {
+    background: var(--cf-mocha-deep);
+    color: var(--cf-cream);
+    border-color: var(--cf-mocha-deep);
+  }
+  .opt-chip .delta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 12px;
+    margin-left: 6px;
+    color: var(--cf-mocha-soft);
+  }
+  .opt-chip.on .delta { color: var(--cf-gold-soft); }
+  .allergy-row {
+    display:flex; flex-wrap:wrap; gap: 6px;
+  }
+  .allergy-tag {
+    background: var(--cf-cream-2);
+    color: var(--cf-mocha-warm);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+  }
+  .modal-foot {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 20px 24px;
+    background: var(--cf-cream);
+    border-top: 1px solid var(--cf-line);
+  }
+  .modal-total {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--cf-mocha-deep);
+  }
+  .modal-total .lbl {
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size: 12px;
+    color: var(--cf-mocha-soft);
+    display:block;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .order-btn {
+    background: var(--cf-mocha-deep);
+    color: var(--cf-cream);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    padding: 12px 22px;
+    border-radius: 4px;
+    cursor:pointer;
+    border:0;
+    transition: background 0.2s;
+  }
+  .order-btn:hover { background: #2a1a0e; }
+
+  /* 카트 패널 */
+  .cart-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 360px;
+    max-width: 92vw;
+    background: var(--cf-paper);
+    box-shadow: -10px 0 40px rgba(60,30,10,0.25);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 90;
+    display:flex; flex-direction:column;
+  }
+  .cart-panel.open { transform: translateX(0); }
+  .cart-head {
+    padding: 22px 22px 16px;
+    border-bottom: 1px solid var(--cf-line);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .cart-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--cf-mocha-deep);
+    letter-spacing: 0.05em;
+  }
+  .cart-body { flex:1; overflow-y:auto; padding: 14px 22px; }
+  .cart-empty {
+    text-align:center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style:italic;
+    color: var(--cf-mocha-soft);
+    margin-top: 40px;
+    font-size: 16px;
+  }
+  .cart-line {
+    display:flex; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--cf-line);
+  }
+  .cart-line .name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--cf-mocha-deep);
+  }
+  .cart-line .opt {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--cf-mocha-soft);
+    margin-top: 2px;
+  }
+  .cart-line .qty {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--cf-mocha-warm);
+    margin-top: 4px;
+  }
+  .cart-line .price {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--cf-mocha-deep);
+    margin-left:auto;
+  }
+  .cart-foot {
+    padding: 18px 22px;
+    border-top: 1px solid var(--cf-line);
+    background: var(--cf-cream);
+  }
+  .cart-sum-row {
+    display:flex; justify-content:space-between;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--cf-mocha-warm);
+    font-size: 14px;
+    padding: 3px 0;
+  }
+  .cart-sum-total {
+    display:flex; justify-content:space-between;
+    align-items:baseline;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--cf-line);
+  }
+  .cart-sum-total .lbl {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    color: var(--cf-mocha-soft);
+    text-transform:uppercase;
+  }
+  .cart-sum-total .val {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 24px;
+    color: var(--cf-mocha-deep);
+  }
+  .cart-checkout {
+    width: 100%;
+    background: var(--cf-mocha-deep);
+    color: var(--cf-cream);
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.25em;
+    padding: 13px 0;
+    border-radius: 4px;
+    cursor:pointer;
+    border:0;
+    margin-top: 14px;
+  }
+  .cart-remove {
+    background: transparent;
+    border:0;
+    color: var(--cf-mocha-soft);
+    font-size: 16px;
+    cursor:pointer;
+    align-self: flex-start;
+    padding: 0 4px;
+  }
+  .cart-remove:hover { color: var(--cf-rust); }
+
+  /* 토스트 */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--cf-mocha-deep);
+    color: var(--cf-cream);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events:none;
+    transition: all 0.3s;
+    z-index: 200;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 640px) {
+    .cafe-logo { font-size: 36px; }
+    .section-head h2 { font-size: 28px; }
+    .info-bar { grid-template-columns: 1fr; margin: 0 16px; }
+    .menu-grid, .dessert-row, .hours-grid { padding-left: 16px; padding-right: 16px; }
+    .membership, .owner-note { margin-left: 16px; margin-right: 16px; }
+    .latte-gallery { padding-left: 16px; padding-right: 16px; }
+    .cafe-header { padding: 40px 20px 24px; }
+    .cart-fab { bottom: 16px; right: 16px; padding: 12px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="cafe-stage">
+  <div class="menu-paper" id="paper">
+    <div class="stain s1"></div>
+    <div class="stain s2"></div>
+
+    <!-- 헤더 -->
+    <div class="cafe-header">
+      <div class="cafe-logo">SPARK CAFE</div>
+      <div class="cafe-logo-sub">스 파 크 카 페</div>
+      <div class="cafe-tagline">— A current of taste, a charge of comfort —</div>
+      <div class="est-badge">EST. 2026 · OHMDONG</div>
+    </div>
+
+    <!-- 인포 바 -->
+    <div class="info-bar">
+      <div class="info-cell">
+        <div class="info-label">Location</div>
+        <div class="info-value">가상 옴동(Ω洞) 24-W</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Hours</div>
+        <div class="info-value">매일 07:30 — 22:00</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-label">Wi-Fi</div>
+        <div class="info-value">SPARK_2026 / pw: ohm220v</div>
+      </div>
+    </div>
+
+    <!-- 카테고리 탭 -->
+    <div class="cat-tabs" id="catTabs"></div>
+
+    <!-- 메뉴 영역 -->
+    <div id="menuArea"></div>
+
+    <!-- 디저트 -->
+    <div class="section-head">
+      <div class="deco">Patisserie</div>
+      <h2>Dessert &amp; Pastry</h2>
+      <div class="ko">디 저 트 · 빵</div>
+      <div class="rule"><span>※</span></div>
+    </div>
+    <div class="dessert-row" id="dessertRow"></div>
+
+    <!-- 라떼 아트 -->
+    <div class="section-head">
+      <div class="deco">Latte Art Gallery</div>
+      <h2>Crafted by Hand</h2>
+      <div class="ko">라 떼 아 트 갤 러 리</div>
+      <div class="rule"><span>※</span></div>
+    </div>
+    <div class="latte-gallery">
+      <div class="latte-grid" id="latteGrid"></div>
+    </div>
+
+    <!-- 멤버십 -->
+    <div class="section-head">
+      <div class="deco">Membership</div>
+      <h2>SPARK Circle</h2>
+      <div class="ko">멤 버 십 등 급</div>
+      <div class="rule"><span>※</span></div>
+    </div>
+    <div class="membership">
+      <div class="mem-grid">
+        <div class="mem-tier">
+          <div class="tier-name">VOLT</div>
+          <div class="tier-cond">— Welcome —</div>
+          <div class="tier-perk">가입 즉시<br/>10잔 적립 카드</div>
+        </div>
+        <div class="mem-tier">
+          <div class="tier-name">AMPERE</div>
+          <div class="tier-cond">— 월 6잔 —</div>
+          <div class="tier-perk">모든 음료 5% 할인<br/>월 1회 디저트 +1</div>
+        </div>
+        <div class="mem-tier">
+          <div class="tier-name">OHM</div>
+          <div class="tier-cond">— 월 12잔 —</div>
+          <div class="tier-perk">시즌 메뉴 우선체험<br/>생일 음료 무료</div>
+        </div>
+        <div class="mem-tier">
+          <div class="tier-name">WATT</div>
+          <div class="tier-cond">— 월 24잔 —</div>
+          <div class="tier-perk">월 1회 시그니처 무료<br/>점주 큐레이션 원두</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 점주 인사 -->
+    <div class="section-head">
+      <div class="deco">Owner's Note</div>
+      <h2>From the Barista</h2>
+      <div class="ko">점 주 의 한 마 디</div>
+      <div class="rule"><span>※</span></div>
+    </div>
+    <div class="owner-note">
+      <div class="owner-quote">&ldquo;</div>
+      <p class="owner-body">
+        전기기능사 공부, 회로도와 씨름하다 보면 머리가 뜨거워질 때가 있죠.
+        그럴 때 한 잔의 커피가 회로의 저항을 풀어주는 콘덴서처럼,
+        잠시 마음을 충전해줍니다.<br/><br/>
+        스파크 카페는 가상의 공간이지만,
+        여러분의 합격을 향한 마음만큼은 진짜로 응원합니다.
+        오늘의 한 모금이 내일의 한 문제를 풀어내는 힘이 되길.
+      </p>
+      <div class="owner-sign">— 점주 김 옴 · Kim Ohm, Head Barista</div>
+    </div>
+
+    <!-- 운영시간 -->
+    <div class="hours">
+      <div class="hours-head">OPENING HOURS</div>
+      <div class="hours-grid">
+        <div class="hours-cell">
+          <div class="hours-day">MON — FRI</div>
+          <div class="hours-time">07:30 — 22:00</div>
+        </div>
+        <div class="hours-cell">
+          <div class="hours-day">SAT — SUN</div>
+          <div class="hours-time">09:00 — 23:00</div>
+        </div>
+        <div class="hours-cell">
+          <div class="hours-day">HOLIDAY</div>
+          <div class="hours-time">10:00 — 20:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 푸터 -->
+    <div class="cafe-footer">
+      <div class="footer-mark">SPARK CAFE · ESTABLISHED 2026</div>
+      <div class="footer-note">
+        가상 카페 시뮬레이션 · No real cafe, no real coffee, no real charge.<br/>
+        본 페이지의 모든 메뉴·가격·매장은 가상이며 학습 콘텐츠 일러스트입니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 카트 FAB -->
+<div class="cart-fab" id="cartFab" onclick="toggleCart()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <path d="M16 10a4 4 0 0 1-8 0"/>
+  </svg>
+  <span style="font-family:'Playfair Display',serif; letter-spacing:0.15em; font-size:13px;">CART</span>
+  <span class="badge" id="cartBadge">0</span>
+</div>
+
+<!-- 카트 패널 -->
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-head">
+    <div class="cart-title">Your Order</div>
+    <button class="cart-remove" onclick="toggleCart()" aria-label="닫기" style="font-size:22px;">&times;</button>
+  </div>
+  <div class="cart-body" id="cartBody">
+    <div class="cart-empty" id="cartEmpty">— 아직 주문이 비어 있어요 —</div>
+  </div>
+  <div class="cart-foot">
+    <div class="cart-sum-row"><span>Subtotal</span><span id="sumSub">₩0</span></div>
+    <div class="cart-sum-row"><span>Service (10%)</span><span id="sumSvc">₩0</span></div>
+    <div class="cart-sum-total">
+      <span class="lbl">Total</span>
+      <span class="val" id="sumTotal">₩0</span>
+    </div>
+    <button class="cart-checkout" onclick="checkout()">PROCEED TO PICKUP</button>
+  </div>
+</div>
+
+<!-- 모달 -->
+<div class="modal-backdrop" id="modal" onclick="closeIfBackdrop(event)">
+  <div class="modal-card" id="modalCard">
+    <div class="modal-illust" id="modalIllust">
+      <button class="modal-close" onclick="closeModal()" aria-label="닫기">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <div class="modal-total">
+        <span class="lbl">Total</span>
+        <span id="modalTotal">₩0</span>
+      </div>
+      <button class="order-btn" onclick="addToCart()">ADD TO CART</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">담겼습니다</div>
+
+<script>
+// ===== 데이터 =====
+const CATEGORIES = [
+  { id: 'espresso', en: 'Espresso', ko: '에스프레소' },
+  { id: 'coffee', en: 'Coffee', ko: '커피' },
+  { id: 'noncoffee', en: 'Non-Coffee', ko: '논커피' },
+  { id: 'tea', en: 'Tea', ko: '차' },
+  { id: 'smoothie', en: 'Smoothie', ko: '스무디' },
+  { id: 'season', en: 'Seasonal', ko: '시즌' }
+];
+
+const MENU = {
+  espresso: [
+    {
+      id:'e1', en:'Ohm Espresso', ko:'옴 에스프레소',
+      desc:'A short, focused shot — pure resistance reduced to flavor.',
+      price: 3800, kcal: 8, tag:'signature',
+      illust: 'espresso',
+      options: {
+        size: [['Solo','솔로',0],['Doppio','도피오',1200]],
+        sweet: [['No Sugar','무가당',0],['Brown Sugar','흑설탕',0]],
+      },
+      allergy: ['카페인']
+    },
+    {
+      id:'e2', en:'Kirchhoff Macchiato', ko:'키르히호프 마키아토',
+      desc:'Foam in, foam out — the law of conservation, drinkable.',
+      price: 4800, kcal: 110,
+      illust: 'macchiato',
+      options: {
+        milk: [['Whole','일반우유',0],['Oat','귀리',600],['Lactose-Free','락토프리',500]],
+        temp: [['Hot','뜨겁게',0],['Iced','차갑게',0]]
+      },
+      allergy: ['우유','카페인']
+    },
+    {
+      id:'e3', en:'Transformer Latte', ko:'변압기 라테',
+      desc:'Voltage steps down into a silken caramel coil.',
+      price: 5500, kcal: 220, tag:'new',
+      illust: 'latte',
+      options: {
+        size: [['Regular','레귤러',0],['Large','라지',800]],
+        syrup: [['Caramel','카라멜',500],['Vanilla','바닐라',500],['None','시럽없이',0]]
+      },
+      allergy: ['우유','카페인']
+    }
+  ],
+  coffee: [
+    {
+      id:'c1', en:'RLC Americano', ko:'RLC 아메리카노',
+      desc:'Resistor, inductor, capacitor — three notes resonate.',
+      price: 4500, kcal: 15, tag:'signature',
+      illust: 'americano',
+      options: {
+        size: [['Regular','레귤러',0],['Large','라지',800]],
+        temp: [['Hot','뜨겁게',0],['Iced','차갑게',0]],
+        shot: [['1 Shot','1샷',0],['2 Shot','2샷',700]]
+      },
+      allergy: ['카페인']
+    },
+    {
+      id:'c2', en:'Three-Phase Cold Brew', ko:'3상 결선 콜드브루',
+      desc:'12 hours, three vessels, one balanced waveform.',
+      price: 5800, kcal: 18,
+      illust: 'coldbrew',
+      options: {
+        size: [['Regular','레귤러',0],['Large','라지',1000]],
+        finish: [['Original','오리지널',0],['Tonic','토닉 추가',1000],['Milk','우유 추가',600]]
+      },
+      allergy: ['카페인']
+    }
+  ],
+  noncoffee: [
+    {
+      id:'n1', en:'Faraday Hot Chocolate', ko:'패러데이 핫초코',
+      desc:'Cocoa induction — warm currents through whipped cream.',
+      price: 5200, kcal: 320,
+      illust: 'choco',
+      options: {
+        milk: [['Whole','일반우유',0],['Oat','귀리',600]],
+        top: [['Marshmallow','마시멜로',500],['Whipped','휘핑',300],['None','없이',0]]
+      },
+      allergy: ['우유','초콜릿']
+    },
+    {
+      id:'n2', en:'Tesla Chai Latte', ko:'테슬라 차이라테',
+      desc:'High-frequency spices arcing across warm milk.',
+      price: 5500, kcal: 240, tag:'new',
+      illust: 'chai',
+      options: {
+        milk: [['Whole','일반우유',0],['Oat','귀리',600],['Soy','두유',500]],
+        spice: [['Mild','순하게',0],['Strong','진하게',0]]
+      },
+      allergy: ['우유','계피']
+    }
+  ],
+  tea: [
+    {
+      id:'t1', en:'Maxwell Earl Grey', ko:'맥스웰 얼그레이',
+      desc:'Bergamot fields modulated by the speed of taste.',
+      price: 4800, kcal: 5,
+      illust: 'tea',
+      options: {
+        temp: [['Hot','뜨겁게',0],['Iced','차갑게',0]],
+        sweet: [['Plain','플레인',0],['Honey','꿀',500]]
+      },
+      allergy: ['카페인']
+    },
+    {
+      id:'t2', en:'Henry Peppermint', ko:'헨리 페퍼민트',
+      desc:'A cool inductive breeze — calm before the next problem.',
+      price: 4500, kcal: 3,
+      illust: 'mint',
+      options: {
+        temp: [['Hot','뜨겁게',0],['Iced','차갑게',0]],
+        addon: [['Plain','플레인',0],['Lemon Slice','레몬 슬라이스',400]]
+      },
+      allergy: []
+    }
+  ],
+  smoothie: [
+    {
+      id:'s1', en:'Resonance Mango', ko:'공명 망고',
+      desc:'A perfect frequency of ripe mango and yogurt.',
+      price: 6200, kcal: 280,
+      illust: 'mango',
+      options: {
+        size: [['Regular','레귤러',0],['Large','라지',1000]],
+        base: [['Yogurt','요거트',0],['Milk','우유',0],['Coconut','코코넛',500]]
+      },
+      allergy: ['우유','망고']
+    },
+    {
+      id:'s2', en:'Pass Berry', ko:'합격 베리',
+      desc:'Mixed berries — for the day you finally pass.',
+      price: 6500, kcal: 260, tag:'signature',
+      illust: 'berry',
+      options: {
+        size: [['Regular','레귤러',0],['Large','라지',1000]],
+        top: [['Granola','그래놀라',700],['Chia','치아씨드',500],['None','없이',0]]
+      },
+      allergy: ['딸기']
+    }
+  ],
+  season: [
+    {
+      id:'sp1', en:'Spring Ohm', ko:'봄날의 옴',
+      desc:'Cherry petals & honey — a seasonal short circuit of joy.',
+      price: 6800, kcal: 290, tag:'new',
+      illust: 'spring',
+      options: {
+        size: [['Regular','레귤러',0],['Large','라지',1000]],
+        top: [['Petal','꽃잎',0],['Whipped','휘핑',300]]
+      },
+      allergy: ['우유']
+    },
+    {
+      id:'sp2', en:'Electric Latte Art', ko:'전기 라떼 아트',
+      desc:'Choose your art — circuit, bolt, or filament.',
+      price: 5800, kcal: 220, tag:'signature',
+      illust: 'art',
+      options: {
+        art: [['Circuit','회로',0],['Bolt','번개',0],['Filament','필라멘트',0]],
+        size: [['Regular','레귤러',0],['Large','라지',800]]
+      },
+      allergy: ['우유','카페인']
+    }
+  ]
+};
+
+const DESSERTS = [
+  { id:'d1', en:'Ohm Cake', ko:'옴 케이크', desc:'Ω-shaped fondant on chocolate ganache.', price: 5800, kcal: 360, illust: 'cake', allergy:['밀','계란','우유'] },
+  { id:'d2', en:'Kirchhoff Madeleine', ko:'키르히호프 마들렌', desc:'Two flavors in, one taste out.', price: 3200, kcal: 180, illust: 'made', allergy:['밀','계란','버터'] },
+  { id:'d3', en:'Transformer Cookie', ko:'변압기 쿠키', desc:'Stepped layers, caramel windings.', price: 2800, kcal: 220, illust: 'cookie', allergy:['밀','계란','우유'] },
+  { id:'d4', en:'RLC Macaron', ko:'RLC 마카롱', desc:'Three notes: rose, lemon, cocoa.', price: 3800, kcal: 150, illust: 'macaron', allergy:['아몬드','계란','우유'] }
+];
+
+const LATTE_ARTS = [
+  { name: 'Circuit', ko:'회로 아트', svg: 'circuit' },
+  { name: 'Bolt', ko:'번개 아트', svg: 'bolt' },
+  { name: 'Filament', ko:'필라멘트', svg: 'filament' },
+  { name: 'Ohm', ko:'옴 아트', svg: 'ohm' },
+  { name: 'Heart', ko:'전기심장', svg: 'heart' }
+];
+
+// ===== SVG 일러스트 =====
+function getIllust(kind, size = 130) {
+  const w = size, h = size;
+  const draw = {
+    espresso: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="115" rx="65" ry="6" fill="#5b3a22" opacity="0.18"/>
+        <path d="M55 50 Q55 100 100 105 Q145 100 145 50 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <path d="M145 60 Q170 65 170 80 Q170 92 150 92" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="50" rx="45" ry="6" fill="#3d2614"/>
+        <ellipse cx="100" cy="48" rx="40" ry="4" fill="#6b4427"/>
+        <ellipse cx="92" cy="46" rx="6" ry="1.5" fill="#c89766" opacity="0.6"/>
+        <ellipse cx="108" cy="46" rx="4" ry="1" fill="#c89766" opacity="0.6"/>
+      </svg>`,
+    macchiato: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="115" rx="65" ry="6" fill="#5b3a22" opacity="0.18"/>
+        <path d="M55 45 Q55 105 100 110 Q145 105 145 45 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="45" rx="45" ry="6" fill="#fff6e2"/>
+        <ellipse cx="100" cy="47" rx="40" ry="3" fill="#c89766"/>
+        <circle cx="100" cy="44" r="4" fill="#fbf6ea" stroke="#8a6a4b" stroke-width="0.8"/>
+        <path d="M145 60 Q170 65 170 80 Q170 92 150 92" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+      </svg>`,
+    latte: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M60 35 L60 110 Q60 118 70 118 L130 118 Q140 118 140 110 L140 35 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="35" rx="40" ry="5" fill="#fff"/>
+        <path d="M85 35 Q100 28 115 35 Q108 38 100 38 Q92 38 85 35" fill="#c89766"/>
+        <path d="M100 35 L100 42 M97 38 L103 38" stroke="#5b3a22" stroke-width="0.8" fill="none"/>
+        <path d="M140 55 Q160 60 160 75 Q160 88 142 88" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+      </svg>`,
+    americano: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="62" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M55 30 L60 115 Q60 120 68 120 L132 120 Q140 120 140 115 L145 30 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="32" rx="45" ry="5" fill="#3d2614"/>
+        <ellipse cx="100" cy="30" rx="40" ry="3" fill="#5b3a22"/>
+        <ellipse cx="95" cy="28" rx="3" ry="0.8" fill="#c89766" opacity="0.5"/>
+      </svg>`,
+    coldbrew: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="120" rx="55" ry="4" fill="#5b3a22" opacity="0.18"/>
+        <path d="M70 25 L70 118 L130 118 L130 25 Z" fill="#5b3a22" opacity="0.85" stroke="#3d2614" stroke-width="1.5"/>
+        <rect x="68" y="20" width="64" height="8" fill="#fbf6ea" stroke="#3d2614" stroke-width="1.5"/>
+        <rect x="74" y="40" width="6" height="6" fill="#fff" opacity="0.6"/>
+        <rect x="88" y="60" width="5" height="5" fill="#fff" opacity="0.5"/>
+        <rect x="108" y="50" width="6" height="6" fill="#fff" opacity="0.6"/>
+        <rect x="118" y="80" width="5" height="5" fill="#fff" opacity="0.5"/>
+        <path d="M96 18 L96 8 L104 8 L104 18" fill="none" stroke="#3d2614" stroke-width="1.5"/>
+      </svg>`,
+    choco: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M60 38 L60 110 Q60 118 70 118 L130 118 Q140 118 140 110 L140 38 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="38" rx="40" ry="5" fill="#3d2614"/>
+        <path d="M75 36 Q80 28 88 32 Q92 24 100 30 Q108 24 112 32 Q120 28 125 36" fill="#fff" stroke="#fff" stroke-width="2"/>
+        <circle cx="88" cy="30" r="2.5" fill="#fff"/>
+        <circle cx="112" cy="30" r="2.5" fill="#fff"/>
+        <path d="M140 58 Q160 62 160 75 Q160 88 142 88" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+      </svg>`,
+    chai: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M58 35 L62 115 Q62 118 70 118 L130 118 Q138 118 138 115 L142 35 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="35" rx="42" ry="5" fill="#c89766"/>
+        <path d="M88 30 Q92 22 100 30 Q108 22 112 30" fill="none" stroke="#a35a2d" stroke-width="1.2" opacity="0.6"/>
+        <circle cx="92" cy="40" r="1.5" fill="#8a5a30"/>
+        <circle cx="108" cy="42" r="1.2" fill="#8a5a30"/>
+      </svg>`,
+    tea: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="62" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M58 60 Q58 110 100 113 Q142 110 142 60" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <path d="M58 60 L142 60" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="60" rx="42" ry="5" fill="#a35a2d"/>
+        <path d="M142 70 Q165 72 165 88 Q165 100 145 100" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+        <path d="M90 50 Q95 40 100 48 Q105 40 110 50" fill="none" stroke="#fbf6ea" stroke-width="1" opacity="0.7"/>
+      </svg>`,
+    mint: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M62 50 Q62 110 100 113 Q138 110 138 50" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="50" rx="38" ry="5" fill="#aebca0"/>
+        <ellipse cx="95" cy="48" rx="6" ry="3" fill="#3f5a3a" transform="rotate(-20 95 48)"/>
+        <ellipse cx="108" cy="49" rx="5" ry="2.5" fill="#6b8462"/>
+        <path d="M138 65 Q158 68 158 82 Q158 95 140 95" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+      </svg>`,
+    mango: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M65 25 L70 110 Q70 118 78 118 L122 118 Q130 118 130 110 L135 25 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <rect x="68" y="27" width="64" height="86" fill="#d4a85f" opacity="0.85"/>
+        <ellipse cx="100" cy="27" rx="33" ry="3" fill="#fff" opacity="0.8"/>
+        <rect x="95" y="10" width="3" height="20" fill="#3f5a3a"/>
+        <ellipse cx="100" cy="10" rx="6" ry="3" fill="#6b8462"/>
+      </svg>`,
+    berry: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M65 25 L70 110 Q70 118 78 118 L122 118 Q130 118 130 110 L135 25 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <rect x="68" y="27" width="64" height="86" fill="#a35a2d" opacity="0.7"/>
+        <circle cx="85" cy="40" r="4" fill="#5b3a22" opacity="0.6"/>
+        <circle cx="115" cy="55" r="3" fill="#5b3a22" opacity="0.6"/>
+        <circle cx="92" cy="70" r="3.5" fill="#5b3a22" opacity="0.5"/>
+        <rect x="95" y="10" width="3" height="20" fill="#3f5a3a"/>
+      </svg>`,
+    spring: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M60 38 L60 110 Q60 118 70 118 L130 118 Q140 118 140 110 L140 38 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="38" rx="40" ry="5" fill="#f0d4c8"/>
+        <g fill="#e8a8b8" opacity="0.85">
+          <circle cx="86" cy="35" r="3"/>
+          <circle cx="92" cy="32" r="2.5"/>
+          <circle cx="106" cy="34" r="3"/>
+          <circle cx="112" cy="32" r="2.5"/>
+        </g>
+        <path d="M140 58 Q160 62 160 75 Q160 88 142 88" fill="none" stroke="#5b3a22" stroke-width="1.5"/>
+      </svg>`,
+    art: `
+      <svg viewBox="0 0 200 130" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="118" rx="60" ry="5" fill="#5b3a22" opacity="0.18"/>
+        <path d="M58 32 L62 112 Q62 118 70 118 L130 118 Q138 118 138 112 L142 32 Z" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.5"/>
+        <ellipse cx="100" cy="32" rx="42" ry="5" fill="#c89766"/>
+        <path d="M75 32 L90 28 L100 32 L110 28 L125 32" fill="none" stroke="#fbf6ea" stroke-width="2"/>
+        <path d="M88 30 L92 26 L95 30 L98 26" fill="none" stroke="#fbf6ea" stroke-width="1.5"/>
+        <text x="100" y="36" text-anchor="middle" font-family="Playfair Display" font-size="9" fill="#3d2614">Ω</text>
+      </svg>`,
+    cake: `
+      <svg viewBox="0 0 200 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="92" rx="55" ry="4" fill="#5b3a22" opacity="0.18"/>
+        <rect x="55" y="40" width="90" height="50" fill="#fbf6ea" stroke="#5b3a22" stroke-width="1.2"/>
+        <rect x="55" y="40" width="90" height="14" fill="#5b3a22"/>
+        <text x="100" y="34" text-anchor="middle" font-family="Playfair Display" font-size="22" fill="#3d2614" font-weight="bold">Ω</text>
+        <circle cx="68" cy="62" r="3" fill="#a35a2d"/>
+        <circle cx="132" cy="68" r="3" fill="#a35a2d"/>
+        <circle cx="100" cy="75" r="3" fill="#a35a2d"/>
+      </svg>`,
+    made: `
+      <svg viewBox="0 0 200 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="88" rx="48" ry="4" fill="#5b3a22" opacity="0.18"/>
+        <path d="M60 75 Q60 35 100 30 Q140 35 140 75 Q140 85 100 85 Q60 85 60 75 Z" fill="#d4a85f" stroke="#8a5a30" stroke-width="1.2"/>
+        <path d="M70 60 Q75 50 85 52 M95 50 Q100 42 110 48 M115 58 Q122 50 130 56" stroke="#8a5a30" stroke-width="1" fill="none" opacity="0.5"/>
+      </svg>`,
+    cookie: `
+      <svg viewBox="0 0 200 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="92" rx="48" ry="4" fill="#5b3a22" opacity="0.18"/>
+        <circle cx="100" cy="55" r="35" fill="#c89766" stroke="#8a5a30" stroke-width="1.2"/>
+        <circle cx="88" cy="48" r="3" fill="#3d2614"/>
+        <circle cx="110" cy="52" r="2.5" fill="#3d2614"/>
+        <circle cx="98" cy="65" r="3" fill="#3d2614"/>
+        <circle cx="112" cy="68" r="2" fill="#3d2614"/>
+        <circle cx="85" cy="62" r="2" fill="#3d2614"/>
+      </svg>`,
+    macaron: `
+      <svg viewBox="0 0 200 100" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <ellipse cx="100" cy="92" rx="48" ry="4" fill="#5b3a22" opacity="0.18"/>
+        <ellipse cx="100" cy="45" rx="38" ry="14" fill="#e8a8b8" stroke="#a35a2d" stroke-width="1"/>
+        <rect x="62" y="55" width="76" height="10" fill="#fbf6ea" stroke="#a35a2d" stroke-width="1"/>
+        <ellipse cx="100" cy="73" rx="38" ry="14" fill="#e8a8b8" stroke="#a35a2d" stroke-width="1"/>
+      </svg>`,
+    circuit: `<svg viewBox="0 0 100 100" width="60%" height="60%"><path d="M20 50 L35 50 M65 50 L80 50 M50 20 L50 35 M50 65 L50 80" stroke="#fbf6ea" stroke-width="3" fill="none"/><rect x="40" y="40" width="20" height="20" rx="2" stroke="#fbf6ea" stroke-width="3" fill="none"/></svg>`,
+    bolt: `<svg viewBox="0 0 100 100" width="55%" height="55%"><path d="M55 15 L30 55 L48 55 L40 85 L70 45 L52 45 Z" fill="#fbf6ea" stroke="#fbf6ea" stroke-width="2"/></svg>`,
+    filament: `<svg viewBox="0 0 100 100" width="60%" height="60%"><path d="M30 30 Q50 18 70 30 L70 60 Q70 75 50 78 Q30 75 30 60 Z" fill="none" stroke="#fbf6ea" stroke-width="3"/><path d="M40 50 Q50 55 60 50" stroke="#fbf6ea" stroke-width="2" fill="none"/><rect x="44" y="78" width="12" height="6" fill="#fbf6ea"/></svg>`,
+    ohm: `<svg viewBox="0 0 100 100" width="60%" height="60%"><text x="50" y="68" text-anchor="middle" font-family="Playfair Display" font-size="64" fill="#fbf6ea" font-weight="bold">Ω</text></svg>`,
+    heart: `<svg viewBox="0 0 100 100" width="55%" height="55%"><path d="M50 80 Q22 60 22 40 Q22 25 35 22 Q45 22 50 35 Q55 22 65 22 Q78 25 78 40 Q78 60 50 80 Z" fill="#fbf6ea" stroke="#fbf6ea" stroke-width="2"/><path d="M30 50 L40 50 L45 42 L50 58 L55 42 L60 50 L70 50" stroke="#5b3a22" stroke-width="2.5" fill="none"/></svg>`
+  };
+  return draw[kind] || draw.latte;
+}
+
+// ===== escape =====
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+}
+function fmtPrice(n) { return '₩' + Number(n).toLocaleString('ko-KR'); }
+
+// ===== 상태 =====
+let currentCat = 'espresso';
+let cart = [];
+let modalItem = null;
+let modalSelected = {};
+
+// ===== 렌더 =====
+function renderTabs() {
+  const wrap = document.getElementById('catTabs');
+  wrap.innerHTML = CATEGORIES.map(c => `
+    <div class="cat-tab ${c.id === currentCat ? 'active' : ''}" data-cat="${esc(c.id)}">
+      ${esc(c.en)}
+      <span class="ko">${esc(c.ko)}</span>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('.cat-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      currentCat = t.dataset.cat;
+      renderTabs();
+      renderMenu();
+    });
+  });
+}
+
+function renderMenu() {
+  const cat = CATEGORIES.find(c => c.id === currentCat);
+  const items = MENU[currentCat] || [];
+  const area = document.getElementById('menuArea');
+  area.innerHTML = `
+    <div class="section-head">
+      <div class="deco">— Menu —</div>
+      <h2>${esc(cat.en)}</h2>
+      <div class="ko">${esc(cat.ko)}</div>
+      <div class="rule"><span>※</span></div>
+    </div>
+    <div class="menu-grid">
+      ${items.map(it => `
+        <div class="menu-card" data-id="${esc(it.id)}" data-cat="${esc(currentCat)}">
+          ${it.tag === 'new' ? '<span class="new-tag">NEW</span>' : ''}
+          ${it.tag === 'signature' ? '<span class="signature-tag">SIGNATURE</span>' : ''}
+          <div class="menu-illust">${getIllust(it.illust)}</div>
+          <div class="menu-name-en">${esc(it.en)}</div>
+          <div class="menu-name-ko">${esc(it.ko)}</div>
+          <div class="menu-desc">${esc(it.desc)}</div>
+          <div class="menu-meta">
+            <span class="menu-price">${fmtPrice(it.price)}</span>
+            <span class="menu-kcal">${it.kcal} kcal</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  area.querySelectorAll('.menu-card').forEach(c => {
+    c.addEventListener('click', () => openModal(c.dataset.cat, c.dataset.id));
+  });
+}
+
+function renderDesserts() {
+  const wrap = document.getElementById('dessertRow');
+  wrap.innerHTML = DESSERTS.map(d => `
+    <div class="dessert-card" data-id="${esc(d.id)}">
+      <div class="dessert-illust">${getIllust(d.illust)}</div>
+      <div class="menu-name-en">${esc(d.en)}</div>
+      <div class="menu-name-ko">${esc(d.ko)}</div>
+      <div class="menu-desc" style="min-height:auto">${esc(d.desc)}</div>
+      <div class="menu-meta">
+        <span class="menu-price">${fmtPrice(d.price)}</span>
+        <span class="menu-kcal">${d.kcal} kcal</span>
+      </div>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('.dessert-card').forEach(c => {
+    c.addEventListener('click', () => openDessertModal(c.dataset.id));
+  });
+}
+
+function renderLatte() {
+  const grid = document.getElementById('latteGrid');
+  grid.innerHTML = LATTE_ARTS.map(a => `
+    <div>
+      <div class="latte-item">${getIllust(a.svg)}</div>
+      <div class="latte-caption">${esc(a.name)} · <span class="han-serif" style="font-size:12px;">${esc(a.ko)}</span></div>
+    </div>
+  `).join('');
+}
+
+// ===== 모달 =====
+function findItem(catId, itemId) {
+  return (MENU[catId] || []).find(i => i.id === itemId);
+}
+function openModal(catId, itemId) {
+  const it = findItem(catId, itemId);
+  if (!it) return;
+  modalItem = { ...it, _type: 'drink' };
+  modalSelected = {};
+  if (it.options) {
+    for (const k of Object.keys(it.options)) {
+      modalSelected[k] = 0;
+    }
+  }
+  fillModal();
+  document.getElementById('modal').classList.add('show');
+}
+function openDessertModal(id) {
+  const d = DESSERTS.find(x => x.id === id);
+  if (!d) return;
+  modalItem = { ...d, _type: 'dessert', options: {} };
+  modalSelected = {};
+  fillModal();
+  document.getElementById('modal').classList.add('show');
+}
+
+const OPT_LABELS = {
+  size: 'SIZE · 사이즈',
+  sweet: 'SWEETNESS · 당도',
+  milk: 'MILK · 우유',
+  temp: 'TEMP · 온도',
+  syrup: 'SYRUP · 시럽',
+  shot: 'SHOT · 샷',
+  finish: 'FINISH · 마무리',
+  top: 'TOPPING · 토핑',
+  spice: 'SPICE · 향신료',
+  addon: 'ADD-ON · 추가',
+  base: 'BASE · 베이스',
+  art: 'ART · 그림'
+};
+
+function fillModal() {
+  document.getElementById('modalIllust').innerHTML = `
+    <button class="modal-close" onclick="closeModal()" aria-label="닫기">&times;</button>
+    <div style="width:65%; max-width:240px;">${getIllust(modalItem.illust)}</div>
+  `;
+  let optsHtml = '';
+  if (modalItem.options && Object.keys(modalItem.options).length) {
+    optsHtml = Object.keys(modalItem.options).map(k => {
+      const list = modalItem.options[k];
+      return `
+        <div class="modal-section-label">${esc(OPT_LABELS[k] || k.toUpperCase())}</div>
+        <div class="opt-row">
+          ${list.map((opt, i) => {
+            const [en, ko, delta] = opt;
+            const on = modalSelected[k] === i;
+            return `<button class="opt-chip ${on ? 'on' : ''}" data-key="${esc(k)}" data-idx="${i}">
+              ${esc(en)} <span class="han-serif" style="font-size:11px;opacity:0.8;">· ${esc(ko)}</span>
+              ${delta ? `<span class="delta">${delta > 0 ? '+' : ''}${fmtPrice(delta)}</span>` : ''}
+            </button>`;
+          }).join('')}
+        </div>`;
+    }).join('');
+  }
+  const allergy = (modalItem.allergy || []).length
+    ? `<div class="modal-section-label">ALLERGENS · 알레르기 안내</div>
+       <div class="allergy-row">${modalItem.allergy.map(a => `<span class="allergy-tag">${esc(a)}</span>`).join('')}</div>`
+    : '';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-title-en">${esc(modalItem.en)}</div>
+    <div class="modal-title-ko">${esc(modalItem.ko)}</div>
+    <div class="modal-desc">${esc(modalItem.desc)}</div>
+    <div class="modal-section-label">DETAILS · 정보</div>
+    <div style="font-family:'Cormorant Garamond', serif; font-style:italic; color:var(--cf-mocha-warm); font-size:14px;">
+      Base price ${fmtPrice(modalItem.price)} · ${modalItem.kcal} kcal
+    </div>
+    ${optsHtml}
+    ${allergy}
+  `;
+  document.getElementById('modalBody').querySelectorAll('.opt-chip').forEach(b => {
+    b.addEventListener('click', () => {
+      modalSelected[b.dataset.key] = parseInt(b.dataset.idx, 10);
+      fillModal();
+    });
+  });
+  updateModalTotal();
+}
+function calcItemTotal(item, selected) {
+  let total = item.price;
+  if (item.options) {
+    for (const k of Object.keys(item.options)) {
+      const idx = selected[k] || 0;
+      const opt = item.options[k][idx];
+      if (opt) total += opt[2] || 0;
+    }
+  }
+  return total;
+}
+function updateModalTotal() {
+  const t = calcItemTotal(modalItem, modalSelected);
+  document.getElementById('modalTotal').textContent = fmtPrice(t);
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+function closeIfBackdrop(e) {
+  if (e.target.id === 'modal') closeModal();
+}
+
+// ===== 카트 =====
+function addToCart() {
+  if (!modalItem) return;
+  const total = calcItemTotal(modalItem, modalSelected);
+  const optDescParts = [];
+  if (modalItem.options) {
+    for (const k of Object.keys(modalItem.options)) {
+      const idx = modalSelected[k] || 0;
+      const opt = modalItem.options[k][idx];
+      if (opt) optDescParts.push(opt[0]);
+    }
+  }
+  cart.push({
+    id: modalItem.id,
+    name: modalItem.en,
+    ko: modalItem.ko,
+    opts: optDescParts.join(' · '),
+    qty: 1,
+    price: total
+  });
+  closeModal();
+  renderCart();
+  showToast(modalItem.ko + ' 담겼습니다');
+}
+function removeFromCart(idx) {
+  cart.splice(idx, 1);
+  renderCart();
+}
+function renderCart() {
+  const body = document.getElementById('cartBody');
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = cart.reduce((s, x) => s + x.qty, 0);
+  if (cart.length === 0) {
+    body.innerHTML = '<div class="cart-empty">— 아직 주문이 비어 있어요 —</div>';
+  } else {
+    body.innerHTML = cart.map((c, i) => `
+      <div class="cart-line">
+        <div style="flex:1;">
+          <div class="name">${esc(c.name)}</div>
+          <div class="opt">${esc(c.ko)}${c.opts ? ' · ' + esc(c.opts) : ''}</div>
+          <div class="qty">× ${c.qty}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <button class="cart-remove" data-idx="${i}" aria-label="삭제">&times;</button>
+          <span class="price">${fmtPrice(c.price * c.qty)}</span>
+        </div>
+      </div>
+    `).join('');
+    body.querySelectorAll('.cart-remove').forEach(b => {
+      b.addEventListener('click', () => removeFromCart(parseInt(b.dataset.idx, 10)));
+    });
+  }
+  const sub = cart.reduce((s, x) => s + x.price * x.qty, 0);
+  const svc = Math.round(sub * 0.1);
+  document.getElementById('sumSub').textContent = fmtPrice(sub);
+  document.getElementById('sumSvc').textContent = fmtPrice(svc);
+  document.getElementById('sumTotal').textContent = fmtPrice(sub + svc);
+}
+function toggleCart() {
+  document.getElementById('cartPanel').classList.toggle('open');
+}
+function checkout() {
+  if (cart.length === 0) {
+    showToast('주문이 비어 있어요');
+    return;
+  }
+  showToast('UI 시뮬레이션입니다 · 실제 결제 없음');
+}
+
+// ===== 토스트 =====
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ===== ESC 키 =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+    document.getElementById('cartPanel').classList.remove('open');
+  }
+});
+
+// ===== 시작 =====
+renderTabs();
+renderMenu();
+renderDesserts();
+renderLatte();
+renderCart();
+</script>
+</body>
+</html>

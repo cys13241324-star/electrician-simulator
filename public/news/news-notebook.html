@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기기능사 합격 노트 — My Study Notebook</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Indie+Flower&family=Kalam:wght@300;400;700&family=Shadows+Into+Light&family=Gaegu:wght@300;400;700&family=Nanum+Pen+Script&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #f4ecd6;     /* 베이지 노트 종이 */
+    --paper-2:     #ece2c4;     /* 그늘진 종이 */
+    --paper-cream: #faf5e6;     /* 크림 페이지 */
+    --paper-gray:  #ecebe3;     /* 라이트 그레이 */
+    --line:        #93b7d6;     /* 노트 가로줄 (연한 파랑) */
+    --margin-line: #d77a78;     /* 마진선 (분홍/빨강) */
+    --grid:        rgba(80,90,110,0.16);
+    --ink:         #1f2937;
+    --ink-soft:    #3b4252;
+    --ink-pen:     #1e3a8a;     /* 파란 볼펜 */
+    --ink-pen-2:   #134e4a;     /* 어두운 청록 */
+    --ink-red:     #b91c1c;     /* 빨강 펜 */
+    --ink-pencil:  #4b5563;     /* 연필 */
+    --hl-yellow:   #fde68a;     /* 형광펜 노랑 */
+    --hl-pink:     #fbcfe8;     /* 형광펜 핑크 */
+    --hl-green:    #bbf7d0;     /* 형광펜 초록 */
+    --sticker:     #fcd34d;
+    --tape:        #fef3c7;
+    --shadow:      0 18px 40px -12px rgba(0,0,0,0.45), 0 40px 80px -20px rgba(0,0,0,0.35);
+  }
+
+  html, body {
+    background:
+      radial-gradient(circle at 20% 20%, #4a3f2e, #2b241a 60%, #1a1510 100%);
+    min-height: 100vh;
+    color: var(--ink);
+  }
+  body {
+    font-family: 'Pretendard', system-ui, sans-serif;
+    margin: 0;
+    padding: 32px 12px 80px;
+  }
+
+  /* 손글씨 폰트 */
+  .f-cave   { font-family: 'Caveat', cursive; }
+  .f-indie  { font-family: 'Indie Flower', cursive; }
+  .f-kalam  { font-family: 'Kalam', cursive; }
+  .f-shadow { font-family: 'Shadows Into Light', cursive; }
+  .f-gaegu  { font-family: 'Gaegu', 'Caveat', cursive; }
+  .f-pen    { font-family: 'Nanum Pen Script', 'Caveat', cursive; }
+  .f-body   { font-family: 'Pretendard', system-ui, sans-serif; }
+
+  /* =========== 노트북 컨테이너 =========== */
+  .notebook {
+    max-width: 980px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .pager-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    color: #e9dfc3;
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+  }
+  .pager-bar button {
+    background: rgba(255,255,255,0.06);
+    color: #f6ecd0;
+    border: 1px solid rgba(255,255,255,0.18);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .pager-bar button:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+  .pager-bar button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .pager-bar .dots { display: inline-flex; gap: 6px; }
+  .pager-bar .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .pager-bar .dot.active { background: var(--sticker); transform: scale(1.4); }
+
+  /* =========== 페이지 =========== */
+  .page {
+    position: relative;
+    background: var(--paper);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    padding: 60px 60px 80px 90px;
+    min-height: 1100px;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .page:hover { transform: translateY(-4px) rotate(-0.2deg); box-shadow: 0 24px 50px -12px rgba(0,0,0,0.55), 0 50px 90px -20px rgba(0,0,0,0.4); }
+
+  .page.hidden { display: none; }
+
+  /* 페이지 모서리 접힘 */
+  .page::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    background:
+      linear-gradient(225deg, transparent 50%, rgba(0,0,0,0.12) 50%),
+      linear-gradient(225deg, transparent 49%, var(--paper-2) 50%);
+    box-shadow: -3px 3px 6px rgba(0,0,0,0.12);
+  }
+
+  /* 가로줄 노트 페이지 */
+  .lined {
+    background-color: var(--paper);
+    background-image:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 35px,
+        var(--line) 35px,
+        var(--line) 36px
+      );
+    background-position: 0 60px;
+  }
+  /* 모눈 페이지 */
+  .grid-page {
+    background-color: var(--paper-cream);
+    background-image:
+      linear-gradient(to right, var(--grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  /* 마진선 (빨강 세로줄) */
+  .margin-line::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 70px;
+    width: 2px;
+    background: var(--margin-line);
+    opacity: 0.85;
+  }
+  /* 종이 결 */
+  .grain::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(120,90,40,0.06), transparent 50%),
+      radial-gradient(circle at 88% 92%, rgba(120,90,40,0.05), transparent 55%),
+      radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size: auto, auto, 4px 4px;
+    mix-blend-mode: multiply;
+    opacity: 0.75;
+  }
+
+  /* 펀치 구멍 */
+  .holes {
+    position: absolute;
+    left: 24px; top: 0; bottom: 0;
+    width: 16px;
+    display: flex; flex-direction: column; justify-content: space-evenly;
+    align-items: center;
+    pointer-events: none;
+  }
+  .hole {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2a241b 0%, #4a3f2e 60%, #6b5a40 100%);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.4);
+  }
+
+  /* 형광펜 */
+  .hl-y { background: linear-gradient(180deg, transparent 55%, var(--hl-yellow) 55%, var(--hl-yellow) 92%, transparent 92%); padding: 0 2px; }
+  .hl-p { background: linear-gradient(180deg, transparent 55%, var(--hl-pink)   55%, var(--hl-pink)   92%, transparent 92%); padding: 0 2px; }
+  .hl-g { background: linear-gradient(180deg, transparent 55%, var(--hl-green)  55%, var(--hl-green)  92%, transparent 92%); padding: 0 2px; }
+
+  /* 펜 색상 */
+  .pen-blue   { color: var(--ink-pen); }
+  .pen-teal   { color: var(--ink-pen-2); }
+  .pen-red    { color: var(--ink-red); }
+  .pen-pencil { color: var(--ink-pencil); }
+  .pen-ink    { color: var(--ink); }
+
+  /* 동그라미 마킹 */
+  .circle-mark {
+    display: inline-block;
+    border: 2.5px solid var(--ink-red);
+    border-radius: 50%;
+    padding: 2px 10px;
+    transform: rotate(-2deg);
+  }
+  .star-mark::after {
+    content: '★';
+    color: var(--ink-red);
+    margin-left: 4px;
+  }
+
+  /* 스티커 / 마스킹 테이프 */
+  .tape {
+    position: absolute;
+    background: rgba(255, 235, 150, 0.78);
+    border: 1px dashed rgba(180, 150, 60, 0.4);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+    width: 110px; height: 26px;
+  }
+  .sticker {
+    position: absolute;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,0.18));
+  }
+
+  /* 손그림 회로 박스 */
+  .doodle-box {
+    border: 2.5px solid var(--ink);
+    border-radius: 8px;
+    padding: 16px;
+    background: rgba(255,255,255,0.25);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.08);
+    position: relative;
+  }
+  .doodle-box.dashed { border-style: dashed; }
+  .doodle-box::before {
+    /* 손그림 느낌의 살짝 비틀어진 외곽 */
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 2px solid rgba(0,0,0,0.05);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+
+  /* 체크박스 */
+  .check {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border: 2.5px solid var(--ink);
+    border-radius: 4px;
+    margin-right: 10px;
+    vertical-align: -5px;
+    position: relative;
+  }
+  .check.done::after {
+    content: '✓';
+    position: absolute;
+    left: 2px; top: -8px;
+    font-family: 'Caveat', cursive;
+    font-size: 26px;
+    color: var(--ink-red);
+    font-weight: 700;
+  }
+
+  /* 화살표/메모 */
+  .arrow-curve { stroke: var(--ink-red); stroke-width: 2.2; fill: none; stroke-linecap: round; }
+  .arrow-pen   { stroke: var(--ink-pen); stroke-width: 2.2; fill: none; stroke-linecap: round; }
+
+  /* 표지 전용 */
+  .cover {
+    background:
+      radial-gradient(circle at 30% 25%, #1f3a6b 0%, #122548 55%, #0a1730 100%);
+    color: #f6ecd0;
+    padding: 80px 70px;
+    min-height: 1100px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 6px 6px;
+    mix-blend-mode: screen;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .cover-frame {
+    border: 2px solid rgba(246, 236, 208, 0.45);
+    padding: 50px 40px;
+    position: relative;
+    min-height: 920px;
+  }
+  .cover-frame::before,
+  .cover-frame::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(246, 236, 208, 0.7);
+  }
+  .cover-frame::before { top: -10px; left: -10px; border-right: 0; border-bottom: 0; }
+  .cover-frame::after  { bottom: -10px; right: -10px; border-left: 0; border-top: 0; }
+
+  /* 책등 그림자 */
+  .spine {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 40px;
+    background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+    pointer-events: none;
+  }
+
+  /* 책갈피 */
+  .bookmark {
+    position: absolute;
+    top: -8px; right: 60px;
+    width: 28px; height: 90px;
+    background: linear-gradient(180deg, #dc2626 0%, #b91c1c 90%, transparent 100%);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  }
+
+  /* D-DAY 카운터 */
+  .dday-box {
+    border: 3px solid var(--ink-red);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.4);
+    padding: 28px 24px;
+    text-align: center;
+    transform: rotate(-1deg);
+    box-shadow: 4px 4px 0 rgba(185, 28, 28, 0.18);
+  }
+
+  /* keyboard hint */
+  .kbd {
+    display: inline-block;
+    padding: 1px 7px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    font-family: 'Pretendard', monospace;
+    font-size: 12px;
+    color: #e9dfc3;
+  }
+
+  /* 페이지 들어올 때 살짝 페이드 */
+  .page, .cover { animation: pageIn 0.4s ease both; }
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(20px) rotate(-0.3deg); }
+    to   { opacity: 1; transform: translateY(0) rotate(0); }
+  }
+
+  /* utility */
+  .rotate-l1 { transform: rotate(-1deg); }
+  .rotate-l2 { transform: rotate(-2deg); }
+  .rotate-r1 { transform: rotate(1deg); }
+  .rotate-r2 { transform: rotate(2deg); }
+
+  @media (max-width: 720px) {
+    .page, .cover { padding: 40px 28px 60px 60px; min-height: 900px; }
+    .cover-frame { padding: 30px 20px; min-height: 760px; }
+    .holes { left: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="notebook">
+
+  <!-- 상단 페이지바 -->
+  <div class="pager-bar">
+    <button id="prevBtn" aria-label="이전 페이지">◀ 이전</button>
+    <div class="flex items-center gap-3">
+      <span class="hidden sm:inline">My Study Notebook</span>
+      <div class="dots" id="dots"></div>
+      <span id="pageLabel">1 / 9</span>
+    </div>
+    <button id="nextBtn" aria-label="다음 페이지">다음 ▶</button>
+  </div>
+
+  <!-- ========================= 0. 표지 ========================= -->
+  <section class="page-wrap" data-page="0">
+    <div class="cover relative">
+      <div class="spine"></div>
+      <div class="cover-frame">
+
+        <!-- 라벨 -->
+        <div class="text-center f-cave text-2xl tracking-widest" style="color:#fcd34d;">— STUDY NOTEBOOK · 2026 —</div>
+
+        <h1 class="f-pen text-center mt-10 leading-none" style="font-size: 110px; color:#fef3c7;">
+          전기기능사<br/>합격 노트
+        </h1>
+
+        <div class="text-center mt-6 f-cave text-4xl" style="color:#fde68a;">
+          Electrician Craftsman · My Way to Pass
+        </div>
+
+        <!-- 번개 스티커 -->
+        <svg class="sticker" style="top: 230px; left: -10px; transform: rotate(-15deg);" width="120" height="120" viewBox="0 0 100 100">
+          <polygon points="55,5 25,55 45,55 35,95 75,40 55,40 70,5"
+                   fill="#fcd34d" stroke="#7c5500" stroke-width="3" stroke-linejoin="round"/>
+          <polygon points="55,5 25,55 45,55 35,95 75,40 55,40 70,5"
+                   fill="none" stroke="#fde68a" stroke-width="1" stroke-linejoin="round"/>
+        </svg>
+
+        <!-- 전구 스티커 -->
+        <svg class="sticker" style="top: 200px; right: -10px; transform: rotate(12deg);" width="110" height="120" viewBox="0 0 100 110">
+          <path d="M50 8 C30 8 20 25 22 42 C24 56 35 60 38 72 L62 72 C65 60 76 56 78 42 C80 25 70 8 50 8 Z"
+                fill="#fde68a" stroke="#7c5500" stroke-width="3"/>
+          <rect x="36" y="75" width="28" height="6" fill="#9ca3af" stroke="#374151" stroke-width="2"/>
+          <rect x="38" y="83" width="24" height="5" fill="#9ca3af" stroke="#374151" stroke-width="2"/>
+          <rect x="42" y="91" width="16" height="6" rx="2" fill="#6b7280" stroke="#374151" stroke-width="2"/>
+          <path d="M40 30 L60 30 M40 40 L60 40 M40 50 L60 50" stroke="#7c5500" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+
+        <!-- 정보 카드 -->
+        <div class="mt-24 grid grid-cols-2 gap-6 max-w-xl mx-auto">
+          <div class="rounded-md p-4" style="background: rgba(253, 230, 138, 0.92); color:#1f2937;">
+            <div class="f-cave text-2xl">NAME</div>
+            <div class="f-pen text-3xl mt-1">김 ◯ ◯</div>
+            <div class="border-b border-dashed border-gray-700/40 mt-1"></div>
+          </div>
+          <div class="rounded-md p-4" style="background: rgba(252, 207, 232, 0.92); color:#1f2937;">
+            <div class="f-cave text-2xl">START</div>
+            <div class="f-pen text-3xl mt-1">2026. 01. 04</div>
+            <div class="border-b border-dashed border-gray-700/40 mt-1"></div>
+          </div>
+          <div class="rounded-md p-4 col-span-2" style="background: rgba(187, 247, 208, 0.92); color:#1f2937;">
+            <div class="f-cave text-2xl">D-DAY (시험일)</div>
+            <div class="f-pen text-3xl mt-1">2026. 07. 26 (토) — <span class="pen-red">D-72</span></div>
+          </div>
+        </div>
+
+        <!-- 하트 스티커 -->
+        <svg class="sticker" style="bottom: 110px; left: 30px; transform: rotate(-10deg);" width="60" height="55" viewBox="0 0 60 55">
+          <path d="M30 50 C8 36 4 18 14 10 C22 4 28 10 30 16 C32 10 38 4 46 10 C56 18 52 36 30 50 Z"
+                fill="#f472b6" stroke="#9d174d" stroke-width="2.5"/>
+        </svg>
+
+        <!-- 메모 -->
+        <div class="absolute bottom-12 right-12 f-cave text-2xl rotate-r2" style="color:#fde68a;">
+          "할 수 있다" — 매일 한 장씩 ✏
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 1. 옴의 법칙 ========================= -->
+  <section class="page-wrap hidden" data-page="1">
+    <div class="page lined margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+      <div class="bookmark"></div>
+
+      <!-- 상단 제목 -->
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:64px; line-height:1;">CH. 01 옴의 법칙</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">2026 · 01 · 12 (월) ☀</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Ohm's Law · the very first lesson</div>
+
+      <div class="mt-8 grid grid-cols-5 gap-6 items-start">
+        <!-- 큰 공식 -->
+        <div class="col-span-3">
+          <div class="doodle-box">
+            <div class="text-center f-pen pen-red" style="font-size: 130px; line-height: 1;">V = I R</div>
+            <div class="text-center f-cave text-3xl pen-blue mt-2">전압 = 전류 × 저항</div>
+            <div class="grid grid-cols-3 mt-5 text-center f-cave text-xl pen-ink">
+              <div><span class="hl-y">V [볼트]</span><br/><span class="text-base pen-pencil">전압 Voltage</span></div>
+              <div><span class="hl-p">I [암페어]</span><br/><span class="text-base pen-pencil">전류 Current</span></div>
+              <div><span class="hl-g">R [옴 Ω]</span><br/><span class="text-base pen-pencil">저항 Resistance</span></div>
+            </div>
+          </div>
+
+          <!-- 변형 공식 -->
+          <div class="mt-6 f-kalam pen-teal text-2xl">
+            <span class="star-mark">기억!</span>
+            <span class="ml-3">I = V / R</span>,
+            <span class="ml-3">R = V / I</span>
+          </div>
+
+          <!-- 예제 -->
+          <div class="mt-6 doodle-box dashed">
+            <div class="f-pen pen-blue text-3xl">예제 1.</div>
+            <div class="f-kalam text-xl pen-ink mt-1">
+              12 V 건전지에 4 Ω 저항을 연결했다. 흐르는 전류는?
+            </div>
+            <div class="f-pen pen-red text-3xl mt-2 ml-6">
+              I = 12 / 4 = <span class="circle-mark">3 A</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 손그림 회로도 -->
+        <div class="col-span-2">
+          <div class="doodle-box" style="background: rgba(255,255,255,0.6);">
+            <div class="f-cave text-xl pen-pencil text-center mb-2">— 회로도 sketch —</div>
+            <svg viewBox="0 0 240 220" class="w-full">
+              <!-- 외곽 사각형 회로 (손그림 느낌의 살짝 비뚤어진 경로) -->
+              <path d="M30 40 Q120 36 210 42 Q214 110 208 180 Q120 184 32 178 Q26 110 30 40 Z"
+                    fill="none" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- 건전지 V -->
+              <line x1="30" y1="100" x2="30" y2="120" stroke="#1f2937" stroke-width="3"/>
+              <line x1="22" y1="106" x2="38" y2="106" stroke="#1f2937" stroke-width="4"/>
+              <line x1="20" y1="114" x2="40" y2="114" stroke="#1f2937" stroke-width="2"/>
+              <text x="6" y="112" font-family="Caveat" font-size="22" fill="#1e3a8a">V</text>
+
+              <!-- 저항 R (지그재그) -->
+              <polyline points="80,42 90,30 100,54 110,30 120,54 130,30 140,54 150,30 160,42"
+                        fill="none" stroke="#b91c1c" stroke-width="2.5" stroke-linejoin="round"/>
+              <text x="110" y="22" font-family="Caveat" font-size="22" fill="#b91c1c">R</text>
+
+              <!-- 전류 방향 화살표 -->
+              <path d="M170 65 Q190 90 175 120" class="arrow-pen"/>
+              <polygon points="172,118 178,124 175,128" fill="#1e3a8a"/>
+              <text x="184" y="100" font-family="Caveat" font-size="24" fill="#1e3a8a">I →</text>
+
+              <!-- 전구 표시 (선택) -->
+              <circle cx="120" cy="180" r="14" fill="#fde68a" stroke="#1f2937" stroke-width="2"/>
+              <path d="M110 180 L130 180 M115 170 L125 190 M125 170 L115 190" stroke="#7c5500" stroke-width="1.5"/>
+              <text x="142" y="186" font-family="Caveat" font-size="20" fill="#1f2937">L (전구)</text>
+            </svg>
+          </div>
+
+          <!-- 포스트잇 메모 -->
+          <div class="mt-5 rotate-r2 relative" style="background:#fde68a; padding:14px 16px; box-shadow: 3px 4px 6px rgba(0,0,0,0.15);">
+            <div class="absolute -top-2 left-1/2 -translate-x-1/2 tape" style="position:absolute; width:60px; height:18px;"></div>
+            <div class="f-cave text-xl pen-ink">
+              ⚡ <span class="hl-p">V·I·R 삼각형</span><br/>
+              가리면 나머지 두 개의<br/>관계가 보인다!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 하단 화살표 메모 -->
+      <div class="mt-6 f-kalam pen-red text-2xl rotate-l1">
+        ↳ <span class="hl-y">실기에서 자주 나옴! 무조건 외우기 ★★★</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 2. 키르히호프 ========================= -->
+  <section class="page-wrap hidden" data-page="2">
+    <div class="page lined margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:60px; line-height:1;">CH. 02 키르히호프</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">2026 · 01 · 19 (월) ☁</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Kirchhoff's Laws — KCL & KVL</div>
+
+      <div class="mt-8 grid grid-cols-2 gap-8">
+        <!-- KCL -->
+        <div>
+          <div class="f-pen pen-red text-5xl">① KCL — 전류 법칙</div>
+          <div class="f-kalam text-xl pen-ink mt-2">
+            "한 노드로 들어가는 전류 = 나가는 전류"<br/>
+            <span class="hl-y">ΣI(in) = ΣI(out)</span>
+          </div>
+
+          <div class="doodle-box mt-4" style="background: rgba(255,255,255,0.5);">
+            <svg viewBox="0 0 260 180" class="w-full">
+              <!-- 노드 -->
+              <circle cx="130" cy="90" r="6" fill="#1f2937"/>
+              <text x="138" y="86" font-family="Caveat" font-size="22" fill="#1f2937">노드 A</text>
+
+              <!-- I1 들어옴 -->
+              <line x1="20" y1="90" x2="124" y2="90" stroke="#1e3a8a" stroke-width="3"/>
+              <polygon points="120,84 132,90 120,96" fill="#1e3a8a"/>
+              <text x="40" y="78" font-family="Caveat" font-size="24" fill="#1e3a8a">I₁ = 5 A →</text>
+
+              <!-- I2 나감 (위로) -->
+              <line x1="130" y1="90" x2="130" y2="20" stroke="#b91c1c" stroke-width="3"/>
+              <polygon points="124,28 130,16 136,28" fill="#b91c1c"/>
+              <text x="140" y="45" font-family="Caveat" font-size="22" fill="#b91c1c">↑ I₂ = 2 A</text>
+
+              <!-- I3 나감 (아래) -->
+              <line x1="130" y1="90" x2="130" y2="160" stroke="#134e4a" stroke-width="3"/>
+              <polygon points="124,152 130,164 136,152" fill="#134e4a"/>
+              <text x="140" y="140" font-family="Caveat" font-size="22" fill="#134e4a">↓ I₃ = ?</text>
+            </svg>
+            <div class="f-pen pen-red text-2xl mt-2">
+              5 = 2 + I₃ → I₃ = <span class="circle-mark">3 A</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- KVL -->
+        <div>
+          <div class="f-pen pen-red text-5xl">② KVL — 전압 법칙</div>
+          <div class="f-kalam text-xl pen-ink mt-2">
+            "닫힌 루프의 전압 합 = 0"<br/>
+            <span class="hl-p">ΣV = 0</span>
+          </div>
+
+          <div class="doodle-box mt-4" style="background: rgba(255,255,255,0.5);">
+            <svg viewBox="0 0 260 180" class="w-full">
+              <!-- 폐회로 -->
+              <path d="M30 30 Q140 26 230 32 Q234 100 226 156 Q140 160 32 154 Q26 90 30 30 Z"
+                    fill="none" stroke="#1f2937" stroke-width="2.5"/>
+              <!-- 전원 -->
+              <line x1="40" y1="80" x2="40" y2="105" stroke="#1f2937" stroke-width="3"/>
+              <line x1="30" y1="86" x2="50" y2="86" stroke="#1f2937" stroke-width="4"/>
+              <line x1="28" y1="98" x2="52" y2="98" stroke="#1f2937" stroke-width="2"/>
+              <text x="8" y="135" font-family="Caveat" font-size="22" fill="#1e3a8a">E=12V</text>
+              <!-- R1 -->
+              <polyline points="90,30 100,18 110,42 120,18 130,42 140,18 150,30"
+                        fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+              <text x="100" y="58" font-family="Caveat" font-size="20" fill="#b91c1c">R₁=4Ω</text>
+              <!-- R2 -->
+              <polyline points="200,60 212,70 188,80 212,90 188,100 212,110 200,120"
+                        fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+              <text x="146" y="98" font-family="Caveat" font-size="20" fill="#b91c1c">R₂=2Ω</text>
+              <!-- 방향 -->
+              <path d="M170 145 Q140 152 90 148" class="arrow-pen"/>
+              <polygon points="92,142 84,148 92,154" fill="#1e3a8a"/>
+            </svg>
+            <div class="f-pen pen-red text-2xl mt-2">
+              12 − 4I − 2I = 0 → I = <span class="circle-mark">2 A</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 노트 메모 -->
+      <div class="mt-8 doodle-box dashed" style="background: rgba(187,247,208,0.4);">
+        <div class="f-cave pen-teal text-2xl">📌 TIP</div>
+        <div class="f-kalam text-xl pen-ink mt-1">
+          <span class="hl-y">KCL은 "노드"</span>에서, <span class="hl-p">KVL은 "루프"</span>에서 적용한다.<br/>
+          기호 부호 — 들어오면 (+), 나가면 (−). 전압 강하는 (−), 전원 기전력은 (+).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 3. 변압기 권수비 ========================= -->
+  <section class="page-wrap hidden" data-page="3">
+    <div class="page grid-page margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:60px; line-height:1;">CH. 03 변압기</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">2026 · 02 · 02 (월) ☀</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Transformer · 권수비와 전압·전류 관계</div>
+
+      <!-- 큰 공식 -->
+      <div class="mt-6 doodle-box" style="background: rgba(255,255,255,0.55);">
+        <div class="text-center f-pen pen-red" style="font-size:78px; line-height:1.1;">
+          a = N₁ / N₂ = V₁ / V₂ = I₂ / I₁
+        </div>
+        <div class="text-center f-cave text-2xl pen-blue mt-3">
+          <span class="hl-y">권수비 a</span> — 1차/2차 코일의 감은 횟수 비
+        </div>
+      </div>
+
+      <div class="mt-7 grid grid-cols-5 gap-6 items-start">
+        <!-- 변압기 손그림 -->
+        <div class="col-span-3">
+          <div class="doodle-box" style="background: rgba(255,255,255,0.5);">
+            <svg viewBox="0 0 460 220" class="w-full">
+              <!-- 1차측 -->
+              <line x1="20" y1="60" x2="80" y2="60" stroke="#1f2937" stroke-width="2.5"/>
+              <line x1="20" y1="160" x2="80" y2="160" stroke="#1f2937" stroke-width="2.5"/>
+              <!-- 1차 코일 (사인파) -->
+              <path d="M80 60 Q90 50 100 60 T120 60 T140 60 T160 60 T180 60"
+                    fill="none" stroke="#1e3a8a" stroke-width="3"/>
+              <path d="M80 80 Q90 70 100 80 T120 80 T140 80 T160 80 T180 80"
+                    fill="none" stroke="#1e3a8a" stroke-width="3"/>
+              <path d="M80 100 Q90 90 100 100 T120 100 T140 100 T160 100 T180 100"
+                    fill="none" stroke="#1e3a8a" stroke-width="3"/>
+              <path d="M80 120 Q90 110 100 120 T120 120 T140 120 T160 120 T180 120"
+                    fill="none" stroke="#1e3a8a" stroke-width="3"/>
+              <path d="M80 140 Q90 130 100 140 T120 140 T140 140 T160 140 T180 140"
+                    fill="none" stroke="#1e3a8a" stroke-width="3"/>
+
+              <!-- 철심 -->
+              <rect x="195" y="40" width="60" height="140" fill="none" stroke="#374151" stroke-width="2"/>
+              <line x1="205" y1="40" x2="205" y2="180" stroke="#9ca3af" stroke-width="1"/>
+              <line x1="215" y1="40" x2="215" y2="180" stroke="#9ca3af" stroke-width="1"/>
+              <line x1="225" y1="40" x2="225" y2="180" stroke="#9ca3af" stroke-width="1"/>
+              <line x1="235" y1="40" x2="235" y2="180" stroke="#9ca3af" stroke-width="1"/>
+              <line x1="245" y1="40" x2="245" y2="180" stroke="#9ca3af" stroke-width="1"/>
+
+              <!-- 2차 코일 -->
+              <path d="M270 70 Q280 60 290 70 T310 70 T330 70 T350 70 T370 70"
+                    fill="none" stroke="#b91c1c" stroke-width="3"/>
+              <path d="M270 100 Q280 90 290 100 T310 100 T330 100 T350 100 T370 100"
+                    fill="none" stroke="#b91c1c" stroke-width="3"/>
+              <path d="M270 130 Q280 120 290 130 T310 130 T330 130 T350 130 T370 130"
+                    fill="none" stroke="#b91c1c" stroke-width="3"/>
+
+              <!-- 2차측 -->
+              <line x1="370" y1="70" x2="430" y2="70" stroke="#1f2937" stroke-width="2.5"/>
+              <line x1="370" y1="130" x2="430" y2="130" stroke="#1f2937" stroke-width="2.5"/>
+
+              <!-- 라벨 -->
+              <text x="100" y="200" font-family="Caveat" font-size="26" fill="#1e3a8a">N₁ (1차)</text>
+              <text x="290" y="200" font-family="Caveat" font-size="26" fill="#b91c1c">N₂ (2차)</text>
+              <text x="20" y="40" font-family="Caveat" font-size="22" fill="#1f2937">V₁, I₁</text>
+              <text x="380" y="50" font-family="Caveat" font-size="22" fill="#1f2937">V₂, I₂</text>
+
+              <!-- 자속 화살표 -->
+              <path d="M225 105 Q220 115 225 125" class="arrow-curve"/>
+              <polygon points="220,123 226,128 228,121" fill="#b91c1c"/>
+              <text x="178" y="118" font-family="Caveat" font-size="20" fill="#b91c1c">Φ</text>
+            </svg>
+          </div>
+
+          <!-- 예제 -->
+          <div class="doodle-box dashed mt-5">
+            <div class="f-pen pen-blue text-3xl">예제.</div>
+            <div class="f-kalam text-xl pen-ink mt-1">
+              1차 220 V, 2차 22 V 변압기. 권수비는?<br/>
+              2차 전류가 10 A 일 때 1차 전류는?
+            </div>
+            <div class="f-pen pen-red text-2xl mt-2 ml-4">
+              a = 220/22 = <span class="circle-mark">10</span><br/>
+              I₁ = I₂/a = 10/10 = <span class="circle-mark">1 A</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 사이드 메모 -->
+        <div class="col-span-2 space-y-5">
+          <div class="rotate-r1" style="background:#fbcfe8; padding: 14px 18px; box-shadow: 3px 3px 6px rgba(0,0,0,0.15);">
+            <div class="f-cave text-2xl pen-ink">💡 외우는 팁</div>
+            <div class="f-kalam text-lg pen-ink mt-1">
+              "권수 많은 쪽이<br/>전압은 <span class="hl-y">높고</span>,<br/>전류는 <span class="hl-y">작다</span>"
+            </div>
+          </div>
+
+          <div class="rotate-l1" style="background:#bbf7d0; padding: 14px 18px; box-shadow: 3px 3px 6px rgba(0,0,0,0.15);">
+            <div class="f-cave text-2xl pen-ink">📐 종류</div>
+            <div class="f-kalam text-base pen-ink mt-1">
+              · 강압 (V₁ &gt; V₂) — 송전→배전<br/>
+              · 승압 (V₁ &lt; V₂) — 발전→송전<br/>
+              · 1:1 — 절연 변압기
+            </div>
+          </div>
+
+          <div class="f-pen pen-red text-3xl rotate-r2">
+            ★ 시험 단골! ★
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 4. RLC 공진 ========================= -->
+  <section class="page-wrap hidden" data-page="4">
+    <div class="page grid-page margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:60px; line-height:1;">CH. 04 RLC 공진</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">2026 · 02 · 16 (월) 🌧</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Resonance — 주파수가 딱 맞을 때</div>
+
+      <!-- 공식 -->
+      <div class="mt-6 doodle-box" style="background: rgba(255,255,255,0.55);">
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <div class="f-cave text-2xl pen-blue">공진 조건</div>
+            <div class="f-pen pen-red mt-1" style="font-size:48px;">X<sub>L</sub> = X<sub>C</sub></div>
+            <div class="f-kalam pen-pencil text-lg">→ ωL = 1/(ωC)</div>
+          </div>
+          <div>
+            <div class="f-cave text-2xl pen-blue">공진 주파수</div>
+            <div class="f-pen pen-red mt-1" style="font-size:48px;">f₀ = 1 / (2π√LC)</div>
+            <div class="f-kalam pen-pencil text-lg">[Hz] · 임피던스 최소!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 그래프 손그림 -->
+      <div class="mt-6 doodle-box" style="background: rgba(255,255,255,0.55);">
+        <div class="f-cave text-2xl pen-blue text-center">전류 I vs 주파수 f — 공진 곡선 sketch</div>
+        <svg viewBox="0 0 520 260" class="w-full mt-2">
+          <!-- 모눈 (옅게) -->
+          <g opacity="0.15">
+            <path d="M40 40 H500 M40 80 H500 M40 120 H500 M40 160 H500 M40 200 H500" stroke="#1f2937" stroke-width="1"/>
+            <path d="M100 30 V230 M180 30 V230 M260 30 V230 M340 30 V230 M420 30 V230" stroke="#1f2937" stroke-width="1"/>
+          </g>
+          <!-- 축 -->
+          <line x1="40" y1="220" x2="500" y2="220" stroke="#1f2937" stroke-width="2.5"/>
+          <line x1="40" y1="220" x2="40" y2="30" stroke="#1f2937" stroke-width="2.5"/>
+          <polygon points="500,220 490,214 490,226" fill="#1f2937"/>
+          <polygon points="40,30 34,40 46,40" fill="#1f2937"/>
+          <text x="498" y="244" font-family="Caveat" font-size="22" fill="#1f2937">f [Hz]</text>
+          <text x="10" y="30" font-family="Caveat" font-size="22" fill="#1f2937">I [A]</text>
+
+          <!-- 공진 곡선 (손그림 느낌) -->
+          <path d="M50 215 Q140 210 200 195 Q240 175 260 65 Q280 175 320 195 Q400 215 490 218"
+                fill="none" stroke="#b91c1c" stroke-width="3.5" stroke-linecap="round"/>
+
+          <!-- 공진점 -->
+          <circle cx="260" cy="65" r="6" fill="#b91c1c"/>
+          <line x1="260" y1="65" x2="260" y2="220" stroke="#b91c1c" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <text x="240" y="55" font-family="Nanum Pen Script" font-size="28" fill="#b91c1c">I_max</text>
+          <text x="252" y="240" font-family="Caveat" font-size="22" fill="#b91c1c">f₀</text>
+
+          <!-- 메모 화살표 -->
+          <path d="M380 100 Q330 70 280 70" class="arrow-pen"/>
+          <polygon points="284,64 274,70 284,76" fill="#1e3a8a"/>
+          <text x="385" y="95" font-family="Caveat" font-size="22" fill="#1e3a8a">← 공진!</text>
+          <text x="385" y="118" font-family="Caveat" font-size="20" fill="#1e3a8a">Z = R (최소)</text>
+        </svg>
+      </div>
+
+      <!-- 직렬/병렬 비교 -->
+      <div class="mt-6 grid grid-cols-2 gap-5">
+        <div class="rotate-l1" style="background:#fde68a; padding: 16px 20px; box-shadow: 3px 4px 6px rgba(0,0,0,0.15);">
+          <div class="f-pen pen-red text-3xl">직렬 공진</div>
+          <div class="f-kalam text-lg pen-ink mt-1">
+            · 임피던스 <span class="hl-p">최소</span><br/>
+            · 전류 <span class="hl-p">최대</span><br/>
+            · "전류 공진"
+          </div>
+        </div>
+        <div class="rotate-r1" style="background:#bfdbfe; padding: 16px 20px; box-shadow: 3px 4px 6px rgba(0,0,0,0.15);">
+          <div class="f-pen pen-red text-3xl">병렬 공진</div>
+          <div class="f-kalam text-lg pen-ink mt-1">
+            · 임피던스 <span class="hl-g">최대</span><br/>
+            · 전류 <span class="hl-g">최소</span><br/>
+            · "전압 공진"
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 5. 3상 Y/Δ ========================= -->
+  <section class="page-wrap hidden" data-page="5">
+    <div class="page lined margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:60px; line-height:1;">CH. 05 Y · Δ 결선</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">2026 · 03 · 02 (월) ☀</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Three-phase Star &amp; Delta</div>
+
+      <div class="mt-8 grid grid-cols-2 gap-8">
+        <!-- Y결선 -->
+        <div class="doodle-box" style="background: rgba(255,255,255,0.5);">
+          <div class="text-center f-pen pen-red" style="font-size:54px; line-height:1;">Y 결선 (Star)</div>
+          <svg viewBox="0 0 240 220" class="w-full mt-2">
+            <!-- 중성점 -->
+            <circle cx="120" cy="120" r="5" fill="#1f2937"/>
+            <text x="128" y="138" font-family="Caveat" font-size="18" fill="#1f2937">N</text>
+
+            <!-- 코일 3개 (중성점에서 R/S/T로) -->
+            <line x1="120" y1="120" x2="120" y2="40" stroke="#1e3a8a" stroke-width="3"/>
+            <line x1="120" y1="120" x2="50" y2="180" stroke="#b91c1c" stroke-width="3"/>
+            <line x1="120" y1="120" x2="190" y2="180" stroke="#134e4a" stroke-width="3"/>
+
+            <!-- 코일 사인 표시 -->
+            <path d="M115 70 Q125 65 115 60 Q105 55 115 50" fill="none" stroke="#1e3a8a" stroke-width="2"/>
+            <path d="M80 158 Q88 168 76 168 Q72 174 84 178" fill="none" stroke="#b91c1c" stroke-width="2"/>
+            <path d="M160 158 Q152 168 164 168 Q168 174 156 178" fill="none" stroke="#134e4a" stroke-width="2"/>
+
+            <!-- 끝점 R S T -->
+            <circle cx="120" cy="40" r="6" fill="#1e3a8a"/>
+            <circle cx="50" cy="180" r="6" fill="#b91c1c"/>
+            <circle cx="190" cy="180" r="6" fill="#134e4a"/>
+            <text x="128" y="38" font-family="Nanum Pen Script" font-size="26" fill="#1e3a8a">R</text>
+            <text x="22" y="195" font-family="Nanum Pen Script" font-size="26" fill="#b91c1c">S</text>
+            <text x="198" y="195" font-family="Nanum Pen Script" font-size="26" fill="#134e4a">T</text>
+          </svg>
+          <div class="f-kalam text-lg pen-ink mt-2">
+            <span class="hl-y">V_line = √3 · V_phase</span><br/>
+            <span class="hl-p">I_line = I_phase</span><br/>
+            <span class="pen-pencil text-base">→ 중성선 N 있음. 380/220V 공급.</span>
+          </div>
+        </div>
+
+        <!-- Δ결선 -->
+        <div class="doodle-box" style="background: rgba(255,255,255,0.5);">
+          <div class="text-center f-pen pen-red" style="font-size:54px; line-height:1;">Δ 결선 (Delta)</div>
+          <svg viewBox="0 0 240 220" class="w-full mt-2">
+            <!-- 삼각형 -->
+            <polygon points="120,40 50,180 190,180" fill="none" stroke="#1f2937" stroke-width="2.5"/>
+            <!-- 코일 (각 변에 사인 마크) -->
+            <path d="M82 110 Q92 100 82 90" fill="none" stroke="#1e3a8a" stroke-width="2"/>
+            <path d="M158 110 Q150 100 160 88" fill="none" stroke="#b91c1c" stroke-width="2"/>
+            <path d="M120 178 Q124 188 130 178" fill="none" stroke="#134e4a" stroke-width="2"/>
+
+            <!-- 단자 -->
+            <circle cx="120" cy="40" r="6" fill="#1e3a8a"/>
+            <circle cx="50" cy="180" r="6" fill="#b91c1c"/>
+            <circle cx="190" cy="180" r="6" fill="#134e4a"/>
+            <text x="128" y="38" font-family="Nanum Pen Script" font-size="26" fill="#1e3a8a">R</text>
+            <text x="22" y="195" font-family="Nanum Pen Script" font-size="26" fill="#b91c1c">S</text>
+            <text x="198" y="195" font-family="Nanum Pen Script" font-size="26" fill="#134e4a">T</text>
+          </svg>
+          <div class="f-kalam text-lg pen-ink mt-2">
+            <span class="hl-y">V_line = V_phase</span><br/>
+            <span class="hl-p">I_line = √3 · I_phase</span><br/>
+            <span class="pen-pencil text-base">→ 중성선 없음. 동력용 380V.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 손그림 메모 -->
+      <div class="mt-7 f-kalam pen-red text-2xl rotate-l1">
+        ↳ <span class="hl-y">총전력 P = √3 · V_line · I_line · cosθ</span> ← Y, Δ 둘 다 동일! ★
+      </div>
+
+      <!-- 포스트잇 -->
+      <div class="mt-6 rotate-r2 inline-block" style="background:#fbcfe8; padding: 12px 18px; box-shadow: 3px 3px 6px rgba(0,0,0,0.15);">
+        <div class="f-cave pen-ink text-xl">
+          🔁 Y→Δ 시동법: 큰 모터 기동전류 줄이기.<br/>
+          시동은 Y, 운전은 Δ 로!
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 6. 안전 수칙 ========================= -->
+  <section class="page-wrap hidden" data-page="6">
+    <div class="page lined margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:60px; line-height:1;">CH. 06 안전 수칙</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">2026 · 03 · 16 (월) ☀</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Safety Checklist — 실기 시작 전 반드시!</div>
+
+      <!-- 체크리스트 -->
+      <ul class="mt-7 space-y-3 f-kalam text-2xl pen-ink">
+        <li><span class="check done"></span><span class="hl-y">전원 차단 확인</span> — 분전반 NFB OFF 후 검전기로 무전압 체크</li>
+        <li><span class="check done"></span><span class="hl-p">절연 장갑 / 안전화 착용</span> — 1000 V 절연 등급 이상</li>
+        <li><span class="check done"></span>접지선 연결 — 녹/황색 표시, 단자 조임 토크 확인</li>
+        <li><span class="check"></span>공구 절연 상태 점검 — 손잡이 파손 없음</li>
+        <li><span class="check"></span>주변 물기 제거, 작업등 충분히 밝게</li>
+        <li><span class="check"></span><span class="hl-g">두 사람 이상 작업</span> — 감시자 배치</li>
+        <li><span class="check done"></span>측정 전 멀티미터 범위 확인 (V/A 혼동 주의!)</li>
+        <li><span class="check"></span>작업 종료 후 — 공구 정리 → 결선 재확인 → 송전</li>
+      </ul>
+
+      <!-- 경고 박스 -->
+      <div class="mt-8 grid grid-cols-2 gap-5">
+        <div class="doodle-box" style="background: rgba(254, 226, 226, 0.7); border-color:#b91c1c;">
+          <div class="f-pen pen-red text-3xl">⚠ 위험!</div>
+          <div class="f-kalam text-lg pen-ink mt-1">
+            · 통전 상태에서 결선 절대 금지<br/>
+            · 1 mA 이상 — 감전 자각<br/>
+            · 50 mA 이상 — 심실세동 위험
+          </div>
+        </div>
+        <div class="doodle-box dashed" style="background: rgba(187, 247, 208, 0.5);">
+          <div class="f-pen pen-teal text-3xl">✅ 습관화</div>
+          <div class="f-kalam text-lg pen-ink mt-1">
+            · "차단 — 확인 — 작업 — 복귀"<br/>
+            · 매번 같은 순서로<br/>
+            · <span class="hl-y">의심나면 한 번 더!</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 손그림 헬멧 -->
+      <div class="absolute right-12 bottom-12 rotate-r2">
+        <svg width="100" height="90" viewBox="0 0 100 90">
+          <path d="M15 70 Q15 30 50 25 Q85 30 85 70 Z"
+                fill="#fde68a" stroke="#1f2937" stroke-width="2.5"/>
+          <rect x="10" y="68" width="80" height="8" rx="2" fill="#fbbf24" stroke="#1f2937" stroke-width="2.5"/>
+          <path d="M50 25 L50 20" stroke="#1f2937" stroke-width="2.5"/>
+          <line x1="35" y1="40" x2="65" y2="40" stroke="#1f2937" stroke-width="1.5"/>
+        </svg>
+        <div class="text-center f-cave pen-pencil text-lg">안전 제일</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 7. 합격 일기 ========================= -->
+  <section class="page-wrap hidden" data-page="7">
+    <div class="page lined margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <h2 class="f-pen pen-blue" style="font-size:54px; line-height:1;">합격 일기</h2>
+        <div class="f-cave pen-pencil text-xl rotate-r1">— after passing —</div>
+      </div>
+      <div class="f-cave pen-pencil text-lg mt-1">Pass Diary · 짧지만 진심으로</div>
+
+      <!-- 다이어리 엔트리 -->
+      <div class="mt-8 space-y-7 f-kalam text-xl pen-ink">
+        <div>
+          <div class="f-cave text-2xl pen-blue">2026 · 04 · 03 (금) ☀</div>
+          <p class="mt-1">
+            오늘 필기 합격 발표. <span class="hl-y">60점, 턱걸이지만 합격은 합격!</span>
+            세 달 야금야금 푼 게 통했다. 솔직히 RLC 부분에서 식 헷갈렸는데 운 좋게 비슷한 문제가 안 나옴 ㅎ
+          </p>
+        </div>
+        <div>
+          <div class="f-cave text-2xl pen-blue">2026 · 05 · 18 (일) ☁</div>
+          <p class="mt-1">
+            실기 학원 첫날. 결선도 그리는 거 손이 안 따라간다.
+            전선 까는 것도 어색 — <span class="hl-p">"피복 12mm 정확히"</span> 라는데 자꾸 동선 잘림.
+            집에 와서 폐자재로 30번 연습. 손이 기억하게 만들기.
+          </p>
+        </div>
+        <div>
+          <div class="f-cave text-2xl pen-blue">2026 · 07 · 12 (일) 🌤</div>
+          <p class="mt-1">
+            실기 시험 2주 전. 모의로 회로 9번 결선 30분 컷.
+            처음엔 1시간 걸렸는데 — 결국 손이 외운다는 게 이런 거구나.
+            <span class="hl-g">자신감 올라옴 ★</span>
+          </p>
+        </div>
+        <div>
+          <div class="f-cave text-2xl pen-blue">2026 · 07 · 26 (토) ☀</div>
+          <p class="mt-1">
+            <span class="circle-mark f-pen pen-red text-2xl">D-DAY</span>
+            시험장. 손 떨림 5분, 그 다음은 그냥 평소처럼.
+            마지막 검사할 때 N선 색이 맞나 두 번 봤고, 토크 한 번씩 더 줬다.
+            <span class="hl-y">완성. 종료 12분 전 제출.</span>
+          </p>
+        </div>
+        <div>
+          <div class="f-cave text-2xl pen-red">2026 · 08 · 14 (목) 🎉</div>
+          <p class="mt-1">
+            <span class="hl-p">합격!!!</span> 부모님께 전화. 엄마 우셨다.
+            이 노트, 다 쓴 첫 자격증 노트로 책장에 꽂아둔다. 다음은 산업기사 — 천천히 가자.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 8. D-DAY 다짐 ========================= -->
+  <section class="page-wrap hidden" data-page="8">
+    <div class="page grid-page margin-line grain">
+      <div class="holes">
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+        <span class="hole"></span><span class="hole"></span><span class="hole"></span>
+      </div>
+
+      <div class="text-center">
+        <div class="f-cave text-3xl pen-pencil">— Last Page —</div>
+        <h2 class="f-pen pen-blue mt-2" style="font-size:64px; line-height:1;">시험까지 D-DAY</h2>
+      </div>
+
+      <!-- D-DAY 카운트 -->
+      <div class="dday-box mt-10 max-w-2xl mx-auto">
+        <div class="f-cave text-3xl pen-ink">전기기능사 실기 시험</div>
+        <div class="f-pen pen-red mt-2" style="font-size:96px; line-height:1;">D − 72</div>
+        <div class="f-kalam text-xl pen-ink mt-3">2026. 07. 26 (토) 09:00 · (가칭)자격검정공단</div>
+        <div class="mt-4 grid grid-cols-3 gap-3 f-cave text-lg">
+          <div class="rounded p-2" style="background: rgba(253, 230, 138, 0.7);">남은 주 <span class="f-pen text-2xl pen-red">10주</span></div>
+          <div class="rounded p-2" style="background: rgba(252, 207, 232, 0.7);">목표 모의 <span class="f-pen text-2xl pen-red">20회</span></div>
+          <div class="rounded p-2" style="background: rgba(187, 247, 208, 0.7);">하루 공부 <span class="f-pen text-2xl pen-red">2시간</span></div>
+        </div>
+      </div>
+
+      <!-- 다짐 -->
+      <div class="mt-12 max-w-2xl mx-auto">
+        <div class="f-cave text-3xl pen-blue text-center">— 나와의 약속 —</div>
+        <ul class="mt-5 space-y-3 f-kalam text-xl pen-ink">
+          <li><span class="check"></span><span class="hl-y">매일 1페이지</span> 노트 정리하기</li>
+          <li><span class="check"></span><span class="hl-p">주 3회</span> 실기 결선 손에 익히기</li>
+          <li><span class="check"></span><span class="hl-g">주 1회</span> 모의 60분 풀고 오답 노트</li>
+          <li><span class="check"></span>핸드폰 SNS — 공부 시간엔 멀리</li>
+          <li><span class="check"></span>잘 안 풀려도 — <span class="circle-mark">하루 쉬고 다시</span></li>
+        </ul>
+
+        <!-- 사인 -->
+        <div class="mt-12 flex items-end justify-between">
+          <div class="f-cave text-2xl pen-pencil">
+            서명 ─ 2026 · 05 · 15<br/>
+            <span class="f-pen pen-blue text-4xl">김 ◯ ◯ ✎</span>
+          </div>
+          <!-- 합격 도장 -->
+          <div class="rotate-r2 inline-block" style="border: 4px double #b91c1c; border-radius: 50%; padding: 22px 26px; color:#b91c1c; opacity: 0.85;">
+            <div class="f-pen text-center" style="font-size:46px; line-height:1;">合格</div>
+            <div class="f-cave text-sm text-center">PASS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 마지막 메시지 -->
+      <div class="text-center mt-12 f-pen pen-red" style="font-size:48px; line-height:1.1;">
+        "끝까지 간다. <br/><span class="hl-y">반드시 합격.</span>"
+      </div>
+
+      <!-- 작은 스티커들 -->
+      <svg class="sticker" style="bottom: 60px; left: 50px; transform: rotate(-12deg);" width="50" height="50" viewBox="0 0 50 50">
+        <polygon points="25,4 30,18 45,18 33,28 38,44 25,34 12,44 17,28 5,18 20,18"
+                 fill="#fcd34d" stroke="#7c5500" stroke-width="2"/>
+      </svg>
+      <svg class="sticker" style="top: 100px; right: 60px; transform: rotate(15deg);" width="55" height="50" viewBox="0 0 55 50">
+        <path d="M27 45 C8 32 4 16 14 9 C21 4 26 9 27 14 C28 9 33 4 40 9 C50 16 46 32 27 45 Z"
+              fill="#f472b6" stroke="#9d174d" stroke-width="2.5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 하단 키보드 힌트 -->
+  <div class="text-center mt-6 f-cave" style="color:#d7c898;">
+    <span class="kbd">←</span> <span class="kbd">→</span> 키보드로 페이지 넘기기
+  </div>
+</div>
+
+<script>
+(function(){
+  const pages = Array.from(document.querySelectorAll('.page-wrap'));
+  const total = pages.length;
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageLabel = document.getElementById('pageLabel');
+  const dotsWrap = document.getElementById('dots');
+  let current = 0;
+
+  // 도트 생성
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('span');
+    d.className = 'dot';
+    d.addEventListener('click', () => show(i));
+    dotsWrap.appendChild(d);
+  }
+  const dots = Array.from(dotsWrap.children);
+
+  function show(idx) {
+    if (idx < 0 || idx >= total) return;
+    pages[current].classList.add('hidden');
+    pages[idx].classList.remove('hidden');
+    // 애니메이션 재실행 트리거
+    const el = pages[idx].querySelector('.page, .cover');
+    if (el) { el.style.animation = 'none'; el.offsetHeight; el.style.animation = ''; }
+    dots[current].classList.remove('active');
+    dots[idx].classList.add('active');
+    current = idx;
+    pageLabel.textContent = (idx + 1) + ' / ' + total;
+    prevBtn.disabled = (idx === 0);
+    nextBtn.disabled = (idx === total - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  prevBtn.addEventListener('click', () => show(current - 1));
+  nextBtn.addEventListener('click', () => show(current + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft')  show(current - 1);
+    if (e.key === 'ArrowRight') show(current + 1);
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>

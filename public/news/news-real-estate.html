@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스파크쌤 부동산 · 전기기능사 학습 매물 정보</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green-50:#f0fdf4;
+    --green-100:#dcfce7;
+    --green-200:#bbf7d0;
+    --green-300:#86efac;
+    --green-400:#4ade80;
+    --green-500:#22c55e;
+    --green-600:#16a34a;
+    --green-700:#15803d;
+    --green-800:#166534;
+    --green-900:#14532d;
+    --ink:#111827;
+    --ink-mute:#6b7280;
+    --line:#e5e7eb;
+    --line-strong:#d1d5db;
+    --bg:#f9fafb;
+    --paper:#ffffff;
+    --accent:#ef4444;
+    --warn:#f59e0b;
+  }
+  html,body{
+    font-family:'Noto Sans KR','Inter','Apple SD Gothic Neo',sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    margin:0;
+    min-height:100vh;
+  }
+  .num{font-family:'Inter','Noto Sans KR',sans-serif;font-feature-settings:"tnum" 1;}
+
+  /* Naver green top bar */
+  .nav-top{
+    background:#fff;
+    border-bottom:1px solid var(--line);
+  }
+  .brand-logo{
+    background:linear-gradient(135deg,#22c55e,#16a34a);
+    color:#fff;
+    width:32px;height:32px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:8px;
+    font-weight:900;
+    box-shadow:0 4px 10px -2px rgba(34,197,94,.5);
+  }
+  .nav-chip{
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:13px;
+    color:#374151;
+    border:1px solid transparent;
+    transition:.15s;
+    cursor:pointer;
+  }
+  .nav-chip:hover{background:#f3f4f6;}
+  .nav-chip.active{background:var(--green-50);color:var(--green-700);border-color:var(--green-200);font-weight:700;}
+
+  /* Filter bar */
+  .filter-bar{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  .filter-btn{
+    padding:9px 14px;
+    border:1px solid var(--line-strong);
+    border-radius:10px;
+    background:#fff;
+    font-size:13px;
+    color:#374151;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:.15s;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .filter-btn:hover{border-color:var(--green-500);color:var(--green-700);}
+  .filter-btn.on{background:var(--green-50);border-color:var(--green-500);color:var(--green-700);font-weight:700;}
+
+  /* Map */
+  .map-wrap{
+    position:relative;
+    background:linear-gradient(180deg,#ecfdf5 0%, #f0fdf4 100%);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  .map-pin{
+    position:absolute;
+    transform:translate(-50%,-100%);
+    cursor:pointer;
+    z-index:5;
+    transition:.18s ease;
+  }
+  .map-pin:hover{transform:translate(-50%,-105%) scale(1.08);z-index:20;}
+  .map-pin.hot .pin-body{background:#ef4444;}
+  .pin-body{
+    background:#22c55e;
+    color:#fff;
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.3);
+    white-space:nowrap;
+    border:2px solid #fff;
+  }
+  .pin-tail{
+    width:0;height:0;
+    margin:0 auto;
+    border-left:6px solid transparent;
+    border-right:6px solid transparent;
+    border-top:7px solid #22c55e;
+    margin-top:-1px;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));
+  }
+  .map-pin.hot .pin-tail{border-top-color:#ef4444;}
+  .district-label{
+    position:absolute;
+    transform:translate(-50%,-50%);
+    font-size:12px;
+    color:#15803d;
+    font-weight:700;
+    background:rgba(255,255,255,.7);
+    padding:2px 8px;
+    border-radius:6px;
+    pointer-events:none;
+  }
+
+  /* Property card */
+  .listing{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    transition:.18s ease;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+  }
+  .listing:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 28px -12px rgba(0,0,0,.18);
+    border-color:var(--green-300);
+  }
+  .listing.highlight{
+    border-color:var(--green-500);
+    box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 14px 28px -12px rgba(0,0,0,.18);
+  }
+  .listing-thumb{
+    aspect-ratio:4/3;
+    background:linear-gradient(180deg,#e0f2fe 0%, #f0fdf4 100%);
+    position:relative;
+    overflow:hidden;
+  }
+  .badge{
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:6px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .badge-deal{background:#fee2e2;color:#b91c1c;}
+  .badge-new{background:#dbeafe;color:#1d4ed8;}
+  .badge-best{background:#fef3c7;color:#b45309;}
+  .badge-vr{background:var(--green-50);color:var(--green-700);border:1px solid var(--green-200);}
+
+  .tag{
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:6px;
+    font-size:11px;
+    color:#15803d;
+    background:#f0fdf4;
+    border:1px solid #bbf7d0;
+    margin-right:4px;
+    margin-bottom:4px;
+  }
+
+  .fav{
+    position:absolute;
+    top:10px;right:10px;
+    width:34px;height:34px;
+    background:rgba(255,255,255,.92);
+    border:1px solid var(--line);
+    border-radius:999px;
+    display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    transition:.15s;
+    z-index:3;
+  }
+  .fav:hover{transform:scale(1.08);}
+  .fav.on svg{fill:#ef4444;stroke:#ef4444;}
+  .fav svg{stroke:#6b7280;fill:transparent;}
+
+  /* Modal */
+  .modal-back{
+    position:fixed;inset:0;
+    background:rgba(15,23,42,.55);
+    backdrop-filter:blur(2px);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:80;
+    padding:20px;
+  }
+  .modal-back.on{display:flex;}
+  .modal-card{
+    background:#fff;
+    border-radius:18px;
+    width:100%;
+    max-width:960px;
+    max-height:90vh;
+    overflow-y:auto;
+    box-shadow:0 30px 60px -10px rgba(0,0,0,.4);
+  }
+
+  /* Sparkline */
+  .spark-grid line{stroke:#e5e7eb;}
+
+  /* Sidebar widgets */
+  .widget{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+  }
+
+  .stat-bar-bg{background:#f0fdf4;border-radius:6px;height:8px;overflow:hidden;}
+  .stat-bar-fg{background:linear-gradient(90deg,#22c55e,#16a34a);height:100%;border-radius:6px;}
+
+  /* utility */
+  .divider-v{width:1px;height:18px;background:var(--line);}
+  .hover-row:hover{background:#f9fafb;}
+
+  /* scrollbar tidy */
+  .modal-card::-webkit-scrollbar{width:10px;}
+  .modal-card::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:10px;}
+
+  @media (max-width: 900px){
+    .map-wrap{height:340px;}
+    .district-label{font-size:11px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP NAV ============ -->
+<header class="nav-top sticky top-0 z-40">
+  <div class="max-w-[1280px] mx-auto px-5 h-14 flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <span class="brand-logo">전</span>
+      <div class="leading-tight">
+        <div class="text-[15px] font-black tracking-tight">스파크쌤 부동산</div>
+        <div class="text-[11px] text-gray-500 -mt-0.5">전기기능사 학습 매물 정보</div>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-1 ml-4">
+      <div class="nav-chip active">매물</div>
+      <div class="nav-chip">분양</div>
+      <div class="nav-chip">시세</div>
+      <div class="nav-chip">학군(과목군)</div>
+      <div class="nav-chip">합격률 통계</div>
+      <div class="nav-chip">즐겨찾기</div>
+    </nav>
+    <div class="flex-1"></div>
+    <div class="hidden md:flex items-center gap-3 text-[13px] text-gray-600">
+      <span>로그인</span>
+      <div class="divider-v"></div>
+      <span>매물 등록</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ MAIN ============ -->
+<main class="max-w-[1280px] mx-auto px-5 py-6">
+
+  <!-- Search / filter bar -->
+  <section class="filter-bar p-4 mb-5">
+    <div class="flex items-center gap-2 flex-wrap">
+      <div class="filter-btn on">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+        지역(과목): 전기이론구
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="filter-btn">
+        가격대(난이도): 전 구간
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="filter-btn">
+        평수(학습량): 30~60h
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="filter-btn">
+        신축연도(개정): 2024년 이후
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="filter-btn">
+        매물 종류: 전체
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="flex-1"></div>
+      <div class="relative">
+        <input id="searchInput" placeholder="매물 검색 (예: 옴, 변압기, 결선)" class="pl-9 pr-3 h-10 w-64 border border-gray-300 rounded-lg text-[13px] focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"/>
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+    </div>
+    <div class="mt-3 flex items-center gap-2 flex-wrap text-[12px]">
+      <span class="text-gray-500">자주 찾는 조건</span>
+      <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-700 cursor-pointer hover:bg-gray-200">#급매</span>
+      <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-700 cursor-pointer hover:bg-gray-200">#초보환영</span>
+      <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-700 cursor-pointer hover:bg-gray-200">#실기포함</span>
+      <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-700 cursor-pointer hover:bg-gray-200">#리모델링(개정)</span>
+      <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-700 cursor-pointer hover:bg-gray-200">#역세권(빈출)</span>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+    <!-- LEFT: map + listings -->
+    <div>
+
+      <!-- ============ MAP ============ -->
+      <section class="map-wrap mb-6" style="height:420px;">
+        <!-- SVG terrain -->
+        <svg viewBox="0 0 1000 420" preserveAspectRatio="none" class="absolute inset-0 w-full h-full">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M40 0H0V40" fill="none" stroke="#d1fae5" stroke-width="1"/>
+            </pattern>
+            <linearGradient id="river" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#bae6fd"/>
+              <stop offset="100%" stop-color="#7dd3fc"/>
+            </linearGradient>
+          </defs>
+          <rect width="1000" height="420" fill="url(#grid)"/>
+          <!-- Roads -->
+          <path d="M0 210 H1000" stroke="#fff" stroke-width="14"/>
+          <path d="M0 210 H1000" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="10 8"/>
+          <path d="M340 0 V420" stroke="#fff" stroke-width="12"/>
+          <path d="M680 0 V420" stroke="#fff" stroke-width="12"/>
+          <path d="M340 0 V420" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="8 8"/>
+          <path d="M680 0 V420" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="8 8"/>
+
+          <!-- River (전류로) -->
+          <path d="M0 340 Q 200 320 380 350 T 720 330 T 1000 360 L 1000 420 L 0 420 Z" fill="url(#river)" opacity=".7"/>
+          <text x="500" y="395" text-anchor="middle" fill="#0369a1" font-size="11" font-weight="700" opacity=".7">전류로(電流路)</text>
+
+          <!-- District blobs -->
+          <ellipse cx="170" cy="120" rx="150" ry="80" fill="#bbf7d0" opacity=".55"/>
+          <ellipse cx="510" cy="120" rx="160" ry="80" fill="#bfdbfe" opacity=".55"/>
+          <ellipse cx="840" cy="120" rx="140" ry="80" fill="#fde68a" opacity=".55"/>
+
+          <!-- Parks -->
+          <circle cx="220" cy="270" r="22" fill="#86efac" opacity=".6"/>
+          <circle cx="560" cy="280" r="18" fill="#86efac" opacity=".6"/>
+          <circle cx="800" cy="265" r="20" fill="#86efac" opacity=".6"/>
+
+          <!-- Subway stations -->
+          <g>
+            <circle cx="340" cy="210" r="8" fill="#fff" stroke="#22c55e" stroke-width="3"/>
+            <circle cx="680" cy="210" r="8" fill="#fff" stroke="#3b82f6" stroke-width="3"/>
+            <text x="340" y="195" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">옴역</text>
+            <text x="680" y="195" text-anchor="middle" font-size="10" fill="#1d4ed8" font-weight="700">전압역</text>
+          </g>
+        </svg>
+
+        <!-- District labels -->
+        <div class="district-label" style="left:17%;top:28%;">전기이론구</div>
+        <div class="district-label" style="left:51%;top:28%;">전기기기구</div>
+        <div class="district-label" style="left:84%;top:28%;">전기설비구</div>
+
+        <!-- Pins -->
+        <div class="map-pin hot" data-id="1" style="left:14%;top:42%;">
+          <div class="pin-body">옴아파트 1.2억</div>
+          <div class="pin-tail"></div>
+        </div>
+        <div class="map-pin" data-id="2" style="left:24%;top:58%;">
+          <div class="pin-body">키르히호프빌라 8,500</div>
+          <div class="pin-tail"></div>
+        </div>
+        <div class="map-pin" data-id="3" style="left:46%;top:46%;">
+          <div class="pin-body">변압기타워 2.4억</div>
+          <div class="pin-tail"></div>
+        </div>
+        <div class="map-pin hot" data-id="4" style="left:58%;top:62%;">
+          <div class="pin-body">3상결선맨션 1.8억</div>
+          <div class="pin-tail"></div>
+        </div>
+        <div class="map-pin" data-id="5" style="left:78%;top:48%;">
+          <div class="pin-body">접지타운하우스 1.5억</div>
+          <div class="pin-tail"></div>
+        </div>
+        <div class="map-pin" data-id="6" style="left:90%;top:62%;">
+          <div class="pin-body">배선공방오피스텔 9,800</div>
+          <div class="pin-tail"></div>
+        </div>
+
+        <!-- Map controls -->
+        <div class="absolute top-3 right-3 flex flex-col gap-1 z-10">
+          <button class="w-9 h-9 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 font-bold">+</button>
+          <button class="w-9 h-9 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 font-bold">−</button>
+          <button class="w-9 h-9 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 text-gray-700 text-[10px] font-bold">현위치</button>
+        </div>
+
+        <!-- Map legend -->
+        <div class="absolute bottom-3 left-3 bg-white/95 border border-gray-200 rounded-lg px-3 py-2 text-[11px] flex items-center gap-3 shadow-sm z-10">
+          <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500"></span>일반 매물</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500"></span>급매(빈출)</span>
+          <span class="flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full bg-green-300 border border-green-500"></span>공원(개념정리)</span>
+        </div>
+      </section>
+
+      <!-- ============ LISTING HEADER + SORT ============ -->
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <h2 class="text-lg font-black tracking-tight">추천 매물 <span class="text-green-600 num">6</span>건</h2>
+          <p class="text-[12px] text-gray-500 mt-0.5">스파크쌤이 직접 가본 매물만 노출합니다 · 거짓 매물 없음</p>
+        </div>
+        <div class="flex items-center gap-1 text-[12px]">
+          <button class="sort-btn px-3 py-1.5 rounded-md hover:bg-gray-100 font-bold text-green-700" data-sort="rec">추천순</button>
+          <button class="sort-btn px-3 py-1.5 rounded-md hover:bg-gray-100 text-gray-600" data-sort="price">가격순</button>
+          <button class="sort-btn px-3 py-1.5 rounded-md hover:bg-gray-100 text-gray-600" data-sort="area">면적순</button>
+          <button class="sort-btn px-3 py-1.5 rounded-md hover:bg-gray-100 text-gray-600" data-sort="date">등록일순</button>
+        </div>
+      </div>
+
+      <!-- ============ LISTINGS GRID ============ -->
+      <section id="listingsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- cards injected by JS -->
+      </section>
+
+      <div class="mt-5 flex justify-center gap-1 text-[13px]">
+        <button class="w-9 h-9 rounded-md border border-gray-300 bg-white text-gray-400">‹</button>
+        <button class="w-9 h-9 rounded-md bg-green-600 text-white font-bold">1</button>
+        <button class="w-9 h-9 rounded-md border border-gray-300 bg-white hover:bg-gray-50">2</button>
+        <button class="w-9 h-9 rounded-md border border-gray-300 bg-white hover:bg-gray-50">3</button>
+        <button class="w-9 h-9 rounded-md border border-gray-300 bg-white hover:bg-gray-50">›</button>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: sidebar -->
+    <aside class="space-y-5">
+      <!-- 합격률 시세 -->
+      <div class="widget">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-black text-[14px]">시세 변동 · 합격률</h3>
+          <span class="text-[11px] text-gray-500">전기이론구 기준</span>
+        </div>
+        <div class="flex items-end gap-2 mb-1">
+          <span class="text-2xl font-black num text-green-700">68.4%</span>
+          <span class="text-[12px] font-bold text-red-500 mb-1">▲ 4.2%p</span>
+        </div>
+        <p class="text-[11px] text-gray-500 mb-3">최근 3개월 평균 합격률</p>
+        <svg viewBox="0 0 280 90" class="w-full h-24">
+          <g class="spark-grid">
+            <line x1="0" y1="20" x2="280" y2="20"/>
+            <line x1="0" y1="45" x2="280" y2="45"/>
+            <line x1="0" y1="70" x2="280" y2="70"/>
+          </g>
+          <polyline fill="none" stroke="#22c55e" stroke-width="2.5"
+            points="0,60 35,52 70,58 105,45 140,40 175,32 210,28 245,22 280,18"/>
+          <polygon fill="url(#sparkfill)" opacity=".25"
+            points="0,60 35,52 70,58 105,45 140,40 175,32 210,28 245,22 280,18 280,90 0,90"/>
+          <defs>
+            <linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22c55e"/>
+              <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="280" cy="18" r="3.5" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+        </svg>
+        <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+          <span>9월</span><span>10월</span><span>11월</span><span>12월</span><span>1월</span>
+        </div>
+      </div>
+
+      <!-- 매물 통계 -->
+      <div class="widget">
+        <h3 class="font-black text-[14px] mb-3">동네별 매물 분포</h3>
+        <div class="space-y-3 text-[12px]">
+          <div>
+            <div class="flex justify-between mb-1"><span>전기이론구</span><span class="num font-bold text-green-700">38건</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fg" style="width:78%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1"><span>전기기기구</span><span class="num font-bold text-green-700">29건</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fg" style="width:60%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1"><span>전기설비구</span><span class="num font-bold text-green-700">22건</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fg" style="width:46%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1"><span>실기 공방촌</span><span class="num font-bold text-green-700">17건</span></div>
+            <div class="stat-bar-bg"><div class="stat-bar-fg" style="width:34%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 인기 검색어 -->
+      <div class="widget">
+        <h3 class="font-black text-[14px] mb-3">실시간 인기 매물 검색어</h3>
+        <ol class="text-[13px] space-y-2">
+          <li class="flex items-center gap-3 hover-row rounded-md px-2 py-1 cursor-pointer"><span class="num font-black text-green-600 w-4">1</span><span class="flex-1">옴의 법칙</span><span class="text-[10px] text-red-500 font-bold">▲ 12</span></li>
+          <li class="flex items-center gap-3 hover-row rounded-md px-2 py-1 cursor-pointer"><span class="num font-black text-green-600 w-4">2</span><span class="flex-1">3상 결선</span><span class="text-[10px] text-red-500 font-bold">▲ 8</span></li>
+          <li class="flex items-center gap-3 hover-row rounded-md px-2 py-1 cursor-pointer"><span class="num font-black text-green-600 w-4">3</span><span class="flex-1">변압기 권수비</span><span class="text-[10px] text-gray-400 font-bold">−</span></li>
+          <li class="flex items-center gap-3 hover-row rounded-md px-2 py-1 cursor-pointer"><span class="num font-black text-green-600 w-4">4</span><span class="flex-1">접지공사 종류</span><span class="text-[10px] text-blue-500 font-bold">▼ 2</span></li>
+          <li class="flex items-center gap-3 hover-row rounded-md px-2 py-1 cursor-pointer"><span class="num font-black text-green-600 w-4">5</span><span class="flex-1">키르히호프 법칙</span><span class="text-[10px] text-red-500 font-bold">▲ 5</span></li>
+        </ol>
+      </div>
+
+      <!-- CTA -->
+      <div class="widget" style="background:linear-gradient(135deg,#15803d,#22c55e);border:none;color:#fff;">
+        <h3 class="font-black text-[15px] mb-1">계약 상담 신청</h3>
+        <p class="text-[12px] opacity-90 mb-3">스파크쌤이 학습 매물을<br>직접 추천해 드립니다.</p>
+        <button class="w-full bg-white text-green-700 font-black py-2.5 rounded-lg text-[13px] hover:bg-green-50 transition">무료 상담 받기</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="mt-10 pt-6 border-t border-gray-200 text-[12px] text-gray-500">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <strong class="text-gray-700">스파크쌤 부동산</strong> · 전기기능사 학습 매물 정보 플랫폼 · 가상 부동산 시뮬레이션
+      </div>
+      <div class="flex gap-3">
+        <span class="hover:text-green-700 cursor-pointer">이용약관</span>
+        <span class="hover:text-green-700 cursor-pointer">개인정보처리방침</span>
+        <span class="hover:text-green-700 cursor-pointer">중개 안내</span>
+      </div>
+    </div>
+    <p class="mt-3 text-[11px] text-gray-400">본 페이지의 모든 매물은 학습 콘셉트의 가상 정보이며 실제 부동산과 무관합니다. — © 2026 스파크쌤 학습연구소</p>
+  </footer>
+
+</main>
+
+<!-- ============ DETAIL MODAL ============ -->
+<div id="modal" class="modal-back">
+  <div class="modal-card">
+    <div id="modalBody"><!-- injected --></div>
+  </div>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const LISTINGS = [
+  {
+    id:1, name:"옴아파트", building:"옴아파트 101동 1208호",
+    district:"전기이론구 옴동", subway:"옴역 도보 3분",
+    type:"매매", price:12000, priceLabel:"매매 1.2억 (응시료 환산)",
+    deposit:0, monthly:0,
+    area:42, areaLabel:"42m² (학습 약 42시간)",
+    floor:"고층(12/24)", builtYear:2024, rooms:3, baths:1,
+    tags:["#급매","#초보환영","#역세권","#필수"],
+    badges:["급매","NEW"],
+    desc:"전기 입문자가 가장 먼저 둘러보는 단지. 전압·전류·저항 3대 생활편의시설이 단지 내 위치하여 도보권 학습이 가능합니다. 가성비 압도적.",
+    options:["기본 개념 풀옵션","공식 카드(빌트인)","오답노트 시스템","24시간 상담"],
+    monthlyFee:"관리비(월 학습 권장시간) 약 6시간",
+    color:"#22c55e", subColor:"#15803d", roof:"#16a34a", emoji:"V=IR",
+    pop:98, hot:true, date:"2026-05-14",
+    floorplan:["전압","전류","저항"]
+  },
+  {
+    id:2, name:"키르히호프빌라", building:"키르히호프빌라 A동 302호",
+    district:"전기이론구 회로동", subway:"옴역 도보 7분",
+    type:"전세", price:8500, priceLabel:"전세 8,500 (집중강의 등록비)",
+    deposit:8500, monthly:0,
+    area:56, areaLabel:"56m² (학습 약 56시간)",
+    floor:"중층(3/5)", builtYear:2023, rooms:4, baths:1,
+    tags:["#회로해석","#필수","#실기연계"],
+    badges:["BEST"],
+    desc:"회로해석 마스터를 위한 정석 매물. 전류법칙(KCL)·전압법칙(KVL) 2개의 메인 도로가 단지를 관통합니다. 객관식 회로문제 95% 적중.",
+    options:["KCL/KVL 풀세트","중첩의 원리 빌트인","테브난·노턴 변환기","실기 도면 연동"],
+    monthlyFee:"관리비(월 학습 권장시간) 약 8시간",
+    color:"#3b82f6", subColor:"#1d4ed8", roof:"#2563eb", emoji:"∑I=0",
+    pop:84, hot:false, date:"2026-05-12",
+    floorplan:["KCL","KVL","중첩","테브난"]
+  },
+  {
+    id:3, name:"변압기타워", building:"변압기타워 펜트하우스 PH1",
+    district:"전기기기구 변압동", subway:"전압역 도보 2분",
+    type:"매매", price:24000, priceLabel:"매매 2.4억 (전과목 풀패키지)",
+    deposit:0, monthly:0,
+    area:78, areaLabel:"78m² (학습 약 78시간)",
+    floor:"최상층(30/30)", builtYear:2025, rooms:5, baths:2,
+    tags:["#프리미엄","#전과목","#리모델링"],
+    badges:["NEW","VR"],
+    desc:"권수비·결선·손실까지 변압기 전 범위를 커버하는 프리미엄 매물. 최상층 펜트하우스로 1차/2차 코일이 분리된 듀플렉스 구조.",
+    options:["1차/2차 권선 분리설계","무부하·부하 손실 측정기","결선도 빌트인","Y-Δ 변환 시뮬레이터"],
+    monthlyFee:"관리비(월 학습 권장시간) 약 12시간",
+    color:"#a855f7", subColor:"#7e22ce", roof:"#9333ea", emoji:"a=N₁/N₂",
+    pop:91, hot:false, date:"2026-05-13",
+    floorplan:["1차코일","2차코일","철심","결선"]
+  },
+  {
+    id:4, name:"3상결선맨션", building:"3상결선맨션 R/S/T동",
+    district:"전기기기구 모터동", subway:"전압역 도보 5분",
+    type:"매매", price:18000, priceLabel:"매매 1.8억 (3상 전과정)",
+    deposit:0, monthly:0,
+    area:66, areaLabel:"66m² (학습 약 66시간)",
+    floor:"R/S/T 3개동", builtYear:2024, rooms:3, baths:1,
+    tags:["#급매","#실기포함","#3상시스템"],
+    badges:["급매","BEST"],
+    desc:"R·S·T 3개동이 120° 위상차로 배치된 단지. Y결선·Δ결선 모두 단지 내에서 체험 가능하며, 동기/유도 전동기 학습 동선이 최적화되어 있습니다.",
+    options:["Y-Δ 결선 변환","상전압/선전압 측정","역률 보상 콘덴서","유도전동기 슬립계"],
+    monthlyFee:"관리비(월 학습 권장시간) 약 10시간",
+    color:"#f59e0b", subColor:"#b45309", roof:"#d97706", emoji:"120°",
+    pop:95, hot:true, date:"2026-05-15",
+    floorplan:["R상","S상","T상","중성점"]
+  },
+  {
+    id:5, name:"접지타운하우스", building:"접지타운하우스 1·2·3종",
+    district:"전기설비구 보호동", subway:"전압역 도보 8분",
+    type:"매매", price:15000, priceLabel:"매매 1.5억 (설비 풀세트)",
+    deposit:0, monthly:0,
+    area:60, areaLabel:"60m² (학습 약 60시간)",
+    floor:"단독 3종", builtYear:2024, rooms:3, baths:2,
+    tags:["#실기포함","#안전제일","#KEC개정"],
+    badges:["NEW"],
+    desc:"제1·2·3종 접지를 모두 갖춘 타운하우스. KEC 개정 반영으로 계통접지 TT·TN·IT 전 시스템 학습 가능. 시공 실기 연계 최강.",
+    options:["1종 접지봉","2종 중성점 접지","3종 외함 접지","KEC 접지 시스템"],
+    monthlyFee:"관리비(월 학습 권장시간) 약 9시간",
+    color:"#10b981", subColor:"#047857", roof:"#059669", emoji:"⏚",
+    pop:78, hot:false, date:"2026-05-11",
+    floorplan:["1종","2종","3종","피뢰"]
+  },
+  {
+    id:6, name:"배선공방오피스텔", building:"배선공방오피스텔 401~408호",
+    district:"실기 공방촌", subway:"전압역 도보 12분",
+    type:"월세", price:9800, priceLabel:"월세 보증 1,000 / 월 98 (실기과정)",
+    deposit:1000, monthly:98,
+    area:36, areaLabel:"36m² (실기 약 36시간)",
+    floor:"실기 전용층(4/8)", builtYear:2025, rooms:1, baths:1,
+    tags:["#실기전용","#1:1지도","#작업형"],
+    badges:["VR","BEST"],
+    desc:"내선공사·기구결선·시퀀스제어 등 실기 작업형을 위한 전용 공방형 매물. 1호당 1배선반·1배전반 제공으로 즉시 작업 가능.",
+    options:["전용 배선반","전동공구 일체","시퀀스 트레이너","채점 카메라"],
+    monthlyFee:"관리비(월 학습 권장시간) 약 14시간",
+    color:"#ef4444", subColor:"#b91c1c", roof:"#dc2626", emoji:"⚒",
+    pop:88, hot:false, date:"2026-05-10",
+    floorplan:["배선반","공구함","시퀀스","채점"]
+  }
+];
+
+/* ============ SVG THUMBNAIL ============ */
+function buildingSVG(item){
+  const c = item.color, sc = item.subColor, rc = item.roof;
+  return `
+  <svg viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 w-full h-full">
+    <defs>
+      <linearGradient id="sky${item.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#dbeafe"/>
+        <stop offset="100%" stop-color="#f0fdf4"/>
+      </linearGradient>
+      <linearGradient id="bld${item.id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${c}"/>
+        <stop offset="100%" stop-color="${sc}"/>
+      </linearGradient>
+    </defs>
+    <rect width="320" height="240" fill="url(#sky${item.id})"/>
+    <!-- ground -->
+    <rect y="200" width="320" height="40" fill="#bbf7d0"/>
+    <rect y="200" width="320" height="6" fill="#86efac"/>
+
+    <!-- trees -->
+    <circle cx="30" cy="195" r="14" fill="#22c55e"/>
+    <rect x="28" y="200" width="4" height="10" fill="#78350f"/>
+    <circle cx="295" cy="198" r="12" fill="#16a34a"/>
+    <rect x="293" y="202" width="4" height="10" fill="#78350f"/>
+
+    <!-- side building (left, smaller) -->
+    <rect x="50" y="120" width="50" height="80" fill="${sc}" opacity=".55"/>
+    <g fill="#fef3c7" opacity=".7">
+      <rect x="58" y="130" width="8" height="10"/>
+      <rect x="74" y="130" width="8" height="10"/>
+      <rect x="58" y="148" width="8" height="10"/>
+      <rect x="74" y="148" width="8" height="10"/>
+      <rect x="58" y="166" width="8" height="10"/>
+      <rect x="74" y="166" width="8" height="10"/>
+    </g>
+
+    <!-- main building -->
+    <rect x="118" y="60" width="120" height="140" fill="url(#bld${item.id})"/>
+    <!-- roof -->
+    <rect x="113" y="54" width="130" height="10" fill="${rc}"/>
+    <!-- top sign -->
+    <rect x="148" y="34" width="60" height="22" fill="#fff" stroke="${sc}" stroke-width="2" rx="3"/>
+    <text x="178" y="50" text-anchor="middle" font-size="11" font-weight="900" fill="${sc}">${item.emoji}</text>
+
+    <!-- windows grid -->
+    <g fill="#fef3c7">
+      ${(()=>{ let w=''; for(let r=0;r<5;r++){ for(let cc=0;cc<5;cc++){ const lit=(r*5+cc+item.id)%3!==0; w += `<rect x="${128+cc*20}" y="${72+r*25}" width="12" height="14" fill="${lit?'#fef9c3':'#1f2937'}" opacity="${lit?'.92':'.6'}"/>`; } } return w; })()}
+    </g>
+
+    <!-- door -->
+    <rect x="168" y="170" width="20" height="30" fill="#1f2937"/>
+    <circle cx="184" cy="186" r="1.5" fill="#fbbf24"/>
+
+    <!-- side building (right) -->
+    <rect x="252" y="100" width="58" height="100" fill="${c}" opacity=".7"/>
+    <g fill="#fef3c7" opacity=".85">
+      <rect x="260" y="112" width="9" height="11"/>
+      <rect x="277" y="112" width="9" height="11"/>
+      <rect x="294" y="112" width="9" height="11"/>
+      <rect x="260" y="132" width="9" height="11"/>
+      <rect x="277" y="132" width="9" height="11"/>
+      <rect x="294" y="132" width="9" height="11"/>
+      <rect x="260" y="152" width="9" height="11"/>
+      <rect x="277" y="152" width="9" height="11"/>
+      <rect x="294" y="152" width="9" height="11"/>
+      <rect x="260" y="172" width="9" height="11"/>
+      <rect x="277" y="172" width="9" height="11"/>
+      <rect x="294" y="172" width="9" height="11"/>
+    </g>
+
+    <!-- power line -->
+    <path d="M 0 70 Q 60 80 118 75" fill="none" stroke="#374151" stroke-width="1"/>
+    <path d="M 238 75 Q 280 80 320 70" fill="none" stroke="#374151" stroke-width="1"/>
+    <line x1="100" y1="60" x2="100" y2="115" stroke="#374151" stroke-width="2"/>
+    <polygon points="96,60 104,60 100,52" fill="#374151"/>
+
+    <!-- sun -->
+    <circle cx="280" cy="40" r="18" fill="#fde68a" opacity=".85"/>
+  </svg>
+  `;
+}
+
+function floorplanSVG(item){
+  const rooms = item.floorplan;
+  return `
+  <svg viewBox="0 0 400 300" class="w-full h-64 border border-gray-200 rounded-lg bg-white">
+    <rect x="10" y="10" width="380" height="280" fill="#f9fafb" stroke="#374151" stroke-width="3"/>
+    <!-- internal walls -->
+    <line x1="200" y1="10" x2="200" y2="160" stroke="#374151" stroke-width="2"/>
+    <line x1="10" y1="160" x2="390" y2="160" stroke="#374151" stroke-width="2"/>
+    <line x1="200" y1="160" x2="200" y2="290" stroke="#374151" stroke-width="2"/>
+
+    <!-- room labels -->
+    <text x="105" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="${item.subColor}">${rooms[0]||'거실'}</text>
+    <text x="105" y="100" text-anchor="middle" font-size="10" fill="#6b7280">메인 학습실</text>
+
+    <text x="295" y="80" text-anchor="middle" font-size="14" font-weight="700" fill="${item.subColor}">${rooms[1]||'침실1'}</text>
+    <text x="295" y="100" text-anchor="middle" font-size="10" fill="#6b7280">집중 자습실</text>
+
+    <text x="105" y="230" text-anchor="middle" font-size="14" font-weight="700" fill="${item.subColor}">${rooms[2]||'주방'}</text>
+    <text x="105" y="250" text-anchor="middle" font-size="10" fill="#6b7280">개념 정리실</text>
+
+    <text x="295" y="230" text-anchor="middle" font-size="14" font-weight="700" fill="${item.subColor}">${rooms[3]||'욕실'}</text>
+    <text x="295" y="250" text-anchor="middle" font-size="10" fill="#6b7280">실전 모의실</text>
+
+    <!-- door symbols -->
+    <path d="M 195 30 A 20 20 0 0 1 215 50" fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+    <line x1="195" y1="30" x2="195" y2="50" stroke="#fff" stroke-width="4"/>
+    <line x1="195" y1="30" x2="195" y2="50" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+    <!-- dimensions -->
+    <text x="200" y="305" text-anchor="middle" font-size="10" fill="#9ca3af">${item.area}m² 평면도 (개념 학습 동선)</text>
+  </svg>
+  `;
+}
+
+/* ============ STATE ============ */
+const state = {
+  favorites: new Set(),
+  sort: 'rec',
+  list: [...LISTINGS]
+};
+
+/* ============ RENDER LISTINGS ============ */
+function renderListings(){
+  const grid = document.getElementById('listingsGrid');
+  let arr = [...LISTINGS];
+  if(state.sort==='price') arr.sort((a,b)=>a.price-b.price);
+  else if(state.sort==='area') arr.sort((a,b)=>b.area-a.area);
+  else if(state.sort==='date') arr.sort((a,b)=>b.date.localeCompare(a.date));
+  else arr.sort((a,b)=>b.pop-a.pop);
+
+  grid.innerHTML = arr.map(item=>`
+    <article class="listing" data-id="${item.id}">
+      <div class="listing-thumb">
+        ${buildingSVG(item)}
+        <div class="absolute top-3 left-3 flex flex-col gap-1">
+          ${item.badges.map(b=>{
+            const cls = b==='급매'?'badge-deal':(b==='NEW'?'badge-new':(b==='BEST'?'badge-best':'badge-vr'));
+            return `<span class="badge ${cls}">${b}</span>`;
+          }).join('')}
+        </div>
+        <button class="fav ${state.favorites.has(item.id)?'on':''}" data-fav="${item.id}" aria-label="즐겨찾기">
+          <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <div class="absolute bottom-2 left-3 text-[10px] bg-black/55 text-white px-2 py-0.5 rounded">매물번호 #${String(item.id).padStart(6,'0')}</div>
+      </div>
+      <div class="p-4 flex-1 flex flex-col">
+        <div class="flex items-center gap-2 text-[11px] text-gray-500 mb-1">
+          <span class="font-bold text-green-700">${item.type}</span>
+          <span>·</span>
+          <span>${item.district}</span>
+        </div>
+        <h3 class="font-black text-[15px] leading-tight">${item.name}</h3>
+        <p class="text-[11px] text-gray-500 mt-0.5">${item.building}</p>
+        <div class="mt-2 text-[15px] font-black num text-gray-900">${item.priceLabel}</div>
+        <div class="mt-1 text-[12px] text-gray-600 num">${item.areaLabel} · ${item.floor}</div>
+        <div class="mt-2 flex-1">
+          ${item.tags.map(t=>`<span class="tag">${t}</span>`).join('')}
+        </div>
+        <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+          <span>${item.subway}</span>
+          <span>등록일 ${item.date.slice(5)}</span>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  // re-bind
+  grid.querySelectorAll('.listing').forEach(el=>{
+    el.addEventListener('click',(e)=>{
+      if(e.target.closest('.fav')) return;
+      openModal(+el.dataset.id);
+    });
+  });
+  grid.querySelectorAll('[data-fav]').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const id = +btn.dataset.fav;
+      if(state.favorites.has(id)) state.favorites.delete(id);
+      else state.favorites.add(id);
+      renderListings();
+    });
+  });
+}
+
+/* ============ MODAL ============ */
+function openModal(id){
+  const item = LISTINGS.find(x=>x.id===id);
+  if(!item) return;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="relative">
+      <div class="listing-thumb" style="aspect-ratio:16/7;">
+        ${buildingSVG(item)}
+        <div class="absolute top-4 left-4 flex gap-2">
+          ${item.badges.map(b=>{
+            const cls = b==='급매'?'badge-deal':(b==='NEW'?'badge-new':(b==='BEST'?'badge-best':'badge-vr'));
+            return `<span class="badge ${cls}" style="font-size:12px;padding:5px 10px;">${b}</span>`;
+          }).join('')}
+        </div>
+        <button id="modalClose" class="absolute top-4 right-4 w-10 h-10 bg-white rounded-full shadow text-gray-700 hover:bg-gray-100 flex items-center justify-center text-lg font-bold">×</button>
+      </div>
+    </div>
+    <div class="p-6 md:p-8">
+      <div class="flex items-center gap-2 text-[12px] text-gray-500 mb-1">
+        <span class="font-bold text-green-700">${item.type}</span>
+        <span>·</span>
+        <span>${item.district}</span>
+        <span>·</span>
+        <span>${item.subway}</span>
+      </div>
+      <h2 class="text-2xl font-black tracking-tight">${item.name}</h2>
+      <p class="text-[13px] text-gray-500 mt-1">${item.building}</p>
+
+      <div class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="border border-gray-200 rounded-lg p-3">
+          <div class="text-[11px] text-gray-500">가격(난이도)</div>
+          <div class="text-[15px] font-black text-green-700 mt-1 num">${item.priceLabel.split(' (')[0]}</div>
+        </div>
+        <div class="border border-gray-200 rounded-lg p-3">
+          <div class="text-[11px] text-gray-500">면적(학습량)</div>
+          <div class="text-[15px] font-black mt-1 num">${item.area}m² / ${item.area}h</div>
+        </div>
+        <div class="border border-gray-200 rounded-lg p-3">
+          <div class="text-[11px] text-gray-500">신축연도(개정)</div>
+          <div class="text-[15px] font-black mt-1 num">${item.builtYear}년</div>
+        </div>
+        <div class="border border-gray-200 rounded-lg p-3">
+          <div class="text-[11px] text-gray-500">방/욕실(섹션)</div>
+          <div class="text-[15px] font-black mt-1 num">${item.rooms}/${item.baths}</div>
+        </div>
+      </div>
+
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6">
+        <div>
+          <h3 class="font-black text-[14px] mb-2">매물 설명</h3>
+          <p class="text-[13px] text-gray-700 leading-relaxed">${item.desc}</p>
+
+          <h3 class="font-black text-[14px] mt-5 mb-2">평면도 (학습 동선)</h3>
+          ${floorplanSVG(item)}
+
+          <h3 class="font-black text-[14px] mt-5 mb-2">옵션 (학습 콘텐츠)</h3>
+          <ul class="grid grid-cols-2 gap-2 text-[13px]">
+            ${item.options.map(o=>`<li class="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 text-green-800"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>${o}</li>`).join('')}
+          </ul>
+
+          <h3 class="font-black text-[14px] mt-5 mb-2">태그</h3>
+          <div>${item.tags.map(t=>`<span class="tag" style="font-size:12px;padding:5px 10px;">${t}</span>`).join('')}</div>
+        </div>
+        <aside>
+          <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
+            <div class="text-[11px] text-gray-500">관리비</div>
+            <div class="text-[14px] font-bold mt-1">${item.monthlyFee}</div>
+            <div class="text-[11px] text-gray-500 mt-3">조회수 (이번 주)</div>
+            <div class="text-[16px] font-black text-green-700 num mt-1">${item.pop * 47}회</div>
+            <div class="text-[11px] text-gray-500 mt-3">관심 등록</div>
+            <div class="text-[16px] font-black text-red-500 num mt-1">${item.pop * 3}명</div>
+            <button class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-lg text-[13px]">계약 상담 신청</button>
+            <button class="mt-2 w-full border border-green-600 text-green-700 font-bold py-3 rounded-lg text-[13px] hover:bg-green-50" id="modalFav">
+              ${state.favorites.has(item.id)?'♥ 즐겨찾기 해제':'♡ 즐겨찾기 추가'}
+            </button>
+          </div>
+          <div class="mt-3 text-[11px] text-gray-400 leading-relaxed px-1">
+            * 본 매물은 학습 콘셉트의 가상 정보입니다.<br>
+            * 응시료·학습시간은 실제 시험과 무관한 비유 수치입니다.
+          </div>
+        </aside>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('on');
+  document.getElementById('modalClose').addEventListener('click',closeModal);
+  document.getElementById('modalFav').addEventListener('click',()=>{
+    if(state.favorites.has(item.id)) state.favorites.delete(item.id);
+    else state.favorites.add(item.id);
+    openModal(item.id);
+    renderListings();
+  });
+}
+function closeModal(){
+  document.getElementById('modal').classList.remove('on');
+}
+document.getElementById('modal').addEventListener('click',(e)=>{
+  if(e.target.id==='modal') closeModal();
+});
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeModal(); });
+
+/* ============ SORT BTNS ============ */
+document.querySelectorAll('.sort-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.sort-btn').forEach(b=>{
+      b.classList.remove('font-bold','text-green-700');
+      b.classList.add('text-gray-600');
+    });
+    btn.classList.remove('text-gray-600');
+    btn.classList.add('font-bold','text-green-700');
+    state.sort = btn.dataset.sort;
+    renderListings();
+  });
+});
+
+/* ============ MAP PIN HOVER → CARD HIGHLIGHT ============ */
+document.querySelectorAll('.map-pin').forEach(pin=>{
+  pin.addEventListener('mouseenter',()=>{
+    const id = +pin.dataset.id;
+    document.querySelectorAll('.listing').forEach(card=>{
+      if(+card.dataset.id===id){
+        card.classList.add('highlight');
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+    });
+  });
+  pin.addEventListener('mouseleave',()=>{
+    document.querySelectorAll('.listing').forEach(c=>c.classList.remove('highlight'));
+  });
+  pin.addEventListener('click',()=>{
+    openModal(+pin.dataset.id);
+  });
+});
+
+/* ============ FILTER CHIPS (UI only) ============ */
+document.querySelectorAll('.filter-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    b.classList.toggle('on');
+  });
+});
+
+/* ============ INIT ============ */
+renderListings();
+</script>
+</body>
+</html>

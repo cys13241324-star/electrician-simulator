@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스파크쌤 (Sparkssaem) — 시드 라운드 피치덱 · 전기기능사</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0a0a;
+    --ink-2:#1f1f23;
+    --ink-mute:#5a5a63;
+    --line:#e6e6ea;
+    --line-2:#f0f0f4;
+    --paper:#ffffff;
+    --paper-2:#fafafb;
+    --paper-3:#f4f4f7;
+    --orange:#ff6a00;
+    --orange-deep:#e85d00;
+    --orange-soft:#fff1e6;
+    --blue:#1a4dff;
+    --blue-deep:#0a35cc;
+    --blue-soft:#eaf0ff;
+    --green:#0aa05a;
+    --red:#e02d3c;
+    --yellow:#ffc400;
+  }
+  html,body{background:var(--paper-3); color:var(--ink);}
+  body{
+    font-family:'Pretendard','Inter',system-ui,-apple-system,sans-serif;
+    margin:0; padding:0;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  .inter{font-family:'Inter','Pretendard',sans-serif;}
+  .num{font-family:'Inter',monospace; font-variant-numeric:tabular-nums; letter-spacing:-0.02em;}
+  .tight{letter-spacing:-0.035em;}
+  .tighter{letter-spacing:-0.05em;}
+
+  /* 앱 셸 */
+  .shell{
+    display:grid;
+    grid-template-columns:240px 1fr;
+    min-height:100vh;
+    background:var(--paper-3);
+  }
+  /* 좌측 썸네일 패널 */
+  .sidepanel{
+    background:#0c0d12;
+    color:#d9d9e0;
+    border-right:1px solid #1a1b22;
+    position:sticky; top:0;
+    height:100vh;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+  .brandbar{
+    padding:18px 18px 14px;
+    border-bottom:1px solid #1a1b22;
+    display:flex; align-items:center; gap:10px;
+  }
+  .brand-mark{
+    width:34px; height:34px;
+    border-radius:9px;
+    background:linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+    display:grid; place-items:center;
+    box-shadow:0 4px 14px -4px rgba(255,106,0,.6);
+  }
+  .brand-mark svg{width:20px; height:20px;}
+  .brand-text{font-weight:800; font-size:15px; letter-spacing:-0.02em; color:#fff;}
+  .brand-sub{font-size:10.5px; color:#7a7a85; letter-spacing:0.06em; text-transform:uppercase; font-weight:600;}
+
+  .thumbs{
+    flex:1; overflow-y:auto;
+    padding:10px 10px 14px;
+    scrollbar-width:thin; scrollbar-color:#2a2a33 transparent;
+  }
+  .thumbs::-webkit-scrollbar{width:6px;}
+  .thumbs::-webkit-scrollbar-thumb{background:#2a2a33; border-radius:3px;}
+  .thumb{
+    display:flex; gap:10px; align-items:flex-start;
+    padding:8px 8px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    margin-bottom:2px;
+  }
+  .thumb:hover{background:#15161d;}
+  .thumb.active{background:#181a23; color:#fff;}
+  .thumb.active .thumb-no{background:var(--orange); color:#fff; border-color:var(--orange);}
+  .thumb-no{
+    flex-shrink:0;
+    width:22px; height:22px;
+    border-radius:5px;
+    background:#15161d;
+    border:1px solid #25262d;
+    color:#9a9aa3;
+    font-size:11px; font-weight:700;
+    display:grid; place-items:center;
+    margin-top:1px;
+  }
+  .thumb-label{
+    font-size:12px; line-height:1.35; color:#b6b6c0;
+    font-weight:500;
+  }
+  .thumb.active .thumb-label{color:#fff; font-weight:600;}
+  .thumb-sub{font-size:10px; color:#6a6a73; margin-top:1px; letter-spacing:0.04em; text-transform:uppercase;}
+
+  .sidefoot{
+    padding:12px 14px;
+    border-top:1px solid #1a1b22;
+    font-size:11px; color:#6a6a73;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+
+  /* 상단 컨트롤 바 */
+  .topbar{
+    position:sticky; top:0; z-index:30;
+    background:rgba(255,255,255,.85);
+    backdrop-filter:saturate(180%) blur(14px);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);
+    border-bottom:1px solid var(--line);
+    height:56px;
+    display:flex; align-items:center;
+    padding:0 22px;
+    gap:14px;
+  }
+  .deck-title{font-weight:700; font-size:13px; letter-spacing:-0.01em; color:var(--ink);}
+  .deck-sub{font-size:11.5px; color:var(--ink-mute);}
+  .btn{
+    display:inline-flex; align-items:center; gap:7px;
+    height:34px; padding:0 13px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fff; color:var(--ink);
+    font-size:12.5px; font-weight:600;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .btn:hover{background:var(--paper-2); border-color:#d4d4da;}
+  .btn-primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .btn-primary:hover{background:#1f1f23; border-color:#1f1f23;}
+  .btn-orange{background:var(--orange); color:#fff; border-color:var(--orange);}
+  .btn-orange:hover{background:var(--orange-deep); border-color:var(--orange-deep);}
+  .kbd{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:18px; height:18px; padding:0 5px;
+    background:#fff;
+    border:1px solid var(--line); border-bottom-width:2px;
+    border-radius:4px;
+    font-size:10px; font-weight:700; color:var(--ink-mute);
+    font-family:'Inter',monospace;
+  }
+  .kbd-dark{background:#15161d; border-color:#25262d; color:#b6b6c0; border-bottom-color:#0a0b10;}
+
+  /* 진행률 */
+  .progress{
+    position:absolute; left:0; right:0; bottom:-1px;
+    height:2px; background:transparent;
+  }
+  .progress-bar{
+    height:100%; background:linear-gradient(90deg, var(--orange) 0%, var(--orange-deep) 100%);
+    transition:width .35s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 0 8px rgba(255,106,0,.5);
+  }
+
+  /* 슬라이드 영역 */
+  .stage{
+    padding:26px 32px 32px;
+    min-height:calc(100vh - 56px);
+    display:flex; flex-direction:column;
+  }
+  .slide-shell{
+    flex:1;
+    background:var(--paper);
+    border-radius:16px;
+    border:1px solid var(--line);
+    box-shadow:
+      0 1px 0 rgba(0,0,0,.02),
+      0 6px 18px -8px rgba(0,0,0,.08),
+      0 30px 60px -28px rgba(0,0,0,.18);
+    position:relative;
+    overflow:hidden;
+    min-height:560px;
+  }
+  .slide{
+    position:absolute; inset:0;
+    padding:54px 64px;
+    opacity:0; transform:translateY(12px);
+    pointer-events:none;
+    transition:opacity .35s ease, transform .35s ease;
+    overflow-y:auto;
+  }
+  .slide.active{opacity:1; transform:none; pointer-events:auto;}
+  .slide-num{
+    position:absolute; top:18px; right:22px;
+    font-size:11px; color:var(--ink-mute);
+    font-weight:600; letter-spacing:0.06em;
+    font-family:'Inter',monospace;
+  }
+  .slide-tag{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 10px;
+    background:var(--orange-soft); color:var(--orange-deep);
+    border-radius:999px;
+    font-size:11px; font-weight:700; letter-spacing:0.08em;
+    text-transform:uppercase;
+  }
+  .slide-tag.blue{background:var(--blue-soft); color:var(--blue-deep);}
+  .slide-tag.dark{background:#15161d; color:#fff;}
+  .slide-tag.green{background:#e6f7ee; color:#066d3d;}
+  .slide-tag.yellow{background:#fff5cc; color:#7a5400;}
+
+  .h-eyebrow{font-size:11.5px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--orange-deep);}
+  .h-display{font-size:64px; font-weight:900; line-height:0.96; letter-spacing:-0.045em; color:var(--ink);}
+  .h-title{font-size:42px; font-weight:800; line-height:1.02; letter-spacing:-0.035em; color:var(--ink);}
+  .h-sub{font-size:18px; font-weight:500; line-height:1.5; color:var(--ink-mute);}
+
+  /* 카드 */
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+    position:relative;
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .card-soft{background:var(--paper-2); border-color:var(--line-2);}
+  .card-dark{background:#0c0d12; color:#fff; border-color:#0c0d12;}
+  .card-orange{background:linear-gradient(135deg, #fff5ec 0%, #ffe7d1 100%); border-color:#ffd9b3;}
+  .card-blue{background:linear-gradient(135deg, #eef2ff 0%, #dde5ff 100%); border-color:#c8d3ff;}
+  .metric-num{font-size:44px; font-weight:900; letter-spacing:-0.04em; line-height:1; font-family:'Inter',sans-serif;}
+  .metric-label{font-size:12px; color:var(--ink-mute); font-weight:600; letter-spacing:0.04em; text-transform:uppercase; margin-top:6px;}
+  .metric-delta{font-size:12px; font-weight:700; color:var(--green); margin-top:8px;}
+
+  /* 슬라이드 1 — 표지 배경 */
+  .cover-bg{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(900px 600px at 110% -10%, rgba(255,106,0,.12), transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, rgba(26,77,255,.10), transparent 55%),
+      linear-gradient(180deg, #fff 0%, #fafafb 100%);
+    z-index:0;
+  }
+  .cover-grid{
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(10,10,10,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(10,10,10,.04) 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(900px 600px at 50% 50%, #000, transparent 75%);
+    -webkit-mask-image:radial-gradient(900px 600px at 50% 50%, #000, transparent 75%);
+    z-index:0;
+  }
+  .cover-content{position:relative; z-index:1;}
+
+  /* 발표자 노트 */
+  .notes{
+    background:#fffbeb;
+    border:1px solid #fde68a;
+    border-radius:12px;
+    padding:14px 16px;
+    margin-top:16px;
+    font-size:13px; line-height:1.55;
+    color:#7a5400;
+    display:none;
+  }
+  .notes.on{display:block;}
+  .notes-label{
+    font-size:10px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase;
+    color:#a07a00; margin-bottom:6px; display:flex; align-items:center; gap:6px;
+  }
+
+  /* 풀스크린 */
+  .shell.fullscreen .sidepanel{display:none;}
+  .shell.fullscreen{grid-template-columns:1fr;}
+  .shell.fullscreen .stage{padding:0;}
+  .shell.fullscreen .slide-shell{border-radius:0; border:0; min-height:calc(100vh - 56px);}
+
+  /* 차트 */
+  .chart-grid line{stroke:var(--line); stroke-width:1;}
+  .chart-axis{fill:var(--ink-mute); font-size:11px; font-family:'Inter',sans-serif;}
+
+  /* 4분면 */
+  .quad{
+    position:relative;
+    aspect-ratio:1/1;
+    background:
+      linear-gradient(to right, transparent calc(50% - 1px), var(--line) calc(50% - 1px), var(--line) 50%, transparent 50%),
+      linear-gradient(to bottom, transparent calc(50% - 1px), var(--line) calc(50% - 1px), var(--line) 50%, transparent 50%),
+      var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+  }
+  .quad-axis-x, .quad-axis-y{
+    position:absolute;
+    font-size:11px; font-weight:700; color:var(--ink-mute);
+    letter-spacing:0.04em; text-transform:uppercase;
+  }
+  .quad-dot{
+    position:absolute;
+    transform:translate(-50%,-50%);
+    background:#fff; border:2px solid var(--ink);
+    padding:8px 11px; border-radius:8px;
+    font-size:12px; font-weight:700;
+    box-shadow:0 2px 6px rgba(0,0,0,.06);
+  }
+  .quad-dot.us{background:var(--orange); color:#fff; border-color:var(--orange);}
+
+  /* 팀 아바타 */
+  .avatar{
+    width:84px; height:84px; border-radius:50%;
+    display:grid; place-items:center;
+    font-size:28px; font-weight:900;
+    color:#fff;
+    margin:0 auto 14px;
+    box-shadow:0 6px 18px -6px rgba(0,0,0,.25);
+  }
+
+  /* 비디오 자리 */
+  .video-frame{
+    aspect-ratio:16/9;
+    background:#0c0d12;
+    border-radius:12px;
+    position:relative; overflow:hidden;
+    display:grid; place-items:center;
+    border:1px solid #15161d;
+  }
+  .video-play{
+    width:72px; height:72px; border-radius:50%;
+    background:rgba(255,255,255,.95);
+    display:grid; place-items:center;
+    cursor:pointer;
+    box-shadow:0 8px 28px -6px rgba(0,0,0,.5);
+    transition:transform .2s ease;
+  }
+  .video-play:hover{transform:scale(1.06);}
+  .video-grid-bg{
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size:32px 32px;
+  }
+
+  /* 로드맵 */
+  .roadmap-line{
+    position:absolute; left:0; right:0; top:50%;
+    height:2px;
+    background:linear-gradient(90deg, var(--orange) 0%, var(--blue) 100%);
+    transform:translateY(-50%);
+  }
+  .roadmap-dot{
+    width:14px; height:14px; border-radius:50%;
+    background:#fff; border:3px solid var(--orange);
+    margin:0 auto;
+    position:relative; z-index:1;
+  }
+  .roadmap-dot.mid{border-color:#a83bff;}
+  .roadmap-dot.end{border-color:var(--blue);}
+
+  /* 분리선 */
+  .hr-thin{height:1px; background:var(--line); border:0;}
+
+  /* 반응형 */
+  @media (max-width:1100px){
+    .shell{grid-template-columns:200px 1fr;}
+    .h-display{font-size:52px;}
+    .h-title{font-size:34px;}
+    .slide{padding:40px 44px;}
+  }
+  @media (max-width:780px){
+    .shell{grid-template-columns:1fr;}
+    .sidepanel{display:none;}
+    .stage{padding:14px;}
+    .slide{padding:28px 24px;}
+    .h-display{font-size:38px;}
+    .h-title{font-size:26px;}
+    .h-sub{font-size:15px;}
+    .metric-num{font-size:32px;}
+  }
+
+  @keyframes pulse{
+    0%,100%{opacity:1; transform:scale(1);}
+    50%{opacity:.85; transform:scale(1.04);}
+  }
+  .live-dot{
+    width:7px; height:7px; border-radius:50%; background:#ff3b3b;
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+
+  /* 푸터 */
+  .deck-footer{
+    margin-top:16px;
+    padding:14px 6px 4px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11.5px; color:var(--ink-mute);
+  }
+</style>
+</head>
+<body>
+
+<div class="shell" id="shell">
+
+  <!-- 좌측 썸네일 패널 -->
+  <aside class="sidepanel" id="sidepanel">
+    <div class="brandbar">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-text">스파크쌤</div>
+        <div class="brand-sub">Seed Round · 2026</div>
+      </div>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="sidefoot">
+      <span>v2.6 · 5월</span>
+      <span class="num"><span id="thumbCount">0</span>/12</span>
+    </div>
+  </aside>
+
+  <!-- 메인 -->
+  <main>
+    <!-- 상단 컨트롤 -->
+    <div class="topbar">
+      <div class="flex items-center gap-2">
+        <div class="live-dot"></div>
+        <span class="deck-title">Sparkssaem · Investor Pitch</span>
+      </div>
+      <div class="deck-sub hidden md:inline">시드 라운드 · 2026 Q2 · 가상 시뮬레이션</div>
+      <div class="ml-auto flex items-center gap-2">
+        <button class="btn" onclick="toggleNotes()" id="notesBtn" title="발표자 노트 (N)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+          <span class="hidden sm:inline">노트</span>
+          <span class="kbd">N</span>
+        </button>
+        <button class="btn" onclick="toggleFullscreen()" id="fsBtn" title="풀스크린 (F)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+          <span class="hidden sm:inline">풀스크린</span>
+          <span class="kbd">F</span>
+        </button>
+        <div class="flex items-center gap-1 ml-1">
+          <button class="btn" onclick="prev()" title="이전 (←)" aria-label="이전 슬라이드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span class="num text-[12.5px] font-bold tabular-nums px-2 min-w-[52px] text-center">
+            <span id="curNo">01</span> <span class="text-gray-400">/</span> <span id="totNo">12</span>
+          </span>
+          <button class="btn" onclick="next()" title="다음 (→)" aria-label="다음 슬라이드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <button class="btn btn-orange" onclick="downloadDeck()" title="투자 의향서 다운로드">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span class="hidden md:inline">투자 의향서</span>
+        </button>
+      </div>
+      <div class="progress"><div class="progress-bar" id="progressBar" style="width:8.3%"></div></div>
+    </div>
+
+    <!-- 슬라이드 무대 -->
+    <div class="stage">
+      <div class="slide-shell" id="slideShell">
+
+        <!-- 슬라이드 1 — 표지 -->
+        <section class="slide active" data-no="01" data-title="표지" data-sub="Cover">
+          <div class="cover-bg"></div>
+          <div class="cover-grid"></div>
+          <div class="cover-content h-full flex flex-col">
+            <div class="slide-num num">01 / 12</div>
+            <div class="flex items-center gap-3">
+              <div class="brand-mark" style="width:48px; height:48px; border-radius:12px;">
+                <svg viewBox="0 0 24 24" fill="none" style="width:28px;height:28px;">
+                  <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#fff"/>
+                </svg>
+              </div>
+              <div>
+                <div class="font-extrabold text-lg tracking-tight">스파크쌤</div>
+                <div class="text-xs text-gray-500 inter font-semibold tracking-widest uppercase">Sparkssaem · EST. 2025</div>
+              </div>
+            </div>
+
+            <div class="flex-1 grid place-items-center my-8">
+              <div class="text-center max-w-3xl">
+                <div class="slide-tag mb-6">Seed Round · 2026 Pitch Deck</div>
+                <div class="h-display tighter">전기기능사,<br><span style="color:var(--orange);">합격을 가속</span>한다.</div>
+                <p class="h-sub mt-7 max-w-xl mx-auto">
+                  시뮬레이터 · 플립카드 · AI 코치로 학습 효율을 3배 끌어올린<br>차세대 자격증 학습 플랫폼.
+                </p>
+                <div class="mt-10 flex items-center justify-center gap-3 flex-wrap">
+                  <div class="px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-semibold">사용자 12만 명</div>
+                  <div class="px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-semibold">합격률 78%</div>
+                  <div class="px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-semibold">MAU 4.8만</div>
+                  <div class="px-4 py-2 rounded-full text-sm font-semibold text-white" style="background:var(--ink);">MRR ₩9,200만</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-end text-xs text-gray-500">
+              <div>
+                <div class="font-bold text-gray-700">발표 · 김정훈 (CEO)</div>
+                <div class="mt-0.5">2026.05.15 · DemoDay Spring</div>
+              </div>
+              <div class="text-right">
+                <div class="font-semibold">CONFIDENTIAL</div>
+                <div class="mt-0.5 opacity-60">For discussion only · Not an offer</div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-1">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            안녕하세요, 스파크쌤 CEO 김정훈입니다. 오늘 12분 동안 우리가 왜 전기기능사 학습 시장의 게임 체인저가 될지, 그리고 5억 원 시드 라운드가 어떻게 사용될지 말씀드리겠습니다. 핵심 메시지 — "전기기능사, 합격을 가속한다."
+          </div>
+        </section>
+
+        <!-- 슬라이드 2 — Problem -->
+        <section class="slide" data-no="02" data-title="문제" data-sub="Problem">
+          <div class="slide-num num">02 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag mb-5">01 · Problem</div>
+            <h2 class="h-title">전기기능사 합격률은 <span style="color:var(--red);">31.2%</span>.<br>학습자 10명 중 7명이 떨어진다.</h2>
+            <p class="h-sub mt-5 max-w-3xl">기존 학습 시장은 종이책·동영상 강의에 갇혀 있다. 회로를 직접 만져보지 못한 채 시험장에 들어가는 응시생이 대부분이다.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
+              <div class="card">
+                <div class="text-sm font-bold text-red-600 mb-3">PAIN 01</div>
+                <div class="text-lg font-extrabold tight mb-2">시각화 부재</div>
+                <p class="text-sm text-gray-600 leading-relaxed">회로도와 실물 사이의 인지 격차. 키르히호프 법칙을 외워도 실제 동작은 모른다.</p>
+              </div>
+              <div class="card">
+                <div class="text-sm font-bold text-red-600 mb-3">PAIN 02</div>
+                <div class="text-lg font-extrabold tight mb-2">단편 학습</div>
+                <p class="text-sm text-gray-600 leading-relaxed">기출만 반복 → 응용 문제에서 무너짐. 개념·실기·도면 연결 학습 부재.</p>
+              </div>
+              <div class="card">
+                <div class="text-sm font-bold text-red-600 mb-3">PAIN 03</div>
+                <div class="text-lg font-extrabold tight mb-2">피드백 공백</div>
+                <p class="text-sm text-gray-600 leading-relaxed">학원은 비싸고, 인강은 일방향. 막힌 부분을 즉시 짚어줄 사람이 없다.</p>
+              </div>
+            </div>
+
+            <div class="card card-dark mt-7 flex items-center justify-between gap-6 flex-wrap">
+              <div>
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">시장 시그널</div>
+                <div class="text-2xl font-extrabold mt-1 tight">연 28만 명이 응시 · 약 19만 명이 다시 응시</div>
+                <div class="text-sm text-gray-400 mt-1">한국산업인력공단 통계 기반 추정 (2024)</div>
+              </div>
+              <div class="text-right">
+                <div class="num metric-num" style="color:var(--orange);">×3.2</div>
+                <div class="text-xs text-gray-400 mt-1">재응시 비율 (글로벌 평균 대비)</div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-2">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            합격률 31%는 우리가 매년 28만 명의 응시생 중 19만 명이 시간을 낭비하고 있다는 뜻입니다. 시장은 비명을 지르고 있어요 — 시각화, 통합 학습, 즉시 피드백. 세 가지가 비어 있습니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 3 — Solution -->
+        <section class="slide" data-no="03" data-title="솔루션" data-sub="Solution">
+          <div class="slide-num num">03 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag blue mb-5">02 · Solution</div>
+            <h2 class="h-title">학습을 <span style="color:var(--blue);">3개의 축</span>으로 재설계했다.</h2>
+            <p class="h-sub mt-5 max-w-3xl">시뮬레이터로 보고, 플립카드로 외우고, AI 코치로 막힌 곳을 즉시 뚫는다. 한 플랫폼에서.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-10">
+              <div class="card card-orange relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-7xl font-black opacity-10" style="color:var(--orange-deep);">01</div>
+                <div class="relative">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#e85d00" stroke-width="2"><path d="M2 12h4l3-9 6 18 3-9h4"/></svg>
+                  <div class="text-xl font-extrabold tight mt-3" style="color:#7a3500;">회로 시뮬레이터</div>
+                  <p class="text-sm mt-2" style="color:#7a3500;">저항·전압·전류를 직접 조절. 실시간 파형과 계산값.</p>
+                </div>
+              </div>
+              <div class="card card-blue relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-7xl font-black opacity-10" style="color:var(--blue-deep);">02</div>
+                <div class="relative">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0a35cc" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h6"/></svg>
+                  <div class="text-xl font-extrabold tight mt-3" style="color:#0a2080;">플립카드 시스템</div>
+                  <p class="text-sm mt-2" style="color:#0a2080;">간격 반복 알고리즘 (SM-2)으로 망각 곡선 정복.</p>
+                </div>
+              </div>
+              <div class="card card-dark relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-7xl font-black opacity-10 text-white">03</div>
+                <div class="relative">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  <div class="text-xl font-extrabold tight mt-3" style="color:var(--orange);">AI 학습 코치</div>
+                  <p class="text-sm mt-2 text-gray-300">Gemini 기반. "왜 틀렸는지" 즉시 설명, 다음 학습 추천.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-7 card card-soft flex items-center gap-5 flex-wrap">
+              <div class="flex-1 min-w-[240px]">
+                <div class="text-xs font-bold tracking-widest uppercase text-gray-500">결과 — 베타 8주</div>
+                <div class="text-2xl font-extrabold tight mt-1">학습 시간 38% 단축 · 합격률 78% (vs 시장 평균 31%)</div>
+              </div>
+              <div class="flex items-center gap-6">
+                <div class="text-center">
+                  <div class="num text-3xl font-black" style="color:var(--orange);">−38%</div>
+                  <div class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider mt-1">학습 시간</div>
+                </div>
+                <div class="text-center">
+                  <div class="num text-3xl font-black" style="color:var(--blue);">+47p</div>
+                  <div class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider mt-1">합격률</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-3">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            세 가지 축이 시너지를 냅니다 — 보고(시뮬레이터), 외우고(플립카드), 뚫고(AI). 베타 8주 결과는 우리 가설이 옳다는 증거입니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 4 — Product Preview -->
+        <section class="slide" data-no="04" data-title="제품 미리보기" data-sub="Product">
+          <div class="slide-num num">04 / 12</div>
+          <div class="max-w-6xl">
+            <div class="slide-tag mb-5">03 · Product</div>
+            <h2 class="h-title">실제 화면, 실제 동작.</h2>
+            <p class="h-sub mt-3">데모 영상으로 30초 안에 핵심을 보여드립니다.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-8">
+              <!-- 비디오 자리 -->
+              <div class="lg:col-span-2">
+                <div class="video-frame">
+                  <div class="video-grid-bg"></div>
+                  <div class="relative text-center">
+                    <div class="video-play" onclick="alert('데모 영상 — 가상 시뮬레이션입니다.')">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="#0c0d12"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                    <div class="mt-4 text-white text-sm font-semibold">제품 데모 영상 · 0:30</div>
+                    <div class="text-gray-400 text-xs mt-1">시뮬레이터 → 플립카드 → AI 코치 시연</div>
+                  </div>
+                  <div class="absolute top-3 left-3 flex items-center gap-2">
+                    <div class="px-2 py-1 rounded text-[10px] font-bold tracking-widest uppercase text-white" style="background:rgba(255,106,0,.9);">● REC</div>
+                    <div class="px-2 py-1 rounded text-[10px] font-bold tracking-widest uppercase bg-black/60 text-white">4K · 60fps</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 미니 제품 SVG -->
+              <div class="card flex flex-col">
+                <div class="text-xs font-bold tracking-widest uppercase text-gray-500 mb-3">시뮬레이터 화면</div>
+                <svg viewBox="0 0 320 200" class="w-full">
+                  <rect width="320" height="200" rx="8" fill="#fafafb"/>
+                  <!-- 회로 -->
+                  <line x1="40" y1="60" x2="280" y2="60" stroke="#0c0d12" stroke-width="2"/>
+                  <line x1="40" y1="60" x2="40" y2="140" stroke="#0c0d12" stroke-width="2"/>
+                  <line x1="280" y1="60" x2="280" y2="140" stroke="#0c0d12" stroke-width="2"/>
+                  <line x1="40" y1="140" x2="280" y2="140" stroke="#0c0d12" stroke-width="2"/>
+                  <!-- 저항 -->
+                  <rect x="120" y="50" width="60" height="20" fill="#fff" stroke="#0c0d12" stroke-width="2"/>
+                  <text x="150" y="64" font-size="10" text-anchor="middle" font-weight="700">220Ω</text>
+                  <!-- 배터리 -->
+                  <line x1="40" y1="95" x2="40" y2="105" stroke="#0c0d12" stroke-width="4"/>
+                  <line x1="35" y1="100" x2="45" y2="100" stroke="#0c0d12" stroke-width="2"/>
+                  <text x="22" y="105" font-size="10" font-weight="700">12V</text>
+                  <!-- 전구 -->
+                  <circle cx="280" cy="100" r="10" fill="#ffc400" stroke="#0c0d12" stroke-width="2"/>
+                  <!-- 전류 화살표 -->
+                  <path d="M160 80 L170 85 L160 90 Z" fill="#ff6a00"/>
+                  <text x="160" y="160" font-size="11" text-anchor="middle" font-weight="700" fill="#ff6a00">I = 54.5 mA</text>
+                  <text x="160" y="180" font-size="9" text-anchor="middle" fill="#666">옴의 법칙 · 실시간 계산</text>
+                </svg>
+                <div class="mt-auto pt-3 flex gap-2 flex-wrap">
+                  <span class="text-[10px] font-bold px-2 py-1 rounded bg-orange-50 text-orange-700">REAL-TIME</span>
+                  <span class="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700">INTERACTIVE</span>
+                  <span class="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-700">SVG</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+              <div class="card card-soft text-center py-4">
+                <div class="text-xs font-semibold text-gray-500">앱 스토어 평점</div>
+                <div class="num text-2xl font-black mt-1">4.8 <span class="text-yellow-500">★</span></div>
+              </div>
+              <div class="card card-soft text-center py-4">
+                <div class="text-xs font-semibold text-gray-500">리텐션 D30</div>
+                <div class="num text-2xl font-black mt-1" style="color:var(--blue);">42%</div>
+              </div>
+              <div class="card card-soft text-center py-4">
+                <div class="text-xs font-semibold text-gray-500">평균 세션</div>
+                <div class="num text-2xl font-black mt-1">28<span class="text-base">분</span></div>
+              </div>
+              <div class="card card-soft text-center py-4">
+                <div class="text-xs font-semibold text-gray-500">NPS</div>
+                <div class="num text-2xl font-black mt-1" style="color:var(--green);">+64</div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-4">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            영상을 보시면 시뮬레이터의 인터랙티브함, 플립카드의 부드러움, AI 코치의 즉답 능력을 30초 안에 체감하실 수 있습니다. NPS +64는 핀테크/에듀테크 평균(+20)을 압도합니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 5 — Market -->
+        <section class="slide" data-no="05" data-title="시장" data-sub="Market">
+          <div class="slide-num num">05 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag blue mb-5">04 · Market</div>
+            <h2 class="h-title">국가 자격증 시장, <span style="color:var(--blue);">8,700억 원</span>.</h2>
+            <p class="h-sub mt-5 max-w-3xl">전기기능사는 응시자 수 1위 기술 자격증. 인접 자격증 (전기산업기사·소방·공조)으로 확장 시 시장은 5배 커진다.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-10">
+              <!-- TAM -->
+              <div class="card text-center py-8" style="background:linear-gradient(180deg,#fff 0%, #fff5ec 100%); border-color:#ffd9b3;">
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange-deep);">TAM · 전체 시장</div>
+                <div class="num text-5xl font-black mt-3 tight">₩8,700억</div>
+                <div class="text-sm text-gray-600 mt-3 leading-relaxed">국내 국가 기술 자격증<br>학습 시장 전체</div>
+                <div class="mt-4 inline-block px-3 py-1 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200">2024 한국직업개발원</div>
+              </div>
+              <!-- SAM -->
+              <div class="card text-center py-8" style="background:linear-gradient(180deg,#fff 0%, #eef2ff 100%); border-color:#c8d3ff;">
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--blue-deep);">SAM · 유효 시장</div>
+                <div class="num text-5xl font-black mt-3 tight">₩1,420억</div>
+                <div class="text-sm text-gray-600 mt-3 leading-relaxed">전기·소방·공조 등<br>기술 자격증 디지털 학습</div>
+                <div class="mt-4 inline-block px-3 py-1 rounded-full text-xs font-bold bg-white text-gray-700 border border-gray-200">YoY +18%</div>
+              </div>
+              <!-- SOM -->
+              <div class="card card-dark text-center py-8">
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">SOM · 진입 시장</div>
+                <div class="num text-5xl font-black mt-3 tight">₩180억</div>
+                <div class="text-sm text-gray-400 mt-3 leading-relaxed">3년 내 도달 가능<br>전기 계열 자격증 모바일</div>
+                <div class="mt-4 inline-block px-3 py-1 rounded-full text-xs font-bold bg-orange-500 text-white">목표 점유율 12%</div>
+              </div>
+            </div>
+
+            <!-- 시장 동심원 -->
+            <div class="mt-8 card card-soft">
+              <div class="flex items-center gap-6 flex-wrap">
+                <svg viewBox="0 0 220 160" class="w-[220px]">
+                  <circle cx="110" cy="80" r="74" fill="#fff1e6" stroke="#ffd9b3"/>
+                  <circle cx="110" cy="80" r="48" fill="#eaf0ff" stroke="#c8d3ff"/>
+                  <circle cx="110" cy="80" r="22" fill="#0c0d12"/>
+                  <text x="110" y="20" font-size="10" text-anchor="middle" font-weight="800" fill="#7a3500">TAM</text>
+                  <text x="110" y="46" font-size="10" text-anchor="middle" font-weight="800" fill="#0a2080">SAM</text>
+                  <text x="110" y="84" font-size="10" text-anchor="middle" font-weight="800" fill="#ff6a00">SOM</text>
+                </svg>
+                <div class="flex-1 min-w-[220px]">
+                  <div class="text-sm font-bold text-gray-600 mb-2">왜 지금인가</div>
+                  <ul class="text-sm space-y-1.5 text-gray-700">
+                    <li class="flex gap-2"><span style="color:var(--orange);">●</span> 베이비붐 세대 은퇴 → 기술 자격증 재교육 수요 폭증</li>
+                    <li class="flex gap-2"><span style="color:var(--blue);">●</span> 모바일 학습 침투율 2020년 28% → 2025년 61%</li>
+                    <li class="flex gap-2"><span style="color:var(--ink);">●</span> 생성형 AI로 1:1 코칭 비용 1/30으로 하락</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-5">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            ₩180억 SOM이라도 12% 점유 시 ARR ₩22억입니다. 인접 자격증으로 확장하면 ₩170억 ARR이 5년 내 가능합니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 6 — Traction -->
+        <section class="slide" data-no="06" data-title="트랙션" data-sub="Traction">
+          <div class="slide-num num">06 / 12</div>
+          <div class="max-w-6xl">
+            <div class="slide-tag green mb-5">05 · Traction</div>
+            <h2 class="h-title">8개월 만에 <span style="color:var(--green);">MAU 4.8만 · 합격률 78%</span>.</h2>
+            <p class="h-sub mt-3">유료 광고 0원. 입소문과 합격 후기로만 성장 중.</p>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-7">
+              <div class="card">
+                <div class="metric-num">12<span class="text-2xl">만</span></div>
+                <div class="metric-label">누적 가입자</div>
+                <div class="metric-delta">+ 4.2만 · 90일</div>
+              </div>
+              <div class="card">
+                <div class="metric-num" style="color:var(--blue);">4.8<span class="text-2xl">만</span></div>
+                <div class="metric-label">MAU</div>
+                <div class="metric-delta">+ 38% MoM</div>
+              </div>
+              <div class="card">
+                <div class="metric-num" style="color:var(--orange);">78<span class="text-2xl">%</span></div>
+                <div class="metric-label">합격률 (자체 집계)</div>
+                <div class="metric-delta">vs 시장 31%</div>
+              </div>
+              <div class="card">
+                <div class="metric-num">₩9,200<span class="text-2xl">만</span></div>
+                <div class="metric-label">MRR</div>
+                <div class="metric-delta">+ 24% MoM</div>
+              </div>
+            </div>
+
+            <!-- 차트 -->
+            <div class="card mt-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <div class="text-xs font-bold tracking-widest uppercase text-gray-500">MAU 추이 · 최근 8개월</div>
+                  <div class="text-lg font-extrabold tight mt-0.5">우상향 · 8개월 연속 성장</div>
+                </div>
+                <div class="flex gap-3 text-xs">
+                  <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:var(--orange);"></span> MAU (천)</div>
+                  <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:var(--blue);"></span> 합격률 (%)</div>
+                </div>
+              </div>
+              <svg viewBox="0 0 720 240" class="w-full">
+                <!-- 그리드 -->
+                <g class="chart-grid">
+                  <line x1="50" y1="30" x2="700" y2="30"/>
+                  <line x1="50" y1="80" x2="700" y2="80"/>
+                  <line x1="50" y1="130" x2="700" y2="130"/>
+                  <line x1="50" y1="180" x2="700" y2="180"/>
+                  <line x1="50" y1="210" x2="700" y2="210" stroke="#0c0d12" stroke-width="1.5"/>
+                </g>
+                <!-- y axis labels -->
+                <g class="chart-axis">
+                  <text x="42" y="34" text-anchor="end">60</text>
+                  <text x="42" y="84" text-anchor="end">45</text>
+                  <text x="42" y="134" text-anchor="end">30</text>
+                  <text x="42" y="184" text-anchor="end">15</text>
+                  <text x="42" y="214" text-anchor="end">0</text>
+                </g>
+                <!-- x axis -->
+                <g class="chart-axis">
+                  <text x="90" y="228" text-anchor="middle">10월</text>
+                  <text x="172" y="228" text-anchor="middle">11월</text>
+                  <text x="254" y="228" text-anchor="middle">12월</text>
+                  <text x="336" y="228" text-anchor="middle">1월</text>
+                  <text x="418" y="228" text-anchor="middle">2월</text>
+                  <text x="500" y="228" text-anchor="middle">3월</text>
+                  <text x="582" y="228" text-anchor="middle">4월</text>
+                  <text x="664" y="228" text-anchor="middle">5월</text>
+                </g>
+                <!-- MAU 막대 -->
+                <g>
+                  <rect x="72" y="190" width="36" height="20" fill="#ff6a00" rx="3"/>
+                  <rect x="154" y="178" width="36" height="32" fill="#ff6a00" rx="3"/>
+                  <rect x="236" y="162" width="36" height="48" fill="#ff6a00" rx="3"/>
+                  <rect x="318" y="140" width="36" height="70" fill="#ff6a00" rx="3"/>
+                  <rect x="400" y="118" width="36" height="92" fill="#ff6a00" rx="3"/>
+                  <rect x="482" y="95" width="36" height="115" fill="#ff6a00" rx="3"/>
+                  <rect x="564" y="72" width="36" height="138" fill="#ff6a00" rx="3"/>
+                  <rect x="646" y="50" width="36" height="160" fill="#ff6a00" rx="3"/>
+                </g>
+                <!-- 합격률 라인 -->
+                <polyline points="90,160 172,150 254,138 336,120 418,100 500,80 582,60 664,48"
+                  fill="none" stroke="#1a4dff" stroke-width="3" stroke-linecap="round"/>
+                <g>
+                  <circle cx="90" cy="160" r="4" fill="#1a4dff"/>
+                  <circle cx="172" cy="150" r="4" fill="#1a4dff"/>
+                  <circle cx="254" cy="138" r="4" fill="#1a4dff"/>
+                  <circle cx="336" cy="120" r="4" fill="#1a4dff"/>
+                  <circle cx="418" cy="100" r="4" fill="#1a4dff"/>
+                  <circle cx="500" cy="80" r="4" fill="#1a4dff"/>
+                  <circle cx="582" cy="60" r="4" fill="#1a4dff"/>
+                  <circle cx="664" cy="48" r="5" fill="#1a4dff" stroke="#fff" stroke-width="2"/>
+                </g>
+                <!-- 라벨 -->
+                <text x="664" y="40" text-anchor="middle" font-size="11" font-weight="800" fill="#1a4dff">78%</text>
+                <text x="664" y="44" text-anchor="middle" font-size="11" font-weight="800" fill="#ff6a00" dx="0" dy="-12">48k</text>
+              </svg>
+            </div>
+          </div>
+          <div class="notes" id="notes-6">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            CAC가 사실상 0원입니다. 합격한 유저가 동료에게 직접 소개합니다. K-factor 1.7 — 한 명이 가입하면 1.7명을 데려옵니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 7 — Business Model -->
+        <section class="slide" data-no="07" data-title="비즈니스 모델" data-sub="Business Model">
+          <div class="slide-num num">07 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag mb-5">06 · Business Model</div>
+            <h2 class="h-title">프리미엄 + 구독.<br>전환율 <span style="color:var(--orange);">14.2%</span>.</h2>
+            <p class="h-sub mt-5 max-w-3xl">무료로 핵심 기능을 충분히 쓰게 한 뒤, 시험 D-30 시점에 결제 압력이 자연스럽게 발생한다.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-9">
+              <!-- Free -->
+              <div class="card">
+                <div class="text-xs font-bold tracking-widest uppercase text-gray-500">FREE</div>
+                <div class="num text-4xl font-black mt-2 tight">₩0</div>
+                <div class="text-xs text-gray-500 mt-1">기본 학습</div>
+                <hr class="hr-thin my-4">
+                <ul class="text-xs space-y-2 text-gray-600">
+                  <li>· 시뮬레이터 기본 회로 5종</li>
+                  <li>· 플립카드 100장</li>
+                  <li>· 기출 100문항</li>
+                </ul>
+              </div>
+              <!-- Pro -->
+              <div class="card relative" style="border-color:var(--orange); border-width:2px;">
+                <div class="absolute -top-3 left-5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase text-white" style="background:var(--orange);">RECOMMENDED</div>
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange-deep);">PRO</div>
+                <div class="num text-4xl font-black mt-2 tight">₩14,900<span class="text-base text-gray-500 font-bold">/월</span></div>
+                <div class="text-xs text-gray-500 mt-1">합격 패키지</div>
+                <hr class="hr-thin my-4">
+                <ul class="text-xs space-y-2 text-gray-700 font-semibold">
+                  <li>· 전 회로 무제한 + 도면 실기</li>
+                  <li>· 플립카드 4,200장</li>
+                  <li>· AI 코치 무제한 질문</li>
+                  <li>· 합격 보장 환불 (조건부)</li>
+                </ul>
+              </div>
+              <!-- B2B -->
+              <div class="card card-dark">
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">B2B · ENTERPRISE</div>
+                <div class="num text-4xl font-black mt-2 tight">맞춤</div>
+                <div class="text-xs text-gray-400 mt-1">학원·기업 교육</div>
+                <hr class="hr-thin my-4" style="background:#25262d;">
+                <ul class="text-xs space-y-2 text-gray-300">
+                  <li>· 학원 단체 라이선스</li>
+                  <li>· 학습 데이터 대시보드</li>
+                  <li>· 커스텀 문제 등록</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-7">
+              <div class="card card-soft py-4">
+                <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">전환율</div>
+                <div class="num text-2xl font-black tight mt-1">14.2%</div>
+              </div>
+              <div class="card card-soft py-4">
+                <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">ARPPU</div>
+                <div class="num text-2xl font-black tight mt-1">₩14,200</div>
+              </div>
+              <div class="card card-soft py-4">
+                <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">CAC</div>
+                <div class="num text-2xl font-black tight mt-1">₩2,100</div>
+              </div>
+              <div class="card card-soft py-4">
+                <div class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">LTV / CAC</div>
+                <div class="num text-2xl font-black tight mt-1" style="color:var(--green);">38×</div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-7">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            LTV/CAC 38배는 SaaS 우수 기업의 3배 이상입니다. B2B 학원 채널을 열면 ARPPU가 더 올라갑니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 8 — Competition -->
+        <section class="slide" data-no="08" data-title="경쟁" data-sub="Competition">
+          <div class="slide-num num">08 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag yellow mb-5">07 · Competition</div>
+            <h2 class="h-title">우리만 <span style="color:var(--orange);">"디지털 × 인터랙티브"</span> 사분면.</h2>
+            <p class="h-sub mt-5 max-w-3xl">기존 학원은 오프라인, 인강 플랫폼은 일방향. 우리는 인터랙티브 + AI로 새 카테고리를 만든다.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mt-9">
+              <!-- 4분면 -->
+              <div class="md:col-span-3 relative">
+                <div class="quad">
+                  <!-- 축 라벨 -->
+                  <div class="quad-axis-x" style="bottom:-22px; left:8px;">← 일방향 (강의)</div>
+                  <div class="quad-axis-x" style="bottom:-22px; right:8px;">인터랙티브 (시뮬레이션) →</div>
+                  <div class="quad-axis-y" style="left:-28px; top:8px; transform:rotate(-90deg); transform-origin:left top;">디지털 →</div>
+                  <div class="quad-axis-y" style="left:-28px; bottom:8px; transform:rotate(-90deg); transform-origin:left bottom;">← 오프라인</div>
+
+                  <!-- 경쟁사 -->
+                  <div class="quad-dot" style="left:20%; top:75%;">A 학원</div>
+                  <div class="quad-dot" style="left:30%; top:60%;">B 학원</div>
+                  <div class="quad-dot" style="left:30%; top:35%;">인강 P사</div>
+                  <div class="quad-dot" style="left:42%; top:25%;">앱 K사</div>
+                  <div class="quad-dot" style="left:55%; top:40%;">앱 D사</div>
+                  <!-- 우리 -->
+                  <div class="quad-dot us" style="left:80%; top:18%;">⚡ 스파크쌤</div>
+                </div>
+              </div>
+
+              <!-- 차별화 -->
+              <div class="md:col-span-2 space-y-3">
+                <div class="card card-orange py-4">
+                  <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange-deep);">MOAT 01</div>
+                  <div class="font-extrabold tight mt-1" style="color:#7a3500;">독자 시뮬레이션 엔진</div>
+                  <div class="text-xs mt-1" style="color:#7a3500;">2년 개발 · 실기 도면까지 커버</div>
+                </div>
+                <div class="card card-blue py-4">
+                  <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--blue-deep);">MOAT 02</div>
+                  <div class="font-extrabold tight mt-1" style="color:#0a2080;">학습 데이터 4,200만 건</div>
+                  <div class="text-xs mt-1" style="color:#0a2080;">AI 코치 정확도 매주 향상</div>
+                </div>
+                <div class="card card-dark py-4">
+                  <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">MOAT 03</div>
+                  <div class="font-extrabold tight mt-1">합격 보장 브랜드</div>
+                  <div class="text-xs mt-1 text-gray-400">"스파크쌤 = 합격" 검색량 8배</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-8">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            우리는 경쟁이 아닌 카테고리를 만듭니다. 인터랙티브 시뮬레이션 + AI 코치 + 모바일은 어디에도 없어요. 추격하려면 최소 18개월 걸립니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 9 — Team -->
+        <section class="slide" data-no="09" data-title="팀" data-sub="Team">
+          <div class="slide-num num">09 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag mb-5">08 · Team</div>
+            <h2 class="h-title">전기·교육·AI, <span style="color:var(--blue);">세 영역의 베테랑</span>.</h2>
+            <p class="h-sub mt-5 max-w-3xl">함께 일한 지 5년. 두 번의 학습 서비스 엑싯 경험.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-10">
+              <div class="card text-center">
+                <div class="avatar" style="background:linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);">정</div>
+                <div class="font-extrabold tight text-lg">김정훈</div>
+                <div class="text-xs font-bold tracking-widest uppercase mt-1" style="color:var(--orange-deep);">CEO · 공동창업</div>
+                <hr class="hr-thin my-3">
+                <ul class="text-xs text-gray-600 space-y-1 text-left">
+                  <li>· 前 에듀테크 K사 PO (사용자 30만 → 200만)</li>
+                  <li>· (가칭)국립공과대 산업공학 학사</li>
+                  <li>· 전기기능사 자격 보유</li>
+                </ul>
+              </div>
+              <div class="card text-center">
+                <div class="avatar" style="background:linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);">서</div>
+                <div class="font-extrabold tight text-lg">박서연</div>
+                <div class="text-xs font-bold tracking-widest uppercase mt-1" style="color:var(--blue-deep);">CTO · 공동창업</div>
+                <hr class="hr-thin my-3">
+                <ul class="text-xs text-gray-600 space-y-1 text-left">
+                  <li>· 前 핀테크 N사 시니어 엔지니어</li>
+                  <li>· 시뮬레이션 엔진 단독 개발</li>
+                  <li>· (가칭)국립대 전기공학 석사</li>
+                </ul>
+              </div>
+              <div class="card text-center">
+                <div class="avatar" style="background:linear-gradient(135deg, #0c0d12 0%, #2a2a33 100%);">민</div>
+                <div class="font-extrabold tight text-lg">이도민</div>
+                <div class="text-xs font-bold tracking-widest uppercase mt-1">CPO · 1호 직원</div>
+                <hr class="hr-thin my-3">
+                <ul class="text-xs text-gray-600 space-y-1 text-left">
+                  <li>· 前 디자인 컨설팅 S사 리드</li>
+                  <li>· 학습자 인터뷰 480회 진행</li>
+                  <li>· 학습 콘텐츠 큐레이션 총괄</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="card card-soft mt-7 flex items-center justify-between gap-6 flex-wrap">
+              <div>
+                <div class="text-xs font-bold tracking-widest uppercase text-gray-500">현재 팀 구성</div>
+                <div class="text-xl font-extrabold tight mt-1">정규 7명 · 자문 3명 · 위촉 콘텐츠 12명</div>
+              </div>
+              <div class="flex gap-4 text-center">
+                <div>
+                  <div class="num text-2xl font-black">3</div>
+                  <div class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">엔지니어</div>
+                </div>
+                <div>
+                  <div class="num text-2xl font-black">2</div>
+                  <div class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">디자이너</div>
+                </div>
+                <div>
+                  <div class="num text-2xl font-black">2</div>
+                  <div class="text-[11px] text-gray-500 font-semibold uppercase tracking-wider">콘텐츠/마케팅</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-9">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            팀의 강점은 도메인 깊이입니다. CEO가 직접 전기기능사를 취득했고, CTO가 시뮬레이션 엔진을 단독 개발했어요. 카피하기 쉽지 않습니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 10 — Roadmap -->
+        <section class="slide" data-no="10" data-title="로드맵" data-sub="Roadmap">
+          <div class="slide-num num">10 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag blue mb-5">09 · Roadmap</div>
+            <h2 class="h-title">1년 · 3년 · 5년.<br><span style="color:var(--blue);">단계별 성장</span> 시나리오.</h2>
+
+            <div class="mt-12 relative">
+              <div class="roadmap-line"></div>
+              <div class="grid grid-cols-3 gap-5 relative">
+                <!-- 1년 -->
+                <div class="text-center">
+                  <div class="roadmap-dot"></div>
+                  <div class="mt-5 card text-left">
+                    <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange-deep);">PHASE 1 · 1년</div>
+                    <div class="font-extrabold tight text-lg mt-1">전기기능사 1위</div>
+                    <ul class="text-xs text-gray-600 space-y-1.5 mt-3">
+                      <li>· MAU 15만 · MRR ₩3억</li>
+                      <li>· 실기 도면 시뮬레이터 출시</li>
+                      <li>· 학원 B2B 12개 도입</li>
+                      <li>· 합격률 85% 돌파</li>
+                    </ul>
+                  </div>
+                </div>
+                <!-- 3년 -->
+                <div class="text-center">
+                  <div class="roadmap-dot mid"></div>
+                  <div class="mt-5 card text-left" style="border-color:#d9b3ff;">
+                    <div class="text-xs font-bold tracking-widest uppercase" style="color:#7a1eb3;">PHASE 2 · 3년</div>
+                    <div class="font-extrabold tight text-lg mt-1">기술 자격증 플랫폼</div>
+                    <ul class="text-xs text-gray-600 space-y-1.5 mt-3">
+                      <li>· 산업기사·소방·공조 확장</li>
+                      <li>· MAU 80만 · ARR ₩70억</li>
+                      <li>· 시리즈 B 라운드</li>
+                      <li>· 일본·베트남 진출</li>
+                    </ul>
+                  </div>
+                </div>
+                <!-- 5년 -->
+                <div class="text-center">
+                  <div class="roadmap-dot end"></div>
+                  <div class="mt-5 card card-dark text-left">
+                    <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">PHASE 3 · 5년</div>
+                    <div class="font-extrabold tight text-lg mt-1 text-white">아시아 No.1</div>
+                    <ul class="text-xs text-gray-400 space-y-1.5 mt-3">
+                      <li>· MAU 300만 · ARR ₩400억</li>
+                      <li>· AI 코치 자체 모델</li>
+                      <li>· IPO 또는 전략적 매각</li>
+                      <li>· 6개국 서비스</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="notes" id="notes-10">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            우리는 자격증 학습이 아니라 "역량 검증 플랫폼"을 만들어가고 있습니다. 5년 후 ARR ₩400억은 보수적 가정입니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 11 — Ask -->
+        <section class="slide" data-no="11" data-title="투자 안내" data-sub="The Ask">
+          <div class="slide-num num">11 / 12</div>
+          <div class="max-w-5xl">
+            <div class="slide-tag mb-5">10 · The Ask</div>
+            <h2 class="h-title">시드 <span style="color:var(--orange);">₩5억</span>.<br>18개월 런웨이.</h2>
+            <p class="h-sub mt-5 max-w-3xl">밸류에이션 프리머니 ₩40억. 18개월 후 시리즈 A ₩50억 (밸류 ₩300억) 목표.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mt-9">
+              <!-- 금액 -->
+              <div class="card card-orange relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 text-[180px] font-black opacity-10 leading-none" style="color:var(--orange-deep);">5억</div>
+                <div class="relative">
+                  <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange-deep);">시드 라운드 (현재)</div>
+                  <div class="num text-6xl font-black mt-2 tight" style="color:#7a3500;">₩5억</div>
+                  <div class="text-sm font-bold mt-2" style="color:#7a3500;">프리머니 ₩40억 · 18개월 런웨이</div>
+                  <hr class="my-4" style="border-color:#ffd9b3;">
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                      <span style="color:#7a3500;">엔지니어링 채용 (5명)</span>
+                      <span class="font-extrabold num" style="color:#7a3500;">40% · ₩2.0억</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span style="color:#7a3500;">콘텐츠 제작 + AI 인프라</span>
+                      <span class="font-extrabold num" style="color:#7a3500;">30% · ₩1.5억</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span style="color:#7a3500;">마케팅 + B2B 영업</span>
+                      <span class="font-extrabold num" style="color:#7a3500;">20% · ₩1.0억</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span style="color:#7a3500;">운영 예비비</span>
+                      <span class="font-extrabold num" style="color:#7a3500;">10% · ₩0.5억</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 마일스톤 -->
+              <div class="card card-dark">
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">18개월 마일스톤</div>
+                <div class="space-y-3 mt-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-md grid place-items-center font-bold text-xs" style="background:#15161d; color:var(--orange);">M6</div>
+                    <div class="flex-1 text-sm">MAU 8만 · MRR ₩1.8억</div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-md grid place-items-center font-bold text-xs" style="background:#15161d; color:var(--orange);">M12</div>
+                    <div class="flex-1 text-sm">MAU 15만 · MRR ₩3억 · 실기 출시</div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-md grid place-items-center font-bold text-xs" style="background:#15161d; color:var(--orange);">M18</div>
+                    <div class="flex-1 text-sm">ARR ₩40억 도달 · 시리즈 A 클로징</div>
+                  </div>
+                </div>
+                <hr class="my-4" style="border-color:#25262d;">
+                <div class="text-xs font-bold tracking-widest uppercase" style="color:var(--orange);">시리즈 A (T+18)</div>
+                <div class="num text-3xl font-black mt-2 tight">₩50억 · 밸류 ₩300억</div>
+              </div>
+            </div>
+
+            <button class="btn btn-orange mt-7 w-full md:w-auto" style="height:48px; padding:0 24px; font-size:14px;" onclick="downloadDeck()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              투자 의향서 (Term Sheet · PDF) 다운로드
+            </button>
+          </div>
+          <div class="notes" id="notes-11">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            우리가 시드 5억을 잘 쓰면 18개월 후 시리즈 A에서 7.5배 밸류 상승이 가능합니다. 이번 라운드는 리드 1곳 + 팔로워 2~3곳을 찾고 있습니다.
+          </div>
+        </section>
+
+        <!-- 슬라이드 12 — Thank You -->
+        <section class="slide" data-no="12" data-title="감사합니다" data-sub="Thank You">
+          <div class="cover-bg"></div>
+          <div class="cover-grid"></div>
+          <div class="cover-content h-full flex flex-col">
+            <div class="slide-num num">12 / 12</div>
+
+            <div class="flex-1 grid place-items-center">
+              <div class="text-center max-w-3xl">
+                <div class="slide-tag dark mb-6">END · Q&A</div>
+                <div class="h-display tighter">감사합니다.</div>
+                <p class="h-sub mt-7">함께 만들 분을 기다립니다.<br>질문이나 미팅 요청은 아래로 부탁드립니다.</p>
+
+                <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
+                  <div class="card py-4">
+                    <div class="text-[10px] font-bold tracking-widest uppercase text-gray-500">대표 메일</div>
+                    <div class="font-extrabold tight text-sm mt-1">hello@sparkssaem.example</div>
+                  </div>
+                  <div class="card py-4">
+                    <div class="text-[10px] font-bold tracking-widest uppercase text-gray-500">투자 문의</div>
+                    <div class="font-extrabold tight text-sm mt-1">invest@sparkssaem.example</div>
+                  </div>
+                  <div class="card py-4">
+                    <div class="text-[10px] font-bold tracking-widest uppercase text-gray-500">데모 신청</div>
+                    <div class="font-extrabold tight text-sm mt-1">sparkssaem.example/demo</div>
+                  </div>
+                </div>
+
+                <div class="mt-10 flex items-center justify-center gap-3 flex-wrap">
+                  <button class="btn btn-primary" style="height:44px; padding:0 22px;" onclick="goSlide(0)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/></svg>
+                    처음으로
+                  </button>
+                  <button class="btn btn-orange" style="height:44px; padding:0 22px;" onclick="downloadDeck()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    투자 의향서 받기
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center text-xs text-gray-500">
+              <div class="font-bold text-gray-700">스파크쌤 (Sparkssaem) · CONFIDENTIAL</div>
+              <div class="mt-1">2026.05.15 · DemoDay Spring · 가상 시뮬레이션</div>
+            </div>
+          </div>
+          <div class="notes" id="notes-12">
+            <div class="notes-label"><span>발표자 노트</span></div>
+            발표 마무리. Q&A 시간을 충분히 가지고, 미팅 일정 잡기. 후속 자료(상세 재무·기술 deep-dive)는 NDA 후 별도 공유.
+          </div>
+        </section>
+
+      </div>
+
+      <div class="deck-footer">
+        <div>
+          <span class="font-semibold text-gray-700">가상 피칭 시뮬레이션</span>
+          <span class="mx-1.5">·</span>
+          실재 회사·인물·기관과 무관
+        </div>
+        <div class="flex items-center gap-2">
+          <span>키보드:</span>
+          <span class="kbd">←</span>
+          <span class="kbd">→</span>
+          <span class="kbd">N</span>
+          <span class="kbd">F</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ====== 안전한 텍스트 처리 ======
+  function escapeHTML(s){
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  // ====== 상태 ======
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var idx = 0;
+  var notesOn = false;
+
+  // ====== 썸네일 생성 ======
+  function buildThumbs(){
+    var box = document.getElementById('thumbs');
+    var html = '';
+    for(var i=0;i<slides.length;i++){
+      var s = slides[i];
+      var no = s.getAttribute('data-no') || ('0'+(i+1)).slice(-2);
+      var title = s.getAttribute('data-title') || ('슬라이드 '+(i+1));
+      var sub = s.getAttribute('data-sub') || '';
+      html += '<div class="thumb'+(i===0?' active':'')+'" data-idx="'+i+'">'+
+        '<div class="thumb-no num">'+escapeHTML(no)+'</div>'+
+        '<div><div class="thumb-label">'+escapeHTML(title)+'</div>'+
+        (sub?'<div class="thumb-sub inter">'+escapeHTML(sub)+'</div>':'')+
+        '</div></div>';
+    }
+    box.innerHTML = html;
+    var thumbs = box.querySelectorAll('.thumb');
+    for(var j=0;j<thumbs.length;j++){
+      (function(node){
+        node.addEventListener('click', function(){
+          goSlide(parseInt(node.getAttribute('data-idx'),10));
+        });
+      })(thumbs[j]);
+    }
+    document.getElementById('thumbCount').textContent = total;
+    document.getElementById('totNo').textContent = ('0'+total).slice(-2);
+  }
+
+  // ====== 슬라이드 이동 ======
+  function goSlide(n){
+    if(n<0) n = 0;
+    if(n>=total) n = total-1;
+    idx = n;
+    for(var i=0;i<slides.length;i++){
+      if(i===idx) slides[i].classList.add('active');
+      else slides[i].classList.remove('active');
+    }
+    // 썸네일 활성화
+    var thumbs = document.querySelectorAll('.thumb');
+    for(var k=0;k<thumbs.length;k++){
+      if(k===idx) thumbs[k].classList.add('active');
+      else thumbs[k].classList.remove('active');
+    }
+    // 진행률
+    var pct = ((idx+1)/total)*100;
+    document.getElementById('progressBar').style.width = pct+'%';
+    document.getElementById('curNo').textContent = ('0'+(idx+1)).slice(-2);
+    // 노트 상태 반영
+    applyNotes();
+    // 스크롤 맨 위로
+    slides[idx].scrollTop = 0;
+  }
+  window.goSlide = goSlide;
+
+  function prev(){ goSlide(idx-1); }
+  function next(){ goSlide(idx+1); }
+  window.prev = prev;
+  window.next = next;
+
+  // ====== 발표자 노트 ======
+  function applyNotes(){
+    var all = document.querySelectorAll('.notes');
+    for(var i=0;i<all.length;i++){
+      if(notesOn) all[i].classList.add('on');
+      else all[i].classList.remove('on');
+    }
+    var btn = document.getElementById('notesBtn');
+    if(notesOn){
+      btn.style.background = '#15161d';
+      btn.style.color = '#fff';
+      btn.style.borderColor = '#15161d';
+    } else {
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  }
+  function toggleNotes(){
+    notesOn = !notesOn;
+    applyNotes();
+  }
+  window.toggleNotes = toggleNotes;
+
+  // ====== 풀스크린 ======
+  function toggleFullscreen(){
+    var shell = document.getElementById('shell');
+    shell.classList.toggle('fullscreen');
+    // 실제 브라우저 풀스크린도 시도
+    if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+      document.documentElement.requestFullscreen().catch(function(){});
+    } else if(document.fullscreenElement && document.exitFullscreen){
+      document.exitFullscreen().catch(function(){});
+    }
+  }
+  window.toggleFullscreen = toggleFullscreen;
+
+  // ====== 다운로드 (UI만) ======
+  function downloadDeck(){
+    var btns = document.querySelectorAll('button');
+    // 임시 안내
+    var note = document.createElement('div');
+    note.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#0c0d12;color:#fff;padding:14px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:9999;letter-spacing:-0.01em;';
+    note.textContent = '투자 의향서 — 가상 시뮬레이션 (실제 다운로드 없음)';
+    document.body.appendChild(note);
+    setTimeout(function(){
+      note.style.transition = 'opacity .3s';
+      note.style.opacity = '0';
+      setTimeout(function(){ note.remove(); }, 320);
+    }, 2200);
+  }
+  window.downloadDeck = downloadDeck;
+
+  // ====== 키보드 ======
+  document.addEventListener('keydown', function(e){
+    var tag = (e.target && e.target.tagName) || '';
+    if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if(e.key === 'ArrowLeft'){ prev(); e.preventDefault(); }
+    else if(e.key === 'ArrowRight' || e.key === ' '){ next(); e.preventDefault(); }
+    else if(e.key === 'n' || e.key === 'N'){ toggleNotes(); }
+    else if(e.key === 'f' || e.key === 'F'){ toggleFullscreen(); e.preventDefault(); }
+    else if(e.key === 'Home'){ goSlide(0); e.preventDefault(); }
+    else if(e.key === 'End'){ goSlide(total-1); e.preventDefault(); }
+    else if(/^[0-9]$/.test(e.key)){
+      var n = parseInt(e.key,10);
+      if(n===0) goSlide(9);
+      else goSlide(n-1);
+    }
+  });
+
+  // 초기화
+  buildThumbs();
+  goSlide(0);
+})();
+</script>
+
+</body>
+</html>

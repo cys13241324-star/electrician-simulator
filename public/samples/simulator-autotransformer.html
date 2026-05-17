@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단권 변압기 시뮬레이터 (Autotransformer)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 660px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(59,130,246,0.4), rgba(168,139,250,0.4), rgba(16,185,129,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #6ee7b7);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-tap { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-r { background: linear-gradient(135deg, rgba(245,158,11,0.20), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.live-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.15); }
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.mode-btn {
+    background: linear-gradient(135deg, rgba(30,41,59,0.7), rgba(15,23,42,0.7));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.mode-btn:hover { border-color: rgba(196, 181, 253, 0.6); color: #e5e7eb; }
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.35), rgba(168,139,250,0.35));
+    border-color: rgba(244,114,182,0.8);
+    color: #fce7f3;
+    box-shadow: 0 0 22px rgba(244,114,182,0.45);
+}
+.capacity-bar {
+    position: relative;
+    height: 12px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+}
+.cap-fill-self {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, #c4b5fd, #a78bfa);
+    transition: width 280ms ease;
+    box-shadow: 0 0 12px rgba(168,139,250,0.6);
+}
+.cap-fill-load {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: linear-gradient(90deg, #6ee7b7, #34d399);
+    transition: width 280ms ease;
+    box-shadow: 0 0 12px rgba(52,211,153,0.6);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · AUTOTRANSFORMER · SINGLE WINDING
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            🔗 단권 변압기 시뮬레이터 (Autotransformer)
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">1차와 2차가 공통 권선을 사용하는 변압기. 공통 권선에는 차전류 $I_2 - I_1$(감압 시)이 흐르며, 자기 용량 $P_{self} = (1-1/a)\,P_{load}$.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">2차 전압 V₂</p>
+            <p class="mt-1 text-lg font-bold"><span id="v2Val" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">2차 전류 I₂</p>
+            <p class="mt-1 text-lg font-bold"><span id="i2Val" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">자기 용량 P<span class="text-[10px]">self</span></p>
+            <p class="mt-1 text-lg font-bold"><span id="pselfVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">효율 η</p>
+            <p class="mt-1 text-lg font-bold"><span id="effVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">단권 권선 · 공통 권선(분기) · 전류 흐름 시각화</span>
+                    <span id="modeBadge" class="text-[10px] tracking-widest font-bold text-cyan-200">MODE · STEP-DOWN</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 자기 용량 vs 부하 용량 -->
+            <div class="glass rounded-2xl p-5" id="capCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📊</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">자기 용량 vs 부하 용량</span>
+                </h3>
+                <div class="mt-4 space-y-3">
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-violet-300 font-bold">자기 용량 P<sub>self</sub> · 권선이 실제 부담하는 용량</span>
+                            <span id="pselfBarTxt" class="font-mono text-slate-300">—</span>
+                        </div>
+                        <div class="capacity-bar"><div id="pselfBar" class="cap-fill-self" style="width: 0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[11px] mb-1">
+                            <span class="text-emerald-300 font-bold">부하 용량 P<sub>load</sub> · 부하에 전달되는 용량</span>
+                            <span id="ploadBarTxt" class="font-mono text-slate-300">—</span>
+                        </div>
+                        <div class="capacity-bar"><div id="ploadBar" class="cap-fill-load" style="width: 0%"></div></div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed mt-2">
+                        용량비 $\dfrac{P_{self}}{P_{load}} = 1 - \dfrac{1}{a}$ · 권수비 a가 1에 가까울수록 자기 용량이 작아져 <span class="text-pink-200 font-bold">동량·동손이 줄어듭니다</span>. 이것이 이권선 변압기 대비 단권 변압기의 핵심 이점.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공식 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">단권 변압기 관계식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">권수비</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$a = \dfrac{N_1}{N_2} = \dfrac{V_1}{V_2}$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">공통 권선 전류</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$I_c = I_2 - I_1$ (감압)</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">자기 용량</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$P_{self} = \left(1 - \dfrac{1}{a}\right) P_{load}$</p>
+                    </div>
+                </div>
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">승압 모드</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">$V_2 = V_1 + V_{add}$ · $a = N_1/(N_1+N_{add})$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">이권선 대비 효율</p>
+                        <p class="mt-2 font-mono text-sm text-pink-200">동량·동손·전압강하 ↓ 효율 ↑</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">동작 모드</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="mode-btn active rounded-md px-3 py-2 text-xs font-bold" data-mode="step-down">감압 (Step-down)</button>
+                    <button class="mode-btn rounded-md px-3 py-2 text-xs font-bold" data-mode="step-up">승압 (Step-up)</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2" id="modeNote">감압 모드: 권선 전체가 1차, 일부 탭이 2차. 공통 권선에 $I_2 - I_1$ 흐름.</p>
+            </div>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>1차 전압 V₁</span><span id="v1Disp" class="font-mono text-base">220</span></label>
+                <input type="range" id="v1" min="50" max="440" step="10" value="220" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V</p>
+            </div>
+
+            <div class="chip-tap chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>탭 위치 (권수비 a)</span><span id="tapDisp" class="font-mono text-base">2.00</span></label>
+                <input type="range" id="tap" min="105" max="500" step="5" value="200" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">a = N₁/N₂ (탭이 높을수록 권수비 ↑)</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 R</span><span id="rDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="r" min="1" max="100" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 space-y-1.5 text-[11px]">
+                <p class="text-slate-300"><span class="text-blue-300 font-bold">1차</span> · V₁=<span id="d_v1" class="font-mono">—</span> · I₁=<span id="d_i1" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-emerald-300 font-bold">2차</span> · V₂=<span id="d_v2" class="font-mono">—</span> · I₂=<span id="d_i2" class="font-mono">—</span></p>
+                <p class="text-slate-300"><span class="text-violet-300 font-bold">공통</span> · I<sub>c</sub>=<span id="d_ic" class="font-mono">—</span></p>
+                <p class="text-slate-300">부하 P<sub>load</sub>=<span id="d_pload" class="font-mono">—</span></p>
+                <p class="text-slate-300">자기 P<sub>self</sub>=<span id="d_pself" class="font-mono">—</span> · 비율 <span id="d_ratio" class="font-mono">—</span></p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 text-[11px] text-slate-300 leading-relaxed">
+                <p class="text-pink-200 font-bold mb-1">💡 학습 포인트</p>
+                <p id="learnNote">권수비 a가 1에 가까울수록 자기 용량 비율이 작아 동손·전압강하가 감소합니다. 단점: 1차·2차가 절연되지 않아 1차 접지/사고 시 2차에 직접 영향. 큰 전압차에는 부적합.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const TOTAL_H = 660;
+
+let state = {
+    mode: 'step-down',
+    V1: 220,
+    tap: 200,   // 0..500 (탭 위치, 권수비 결정용 raw)
+    R: 10,
+    t: 0
+};
+
+let layout = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    computeLayout();
+    seedFluxParticles();
+}
+window.addEventListener('resize', resize);
+
+function computeLayout() {
+    const W = canvas.width;
+    const H = TOTAL_H;
+    // 코어 (좌측)
+    const coreW = Math.min(W * 0.28, 320);
+    const coreH = Math.min(H * 0.72, 480);
+    const cx = W * 0.30;
+    const cy = H * 0.50;
+    layout.core = {
+        x: cx - coreW / 2,
+        y: cy - coreH / 2,
+        w: coreW,
+        h: coreH,
+        cx, cy
+    };
+    const innerPad = 30;
+    layout.core.innerX = layout.core.x + innerPad;
+    layout.core.innerY = layout.core.y + innerPad;
+    layout.core.innerW = coreW - innerPad * 2;
+    layout.core.innerH = coreH - innerPad * 2;
+
+    // 우측 기둥 — 단권 권선 (하나의 연속 권선)
+    const colCx = layout.core.x + layout.core.w - 16;
+    const colTop = layout.core.y + 30;
+    const colBot = layout.core.y + layout.core.h - 30;
+    layout.coil = { cx: colCx, yTop: colTop, yBot: colBot };
+
+    // AC 전원 (좌측 기둥 외부)
+    layout.ac = { x: layout.core.x - 60, y: cy };
+
+    // 부하 (우측)
+    layout.load = { x: W - 90, y: cy };
+
+    // 컴퓨팅에 필요한 비율 위치
+    layout.tapMin = 0.05;
+    layout.tapMax = 0.95;
+}
+
+// 자속 입자
+let fluxParticles = [];
+let coreLoopLen = 0;
+let coreLoopSegs = [];
+function buildCoreLoop() {
+    const r = layout.core;
+    const offset = 14;
+    const pts = [
+        { x: r.x + offset, y: r.y + offset },
+        { x: r.x + r.w - offset, y: r.y + offset },
+        { x: r.x + r.w - offset, y: r.y + r.h - offset },
+        { x: r.x + offset, y: r.y + r.h - offset },
+        { x: r.x + offset, y: r.y + offset },
+    ];
+    coreLoopLen = 0;
+    coreLoopSegs = [];
+    for (let k = 0; k < pts.length - 1; k++) {
+        const a = pts[k], b = pts[k + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        coreLoopSegs.push({ a, b, len, start: coreLoopLen });
+        coreLoopLen += len;
+    }
+}
+function coreLoopPointAt(progress) {
+    let p = ((progress % coreLoopLen) + coreLoopLen) % coreLoopLen;
+    for (const s of coreLoopSegs) {
+        if (p <= s.start + s.len) {
+            const t = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
+        }
+    }
+    return coreLoopSegs[0].a;
+}
+function seedFluxParticles() {
+    buildCoreLoop();
+    fluxParticles = [];
+    const count = 28;
+    for (let i = 0; i < count; i++) {
+        fluxParticles.push({ progress: (i / count) * coreLoopLen, size: 1.6 + Math.random() * 1.0 });
+    }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function badgeText(text, x, y, color, font = 'bold 11px ui-monospace, monospace', bg = 'rgba(15, 23, 42, 0.92)') {
+    ctx.save();
+    ctx.font = font;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = bg;
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// 배경
+function drawBg() {
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, TOTAL_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TOTAL_H); ctx.stroke();
+    }
+    for (let i = 0; i < TOTAL_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ AUTOTRANSFORMER · SINGLE WINDING · COMMON SECTION', 12, 10);
+    ctx.restore();
+}
+
+// 코어
+function drawCore() {
+    const r = layout.core;
+    ctx.save();
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.45)';
+    const gExt = ctx.createLinearGradient(r.x, r.y, r.x + r.w, r.y + r.h);
+    gExt.addColorStop(0, '#475569');
+    gExt.addColorStop(0.5, '#94a3b8');
+    gExt.addColorStop(1, '#334155');
+    ctx.fillStyle = gExt;
+    roundRect(ctx, r.x, r.y, r.w, r.h, 10);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.stroke();
+    ctx.restore();
+
+    // 내부 창
+    ctx.save();
+    const gIn = ctx.createLinearGradient(r.innerX, r.innerY, r.innerX + r.innerW, r.innerY + r.innerH);
+    gIn.addColorStop(0, '#0a0e1e');
+    gIn.addColorStop(1, '#060814');
+    ctx.fillStyle = gIn;
+    roundRect(ctx, r.innerX, r.innerY, r.innerW, r.innerH, 6);
+    ctx.fill();
+    ctx.restore();
+
+    // 라미네이션
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let y = r.y + 6; y < r.y + r.h; y += 6) {
+        ctx.beginPath(); ctx.moveTo(r.x + 3, y); ctx.lineTo(r.x + r.w - 3, y); ctx.stroke();
+    }
+    ctx.restore();
+
+    badgeText('철심', r.x + r.w / 2, r.y + r.h + 14, '#94a3b8', 'bold 10px ui-monospace, monospace');
+}
+
+// 자속 흐름
+function drawFlux() {
+    const speed = 0.6 + (state.V1 / 220) * 2.2;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of fluxParticles) {
+        p.progress = (p.progress + speed) % coreLoopLen;
+        const pt = coreLoopPointAt(p.progress);
+        ctx.fillStyle = 'rgba(168, 139, 250, 0.85)';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#a78bfa';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // Φ 라벨
+    const r = layout.core;
+    ctx.save();
+    ctx.font = 'bold 12px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const label = 'Φ';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, r.x + r.w/2 - tw/2 - 6, r.y + r.h/2 - 9, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(label, r.x + r.w/2, r.y + r.h/2);
+    ctx.restore();
+}
+
+// 핵심: 단권 권선 (하나의 연속 코일 + 탭 분기)
+// 감압: 권선 전체 = 1차(N1), 위쪽 탭부터 아래 끝까지 = 2차(N2 < N1)
+// 승압: 권선 일부(아래쪽 N1) = 1차, 권선 전체(N1+N_add) = 2차
+function drawWinding() {
+    const c = layout.coil;
+    const cx = c.cx;
+    const yTop = c.yTop;
+    const yBot = c.yBot;
+    const span = yBot - yTop;
+
+    // 탭 위치 비율 (0..1, 위쪽으로 갈수록 큰 권수)
+    // 감압: tap이 곧 2차 권선 비율 (낮은 위치 ~ 작은 N2)
+    // 권수비 a = N1/N2 이므로 tap비율 = N2/N1 = 1/a
+    let tapRatio = state.tap / 500; // 0.05..1.0 정도
+    tapRatio = Math.max(0.1, Math.min(0.95, tapRatio));
+
+    // tap 절대 좌표 (위쪽이 큰 권수). 우리는 권선을 위→아래로 그릴 거고
+    // tap은 권선 위쪽 비율 위치
+    const tapY = yTop + span * (1 - tapRatio); // tapRatio=1 → tapY=yTop (전체), tapRatio=0.1 → 거의 yBot
+    // 즉 tapY부터 yBot까지가 "2차 권선(공통)", yTop부터 tapY까지가 "직렬 권선"
+
+    // turns 개수 (시각화용)
+    const totalTurns = 24;
+    const turnsCommon = Math.max(2, Math.round(totalTurns * tapRatio));
+    const turnsSeries = totalTurns - turnsCommon;
+    const turnStep = span / totalTurns;
+
+    // 색상 정의
+    const C_SERIES = { base: '#3b82f6', glow: '#60a5fa' };   // 직렬 권선(파랑)
+    const C_COMMON = { base: '#a855f7', glow: '#c4b5fd' };   // 공통 권선(보라)
+
+    // 권선 turn 그리기
+    ctx.save();
+    for (let i = 0; i < totalTurns; i++) {
+        const y = yTop + (i + 0.5) * turnStep;
+        const isSeries = i < turnsSeries;
+        const col = isSeries ? C_SERIES : C_COMMON;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = col.glow;
+        const g = ctx.createLinearGradient(cx - 26, y, cx + 26, y);
+        g.addColorStop(0, col.base);
+        g.addColorStop(0.5, '#ffffff');
+        g.addColorStop(1, col.base);
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.ellipse(cx, y, 28, 5.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 탭 점 (분기점)
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#67e8f9';
+    ctx.fillStyle = '#22d3ee';
+    ctx.beginPath();
+    ctx.arc(cx + 28, tapY, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+
+    // 권선 영역 라벨
+    const seriesYMid = yTop + turnsSeries * turnStep / 2;
+    const commonYMid = yTop + turnsSeries * turnStep + (totalTurns - turnsSeries) * turnStep / 2;
+
+    // 직렬 영역
+    if (turnsSeries > 0) {
+        badgeText('직렬 권선', cx - 70, seriesYMid, '#93c5fd', 'bold 10px ui-monospace, monospace');
+    }
+    // 공통 영역
+    badgeText('공통 권선', cx - 70, commonYMid, '#c4b5fd', 'bold 10px ui-monospace, monospace');
+
+    // 권선 양 끝 마커 (입력/출력 단자)
+    const topY = yTop - 8;
+    const botY = yBot + 8;
+    // 상단 단자
+    ctx.save();
+    ctx.fillStyle = '#f472b6';
+    ctx.shadowBlur = 14; ctx.shadowColor = '#f472b6';
+    ctx.beginPath();
+    ctx.arc(cx, topY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // 하단 단자 (공통 접지)
+    ctx.save();
+    ctx.fillStyle = '#94a3b8';
+    ctx.shadowBlur = 10; ctx.shadowColor = '#94a3b8';
+    ctx.beginPath();
+    ctx.arc(cx, botY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 저장: 다른 함수에서 접근
+    layout._tap = { tapY, cx, yTop, yBot, topY, botY };
+}
+
+// AC 전원 (좌측)
+function drawAC() {
+    const a = layout.ac;
+    ctx.save();
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = '#f472b6';
+    const g = ctx.createRadialGradient(a.x - 5, a.y - 7, 2, a.x, a.y, 28);
+    g.addColorStop(0, '#fce7f3');
+    g.addColorStop(0.55, '#ec4899');
+    g.addColorStop(1, '#831843');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, 28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.stroke();
+    // sin
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    for (let dx = -14; dx <= 14; dx += 1) {
+        const dy = Math.sin((dx + state.t * 4) * 0.28) * 7;
+        if (dx === -14) ctx.moveTo(a.x + dx, a.y + dy); else ctx.lineTo(a.x + dx, a.y + dy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // V1 라벨
+    badgeText(`V₁ = ${state.V1.toFixed(0)} V`, a.x, a.y + 46, '#f9a8d4', 'bold 10px ui-monospace, monospace');
+}
+
+// 부하 R (우측)
+function drawLoad() {
+    const l = layout.load;
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#fbbf24';
+    const g = ctx.createLinearGradient(l.x - 24, l.y - 16, l.x + 24, l.y + 16);
+    g.addColorStop(0, '#fbbf24');
+    g.addColorStop(0.5, '#f59e0b');
+    g.addColorStop(1, '#b45309');
+    ctx.fillStyle = g;
+    roundRect(ctx, l.x - 24, l.y - 16, 48, 32, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // zig
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const zs = l.x - 16, ze = l.x + 16;
+    for (let k = 0; k <= 6; k++) {
+        const x = zs + ((ze - zs) * k) / 6;
+        const y = l.y + (k % 2 === 0 ? -5 : 5);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    badgeText(`R = ${state.R} Ω`, l.x, l.y + 32, '#fcd34d', 'bold 10px ui-monospace, monospace');
+}
+
+// 배선 + 전류 흐름 (분기 시각화)
+function drawWiring() {
+    const r = layout.core;
+    const ac = layout.ac;
+    const ld = layout.load;
+    const tp = layout._tap;
+
+    // 모드별 배선
+    // 감압(step-down):
+    //   1차 입력: AC → 권선 상단(topY), 권선 하단(botY) (전체 권선)
+    //   2차 출력: 탭(tapY) → 부하 상단, 권선 하단(botY) → 부하 하단 (공유)
+    // 승압(step-up):
+    //   1차 입력: AC → 탭(tapY), 권선 하단(botY) (일부 권선)
+    //   2차 출력: 권선 상단(topY) → 부하 상단, 권선 하단(botY) → 부하 하단 (전체 권선)
+    const isDown = state.mode === 'step-down';
+
+    // 1차 입력 (핑크)
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#f472b6';
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (isDown) {
+        // 상단 단자 입력
+        ctx.moveTo(ac.x, ac.y - 28); ctx.lineTo(ac.x, r.y - 14); ctx.lineTo(tp.cx, r.y - 14); ctx.lineTo(tp.cx, tp.topY);
+        // 하단 단자 (공통 귀선)
+        ctx.moveTo(ac.x, ac.y + 28); ctx.lineTo(ac.x, r.y + r.h + 14); ctx.lineTo(tp.cx, r.y + r.h + 14); ctx.lineTo(tp.cx, tp.botY);
+    } else {
+        // 승압: 1차 입력은 탭 ~ 하단
+        ctx.moveTo(ac.x, ac.y - 28); ctx.lineTo(ac.x, tp.tapY); ctx.lineTo(tp.cx + 28, tp.tapY);
+        ctx.moveTo(ac.x, ac.y + 28); ctx.lineTo(ac.x, r.y + r.h + 14); ctx.lineTo(tp.cx, r.y + r.h + 14); ctx.lineTo(tp.cx, tp.botY);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 2차 출력 (에메랄드)
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#34d399';
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (isDown) {
+        // 2차: 탭 → 부하 위, 하단 → 부하 아래
+        ctx.moveTo(tp.cx + 28, tp.tapY); ctx.lineTo(ld.x, tp.tapY); ctx.lineTo(ld.x, ld.y - 16);
+        ctx.moveTo(tp.cx, tp.botY); ctx.lineTo(tp.cx, r.y + r.h + 28); ctx.lineTo(ld.x, r.y + r.h + 28); ctx.lineTo(ld.x, ld.y + 16);
+    } else {
+        // 승압: 2차는 전체 권선
+        ctx.moveTo(tp.cx, tp.topY); ctx.lineTo(tp.cx, r.y - 14); ctx.lineTo(ld.x, r.y - 14); ctx.lineTo(ld.x, ld.y - 16);
+        ctx.moveTo(tp.cx, tp.botY); ctx.lineTo(tp.cx, r.y + r.h + 28); ctx.lineTo(ld.x, r.y + r.h + 28); ctx.lineTo(ld.x, ld.y + 16);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 전류 흐름 입자 (3계열)
+    drawCurrentParticles(isDown);
+
+    // 직렬/공통 권선 전류 화살표 라벨
+    drawCurrentLabels(isDown);
+}
+
+// 전류 입자
+let particleT = 0;
+function drawCurrentParticles(isDown) {
+    particleT += 0.04;
+    const r = layout.core;
+    const ac = layout.ac;
+    const ld = layout.load;
+    const tp = layout._tap;
+
+    // I1 입자 (핑크, 1차 입력 라인)
+    drawFlowDots('#f472b6', 6, particleT * 1.0, () => {
+        if (isDown) {
+            return [
+                { x: ac.x, y: ac.y - 28 }, { x: ac.x, y: r.y - 14 },
+                { x: tp.cx, y: r.y - 14 }, { x: tp.cx, y: tp.topY }
+            ];
+        } else {
+            return [
+                { x: ac.x, y: ac.y - 28 }, { x: ac.x, y: tp.tapY },
+                { x: tp.cx + 28, y: tp.tapY }
+            ];
+        }
+    });
+
+    // I2 입자 (에메랄드, 2차 출력 라인)
+    drawFlowDots('#34d399', 6, particleT * 1.3, () => {
+        if (isDown) {
+            return [
+                { x: tp.cx + 28, y: tp.tapY }, { x: ld.x, y: tp.tapY },
+                { x: ld.x, y: ld.y - 16 }
+            ];
+        } else {
+            return [
+                { x: tp.cx, y: tp.topY }, { x: tp.cx, y: r.y - 14 },
+                { x: ld.x, y: r.y - 14 }, { x: ld.x, y: ld.y - 16 }
+            ];
+        }
+    });
+
+    // Ic 입자 (보라, 공통 권선 내부 - 권선 옆 흐름 시각화)
+    // 공통 권선 영역 내부에서 위→아래(감압) 또는 아래→위(승압)
+    const commonYTop = isDown ? tp.tapY : tp.topY;
+    const commonYBot = isDown ? tp.botY : tp.tapY;
+    drawFlowDots('#a78bfa', 5, particleT * 0.8, () => {
+        // 공통 권선 옆에 화살 입자
+        const x = tp.cx + 42;
+        return [
+            { x, y: isDown ? commonYTop : commonYBot },
+            { x, y: isDown ? commonYBot : commonYTop }
+        ];
+    });
+}
+
+function drawFlowDots(color, count, phase, getPath) {
+    const pts = getPath();
+    if (pts.length < 2) return;
+    // 총 길이
+    const lens = [];
+    let total = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+        const L = Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+        lens.push(L);
+        total += L;
+    }
+    if (total < 1) return;
+
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    for (let k = 0; k < count; k++) {
+        const t = ((phase + k / count) % 1) * total;
+        let acc = 0;
+        let placed = false;
+        for (let i = 0; i < pts.length - 1; i++) {
+            if (t <= acc + lens[i]) {
+                const u = (t - acc) / lens[i];
+                const x = pts[i].x + (pts[i+1].x - pts[i].x) * u;
+                const y = pts[i].y + (pts[i+1].y - pts[i].y) * u;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                placed = true;
+                break;
+            }
+            acc += lens[i];
+        }
+        if (!placed) {
+            const p = pts[pts.length - 1];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+function drawCurrentLabels(isDown) {
+    const tp = layout._tap;
+    // 공통 권선 중앙 부근에 I_c 라벨
+    const commonYMid = isDown ? (tp.tapY + tp.botY)/2 : (tp.topY + tp.tapY)/2;
+    badgeText(`I_c = |I₂ − I₁|`, tp.cx + 92, commonYMid, '#c4b5fd', 'bold 10px ui-monospace, monospace');
+
+    // 직렬 권선 중앙에 차전류 표시
+    if (isDown && tp.tapY - tp.topY > 30) {
+        const seriesYMid = (tp.topY + tp.tapY) / 2;
+        badgeText(`I₁`, tp.cx + 70, seriesYMid, '#f9a8d4', 'bold 10px ui-monospace, monospace');
+    } else if (!isDown && tp.botY - tp.tapY > 30) {
+        const seriesYMid = (tp.tapY + tp.botY) / 2;
+        badgeText(`I₂`, tp.cx + 70, seriesYMid, '#6ee7b7', 'bold 10px ui-monospace, monospace');
+    }
+
+    // 탭 라벨
+    badgeText('TAP', tp.cx + 28, tp.tapY - 16, '#67e8f9', 'bold 9px ui-monospace, monospace');
+}
+
+// ===== 계산 =====
+function compute() {
+    state.V1 = +$('v1').value;
+    state.tap = +$('tap').value;
+    state.R = +$('r').value;
+
+    // tap → 권수비 a
+    // 감압: a = N1/N2 > 1, 탭 위치는 2차 권수 비율 N2/N1 = 1/a
+    // tap raw: 105..500, 우리는 a값을 1.05..5.0 정도로 매핑
+    // tap=200 → a=2.0 (mid), tap=105 → a≈1.05, tap=500 → a=5.0
+    // 단순: a = tap/100 (105..500 → 1.05..5.0)
+    state.a = state.tap / 100;
+    if (state.a < 1.05) state.a = 1.05;
+
+    let V1 = state.V1;
+    let V2, I2, I1;
+    if (state.mode === 'step-down') {
+        // 감압: V2 = V1 / a
+        V2 = V1 / state.a;
+        I2 = V2 / state.R;
+        I1 = I2 / state.a;
+    } else {
+        // 승압: V2 = V1 * a (1차가 일부 권선, 2차가 전체)
+        // 단권 승압에서도 a = N전체/N1차부 = V2/V1
+        V2 = V1 * state.a;
+        I2 = V2 / state.R;
+        // 전력 보존: V1·I1 = V2·I2 → I1 = I2·a
+        I1 = I2 * state.a;
+    }
+
+    const Pload = V2 * I2;
+    // 자기 용량 (단권 변압기 공통 공식)
+    // 감압: P_self = (1 - 1/a) * P_load
+    // 승압: P_self = (1 - 1/a) * P_load (V2 기준 a = V2/V1)
+    // 두 모드 모두 같은 형태 (a는 큰값/작은값 비율)
+    const ratio = 1 - 1 / state.a;
+    const Pself = ratio * Pload;
+
+    // 공통 권선 전류
+    const Ic = Math.abs(I2 - I1);
+
+    // 효율 (간단 모델): 손실 ∝ Pself (자기 용량이 작을수록 손실 ↓)
+    // P_loss ≈ 0.02 * Pself (이권선이면 0.02 * Pload)
+    const Ploss = 0.02 * Pself + 1; // 약간의 무부하 손실
+    const eff = Pload / (Pload + Ploss) * 100;
+
+    state.V2 = V2; state.I2 = I2; state.I1 = I1; state.Ic = Ic;
+    state.Pload = Pload; state.Pself = Pself; state.ratio = ratio; state.eff = eff;
+
+    // 표시 업데이트
+    $('v1Disp').textContent = state.V1;
+    $('tapDisp').textContent = state.a.toFixed(2);
+    $('rDisp').textContent = state.R;
+
+    $('v2Val').textContent = `${V2.toFixed(1)} V`;
+    $('i2Val').textContent = `${I2.toFixed(2)} A`;
+    $('pselfVal').textContent = `${Pself.toFixed(0)} VA`;
+    $('effVal').textContent = `${eff.toFixed(1)} %`;
+
+    $('d_v1').textContent = `${V1} V`;
+    $('d_i1').textContent = `${I1.toFixed(2)} A`;
+    $('d_v2').textContent = `${V2.toFixed(1)} V`;
+    $('d_i2').textContent = `${I2.toFixed(2)} A`;
+    $('d_ic').textContent = `${Ic.toFixed(2)} A`;
+    $('d_pload').textContent = `${Pload.toFixed(0)} VA`;
+    $('d_pself').textContent = `${Pself.toFixed(0)} VA`;
+    $('d_ratio').textContent = `${(ratio * 100).toFixed(1)} %`;
+
+    // 용량 막대 (최대 = Pload)
+    const denom = Math.max(Pload, 1);
+    $('pselfBar').style.width = `${Math.min(100, (Pself / denom) * 100)}%`;
+    $('ploadBar').style.width = `100%`;
+    $('pselfBarTxt').textContent = `${Pself.toFixed(0)} VA (${(ratio * 100).toFixed(1)}%)`;
+    $('ploadBarTxt').textContent = `${Pload.toFixed(0)} VA`;
+
+    $('modeBadge').textContent = state.mode === 'step-down' ? 'MODE · STEP-DOWN' : 'MODE · STEP-UP';
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(168, 139, 250, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(168, 139, 250, 0)', duration: 0.6 });
+}
+
+['v1','tap','r'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); flashCard(); });
+});
+
+document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.mode = btn.dataset.mode;
+        $('modeNote').textContent = state.mode === 'step-down'
+            ? '감압 모드: 권선 전체가 1차, 일부 탭이 2차. 공통 권선에 $I_2 - I_1$ 흐름.'
+            : '승압 모드: 권선 일부가 1차, 권선 전체가 2차. 직렬 권선이 추가 전압을 부담.';
+        compute();
+        flashCard();
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([$('modeNote')]);
+        }
+    });
+});
+
+function animate() {
+    state.t++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBg();
+    drawCore();
+    drawFlux();
+    drawAC();
+    drawLoad();
+    drawWinding();
+    drawWiring();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#capCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

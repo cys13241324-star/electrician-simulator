@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARK KARAOKE · 스파크 노래방 — 전기기능사 가상 노래방</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Audiowide&family=Orbitron:wght@500;700;900&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Jua&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0414;
+    --bg-2:#13072a;
+    --bg-3:#1c0a3e;
+    --panel:#150829;
+    --panel-2:#1d0a3a;
+    --hp:#ff2bd6;        /* hot pink */
+    --hp2:#ff66e1;
+    --cy:#00f0ff;        /* cyan */
+    --cy2:#7af5ff;
+    --yl:#ffe600;        /* yellow */
+    --yl2:#fff36b;
+    --pp:#a64bff;
+    --gn:#39ff7a;
+    --ink:#f6f1ff;
+    --ink-mute:#b8aeda;
+    --ink-dim:#7c719c;
+    --line:rgba(255,255,255,.10);
+    --line-2:rgba(255,255,255,.20);
+  }
+  html,body{background:var(--bg); color:var(--ink); margin:0;}
+  body{
+    font-family:'Noto Sans KR','Bebas Neue',sans-serif;
+    background:
+      radial-gradient(900px 600px at 10% -10%, rgba(255,43,214,.22), transparent 60%),
+      radial-gradient(900px 600px at 92% 5%, rgba(0,240,255,.18), transparent 60%),
+      radial-gradient(800px 600px at 50% 110%, rgba(166,75,255,.16), transparent 60%),
+      linear-gradient(180deg, #0a0414 0%, #140728 100%);
+    padding:18px 10px 90px;
+    overflow-x:hidden;
+  }
+  .bebas{font-family:'Bebas Neue',sans-serif; letter-spacing:.03em;}
+  .audio{font-family:'Audiowide','Bebas Neue',sans-serif;}
+  .orb{font-family:'Orbitron','Bebas Neue',sans-serif; letter-spacing:.04em;}
+  .bhan{font-family:'Black Han Sans','Bebas Neue',sans-serif; letter-spacing:.01em;}
+  .jua{font-family:'Jua','Noto Sans KR',sans-serif;}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;}
+
+  .stage{ max-width:1240px; margin:0 auto; position:relative; }
+
+  /* 노이즈 / 그리드 */
+  .noise{
+    position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.05; mix-blend-mode:overlay;
+    background-image: repeating-conic-gradient(from 0deg, rgba(255,255,255,.4) 0 1deg, transparent 1deg 3deg);
+  }
+  .grid-bg{
+    position:absolute; inset:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,43,214,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,.05) 1px, transparent 1px);
+    background-size: 56px 56px, 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 80%);
+  }
+
+  /* 글로우 텍스트 */
+  .gl-pink{ color:var(--hp); text-shadow:0 0 10px rgba(255,43,214,.6), 0 0 26px rgba(255,43,214,.35);}
+  .gl-cyan{ color:var(--cy); text-shadow:0 0 10px rgba(0,240,255,.6), 0 0 26px rgba(0,240,255,.35);}
+  .gl-yellow{ color:var(--yl); text-shadow:0 0 10px rgba(255,230,0,.6), 0 0 26px rgba(255,230,0,.35);}
+  .gl-purple{ color:var(--pp); text-shadow:0 0 10px rgba(166,75,255,.6), 0 0 26px rgba(166,75,255,.35);}
+  .gl-green{ color:var(--gn); text-shadow:0 0 10px rgba(57,255,122,.6), 0 0 26px rgba(57,255,122,.35);}
+  .gl-soft{ text-shadow:0 0 6px rgba(255,255,255,.25);}
+
+  /* 패널 */
+  .panel{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+    border-radius:16px;
+    backdrop-filter: blur(6px);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.03),
+      0 18px 50px -22px rgba(166,75,255,.35);
+  }
+  .panel-pink{
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.04),
+      0 0 0 1px rgba(255,43,214,.20),
+      0 18px 50px -22px rgba(255,43,214,.45);
+  }
+  .panel-cyan{
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.04),
+      0 0 0 1px rgba(0,240,255,.20),
+      0 18px 50px -22px rgba(0,240,255,.45);
+  }
+  .panel-yellow{
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.04),
+      0 0 0 1px rgba(255,230,0,.22),
+      0 18px 50px -22px rgba(255,230,0,.4);
+  }
+
+  /* 상단 메타 바 */
+  .topbar{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+    border-radius:14px;
+  }
+  .room-num{
+    width:46px; height:46px; border-radius:12px;
+    background:linear-gradient(180deg,#1d0a3a,#0d0420);
+    border:1px solid rgba(255,43,214,.5);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 16px rgba(255,43,214,.35), inset 0 0 0 1px rgba(255,255,255,.05);
+    font-family:'Audiowide',sans-serif;
+    font-size:22px;
+    color:var(--hp);
+    text-shadow:0 0 12px rgba(255,43,214,.7);
+  }
+  .live-dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--hp);
+    box-shadow:0 0 12px rgba(255,43,214,.9);
+    animation: pulse 1.3s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.55;transform:scale(.85);}}
+
+  /* 사인보드 */
+  .signboard{
+    position:relative;
+    border-radius:24px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.10);
+    background:
+      radial-gradient(700px 400px at 80% 25%, rgba(255,43,214,.35), transparent 60%),
+      radial-gradient(700px 400px at 15% 30%, rgba(0,240,255,.32), transparent 60%),
+      radial-gradient(700px 400px at 50% 110%, rgba(166,75,255,.32), transparent 60%),
+      linear-gradient(180deg, #0d0420 0%, #190a36 100%);
+    padding:44px 28px 30px;
+  }
+  .sign-title{
+    font-family:'Audiowide','Bebas Neue',sans-serif;
+    line-height:.9;
+    letter-spacing:.02em;
+  }
+  .sign-l1{ font-size: clamp(54px, 11vw, 168px); }
+  .sign-l2{ font-size: clamp(46px, 8vw, 124px); }
+
+  .grad-neon{
+    background:linear-gradient(90deg, #00f0ff 0%, #ff66e1 50%, #ffe600 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+    filter: drop-shadow(0 0 14px rgba(255,43,214,.45));
+  }
+
+  /* 마이크 SVG hover */
+  .mic-wrap{ position:relative; }
+  .mic-glow{ filter: drop-shadow(0 0 16px rgba(255,43,214,.55)); animation: float 4s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+
+  /* TV 화면 */
+  .tv-frame{
+    border-radius:22px;
+    padding:16px;
+    background:
+      linear-gradient(180deg, #2b1147 0%, #160730 70%, #0a0414 100%);
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:
+      0 0 0 1px rgba(0,240,255,.15),
+      0 30px 70px -20px rgba(0,240,255,.35),
+      inset 0 0 0 1px rgba(255,255,255,.05);
+    position:relative;
+  }
+  .tv-bezel-top{
+    position:absolute; left:50%; top:-10px; transform:translateX(-50%);
+    width:60%; height:18px; border-radius:0 0 16px 16px;
+    background:linear-gradient(180deg,#2b1147,#150729);
+    border:1px solid rgba(255,255,255,.08);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding-bottom:2px;
+  }
+  .tv-led{ width:6px; height:6px; border-radius:50%; }
+  .tv-screen{
+    position:relative;
+    border-radius:14px;
+    overflow:hidden;
+    aspect-ratio: 16/9;
+    background:#04020a;
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .scanline{
+    position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay; opacity:.6;
+  }
+  .crt-vignette{
+    position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(120% 80% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+  .lyric-line{
+    transition: all .4s ease;
+  }
+  .lyric-now{
+    color:#fff;
+    text-shadow:0 0 14px rgba(255,255,255,.7), 0 0 22px rgba(255,43,214,.55);
+    transform: scale(1.04);
+  }
+  .lyric-next{ color:var(--cy); opacity:.85; }
+  .lyric-prev{ color:var(--ink-dim); opacity:.55;}
+
+  /* 점수 게이지 */
+  .score-bar{
+    height:14px; border-radius:999px;
+    background:linear-gradient(90deg, #1a0a30, #0d0420);
+    border:1px solid rgba(255,255,255,.08);
+    overflow:hidden; position:relative;
+  }
+  .score-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--cy), var(--hp), var(--yl));
+    box-shadow: 0 0 18px rgba(255,43,214,.55);
+    transition: width .5s ease;
+  }
+  .score-num{
+    font-family:'Audiowide',sans-serif;
+    font-size: clamp(48px, 7vw, 84px);
+    line-height:1; color:var(--yl);
+    text-shadow:0 0 14px rgba(255,230,0,.6), 0 0 30px rgba(255,230,0,.35);
+  }
+
+  /* 선곡표 */
+  .song-row{
+    display:grid;
+    grid-template-columns: 56px 1.5fr 1fr 70px 90px 92px;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    transition: background .15s ease, transform .15s ease;
+    cursor:pointer;
+  }
+  .song-row:hover{ background:rgba(255,43,214,.06); }
+  .song-row:hover .num-cell{ color:var(--hp); text-shadow:0 0 12px rgba(255,43,214,.6);}
+  .song-row.picked{ background:rgba(0,240,255,.07); }
+  .num-cell{
+    font-family:'Audiowide',sans-serif;
+    font-size:18px; color:var(--ink-mute); letter-spacing:.04em;
+  }
+  .num-rank-1{ color:var(--yl); text-shadow:0 0 12px rgba(255,230,0,.55);}
+  .num-rank-2{ color:#e6c0ff; text-shadow:0 0 10px rgba(230,192,255,.5);}
+  .num-rank-3{ color:#ffa56b; text-shadow:0 0 10px rgba(255,165,107,.5);}
+  .badge{
+    display:inline-block; padding:3px 9px; border-radius:999px;
+    font-size:11px; letter-spacing:.08em;
+    border:1px solid rgba(255,255,255,.12);
+    color:var(--ink-mute);
+    background:rgba(255,255,255,.04);
+  }
+  .badge.hot{ color:var(--hp); border-color:rgba(255,43,214,.35); background:rgba(255,43,214,.08);}
+  .badge.easy{ color:var(--gn); border-color:rgba(57,255,122,.35); background:rgba(57,255,122,.08);}
+  .badge.new{ color:var(--cy); border-color:rgba(0,240,255,.35); background:rgba(0,240,255,.08);}
+  .reserve-btn{
+    padding:6px 10px; border-radius:999px;
+    font-family:'Bebas Neue',sans-serif; letter-spacing:.14em; font-size:12px;
+    background:linear-gradient(90deg, var(--cy), var(--hp));
+    color:#0a0414;
+    border:none; cursor:pointer;
+    box-shadow: 0 8px 20px -8px rgba(255,43,214,.5);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .reserve-btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px -8px rgba(255,43,214,.7);}
+  .reserve-btn.added{
+    background:linear-gradient(90deg, var(--gn), var(--cy));
+    color:#03130a;
+  }
+
+  /* 검색바 */
+  .search-input{
+    width:100%;
+    padding:11px 14px 11px 38px;
+    border-radius:999px;
+    background:rgba(255,255,255,.05);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:'Noto Sans KR',sans-serif; font-size:13px;
+    outline:none;
+  }
+  .search-input:focus{ border-color: rgba(0,240,255,.45); box-shadow:0 0 0 4px rgba(0,240,255,.10);}
+
+  /* 큐 칩 */
+  .queue-chip{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:12px;
+    background:linear-gradient(180deg, rgba(255,43,214,.10), rgba(255,43,214,.03));
+    border:1px solid rgba(255,43,214,.20);
+  }
+  .queue-num{
+    width:28px; height:28px; border-radius:8px;
+    background:rgba(255,43,214,.18);
+    color:var(--hp);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Audiowide',sans-serif; font-size:13px;
+    border:1px solid rgba(255,43,214,.35);
+  }
+
+  /* 점수판 */
+  .score-card{
+    padding:12px;
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(0,240,255,.08), rgba(0,240,255,.02));
+    border:1px solid rgba(0,240,255,.20);
+    text-align:center;
+  }
+  .score-card .v{
+    font-family:'Audiowide',sans-serif; font-size:28px;
+    color:var(--yl); text-shadow:0 0 10px rgba(255,230,0,.5);
+  }
+  .score-card .s{ font-size:11px; color:var(--ink-mute); letter-spacing:.18em; margin-top:6px;}
+
+  /* 마이크 음량 슬라이더 */
+  .vol-slider{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:8px; border-radius:999px;
+    background:linear-gradient(90deg, var(--cy), var(--hp));
+    outline:none;
+  }
+  .vol-slider::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:20px; height:20px; border-radius:50%;
+    background:#fff;
+    border:3px solid var(--hp);
+    cursor:pointer;
+    box-shadow:0 0 12px rgba(255,43,214,.7);
+  }
+  .vol-slider::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%;
+    background:#fff;
+    border:3px solid var(--hp);
+    cursor:pointer;
+    box-shadow:0 0 12px rgba(255,43,214,.7);
+  }
+
+  /* 룸서비스 */
+  .menu-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px;
+    border-radius:10px;
+    transition: background .15s ease;
+  }
+  .menu-row:hover{ background: rgba(255,230,0,.06);}
+  .menu-row .price{
+    font-family:'Audiowide',sans-serif; color:var(--yl); font-size:13px;
+    text-shadow:0 0 8px rgba(255,230,0,.35);
+  }
+
+  /* 컨트롤 버튼 */
+  .ctrl-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:11px 16px;
+    border-radius:12px;
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:'Bebas Neue',sans-serif; letter-spacing:.16em; font-size:13px;
+    cursor:pointer; transition: all .15s ease;
+  }
+  .ctrl-btn:hover{ background:rgba(255,43,214,.10); border-color: rgba(255,43,214,.35); color:var(--hp);}
+  .ctrl-btn.primary{
+    background:linear-gradient(90deg, var(--cy), var(--hp));
+    color:#0a0414; border:none;
+    box-shadow: 0 10px 24px -10px rgba(255,43,214,.55);
+  }
+  .ctrl-btn.primary:hover{ color:#0a0414; transform: translateY(-1px);}
+
+  /* 곡 진행률 */
+  .prog-bar{
+    height:6px; border-radius:999px;
+    background:rgba(255,255,255,.10);
+    overflow:hidden; position:relative;
+  }
+  .prog-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--cy), var(--yl));
+    box-shadow: 0 0 12px rgba(0,240,255,.45);
+    transition: width .25s linear;
+  }
+
+  /* 디스코 라이트 */
+  .disco{
+    position:absolute; border-radius:50%;
+    width:160px; height:160px;
+    filter: blur(40px);
+    opacity:.5;
+    pointer-events:none;
+    animation: disco 7s ease-in-out infinite;
+  }
+  @keyframes disco{
+    0%,100%{ transform: translate(0,0) scale(1); opacity:.5;}
+    50%{ transform: translate(20px,-12px) scale(1.1); opacity:.8;}
+  }
+
+  /* 작은 유틸 */
+  .divider-dot{ width:3px; height:3px; border-radius:50%; background:var(--ink-dim);}
+  .glow-bar{
+    height:2px; background:linear-gradient(90deg, transparent, var(--hp), var(--cy), transparent);
+    opacity:.6;
+  }
+
+  /* 반응형 */
+  @media (max-width: 880px){
+    .song-row{ grid-template-columns: 44px 1.4fr 80px 90px; }
+    .song-row .col-genre, .song-row .col-len{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<div class="stage">
+  <div class="grid-bg"></div>
+
+  <!-- 상단 메타 바 -->
+  <div class="topbar flex flex-wrap items-center justify-between gap-3 px-4 py-3 mb-4">
+    <div class="flex items-center gap-3">
+      <div class="room-num">07</div>
+      <div>
+        <div class="text-[10px] tracking-[.24em] text-[color:var(--ink-mute)] bebas">ROOM · 룸</div>
+        <div class="text-sm jua">7번방 · 스탠다드 · 4인실</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-5">
+      <div class="flex items-center gap-2">
+        <span class="live-dot"></span>
+        <span class="text-xs tracking-[.18em] bebas text-[color:var(--hp)]">SINGING NOW</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-2 text-xs text-[color:var(--ink-mute)]">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        남은 시간 <span class="orb text-[color:var(--cy)]" id="timer">00:42:18</span>
+      </div>
+      <div class="hidden md:flex items-center gap-2 text-xs text-[color:var(--ink-mute)]">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M19 9a7 7 0 0 1-14 0"/><path d="M8 22h8"/></svg>
+        MIC LV <span class="orb text-[color:var(--hp)]" id="micLevel">62</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 사인보드 -->
+  <section class="signboard mb-6">
+    <div class="disco" style="left:-30px; top:20px; background:var(--hp);"></div>
+    <div class="disco" style="right:-30px; top:60px; background:var(--cy); animation-delay:1.5s;"></div>
+    <div class="disco" style="left:40%; bottom:-40px; background:var(--yl); animation-delay:3s;"></div>
+
+    <div class="relative grid md:grid-cols-[1fr_auto] gap-6 items-end">
+      <div class="relative z-10">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="badge new">VOL.07 · 가상 노래방</span>
+          <span class="badge hot">합격 응원 특집</span>
+          <span class="badge">2026 · 봄호</span>
+        </div>
+        <h1 class="sign-title">
+          <span class="sign-l1 grad-neon block">SPARK</span>
+          <span class="sign-l2 gl-pink block">KARAOKE</span>
+        </h1>
+        <div class="mt-3 jua text-xl text-[color:var(--ink)]">스파크 노래방 — <span class="gl-cyan">전기기능사</span>의 밤</div>
+        <div class="mt-2 text-sm text-[color:var(--ink-mute)] max-w-xl">
+          오늘 밤도 한 곡 뽑으며 외워봅시다. 옴·키르히호프·변압기·3상 — 가사 한 줄에 공식 하나. <span class="text-[color:var(--yl)]">99점</span>은 합격, <span class="text-[color:var(--hp)]">88점</span>은 격려.
+        </div>
+      </div>
+
+      <!-- 마이크 SVG -->
+      <div class="mic-wrap relative z-10 self-center justify-self-end">
+        <svg class="mic-glow" width="170" height="220" viewBox="0 0 170 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="mh" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stop-color="#ff66e1"/>
+              <stop offset="60%" stop-color="#ff2bd6"/>
+              <stop offset="100%" stop-color="#a64bff"/>
+            </linearGradient>
+            <linearGradient id="ms" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#2a1146"/>
+              <stop offset="100%" stop-color="#0d0420"/>
+            </linearGradient>
+            <radialGradient id="mg" cx="50%" cy="40%" r="50%">
+              <stop offset="0%" stop-color="rgba(255,255,255,.6)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+          </defs>
+          <!-- 헤드 -->
+          <ellipse cx="85" cy="65" rx="58" ry="62" fill="url(#mh)" stroke="#fff3" stroke-width="1.2"/>
+          <!-- 그릴 패턴 -->
+          <g stroke="#ffffff44" stroke-width="1">
+            <path d="M40 35 L130 35" /><path d="M34 50 L136 50" />
+            <path d="M30 65 L140 65" /><path d="M30 80 L140 80" />
+            <path d="M34 95 L136 95" /><path d="M40 110 L130 110" />
+            <path d="M70 12 L70 118" /><path d="M85 8 L85 122" />
+            <path d="M100 12 L100 118" />
+          </g>
+          <ellipse cx="65" cy="50" rx="20" ry="12" fill="url(#mg)" opacity=".7"/>
+          <!-- 목 -->
+          <rect x="74" y="120" width="22" height="22" fill="#1a0a30" stroke="#fff2"/>
+          <!-- 핸들 -->
+          <rect x="68" y="140" width="34" height="70" rx="10" fill="url(#ms)" stroke="#fff2"/>
+          <!-- 라벨 -->
+          <rect x="74" y="160" width="22" height="14" rx="2" fill="#ff2bd6" opacity=".25"/>
+          <text x="85" y="171" text-anchor="middle" font-family="Audiowide" font-size="8" fill="#ffe600">SPK</text>
+          <!-- 하단 캡 -->
+          <rect x="66" y="200" width="38" height="10" rx="3" fill="#0d0420" stroke="#fff2"/>
+        </svg>
+        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] tracking-[.24em] bebas text-[color:var(--ink-mute)]">SPARK MIC · 01</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 메인 그리드 : TV + 사이드 -->
+  <section class="grid lg:grid-cols-[1.6fr_1fr] gap-6 mb-6">
+
+    <!-- TV 화면 + 컨트롤 -->
+    <div class="panel panel-cyan p-4 md:p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--cy)]">
+          <span class="inline-block w-2 h-2 rounded-full bg-[color:var(--cy)] shadow-[0_0_10px_#00f0ff]"></span>
+          SCREEN · 화면
+        </div>
+        <div class="text-[10px] tracking-[.2em] mono text-[color:var(--ink-mute)]">CH 07 · NEON CITY MV</div>
+      </div>
+
+      <div class="tv-frame">
+        <div class="tv-bezel-top">
+          <span class="tv-led" style="background:var(--hp); box-shadow:0 0 8px var(--hp);"></span>
+          <span class="tv-led" style="background:var(--cy); box-shadow:0 0 8px var(--cy);"></span>
+          <span class="tv-led" style="background:var(--yl); box-shadow:0 0 8px var(--yl);"></span>
+        </div>
+        <div class="tv-screen">
+          <!-- 가상 MV 배경 (네온 도시) -->
+          <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" style="position:absolute; inset:0; width:100%; height:100%;">
+            <defs>
+              <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#1a0840"/>
+                <stop offset="55%" stop-color="#34107a"/>
+                <stop offset="100%" stop-color="#ff2bd6"/>
+              </linearGradient>
+              <linearGradient id="city" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#0a0420"/>
+                <stop offset="100%" stop-color="#000"/>
+              </linearGradient>
+              <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffe600"/>
+                <stop offset="60%" stop-color="#ff66e1"/>
+                <stop offset="100%" stop-color="#a64bff"/>
+              </radialGradient>
+            </defs>
+            <rect width="800" height="450" fill="url(#sky)"/>
+            <!-- 태양 -->
+            <circle cx="400" cy="245" r="110" fill="url(#sun)" opacity=".9"/>
+            <!-- 태양 줄무늬 -->
+            <g fill="#1a0840">
+              <rect x="290" y="260" width="220" height="6"/>
+              <rect x="295" y="280" width="210" height="6"/>
+              <rect x="305" y="300" width="190" height="5"/>
+              <rect x="315" y="320" width="170" height="4"/>
+            </g>
+            <!-- 격자 바닥 -->
+            <g stroke="#00f0ff" stroke-width="1" opacity=".55">
+              <line x1="0" y1="330" x2="800" y2="330"/>
+              <line x1="0" y1="350" x2="800" y2="350"/>
+              <line x1="0" y1="375" x2="800" y2="375"/>
+              <line x1="0" y1="405" x2="800" y2="405"/>
+              <line x1="0" y1="445" x2="800" y2="445"/>
+              <!-- 원근 라인 -->
+              <line x1="400" y1="330" x2="-200" y2="450"/>
+              <line x1="400" y1="330" x2="100" y2="450"/>
+              <line x1="400" y1="330" x2="300" y2="450"/>
+              <line x1="400" y1="330" x2="500" y2="450"/>
+              <line x1="400" y1="330" x2="700" y2="450"/>
+              <line x1="400" y1="330" x2="1000" y2="450"/>
+            </g>
+            <!-- 빌딩 실루엣 -->
+            <g fill="url(#city)">
+              <rect x="40" y="200" width="60" height="135"/>
+              <rect x="110" y="170" width="50" height="165"/>
+              <rect x="170" y="220" width="40" height="115"/>
+              <rect x="220" y="180" width="70" height="155"/>
+              <rect x="510" y="195" width="55" height="140"/>
+              <rect x="575" y="175" width="60" height="160"/>
+              <rect x="645" y="210" width="45" height="125"/>
+              <rect x="700" y="165" width="65" height="170"/>
+            </g>
+            <!-- 창문 빛 -->
+            <g fill="#ffe600">
+              <rect x="50" y="215" width="6" height="6"/><rect x="70" y="240" width="6" height="6"/>
+              <rect x="125" y="185" width="5" height="5"/><rect x="140" y="220" width="5" height="5"/>
+              <rect x="235" y="200" width="5" height="5"/><rect x="260" y="240" width="5" height="5"/>
+              <rect x="525" y="220" width="5" height="5"/><rect x="590" y="195" width="5" height="5"/>
+              <rect x="660" y="225" width="5" height="5"/><rect x="720" y="190" width="6" height="6"/>
+              <rect x="740" y="220" width="6" height="6"/>
+            </g>
+            <!-- 번개 -->
+            <g stroke="#ffe600" stroke-width="2" fill="none" opacity=".8">
+              <polyline points="120,40 132,90 118,95 138,150"/>
+              <polyline points="680,50 668,95 684,100 666,148"/>
+            </g>
+          </svg>
+
+          <!-- 가사 + 정보 오버레이 -->
+          <div style="position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between; padding:14px 18px;">
+            <!-- 상단: 곡 정보 -->
+            <div class="flex items-center justify-between text-[11px] mono" style="color:rgba(255,255,255,.85)">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-[2px] rounded" style="background:rgba(255,43,214,.7); color:#fff;">NOW</span>
+                <span id="nowTitle" class="bhan text-base" style="text-shadow:0 0 8px rgba(0,0,0,.7);">옴의 노래</span>
+                <span class="opacity-70">· <span id="nowArtist">옴라이브</span></span>
+              </div>
+              <div class="orb text-[color:var(--yl)]">
+                <span id="nowTime">00:42</span> / <span id="nowDuration">03:48</span>
+              </div>
+            </div>
+
+            <!-- 중앙: 가사 -->
+            <div class="text-center select-none" style="font-family:'Black Han Sans',sans-serif;">
+              <div id="lyricPrev" class="lyric-line lyric-prev text-base md:text-lg mb-1">전기의 길에 들어선 그대여</div>
+              <div id="lyricNow" class="lyric-line lyric-now text-2xl md:text-4xl mb-1" style="letter-spacing:.02em;">옴 옴 옴~ 전압은 전류 곱하기 저항</div>
+              <div id="lyricNext" class="lyric-line lyric-next text-base md:text-lg">V 이콜 I 알 잊지 말아요</div>
+            </div>
+
+            <!-- 하단: 진행률 + 점수 -->
+            <div>
+              <div class="flex items-center justify-between mb-2 text-[10px] mono" style="color:rgba(255,255,255,.85)">
+                <span class="tracking-[.2em]">PROGRESS</span>
+                <span><span id="progPct">18</span>%</span>
+              </div>
+              <div class="prog-bar mb-3"><div id="progFill" class="prog-fill" style="width:18%"></div></div>
+              <div class="flex items-end justify-between gap-3">
+                <div class="flex-1">
+                  <div class="flex items-center justify-between text-[10px] mono mb-1" style="color:rgba(255,255,255,.85)">
+                    <span class="tracking-[.2em]">SCORE</span>
+                    <span><span id="liveScore">72</span> / 100</span>
+                  </div>
+                  <div class="score-bar"><div id="scoreFill" class="score-fill" style="width:72%"></div></div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[10px] mono opacity-80 tracking-[.2em]">키 / 템포</div>
+                  <div class="orb text-[color:var(--cy)] text-sm"><span id="keyVal">+0</span> · <span id="tempoVal">100%</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="scanline"></div>
+          <div class="crt-vignette"></div>
+        </div>
+      </div>
+
+      <!-- 컨트롤 -->
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <button class="ctrl-btn primary" id="btnPlayPause">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" id="ppIcon"><path d="M5 4h4v16H5zM15 4h4v16h-4z"/></svg>
+          <span id="ppLabel">일시정지</span>
+        </button>
+        <button class="ctrl-btn" id="btnNext">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l10 8-10 8V4zM18 4h2v16h-2z"/></svg>
+          다음 곡
+        </button>
+        <button class="ctrl-btn" id="btnCancel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          취소
+        </button>
+        <div class="ml-auto flex items-center gap-2">
+          <span class="text-[10px] tracking-[.2em] bebas text-[color:var(--ink-mute)]">KEY</span>
+          <button class="ctrl-btn" id="keyDown">－</button>
+          <button class="ctrl-btn" id="keyUp">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사이드: 마이크 음량 + 예약 큐 + 점수판 -->
+    <div class="grid grid-rows-[auto_auto_auto] gap-6">
+
+      <!-- 마이크 음량 -->
+      <div class="panel panel-pink p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--hp)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+            MIC · 마이크 음량
+          </div>
+          <span class="orb text-[color:var(--hp)] text-sm" id="micVal">62</span>
+        </div>
+        <input id="micSlider" type="range" min="0" max="100" value="62" class="vol-slider">
+        <div class="flex justify-between mt-2 text-[10px] mono text-[color:var(--ink-mute)]">
+          <span>0</span><span>50</span><span>100</span>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-[10px] mono text-[color:var(--ink-mute)]">
+          <div class="text-center p-2 rounded-lg" style="background:rgba(255,255,255,.03); border:1px solid var(--line);">
+            <div class="tracking-[.18em]">에코</div>
+            <div class="orb text-[color:var(--cy)] text-sm mt-1">38</div>
+          </div>
+          <div class="text-center p-2 rounded-lg" style="background:rgba(255,255,255,.03); border:1px solid var(--line);">
+            <div class="tracking-[.18em]">리버브</div>
+            <div class="orb text-[color:var(--yl)] text-sm mt-1">22</div>
+          </div>
+          <div class="text-center p-2 rounded-lg" style="background:rgba(255,255,255,.03); border:1px solid var(--line);">
+            <div class="tracking-[.18em]">음정</div>
+            <div class="orb text-[color:var(--pp)] text-sm mt-1">±0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 예약 큐 -->
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--cy)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h13M3 12h13M3 18h9"/><path d="M17 16l3 3-3 3"/></svg>
+            QUEUE · 예약 대기
+          </div>
+          <span class="text-[10px] mono text-[color:var(--ink-mute)]">총 <span id="queueCount">0</span>곡</span>
+        </div>
+        <div id="queueList" class="grid gap-2">
+          <div class="text-xs text-[color:var(--ink-dim)] italic px-1 py-3">선곡표에서 곡을 골라 예약하세요.</div>
+        </div>
+      </div>
+
+      <!-- 점수판 -->
+      <div class="panel panel-yellow p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--yl)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 7 .9-5 4.7 1.2 6.9L12 17l-6.2 3.5L7 13.6 2 8.9 9 8z"/></svg>
+            SCOREBOARD · 점수판
+          </div>
+          <span class="text-[10px] mono text-[color:var(--ink-mute)]">최근 5곡</span>
+        </div>
+        <div class="grid grid-cols-5 gap-2 mb-3">
+          <div class="score-card"><div class="v">98</div><div class="s">곡 1</div></div>
+          <div class="score-card"><div class="v">92</div><div class="s">곡 2</div></div>
+          <div class="score-card"><div class="v">87</div><div class="s">곡 3</div></div>
+          <div class="score-card"><div class="v">95</div><div class="s">곡 4</div></div>
+          <div class="score-card"><div class="v">90</div><div class="s">곡 5</div></div>
+        </div>
+        <div class="flex items-end justify-between pt-2 border-t border-[color:var(--line)]">
+          <div>
+            <div class="text-[10px] tracking-[.2em] bebas text-[color:var(--ink-mute)]">평균 점수</div>
+            <div class="text-xs text-[color:var(--ink-dim)] mt-1">합격 라인 80점</div>
+          </div>
+          <div class="score-num">92.4</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="glow-bar mb-6"></div>
+
+  <!-- 선곡표 -->
+  <section class="panel p-4 md:p-5 mb-6">
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+      <div>
+        <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--hp)] mb-1">
+          <span class="inline-block w-2 h-2 rounded-full bg-[color:var(--hp)] shadow-[0_0_10px_#ff2bd6]"></span>
+          SONG BOOK · 선곡표
+        </div>
+        <div class="bhan text-2xl md:text-3xl gl-soft">인기곡 TOP 20</div>
+        <div class="text-xs text-[color:var(--ink-mute)] mt-1">스파크 노래방 5월 둘째 주 차트 · 가상 데이터</div>
+      </div>
+      <div class="relative w-full md:w-72">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--ink-mute);"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="searchInput" type="text" class="search-input" placeholder="곡 / 가수로 검색 — 예: 옴, 변압기" maxlength="40"/>
+      </div>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="hidden md:grid px-3 py-2 text-[10px] tracking-[.2em] bebas text-[color:var(--ink-mute)]" style="grid-template-columns: 56px 1.5fr 1fr 70px 90px 92px; gap:10px;">
+      <div>#</div>
+      <div>제목</div>
+      <div>아티스트 · 장르</div>
+      <div class="text-right">시간</div>
+      <div class="text-center">평균</div>
+      <div class="text-right">예약</div>
+    </div>
+
+    <div id="songList" class="rounded-xl overflow-hidden border border-[color:var(--line)]">
+      <!-- JS로 채움 -->
+    </div>
+
+    <div id="emptyMsg" class="hidden text-center py-8 text-sm text-[color:var(--ink-dim)] italic">검색 결과가 없습니다. 다른 키워드를 시도해 보세요.</div>
+
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-[11px] text-[color:var(--ink-mute)]">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="badge hot">HOT</span><span>주간 신규 인기</span>
+        <span class="divider-dot"></span>
+        <span class="badge new">NEW</span><span>이번 주 추가</span>
+        <span class="divider-dot"></span>
+        <span class="badge easy">EASY</span><span>초보 추천</span>
+      </div>
+      <div class="mono">총 <span id="totalSongs">20</span>곡 등재 · 가상</div>
+    </div>
+  </section>
+
+  <!-- 룸서비스 + 안내 -->
+  <section class="grid lg:grid-cols-[1fr_1fr] gap-6">
+
+    <div class="panel p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--yl)]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/><circle cx="12" cy="12" r="9"/></svg>
+          ROOM SERVICE · 룸서비스
+        </div>
+        <span class="text-[10px] mono text-[color:var(--ink-mute)]">호출 · 인터폰 9번</span>
+      </div>
+      <div class="grid gap-1">
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">01</span>
+            <div>
+              <div class="jua text-sm">전압강하 콜라 세트</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">콜라 2 · 새우깡 · 빠다코코낫</div>
+            </div>
+          </div>
+          <div class="price">9,000원</div>
+        </div>
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">02</span>
+            <div>
+              <div class="jua text-sm">3상 결선 안주 모듬</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">치즈 · 살라미 · 견과</div>
+            </div>
+          </div>
+          <div class="price">14,000원</div>
+        </div>
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">03</span>
+            <div>
+              <div class="jua text-sm">옴의 라면</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">계란 · 파 · 김치 무한</div>
+            </div>
+          </div>
+          <div class="price">6,500원</div>
+        </div>
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">04</span>
+            <div>
+              <div class="jua text-sm">키르히호프 쥬스 4종</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">사과 · 포도 · 오렌지 · 자몽</div>
+            </div>
+          </div>
+          <div class="price">11,000원</div>
+        </div>
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">05</span>
+            <div>
+              <div class="jua text-sm">합격의 떡볶이</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">달콤·매콤 · 어묵 추가 가능</div>
+            </div>
+          </div>
+          <div class="price">8,500원</div>
+        </div>
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">06</span>
+            <div>
+              <div class="jua text-sm">변압기 핫도그</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">치즈 · 감자 토핑</div>
+            </div>
+          </div>
+          <div class="price">5,000원</div>
+        </div>
+        <div class="menu-row">
+          <div class="flex items-center gap-3">
+            <span class="orb text-[color:var(--cy)] text-sm w-7 text-center">07</span>
+            <div>
+              <div class="jua text-sm">안전 수칙 아이스 트레이</div>
+              <div class="text-[11px] text-[color:var(--ink-mute)]">레몬 · 라임 · 베리</div>
+            </div>
+          </div>
+          <div class="price">7,000원</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이번 호 안내 + 추첨 -->
+    <div class="panel panel-cyan p-5">
+      <div class="flex items-center gap-2 text-xs tracking-[.18em] bebas text-[color:var(--cy)] mb-3">
+        <span class="inline-block w-2 h-2 rounded-full bg-[color:var(--cy)] shadow-[0_0_10px_#00f0ff]"></span>
+        NOTE · 이번 호 안내
+      </div>
+      <div class="bhan text-2xl md:text-3xl gl-cyan mb-2">노래 한 곡, 공식 한 줄</div>
+      <p class="text-sm text-[color:var(--ink-mute)] leading-relaxed mb-4">
+        스파크 노래방의 모든 곡은 전기기능사 핵심 공식을 가사로 옮겨 만든 가상 곡입니다.
+        실재 가수·노래·노래방 체인과 무관합니다. 한 곡당 약 3분, 외워야 할 공식 한 줄. 합격 라인 80점, 만점은 100점.
+      </p>
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="text-center p-3 rounded-xl" style="background:rgba(0,240,255,.06); border:1px solid rgba(0,240,255,.20);">
+          <div class="orb text-2xl text-[color:var(--cy)]">20</div>
+          <div class="text-[10px] tracking-[.18em] text-[color:var(--ink-mute)] mt-1 bebas">SONGS</div>
+        </div>
+        <div class="text-center p-3 rounded-xl" style="background:rgba(255,43,214,.06); border:1px solid rgba(255,43,214,.20);">
+          <div class="orb text-2xl text-[color:var(--hp)]">07</div>
+          <div class="text-[10px] tracking-[.18em] text-[color:var(--ink-mute)] mt-1 bebas">GENRES</div>
+        </div>
+        <div class="text-center p-3 rounded-xl" style="background:rgba(255,230,0,.06); border:1px solid rgba(255,230,0,.20);">
+          <div class="orb text-2xl text-[color:var(--yl)]">92.4</div>
+          <div class="text-[10px] tracking-[.18em] text-[color:var(--ink-mute)] mt-1 bebas">AVG</div>
+        </div>
+      </div>
+      <div class="p-3 rounded-xl text-xs text-[color:var(--ink-mute)]" style="background:rgba(255,255,255,.03); border:1px dashed rgba(255,255,255,.18);">
+        TIP · 가사 안에 공식이 숨어 있습니다.
+        <span class="text-[color:var(--yl)]">"V 이콜 I 알"</span>, <span class="text-[color:var(--hp)]">"전류 합 영점"</span>,
+        <span class="text-[color:var(--cy)]">"세 점 일 사 일"</span> — 외울 때까지 부르세요.
+      </div>
+    </div>
+  </section>
+
+  <!-- 푸터 -->
+  <footer class="mt-10 text-center">
+    <div class="glow-bar mb-4"></div>
+    <div class="bebas tracking-[.3em] text-[11px] text-[color:var(--ink-mute)]">SPARK KARAOKE · ELECTRICIAN EXAM EDITION</div>
+    <div class="mt-2 text-[11px] text-[color:var(--ink-dim)]">
+      가상 노래방 시뮬레이션 · 모든 곡·아티스트·체인명은 학습 목적의 가상 콘텐츠입니다.
+    </div>
+    <div class="mt-1 text-[10px] text-[color:var(--ink-dim)] mono">© 2026 SPARK · vol.07 · 노래방 콘셉트</div>
+  </footer>
+
+</div>
+
+<script>
+  // ── 곡 데이터 (모두 가상) ─────────────────────────────────────────────
+  const songs = [
+    { no:1,  title:"옴의 노래",            artist:"옴라이브",       genre:"발라드", len:"03:48", avg:95, tag:"hot" },
+    { no:2,  title:"키르히호프의 추리극",   artist:"키르히밴드",     genre:"록",    len:"04:12", avg:90, tag:"" },
+    { no:3,  title:"변압기 사랑",          artist:"패러데이즈",     genre:"트로트", len:"03:30", avg:88, tag:"" },
+    { no:4,  title:"RLC 댄스",            artist:"공명 크루",       genre:"댄스",  len:"03:18", avg:92, tag:"hot" },
+    { no:5,  title:"3상 결선 블루스",      artist:"3φ밴드",         genre:"블루스", len:"05:02", avg:87, tag:"" },
+    { no:6,  title:"안전 수칙 송",         artist:"안전팀",         genre:"동요",  len:"02:14", avg:99, tag:"easy" },
+    { no:7,  title:"합격의 외침",          artist:"합격생",         genre:"댄스",  len:"03:44", avg:94, tag:"hot" },
+    { no:8,  title:"전기 사이코",          artist:"테슬라크루",     genre:"락",    len:"04:38", avg:91, tag:"" },
+    { no:9,  title:"전동기 룸바",          artist:"로터즈",         genre:"라틴",  len:"03:22", avg:89, tag:"new" },
+    { no:10, title:"콘덴서의 추억",        artist:"커패시터 보이즈", genre:"발라드", len:"04:01", avg:86, tag:"" },
+    { no:11, title:"전기야 부탁해",        artist:"꼬마전구",       genre:"동요",  len:"02:30", avg:97, tag:"easy" },
+    { no:12, title:"역률 개선의 밤",       artist:"코사인파",       genre:"R&B",   len:"04:22", avg:84, tag:"" },
+    { no:13, title:"단상 220V",           artist:"이엠에프",       genre:"인디",  len:"03:50", avg:83, tag:"new" },
+    { no:14, title:"접지의 약속",          artist:"어스 시스터즈",   genre:"발라드", len:"04:05", avg:90, tag:"" },
+    { no:15, title:"전기는 흐른다",        artist:"플로우즈",       genre:"댄스",  len:"03:36", avg:88, tag:"" },
+    { no:16, title:"배선 정리의 미학",     artist:"케이블 보이",     genre:"인디",  len:"03:11", avg:81, tag:"" },
+    { no:17, title:"누전차단의 순간",      artist:"브레이커즈",     genre:"락",    len:"03:58", avg:85, tag:"new" },
+    { no:18, title:"고압선 위의 새",       artist:"라인맨스",       genre:"포크",  len:"04:20", avg:82, tag:"" },
+    { no:19, title:"전기기능사 응원가",    artist:"기능사 친구들",   genre:"행진곡", len:"02:48", avg:96, tag:"hot" },
+    { no:20, title:"마지막 한 문제",       artist:"필기조",         genre:"발라드", len:"03:55", avg:93, tag:"" },
+  ];
+
+  // 가사 모음 (가상, 모든 가사 학습용)
+  const lyricsMap = {
+    "옴의 노래": [
+      "전기의 길에 들어선 그대여",
+      "옴 옴 옴~ 전압은 전류 곱하기 저항",
+      "V 이콜 I 알 잊지 말아요",
+      "저항이 두 배면 전류는 절반",
+      "전압이 두 배면 전류도 두 배",
+      "옴의 법칙 외쳐요 다 같이",
+    ],
+    "키르히호프의 추리극": [
+      "마디로 들어오고 마디로 나가는",
+      "전류의 합은 언제나 영점",
+      "폐회로 한 바퀴 전압의 합도 영",
+      "범인은 누구냐 회로 추리극",
+      "KCL KVL 두 손에 들고",
+    ],
+    "변압기 사랑": [
+      "권수비가 우리 사이를 결정해",
+      "1차와 2차 비례하는 마음",
+      "전압은 늘고 전류는 줄어드네",
+      "철심 위에 감겨버린 우리 사랑",
+    ],
+    "RLC 댄스": [
+      "저항은 위상 그대로 직진",
+      "코일은 90도 늦게 따라와",
+      "콘덴서는 90도 빠르게 앞서가",
+      "공진은 X 엘 이콜 X 씨",
+      "에프 이콜 일 나누기 이 파이 루트 엘 씨",
+    ],
+    "3상 결선 블루스": [
+      "와이 결선 선전압이 루트 삼배",
+      "델타는 선전류가 루트 삼배",
+      "세 점 일 사 일 곱해서 외워",
+      "균형 잡힌 삼상의 블루스",
+    ],
+    "안전 수칙 송": [
+      "검전기 먼저 꼭 확인해요",
+      "차단기 내리고 작업을 시작",
+      "절연장갑 절연화 모두 착용",
+      "한 손 작업 안전한 자세로",
+    ],
+    "합격의 외침": [
+      "60점 이상 합격의 기준",
+      "필기 실기 두 관문 넘어서",
+      "오늘 밤도 한 곡 외우며 가자",
+      "내일 시험장 자신감 있게",
+    ],
+    "전기 사이코": [
+      "전류가 흐르면 자기장이 돌아",
+      "오른손 법칙 손가락 펴고",
+      "엄지가 방향 네 손가락이 회전",
+      "전기와 자기 사이코한 사랑",
+    ],
+  };
+  const defaultLyrics = [
+    "오늘 밤은 합격을 노래해",
+    "공식 한 줄 가사로 외워봐요",
+    "다 같이 외쳐 전기기능사",
+    "내일은 더 높은 점수로",
+  ];
+
+  // ── 상태 ─────────────────────────────────────────────────────────────
+  const state = {
+    nowIdx: 0,           // 현재 재생 중인 곡 인덱스
+    queue: [],           // 예약 곡 번호 배열
+    playing: true,
+    progress: 18,        // %
+    score: 72,
+    lyricIdx: 1,
+  };
+
+  // ── 안전: escape ────────────────────────────────────────────────────
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, ch => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+    }[ch]));
+  }
+
+  // ── 선곡표 렌더 ─────────────────────────────────────────────────────
+  const songList = document.getElementById("songList");
+  const emptyMsg = document.getElementById("emptyMsg");
+  const totalSongs = document.getElementById("totalSongs");
+  totalSongs.textContent = songs.length;
+
+  function tagBadge(tag){
+    if(!tag) return "";
+    if(tag==="hot")  return '<span class="badge hot">HOT</span>';
+    if(tag==="new")  return '<span class="badge new">NEW</span>';
+    if(tag==="easy") return '<span class="badge easy">EASY</span>';
+    return "";
+  }
+  function rankClass(no){
+    if(no===1) return "num-rank-1";
+    if(no===2) return "num-rank-2";
+    if(no===3) return "num-rank-3";
+    return "";
+  }
+
+  function renderSongs(filter=""){
+    const q = filter.trim().toLowerCase();
+    const filtered = songs.filter(s =>
+      !q ||
+      s.title.toLowerCase().includes(q) ||
+      s.artist.toLowerCase().includes(q) ||
+      s.genre.toLowerCase().includes(q)
+    );
+    songList.innerHTML = "";
+    if(filtered.length === 0){
+      emptyMsg.classList.remove("hidden");
+      return;
+    }
+    emptyMsg.classList.add("hidden");
+    filtered.forEach(s => {
+      const picked = state.queue.includes(s.no);
+      const row = document.createElement("div");
+      row.className = "song-row" + (picked ? " picked":"");
+      row.dataset.no = s.no;
+      row.innerHTML = `
+        <div class="num-cell ${rankClass(s.no)}">${String(s.no).padStart(2,"0")}</div>
+        <div class="min-w-0">
+          <div class="jua text-sm md:text-base truncate">${escapeHTML(s.title)} ${tagBadge(s.tag)}</div>
+          <div class="md:hidden text-[11px] text-[color:var(--ink-mute)] mt-0.5 truncate">${escapeHTML(s.artist)} · ${escapeHTML(s.genre)}</div>
+        </div>
+        <div class="col-genre min-w-0">
+          <div class="text-xs text-[color:var(--ink)] truncate">${escapeHTML(s.artist)}</div>
+          <div class="text-[11px] text-[color:var(--ink-mute)] mt-0.5">${escapeHTML(s.genre)}</div>
+        </div>
+        <div class="col-len text-right mono text-xs text-[color:var(--ink-mute)]">${escapeHTML(s.len)}</div>
+        <div class="text-center hidden md:block">
+          <span class="orb text-sm" style="color:${s.avg>=95?'var(--yl)':s.avg>=90?'var(--cy)':'var(--ink)'}">${s.avg}</span>
+        </div>
+        <div class="text-right">
+          <button class="reserve-btn ${picked?'added':''}" data-no="${s.no}">
+            ${picked?'예약됨':'예약'}
+          </button>
+        </div>
+      `;
+      songList.appendChild(row);
+    });
+
+    // 클릭 이벤트
+    songList.querySelectorAll(".reserve-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const no = Number(btn.dataset.no);
+        toggleQueue(no);
+      });
+    });
+    songList.querySelectorAll(".song-row").forEach(row => {
+      row.addEventListener("click", () => {
+        const no = Number(row.dataset.no);
+        toggleQueue(no);
+      });
+    });
+  }
+
+  // ── 큐 관리 ─────────────────────────────────────────────────────────
+  function toggleQueue(no){
+    const i = state.queue.indexOf(no);
+    if(i>=0) state.queue.splice(i,1);
+    else state.queue.push(no);
+    renderSongs(document.getElementById("searchInput").value);
+    renderQueue();
+  }
+
+  const queueList  = document.getElementById("queueList");
+  const queueCount = document.getElementById("queueCount");
+  function renderQueue(){
+    queueCount.textContent = state.queue.length;
+    if(state.queue.length === 0){
+      queueList.innerHTML = '<div class="text-xs text-[color:var(--ink-dim)] italic px-1 py-3">선곡표에서 곡을 골라 예약하세요.</div>';
+      return;
+    }
+    queueList.innerHTML = state.queue.map((no,i)=>{
+      const s = songs.find(x => x.no===no);
+      if(!s) return "";
+      return `
+        <div class="queue-chip">
+          <div class="queue-num">${i+1}</div>
+          <div class="min-w-0 flex-1">
+            <div class="jua text-sm truncate">${escapeHTML(s.title)}</div>
+            <div class="text-[11px] text-[color:var(--ink-mute)] truncate">${escapeHTML(s.artist)} · ${escapeHTML(s.len)}</div>
+          </div>
+          <button class="text-xs text-[color:var(--ink-mute)] hover:text-[color:var(--hp)]" data-rm="${no}" title="제거">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      `;
+    }).join("");
+    queueList.querySelectorAll("[data-rm]").forEach(btn=>{
+      btn.addEventListener("click", () => {
+        const no = Number(btn.dataset.rm);
+        toggleQueue(no);
+      });
+    });
+  }
+
+  // ── 현재 곡 / 가사 ──────────────────────────────────────────────────
+  const nowTitle    = document.getElementById("nowTitle");
+  const nowArtist   = document.getElementById("nowArtist");
+  const nowDuration = document.getElementById("nowDuration");
+  const nowTime     = document.getElementById("nowTime");
+  const progFill    = document.getElementById("progFill");
+  const progPct     = document.getElementById("progPct");
+  const scoreFill   = document.getElementById("scoreFill");
+  const liveScore   = document.getElementById("liveScore");
+  const lyricPrev   = document.getElementById("lyricPrev");
+  const lyricNow    = document.getElementById("lyricNow");
+  const lyricNext   = document.getElementById("lyricNext");
+
+  function loadSong(idx){
+    state.nowIdx   = idx;
+    state.progress = 0;
+    state.score    = 60 + Math.floor(Math.random()*20);
+    state.lyricIdx = 0;
+    const s = songs[idx];
+    nowTitle.textContent    = s.title;
+    nowArtist.textContent   = s.artist;
+    nowDuration.textContent = s.len;
+    updateLyrics();
+    update();
+  }
+
+  function durationSeconds(len){
+    const [m,sec] = len.split(":").map(Number);
+    return m*60 + sec;
+  }
+  function fmtTime(sec){
+    const m = Math.floor(sec/60); const s = Math.floor(sec%60);
+    return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  }
+
+  function update(){
+    progFill.style.width = state.progress + "%";
+    progPct.textContent  = Math.floor(state.progress);
+    scoreFill.style.width = state.score + "%";
+    liveScore.textContent = Math.floor(state.score);
+    const cur = songs[state.nowIdx];
+    const totalSec = durationSeconds(cur.len);
+    const curSec   = Math.floor(totalSec * state.progress / 100);
+    nowTime.textContent = fmtTime(curSec);
+  }
+
+  function updateLyrics(){
+    const s = songs[state.nowIdx];
+    const lines = lyricsMap[s.title] || defaultLyrics;
+    const i = state.lyricIdx % lines.length;
+    const prev = (i - 1 + lines.length) % lines.length;
+    const next = (i + 1) % lines.length;
+    lyricPrev.textContent = lines[prev];
+    lyricNow.textContent  = lines[i];
+    lyricNext.textContent = lines[next];
+  }
+
+  // ── 타이머 ──────────────────────────────────────────────────────────
+  let tickId;
+  function tick(){
+    if(!state.playing) return;
+    state.progress += 0.4;
+    // 점수 진동
+    state.score += (Math.random()-0.45) * 2.4;
+    state.score = Math.max(40, Math.min(100, state.score));
+    // 가사 진행
+    if(Math.floor(state.progress) % 12 === 0 && state.progress > 1){
+      state.lyricIdx += 1;
+      updateLyrics();
+    }
+    // 다음 곡으로
+    if(state.progress >= 100){
+      nextSong();
+      return;
+    }
+    update();
+  }
+  function startTick(){
+    if(tickId) clearInterval(tickId);
+    tickId = setInterval(tick, 700);
+  }
+
+  // ── 컨트롤 ─────────────────────────────────────────────────────────
+  const btnPlayPause = document.getElementById("btnPlayPause");
+  const ppIcon       = document.getElementById("ppIcon");
+  const ppLabel      = document.getElementById("ppLabel");
+  const btnNext      = document.getElementById("btnNext");
+  const btnCancel    = document.getElementById("btnCancel");
+
+  btnPlayPause.addEventListener("click", () => {
+    state.playing = !state.playing;
+    if(state.playing){
+      ppIcon.innerHTML = '<path d="M5 4h4v16H5zM15 4h4v16h-4z"/>';
+      ppLabel.textContent = "일시정지";
+    } else {
+      ppIcon.innerHTML = '<path d="M6 4l14 8L6 20V4z"/>';
+      ppLabel.textContent = "재생";
+    }
+  });
+  function nextSong(){
+    // 큐에서 다음, 없으면 다음 인덱스
+    if(state.queue.length > 0){
+      const no = state.queue.shift();
+      const idx = songs.findIndex(s => s.no===no);
+      if(idx>=0){
+        loadSong(idx);
+        renderQueue();
+        renderSongs(document.getElementById("searchInput").value);
+        return;
+      }
+    }
+    const next = (state.nowIdx + 1) % songs.length;
+    loadSong(next);
+  }
+  btnNext.addEventListener("click", nextSong);
+  btnCancel.addEventListener("click", () => {
+    // 현재 곡 점수 무효 처리 후 다음 곡
+    state.progress = 0;
+    state.score = 0;
+    update();
+    setTimeout(nextSong, 250);
+  });
+
+  // 키 / 템포
+  const keyVal = document.getElementById("keyVal");
+  const tempoVal = document.getElementById("tempoVal");
+  let curKey = 0;
+  document.getElementById("keyUp").addEventListener("click", () => {
+    curKey = Math.min(6, curKey+1);
+    keyVal.textContent = (curKey>=0?"+":"")+curKey;
+  });
+  document.getElementById("keyDown").addEventListener("click", () => {
+    curKey = Math.max(-6, curKey-1);
+    keyVal.textContent = (curKey>=0?"+":"")+curKey;
+  });
+
+  // 마이크 슬라이더
+  const micSlider = document.getElementById("micSlider");
+  const micVal    = document.getElementById("micVal");
+  const micLevel  = document.getElementById("micLevel");
+  micSlider.addEventListener("input", () => {
+    const v = micSlider.value;
+    micVal.textContent = v;
+    micLevel.textContent = v;
+  });
+
+  // 검색
+  const searchInput = document.getElementById("searchInput");
+  searchInput.addEventListener("input", () => {
+    renderSongs(searchInput.value);
+  });
+
+  // ── 룸 타이머 (남은 시간) ───────────────────────────────────────────
+  const timerEl = document.getElementById("timer");
+  let remain = 42*60 + 18;
+  function timerTick(){
+    if(remain <= 0) return;
+    remain -= 1;
+    const h = Math.floor(remain/3600);
+    const m = Math.floor((remain%3600)/60);
+    const s = remain%60;
+    timerEl.textContent = String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  }
+  setInterval(timerTick, 1000);
+
+  // ── 부팅 ───────────────────────────────────────────────────────────
+  renderSongs();
+  renderQueue();
+  loadSong(0);
+  startTick();
+</script>
+</body>
+</html>

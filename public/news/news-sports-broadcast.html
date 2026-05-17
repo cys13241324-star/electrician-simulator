@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크쌤 스포츠 · 전기 챔피언스 리그 2026 — 라이브 중계</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root {
+    --sb-bg:        #08090c;
+    --sb-bg-2:      #0f1117;
+    --sb-bg-3:      #161a22;
+    --sb-bg-4:      #1e232e;
+    --sb-line:      #262c38;
+    --sb-line-2:    #353c4b;
+    --sb-text:      #f3f5f9;
+    --sb-text-2:    #b6bcc8;
+    --sb-text-3:    #7a8190;
+    --sb-red:       #ff2233;
+    --sb-red-d:     #c91222;
+    --sb-blue:      #2978ff;
+    --sb-blue-d:    #0b4fcc;
+    --sb-yellow:    #ffd24a;
+    --sb-green:     #28d96b;
+    --sb-orange:    #ff8a2a;
+  }
+  * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+  html, body { background: var(--sb-bg); color: var(--sb-text); }
+  body { overflow-x: hidden; }
+  .mono { font-family: 'JetBrains Mono', 'Consolas', ui-monospace, monospace; font-feature-settings: 'tnum' 1; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a3140; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4252; }
+
+  /* Top bar */
+  .sb-topbar {
+    background: linear-gradient(180deg, #0a0c11 0%, #0f1219 100%);
+    border-bottom: 1px solid var(--sb-line);
+  }
+  .sb-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--sb-bg-3);
+    border: 1px solid var(--sb-line);
+    color: var(--sb-text-2);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .sb-chip.red {
+    background: rgba(255,34,51,.12); color: var(--sb-red); border-color: rgba(255,34,51,.4);
+  }
+  .sb-chip.blue {
+    background: rgba(41,120,255,.12); color: var(--sb-blue); border-color: rgba(41,120,255,.4);
+  }
+  .sb-chip.yellow {
+    background: rgba(255,210,74,.12); color: var(--sb-yellow); border-color: rgba(255,210,74,.4);
+  }
+
+  /* Live dot */
+  .sb-live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--sb-red);
+    box-shadow: 0 0 0 0 rgba(255,34,51,.7);
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255,34,51,.7); }
+    70%  { box-shadow: 0 0 0 10px rgba(255,34,51,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,34,51,0); }
+  }
+
+  /* Channel logo */
+  .sb-channel {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, #ff2233 0%, #ff8a2a 100%);
+    color: white;
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+  }
+  .sb-channel-2 {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--sb-bg-3);
+    border: 1px solid var(--sb-line);
+    color: var(--sb-text-2);
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* Stadium SVG container */
+  .sb-stadium {
+    position: relative;
+    background: radial-gradient(ellipse at center, #0b1422 0%, #050810 100%);
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .sb-stadium::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 28px, rgba(255,255,255,.012) 28px, rgba(255,255,255,.012) 29px),
+      repeating-linear-gradient(90deg, transparent 0, transparent 28px, rgba(255,255,255,.012) 28px, rgba(255,255,255,.012) 29px);
+    pointer-events: none;
+  }
+
+  /* Scoreboard */
+  .sb-scoreboard {
+    background: linear-gradient(180deg, #0a0e16 0%, #11161f 100%);
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+  }
+  .sb-score-cell {
+    background: var(--sb-bg-3);
+    border: 1px solid var(--sb-line);
+    border-radius: 4px;
+    padding: 6px 0;
+    text-align: center;
+    font-weight: 800;
+    color: var(--sb-text);
+  }
+  .sb-score-cell.active {
+    background: rgba(255,210,74,.12);
+    border-color: rgba(255,210,74,.5);
+    color: var(--sb-yellow);
+  }
+  .sb-bsb {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid var(--sb-line-2);
+    background: transparent;
+  }
+  .sb-bsb.on-ball { background: var(--sb-green); border-color: var(--sb-green); }
+  .sb-bsb.on-strike { background: var(--sb-yellow); border-color: var(--sb-yellow); }
+  .sb-bsb.on-out { background: var(--sb-red); border-color: var(--sb-red); }
+
+  /* Card */
+  .sb-card {
+    background: var(--sb-bg-2);
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+  }
+  .sb-card-hdr {
+    background: linear-gradient(90deg, rgba(255,34,51,.12) 0%, rgba(41,120,255,.06) 100%);
+    border-bottom: 1px solid var(--sb-line);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--sb-text);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Team badges */
+  .sb-team-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%;
+    font-weight: 900; font-size: 14px; color: #fff;
+    border: 2px solid rgba(255,255,255,.18);
+    flex-shrink: 0;
+  }
+
+  /* Ticker */
+  .sb-ticker-wrap {
+    overflow: hidden;
+    background: linear-gradient(90deg, #ff2233 0%, #c91222 100%);
+    border-top: 1px solid rgba(255,255,255,.15);
+    border-bottom: 1px solid rgba(0,0,0,.4);
+  }
+  .sb-ticker {
+    display: inline-flex;
+    gap: 48px;
+    white-space: nowrap;
+    animation: ticker 38s linear infinite;
+    padding: 7px 0;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Bottom stats bar (TV style lower-third) */
+  .sb-lower-third {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg, rgba(8,9,12,0) 0%, rgba(8,9,12,.85) 35%, rgba(8,9,12,.95) 100%);
+    padding: 18px 18px 14px;
+    pointer-events: none;
+  }
+  .sb-caster-bar {
+    background: var(--sb-bg-2);
+    border-left: 4px solid var(--sb-red);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 14px;
+  }
+
+  /* Chat */
+  .sb-chat-msg {
+    padding: 5px 10px;
+    border-bottom: 1px dashed var(--sb-line);
+    font-size: 13px;
+    line-height: 1.45;
+    animation: chatFadeIn .4s ease-out;
+  }
+  @keyframes chatFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .sb-chat-user {
+    font-weight: 800; margin-right: 6px;
+  }
+
+  /* Stats bar */
+  .sb-bar-track {
+    background: var(--sb-bg-4);
+    border-radius: 999px;
+    height: 6px; overflow: hidden;
+  }
+  .sb-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sb-blue) 0%, var(--sb-green) 100%);
+    border-radius: 999px;
+    transition: width .9s cubic-bezier(.22,.61,.36,1);
+  }
+
+  /* Ad banner */
+  .sb-ad {
+    background: linear-gradient(135deg, #1a2236 0%, #0e1424 100%);
+    border: 1px dashed var(--sb-line-2);
+    border-radius: 8px;
+    position: relative; overflow: hidden;
+  }
+  .sb-ad::before {
+    content: 'AD';
+    position: absolute; top: 8px; right: 8px;
+    font-size: 10px; font-weight: 800; letter-spacing: .1em;
+    color: var(--sb-text-3);
+    background: var(--sb-bg-3);
+    border: 1px solid var(--sb-line);
+    border-radius: 3px;
+    padding: 2px 6px;
+  }
+
+  /* Diamond pulse */
+  .sb-base { transition: fill .35s ease; }
+  .sb-runner {
+    transform-origin: center;
+    animation: bob 1.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
+  /* Scrollable area */
+  .scroll-y { overflow-y: auto; }
+
+  /* Highlight number */
+  .sb-bignum {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-weight: 900;
+    color: var(--sb-yellow);
+    text-shadow: 0 0 12px rgba(255,210,74,.35);
+    line-height: 1;
+  }
+
+  /* Section divider */
+  .sb-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--sb-line-2) 50%, transparent 100%);
+  }
+
+  /* Hover lift */
+  .lift { transition: transform .15s ease, border-color .15s ease; }
+  .lift:hover { transform: translateY(-1px); border-color: var(--sb-line-2); }
+
+  /* Tab pill */
+  .sb-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sb-text-3);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .sb-tab.active {
+    background: var(--sb-red);
+    color: #fff;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- =============== TOP BAR =============== -->
+<header class="sb-topbar sticky top-0 z-40">
+  <div class="max-w-[1400px] mx-auto px-4 py-2.5 flex items-center gap-3 flex-wrap">
+    <!-- Channel logo (virtual) -->
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-md flex items-center justify-center font-black text-white" style="background: linear-gradient(135deg, #ff2233 0%, #ff8a2a 100%); box-shadow: 0 4px 12px rgba(255,34,51,.35);">SS</div>
+      <div class="leading-tight">
+        <div class="font-black text-[15px] tracking-tight">스파크쌤 스포츠</div>
+        <div class="text-[10px] text-gray-400 tracking-widest mono">SPARK&middot;SPORTS&middot;NETWORK</div>
+      </div>
+    </div>
+
+    <span class="hidden md:inline-block w-px h-7 bg-[var(--sb-line)]"></span>
+
+    <div class="flex items-center gap-2">
+      <span class="sb-chip red">
+        <span class="sb-live-dot"></span>
+        <span class="font-extrabold tracking-wider">LIVE</span>
+      </span>
+      <span class="sb-chip"><span class="mono" id="liveClock">--:--:--</span></span>
+      <span class="sb-chip blue">전기 챔피언스 리그 2026</span>
+      <span class="sb-chip yellow hidden sm:inline-flex">PLAYOFF · 정규시즌 87일차</span>
+    </div>
+
+    <div class="ml-auto flex items-center gap-2">
+      <button class="sb-chip">중계 채널</button>
+      <button class="sb-chip">하이라이트</button>
+      <button class="px-3 py-1.5 rounded-md text-[12px] font-black text-white" style="background: var(--sb-red);">구독</button>
+    </div>
+  </div>
+
+  <!-- Sub nav -->
+  <div class="border-t border-[var(--sb-line)]">
+    <div class="max-w-[1400px] mx-auto px-4 py-2 flex items-center gap-1 overflow-x-auto">
+      <div class="sb-tab active">중계</div>
+      <div class="sb-tab">스코어보드</div>
+      <div class="sb-tab">선수단</div>
+      <div class="sb-tab">기록실</div>
+      <div class="sb-tab">하이라이트</div>
+      <div class="sb-tab">팀 순위</div>
+      <div class="sb-tab">데일리</div>
+      <div class="ml-auto text-[11px] text-gray-500 mono hidden md:block">SEASON 2026 · ROUND 14</div>
+    </div>
+  </div>
+</header>
+
+<!-- =============== HERO MATCHUP =============== -->
+<section class="max-w-[1400px] mx-auto px-4 pt-5 pb-3">
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex items-center gap-3">
+      <span class="sb-channel">CH 11 · SS HD</span>
+      <span class="sb-channel-2">전기 챔피언스 리그</span>
+      <span class="sb-chip">정규시즌 R14 · DAY 87</span>
+    </div>
+    <div class="text-[11px] text-gray-500 mono">중계: 김중계 / 해설: 옴해설 · 김전기</div>
+  </div>
+
+  <h1 class="mt-3 text-2xl md:text-3xl font-black tracking-tight">
+    <span style="color: var(--sb-red);">제 14차전</span>
+    <span class="text-gray-300">옴 타이거즈</span>
+    <span class="text-gray-500 mx-1">vs</span>
+    <span class="text-gray-300">패러데이 다이너스</span>
+    <span class="text-gray-500 mx-2">·</span>
+    <span class="text-gray-300">키르히호프 라이온스</span>
+    <span class="text-gray-500 mx-1">vs</span>
+    <span class="text-gray-300">테슬라 이글스</span>
+  </h1>
+  <p class="mt-1 text-sm text-gray-400">합격이라는 챔피언십을 향한 4팀의 풀리그. 오늘은 1경기 5회초 — 옴 타이거즈가 키워드 직류회로로 추격에 나섭니다.</p>
+</section>
+
+<!-- =============== MAIN GRID =============== -->
+<section class="max-w-[1400px] mx-auto px-4 pb-6 grid grid-cols-12 gap-4">
+
+  <!-- LEFT: stadium screen -->
+  <div class="col-span-12 lg:col-span-8">
+    <!-- 16:9 stadium with lower-third -->
+    <div class="sb-stadium" style="aspect-ratio: 16/9;">
+      <!-- top channel ribbon -->
+      <div class="absolute top-3 left-3 right-3 z-20 flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <span class="sb-channel">SS HD</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-black tracking-wider text-white" style="background: rgba(255,34,51,.85);">
+            <span class="inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle" style="background:#fff; animation: pulse 1.2s infinite;"></span>LIVE
+          </span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide text-white/90 bg-black/40 mono" id="elapsedTime">00:00</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide text-white/80 bg-black/40">정규시즌 R14</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-black text-white" style="background: var(--sb-blue);">PLAYOFF 진출 경쟁</span>
+        </div>
+      </div>
+
+      <!-- SVG diamond stadium -->
+      <svg viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid meet" class="absolute inset-0 w-full h-full">
+        <defs>
+          <radialGradient id="sbGrass" cx="50%" cy="60%" r="60%">
+            <stop offset="0%" stop-color="#0b2a18"/>
+            <stop offset="60%" stop-color="#072014"/>
+            <stop offset="100%" stop-color="#03100a"/>
+          </radialGradient>
+          <linearGradient id="sbDiamond" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#9c6a2c"/>
+            <stop offset="100%" stop-color="#5a3a14"/>
+          </linearGradient>
+          <linearGradient id="sbCrowd" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#11151d"/>
+            <stop offset="100%" stop-color="#1a212e"/>
+          </linearGradient>
+          <radialGradient id="sbSpot" cx="50%" cy="0%" r="60%">
+            <stop offset="0%" stop-color="rgba(255,255,255,.18)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </radialGradient>
+          <pattern id="sbDots" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="rgba(255,255,255,.06)"/>
+          </pattern>
+        </defs>
+
+        <!-- sky / stadium roof -->
+        <rect x="0" y="0" width="1280" height="180" fill="#070a12"/>
+        <rect x="0" y="0" width="1280" height="180" fill="url(#sbSpot)"/>
+        <!-- crowd tiers -->
+        <rect x="0" y="120" width="1280" height="180" fill="url(#sbCrowd)"/>
+        <rect x="0" y="120" width="1280" height="180" fill="url(#sbDots)"/>
+        <!-- field -->
+        <ellipse cx="640" cy="640" rx="900" ry="430" fill="url(#sbGrass)"/>
+        <!-- outfield arc -->
+        <path d="M 140 540 Q 640 200 1140 540 L 1140 720 L 140 720 Z" fill="#0a2818" opacity=".7"/>
+        <!-- mowed stripes -->
+        <g opacity=".18">
+          <path d="M 200 540 Q 640 260 1080 540 L 1080 720 L 200 720 Z" fill="#0e3a22"/>
+          <path d="M 280 540 Q 640 320 1000 540 L 1000 720 L 280 720 Z" fill="#082818"/>
+          <path d="M 360 540 Q 640 380 920 540 L 920 720 L 360 720 Z" fill="#0e3a22"/>
+        </g>
+
+        <!-- Diamond (infield) -->
+        <g transform="translate(640 500)">
+          <!-- infield dirt -->
+          <polygon points="0,-160 220,60 0,280 -220,60" fill="url(#sbDiamond)" opacity=".95"/>
+          <!-- grass infield -->
+          <polygon points="0,-110 165,55 0,220 -165,55" fill="#0e3a22"/>
+          <!-- base lines -->
+          <polygon points="0,-160 220,60 0,280 -220,60" fill="none" stroke="#fff" stroke-width="2" stroke-opacity=".7"/>
+          <!-- pitcher mound -->
+          <circle cx="0" cy="55" r="22" fill="#7a4f1f"/>
+          <circle cx="0" cy="55" r="3" fill="#fff" opacity=".6"/>
+          <!-- bases -->
+          <rect class="sb-base" id="baseHome" x="-12" y="268" width="24" height="24" fill="#fff" transform="rotate(45 0 280)"/>
+          <rect class="sb-base" id="base1" x="208" y="48" width="24" height="24" fill="#ddd" transform="rotate(45 220 60)"/>
+          <rect class="sb-base" id="base2" x="-12" y="-172" width="24" height="24" fill="#ddd" transform="rotate(45 0 -160)"/>
+          <rect class="sb-base" id="base3" x="-232" y="48" width="24" height="24" fill="#ddd" transform="rotate(45 -220 60)"/>
+          <!-- base labels -->
+          <text x="0" y="320" text-anchor="middle" fill="#cbd2dd" font-size="13" font-family="JetBrains Mono, monospace">HOME</text>
+          <text x="245" y="60" text-anchor="start" fill="#cbd2dd" font-size="13" font-family="JetBrains Mono, monospace">1B</text>
+          <text x="0" y="-180" text-anchor="middle" fill="#cbd2dd" font-size="13" font-family="JetBrains Mono, monospace">2B</text>
+          <text x="-260" y="60" text-anchor="end" fill="#cbd2dd" font-size="13" font-family="JetBrains Mono, monospace">3B</text>
+        </g>
+
+        <!-- Players (electric historical figures) -->
+        <!-- Pitcher (FARADAY) -->
+        <g class="sb-runner" transform="translate(640 555)">
+          <circle r="13" fill="#2978ff"/>
+          <text y="4" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">F</text>
+          <text y="-22" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" opacity=".95">패러데이 P</text>
+        </g>
+        <!-- Batter (OHM) -->
+        <g class="sb-runner" transform="translate(620 765)" style="animation-delay:.3s">
+          <circle r="13" fill="#ff2233"/>
+          <text y="4" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">Ω</text>
+          <text y="-22" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" opacity=".95">옴 (타석)</text>
+        </g>
+        <!-- Catcher -->
+        <g transform="translate(660 790)">
+          <circle r="11" fill="#1e232e" stroke="#fff" stroke-width="1.5"/>
+          <text y="4" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">C</text>
+        </g>
+        <!-- Runner on 1B (Volta) -->
+        <g class="sb-runner" transform="translate(860 555)" style="animation-delay:.6s">
+          <circle r="12" fill="#ff8a2a"/>
+          <text y="4" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">V</text>
+          <text y="-20" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" opacity=".95">볼타 1루</text>
+        </g>
+        <!-- Outfielders -->
+        <g transform="translate(640 300)">
+          <circle r="10" fill="#2978ff"/>
+          <text y="-16" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" opacity=".85">맥스웰 CF</text>
+        </g>
+        <g transform="translate(380 380)">
+          <circle r="10" fill="#2978ff"/>
+          <text y="-16" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" opacity=".85">앙페르 LF</text>
+        </g>
+        <g transform="translate(900 380)">
+          <circle r="10" fill="#2978ff"/>
+          <text y="-16" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" opacity=".85">와트 RF</text>
+        </g>
+
+        <!-- Stadium bleacher signage (virtual ads) -->
+        <g font-family="JetBrains Mono, monospace" font-weight="800" font-size="13">
+          <rect x="160" y="285" width="180" height="22" rx="3" fill="#ff2233" opacity=".9"/>
+          <text x="250" y="301" text-anchor="middle" fill="#fff">SPARK ACADEMY</text>
+          <rect x="370" y="285" width="180" height="22" rx="3" fill="#2978ff" opacity=".9"/>
+          <text x="460" y="301" text-anchor="middle" fill="#fff">전기 챔피언스 리그</text>
+          <rect x="580" y="285" width="120" height="22" rx="3" fill="#ffd24a" opacity=".9"/>
+          <text x="640" y="301" text-anchor="middle" fill="#1a1408">CBT BANK</text>
+          <rect x="730" y="285" width="180" height="22" rx="3" fill="#28d96b" opacity=".9"/>
+          <text x="820" y="301" text-anchor="middle" fill="#06200f">FLIP CARD STUDIO</text>
+          <rect x="940" y="285" width="180" height="22" rx="3" fill="#ff8a2a" opacity=".9"/>
+          <text x="1030" y="301" text-anchor="middle" fill="#1a0a02">시뮬레이터 시즌권</text>
+        </g>
+
+        <!-- Crowd dots (virtual fans) -->
+        <g fill="#3a4252" opacity=".65">
+          <circle cx="80" cy="220" r="2"/><circle cx="130" cy="200" r="2"/><circle cx="180" cy="225" r="2"/>
+          <circle cx="240" cy="210" r="2"/><circle cx="320" cy="225" r="2"/><circle cx="400" cy="205" r="2"/>
+          <circle cx="480" cy="220" r="2"/><circle cx="560" cy="200" r="2"/><circle cx="640" cy="225" r="2"/>
+          <circle cx="720" cy="210" r="2"/><circle cx="800" cy="225" r="2"/><circle cx="880" cy="205" r="2"/>
+          <circle cx="960" cy="220" r="2"/><circle cx="1040" cy="200" r="2"/><circle cx="1120" cy="225" r="2"/>
+          <circle cx="1200" cy="210" r="2"/>
+        </g>
+        <g fill="#ff2233" opacity=".7">
+          <circle cx="160" cy="245" r="2.5"/><circle cx="420" cy="250" r="2.5"/><circle cx="700" cy="245" r="2.5"/><circle cx="980" cy="250" r="2.5"/>
+        </g>
+        <g fill="#2978ff" opacity=".7">
+          <circle cx="260" cy="248" r="2.5"/><circle cx="540" cy="242" r="2.5"/><circle cx="820" cy="248" r="2.5"/><circle cx="1100" cy="242" r="2.5"/>
+        </g>
+      </svg>
+
+      <!-- Lower-third caption (caster) -->
+      <div class="sb-lower-third">
+        <div class="sb-caster-bar mono" style="pointer-events:auto;">
+          <div class="text-[10px] tracking-widest font-extrabold text-[color:var(--sb-red)]">CASTER · 김중계</div>
+          <div id="casterLine" class="text-[14px] md:text-[15px] font-bold text-white mt-0.5">
+            5회초 무사 1루 — 옴 타이거즈의 추격! 볼타 1루주자, 도루 사인이 나왔습니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoreboard under screen -->
+    <div class="sb-scoreboard mt-4 p-3 md:p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-black tracking-widest text-gray-300">SCOREBOARD</span>
+          <span class="sb-chip yellow">5회초</span>
+        </div>
+        <div class="text-[11px] mono text-gray-400">B/S/O · BALL · STRIKE · OUT</div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-center mono">
+          <thead class="text-[11px] text-gray-400">
+            <tr>
+              <th class="text-left pl-2 py-1">TEAM</th>
+              <th class="py-1">1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th>
+              <th class="px-2">R</th><th>H</th><th>E</th>
+            </tr>
+          </thead>
+          <tbody class="text-[14px]">
+            <tr>
+              <td class="text-left pl-2 py-1.5">
+                <div class="flex items-center gap-2">
+                  <div class="sb-team-badge" style="background: linear-gradient(135deg,#ff8a2a,#c91222); width:22px; height:22px; font-size:10px;">Ω</div>
+                  <span class="font-bold text-gray-200">옴 타이거즈</span>
+                </div>
+              </td>
+              <td id="scOhm-1" class="sb-score-cell">0</td>
+              <td id="scOhm-2" class="sb-score-cell">1</td>
+              <td id="scOhm-3" class="sb-score-cell">0</td>
+              <td id="scOhm-4" class="sb-score-cell">2</td>
+              <td id="scOhm-5" class="sb-score-cell active">-</td>
+              <td id="scOhm-6" class="sb-score-cell">-</td>
+              <td id="scOhm-7" class="sb-score-cell">-</td>
+              <td id="scOhm-8" class="sb-score-cell">-</td>
+              <td id="scOhm-9" class="sb-score-cell">-</td>
+              <td class="px-2 font-black sb-bignum text-[18px]" id="scOhmR">3</td>
+              <td class="font-bold" id="scOhmH">6</td>
+              <td class="font-bold text-gray-400" id="scOhmE">1</td>
+            </tr>
+            <tr>
+              <td class="text-left pl-2 py-1.5">
+                <div class="flex items-center gap-2">
+                  <div class="sb-team-badge" style="background: linear-gradient(135deg,#2978ff,#0b4fcc); width:22px; height:22px; font-size:10px;">F</div>
+                  <span class="font-bold text-gray-200">패러데이 다이너스</span>
+                </div>
+              </td>
+              <td id="scFar-1" class="sb-score-cell">1</td>
+              <td id="scFar-2" class="sb-score-cell">0</td>
+              <td id="scFar-3" class="sb-score-cell">2</td>
+              <td id="scFar-4" class="sb-score-cell">1</td>
+              <td id="scFar-5" class="sb-score-cell">-</td>
+              <td id="scFar-6" class="sb-score-cell">-</td>
+              <td id="scFar-7" class="sb-score-cell">-</td>
+              <td id="scFar-8" class="sb-score-cell">-</td>
+              <td id="scFar-9" class="sb-score-cell">-</td>
+              <td class="px-2 font-black sb-bignum text-[18px]" id="scFarR">4</td>
+              <td class="font-bold" id="scFarH">7</td>
+              <td class="font-bold text-gray-400" id="scFarE">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sb-divider my-3"></div>
+
+      <!-- B/S/O + Count -->
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-3 text-[12px]">
+        <div>
+          <div class="text-gray-400 text-[10px] tracking-widest mb-1">BALL</div>
+          <div class="flex gap-1.5">
+            <div class="sb-bsb" id="ball-1"></div>
+            <div class="sb-bsb" id="ball-2"></div>
+            <div class="sb-bsb" id="ball-3"></div>
+          </div>
+        </div>
+        <div>
+          <div class="text-gray-400 text-[10px] tracking-widest mb-1">STRIKE</div>
+          <div class="flex gap-1.5">
+            <div class="sb-bsb" id="strike-1"></div>
+            <div class="sb-bsb" id="strike-2"></div>
+          </div>
+        </div>
+        <div>
+          <div class="text-gray-400 text-[10px] tracking-widest mb-1">OUT</div>
+          <div class="flex gap-1.5">
+            <div class="sb-bsb" id="out-1"></div>
+            <div class="sb-bsb" id="out-2"></div>
+          </div>
+        </div>
+        <div>
+          <div class="text-gray-400 text-[10px] tracking-widest mb-1">투수</div>
+          <div class="mono font-bold text-gray-100">패러데이 #FX <span class="text-gray-500 text-[11px]">(76구)</span></div>
+        </div>
+        <div>
+          <div class="text-gray-400 text-[10px] tracking-widest mb-1">타자</div>
+          <div class="mono font-bold text-gray-100">옴 Ω <span class="text-gray-500 text-[11px]">(.342)</span></div>
+        </div>
+        <div>
+          <div class="text-gray-400 text-[10px] tracking-widest mb-1">관중</div>
+          <div class="mono font-bold text-gray-100" id="attendCnt">12,847명</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live commentary feed -->
+    <div class="sb-card mt-4">
+      <div class="sb-card-hdr">
+        <span class="sb-live-dot"></span>
+        <span>실시간 해설</span>
+        <span class="ml-auto text-[10px] text-gray-400 font-normal">자동 갱신 · 약 6초</span>
+      </div>
+      <div id="commentaryFeed" class="p-3 text-[13px] leading-relaxed text-gray-200 space-y-2 mono" style="min-height: 200px;"></div>
+    </div>
+
+    <!-- Highlight stats - 3 column -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+      <div class="sb-card p-4 lift">
+        <div class="text-[10px] tracking-widest text-gray-400 font-bold">팀 타율 (합격률)</div>
+        <div class="flex items-end gap-2 mt-1">
+          <div class="sb-bignum text-3xl">.342</div>
+          <div class="text-[11px] text-green-400 mono mb-1">▲ .018</div>
+        </div>
+        <div class="text-[11px] text-gray-400 mt-1">옴 타이거즈 · 직류회로 모의 vs 정답</div>
+        <div class="sb-bar-track mt-3"><div class="sb-bar-fill" style="width:68%;"></div></div>
+      </div>
+      <div class="sb-card p-4 lift">
+        <div class="text-[10px] tracking-widest text-gray-400 font-bold">홈런 (단원별 만점)</div>
+        <div class="flex items-end gap-2 mt-1">
+          <div class="sb-bignum text-3xl" style="color: var(--sb-red);">14</div>
+          <div class="text-[11px] text-green-400 mono mb-1">+3 (이번 회)</div>
+        </div>
+        <div class="text-[11px] text-gray-400 mt-1">교류회로 / 전기기기 / 전기설비</div>
+        <div class="sb-bar-track mt-3"><div class="sb-bar-fill" style="width:74%; background: linear-gradient(90deg,var(--sb-red),var(--sb-orange));"></div></div>
+      </div>
+      <div class="sb-card p-4 lift">
+        <div class="text-[10px] tracking-widest text-gray-400 font-bold">방어율 (오답률)</div>
+        <div class="flex items-end gap-2 mt-1">
+          <div class="sb-bignum text-3xl" style="color: var(--sb-blue);">2.18</div>
+          <div class="text-[11px] text-red-400 mono mb-1">▼ .42</div>
+        </div>
+        <div class="text-[11px] text-gray-400 mt-1">9이닝당 자책점 — 낮을수록 좋음</div>
+        <div class="sb-bar-track mt-3"><div class="sb-bar-fill" style="width:32%; background: linear-gradient(90deg,var(--sb-blue),#7ab6ff);"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: scoreboard panel + chat -->
+  <div class="col-span-12 lg:col-span-4 space-y-4">
+
+    <!-- Team standings -->
+    <div class="sb-card">
+      <div class="sb-card-hdr">
+        <span>리그 순위 · 정규시즌</span>
+        <span class="ml-auto text-[10px] text-gray-400 font-normal">14R 종료 기준</span>
+      </div>
+      <div class="p-3 space-y-2">
+        <!-- row template -->
+        <div class="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+          <div class="sb-bignum text-lg w-6 text-center" style="color:var(--sb-yellow)">1</div>
+          <div class="sb-team-badge" style="background: linear-gradient(135deg,#2978ff,#0b4fcc);">F</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-[14px] truncate">패러데이 다이너스</div>
+            <div class="text-[11px] text-gray-400 mono">9W 3L · 승률 .750</div>
+          </div>
+          <div class="text-right mono">
+            <div class="text-[13px] font-black" style="color:var(--sb-green);">+12</div>
+            <div class="text-[10px] text-gray-500">득실</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+          <div class="sb-bignum text-lg w-6 text-center" style="color:#cbd2dd">2</div>
+          <div class="sb-team-badge" style="background: linear-gradient(135deg,#ffd24a,#ff8a2a);">K</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-[14px] truncate">키르히호프 라이온스</div>
+            <div class="text-[11px] text-gray-400 mono">8W 4L · 승률 .667</div>
+          </div>
+          <div class="text-right mono">
+            <div class="text-[13px] font-black" style="color:var(--sb-green);">+8</div>
+            <div class="text-[10px] text-gray-500">득실</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+          <div class="sb-bignum text-lg w-6 text-center" style="color:#cbd2dd">3</div>
+          <div class="sb-team-badge" style="background: linear-gradient(135deg,#ff8a2a,#c91222);">Ω</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-[14px] truncate">옴 타이거즈</div>
+            <div class="text-[11px] text-gray-400 mono">6W 6L · 승률 .500</div>
+          </div>
+          <div class="text-right mono">
+            <div class="text-[13px] font-black text-gray-400">±0</div>
+            <div class="text-[10px] text-gray-500">득실</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+          <div class="sb-bignum text-lg w-6 text-center" style="color:#cbd2dd">4</div>
+          <div class="sb-team-badge" style="background: linear-gradient(135deg,#28d96b,#0f7a3a);">T</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-[14px] truncate">테슬라 이글스</div>
+            <div class="text-[11px] text-gray-400 mono">4W 8L · 승률 .333</div>
+          </div>
+          <div class="text-right mono">
+            <div class="text-[13px] font-black" style="color:var(--sb-red);">-9</div>
+            <div class="text-[10px] text-gray-500">득실</div>
+          </div>
+        </div>
+
+        <div class="sb-divider my-2"></div>
+        <div class="text-[11px] text-gray-500 px-1">
+          포스트시즌 진출선 — 상위 2팀이 챔피언십 시리즈(=합격) 진출. 14라운드 남았습니다.
+        </div>
+      </div>
+    </div>
+
+    <!-- Starting lineup -->
+    <div class="sb-card">
+      <div class="sb-card-hdr">
+        <span>오늘의 선발 라인업 · 옴 타이거즈</span>
+      </div>
+      <div class="p-3">
+        <table class="w-full text-[12px] mono">
+          <thead class="text-gray-400 text-[10px] tracking-widest">
+            <tr><th class="text-left pb-1.5">#</th><th class="text-left pb-1.5">POS</th><th class="text-left pb-1.5">PLAYER</th><th class="text-right pb-1.5">AVG</th><th class="text-right pb-1.5">HR</th></tr>
+          </thead>
+          <tbody class="text-gray-200">
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">1</td><td class="text-gray-400">SS</td><td class="font-bold">옴 (Ω)</td><td class="text-right">.342</td><td class="text-right">14</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">2</td><td class="text-gray-400">2B</td><td class="font-bold">볼타 (V)</td><td class="text-right">.301</td><td class="text-right">9</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">3</td><td class="text-gray-400">CF</td><td class="font-bold">맥스웰 (M)</td><td class="text-right">.318</td><td class="text-right">22</td></tr>
+            <tr class="border-t border-[var(--sb-line)] bg-[rgba(255,210,74,.05)]"><td class="py-1.5">4</td><td class="text-gray-400">1B</td><td class="font-bold" style="color:var(--sb-yellow)">앙페르 (A) <span class="text-[10px] ml-1">★4번</span></td><td class="text-right">.355</td><td class="text-right">28</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">5</td><td class="text-gray-400">RF</td><td class="font-bold">와트 (W)</td><td class="text-right">.276</td><td class="text-right">11</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">6</td><td class="text-gray-400">3B</td><td class="font-bold">쿨롱 (C)</td><td class="text-right">.288</td><td class="text-right">7</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">7</td><td class="text-gray-400">LF</td><td class="font-bold">테슬라* (T)</td><td class="text-right">.265</td><td class="text-right">19</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">8</td><td class="text-gray-400">C</td><td class="font-bold">헤르츠 (Hz)</td><td class="text-right">.251</td><td class="text-right">5</td></tr>
+            <tr class="border-t border-[var(--sb-line)]"><td class="py-1.5">9</td><td class="text-gray-400">P</td><td class="font-bold">에디슨 (E)</td><td class="text-right">.198</td><td class="text-right">1</td></tr>
+          </tbody>
+        </table>
+        <div class="text-[10px] text-gray-500 mt-2">* 임대 선수 — 본 콘텐츠는 가상 시뮬레이션입니다.</div>
+      </div>
+    </div>
+
+    <!-- Cheer chat -->
+    <div class="sb-card flex flex-col" style="height: 420px;">
+      <div class="sb-card-hdr">
+        <span class="sb-live-dot"></span>
+        <span>응원 채팅</span>
+        <span class="ml-auto text-[10px] text-gray-400 font-normal mono" id="chatViewers">시청자 8,421</span>
+      </div>
+      <div id="chatBox" class="scroll-y flex-1"></div>
+      <div class="border-t border-[var(--sb-line)] p-2 flex gap-2">
+        <input id="chatInput" type="text" placeholder="응원 메시지 입력... (Enter)" class="flex-1 bg-[var(--sb-bg-3)] border border-[var(--sb-line)] rounded px-3 py-1.5 text-[13px] text-gray-100 placeholder-gray-500 outline-none focus:border-[var(--sb-red)]"/>
+        <button id="chatSend" class="px-3 py-1.5 rounded text-[12px] font-black text-white" style="background:var(--sb-red);">전송</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- =============== AD BANNER + TICKER =============== -->
+<section class="max-w-[1400px] mx-auto px-4 pb-2">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="sb-ad p-4 md:col-span-2 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-lg flex items-center justify-center font-black text-2xl text-white flex-shrink-0" style="background: linear-gradient(135deg,#ff2233,#ff8a2a);">⚡</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] tracking-widest font-bold text-gray-400">SPARK ACADEMY · CBT BANK</div>
+        <div class="text-[16px] font-black mt-0.5">시즌권 발급 — 1,200문항 · AI 해설 · 7일 무료</div>
+        <div class="text-[12px] text-gray-400 mt-0.5">전기 챔피언스 리그 공식 학습 파트너 (가상)</div>
+      </div>
+      <div class="px-4 py-2 rounded-md text-[12px] font-black bg-white text-black flex-shrink-0 hidden sm:block">입장</div>
+    </div>
+    <div class="sb-ad p-4 flex items-center gap-3">
+      <div class="w-12 h-12 rounded-lg flex items-center justify-center font-black text-xl text-white flex-shrink-0" style="background: linear-gradient(135deg,#2978ff,#0b4fcc);">F</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] tracking-widest font-bold text-gray-400">FLIP CARD STUDIO</div>
+        <div class="text-[14px] font-black mt-0.5">플립카드 240종 · 단원별 워크북</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">3분이면 한 회 — 출퇴근 학습</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- News ticker -->
+  <div class="sb-ticker-wrap mt-4 rounded-md">
+    <div class="sb-ticker mono">
+      <span>⚡ 속보 · 옴 타이거즈, 5회초 추격 시작</span>
+      <span>● 패러데이 다이너스, 단원 통산 홈런 100개 돌파</span>
+      <span>★ 키르히호프 라이온스, 7연승 행진</span>
+      <span>◆ 테슬라 이글스, 신인 드래프트 1순위 영입 검토</span>
+      <span>▲ 전기 챔피언스 리그 14R · 평균 출제율 적중 92%</span>
+      <span>♛ 챔피언십 시리즈 진출 매직넘버 — 다이너스 4, 라이온스 6</span>
+      <!-- duplicate for seamless loop -->
+      <span>⚡ 속보 · 옴 타이거즈, 5회초 추격 시작</span>
+      <span>● 패러데이 다이너스, 단원 통산 홈런 100개 돌파</span>
+      <span>★ 키르히호프 라이온스, 7연승 행진</span>
+      <span>◆ 테슬라 이글스, 신인 드래프트 1순위 영입 검토</span>
+      <span>▲ 전기 챔피언스 리그 14R · 평균 출제율 적중 92%</span>
+      <span>♛ 챔피언십 시리즈 진출 매직넘버 — 다이너스 4, 라이온스 6</span>
+    </div>
+  </div>
+</section>
+
+<!-- =============== BOTTOM STATS / NEWS / FOOTER =============== -->
+<section class="max-w-[1400px] mx-auto px-4 py-6 grid grid-cols-12 gap-4">
+
+  <!-- Player of the game -->
+  <div class="col-span-12 md:col-span-5 sb-card overflow-hidden">
+    <div class="sb-card-hdr">
+      <span>오늘의 MVP 후보</span>
+    </div>
+    <div class="p-4 flex items-center gap-4">
+      <div class="w-20 h-20 rounded-xl flex items-center justify-center font-black text-3xl text-white flex-shrink-0 shadow-xl" style="background: linear-gradient(135deg,#ffd24a,#ff8a2a);">A</div>
+      <div class="flex-1">
+        <div class="text-[10px] tracking-widest text-gray-400 font-bold">앙페르 · 1B · #5</div>
+        <div class="text-xl font-black mt-0.5">앙페르 (André-Marie)</div>
+        <div class="text-[12px] text-gray-400">옴 타이거즈 · 4번 타자</div>
+        <div class="mt-2 grid grid-cols-3 gap-2 text-center">
+          <div class="bg-[var(--sb-bg-3)] rounded px-2 py-1.5 border border-[var(--sb-line)]">
+            <div class="sb-bignum text-base">3</div>
+            <div class="text-[9px] text-gray-400 tracking-wider">HIT</div>
+          </div>
+          <div class="bg-[var(--sb-bg-3)] rounded px-2 py-1.5 border border-[var(--sb-line)]">
+            <div class="sb-bignum text-base" style="color:var(--sb-red);">2</div>
+            <div class="text-[9px] text-gray-400 tracking-wider">HR</div>
+          </div>
+          <div class="bg-[var(--sb-bg-3)] rounded px-2 py-1.5 border border-[var(--sb-line)]">
+            <div class="sb-bignum text-base" style="color:var(--sb-green);">5</div>
+            <div class="text-[9px] text-gray-400 tracking-wider">RBI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini headlines -->
+  <div class="col-span-12 md:col-span-7 sb-card">
+    <div class="sb-card-hdr">
+      <span>리그 헤드라인</span>
+      <span class="ml-auto text-[10px] text-gray-400 font-normal">스파크쌤 스포츠 데스크</span>
+    </div>
+    <div class="p-2">
+      <a class="flex items-start gap-3 p-2.5 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+        <span class="text-[10px] mono font-black px-2 py-1 rounded flex-shrink-0" style="background:var(--sb-red); color:#fff;">BREAKING</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[14px] font-bold leading-snug">옴 타이거즈, 직류회로 시리즈 10연승 — 챔피언십 시리즈 진출 가시권</div>
+          <div class="text-[11px] text-gray-400 mt-1 mono">14R · 5분 전 · 김전기 기자</div>
+        </div>
+      </a>
+      <a class="flex items-start gap-3 p-2.5 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+        <span class="text-[10px] mono font-black px-2 py-1 rounded flex-shrink-0" style="background:var(--sb-blue); color:#fff;">분석</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[14px] font-bold leading-snug">패러데이 다이너스 vs 키르히호프 라이온스 — 교류회로 단원 맞대결 프리뷰</div>
+          <div class="text-[11px] text-gray-400 mt-1 mono">14R · 22분 전 · 옴해설 위원</div>
+        </div>
+      </a>
+      <a class="flex items-start gap-3 p-2.5 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+        <span class="text-[10px] mono font-black px-2 py-1 rounded flex-shrink-0" style="background:var(--sb-yellow); color:#1a1408;">기록</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[14px] font-bold leading-snug">테슬라 이글스 신인 마르코니, 데뷔전 노히트노런 — 무선 강속구 16개</div>
+          <div class="text-[11px] text-gray-400 mt-1 mono">13R · 1시간 전 · 패러데이 데스크</div>
+        </div>
+      </a>
+      <a class="flex items-start gap-3 p-2.5 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+        <span class="text-[10px] mono font-black px-2 py-1 rounded flex-shrink-0" style="background:var(--sb-green); color:#06200f;">트레이드</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[14px] font-bold leading-snug">전기설비 단원 전문 클로저, 키르히호프 라이온스 이적 — 마감투수 보강</div>
+          <div class="text-[11px] text-gray-400 mt-1 mono">13R · 2시간 전 · 김중계 기자</div>
+        </div>
+      </a>
+      <a class="flex items-start gap-3 p-2.5 rounded-md hover:bg-[var(--sb-bg-3)] lift border border-transparent">
+        <span class="text-[10px] mono font-black px-2 py-1 rounded flex-shrink-0 border border-[var(--sb-line-2)] text-gray-300">칼럼</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[14px] font-bold leading-snug">시청자 데이터로 본 챔피언십 진출 — 오답률 2.0 미만 팀의 공통점</div>
+          <div class="text-[11px] text-gray-400 mt-1 mono">14R · 3시간 전 · 옴해설 위원</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- =============== FOOTER =============== -->
+<footer class="border-t border-[var(--sb-line)] bg-[var(--sb-bg-2)]">
+  <div class="max-w-[1400px] mx-auto px-4 py-6 grid grid-cols-12 gap-4 text-[12px] text-gray-400">
+    <div class="col-span-12 md:col-span-5">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-md flex items-center justify-center font-black text-white" style="background: linear-gradient(135deg,#ff2233,#ff8a2a);">SS</div>
+        <div class="leading-tight">
+          <div class="font-black text-white text-[14px]">스파크쌤 스포츠 네트워크</div>
+          <div class="text-[10px] mono tracking-widest text-gray-500">SPARK·SPORTS·NETWORK · CH 11</div>
+        </div>
+      </div>
+      <p class="mt-3 text-gray-500 leading-relaxed">
+        스파크쌤 스포츠는 전기기능사 학습 콘텐츠를 스포츠 중계 형식으로 재구성한 가상의 채널입니다.
+        모든 팀명·선수명·리그·경기 결과는 학습 비유를 위한 창작이며 실재와 무관합니다.
+      </p>
+    </div>
+    <div class="col-span-6 md:col-span-3">
+      <div class="text-[10px] tracking-widest font-bold text-gray-300 mb-2">중계 채널</div>
+      <ul class="space-y-1.5">
+        <li>· 전기 챔피언스 리그 본방</li>
+        <li>· 라이브 스코어보드</li>
+        <li>· 단원별 하이라이트</li>
+        <li>· 시즌 통계 데이터</li>
+      </ul>
+    </div>
+    <div class="col-span-6 md:col-span-4">
+      <div class="text-[10px] tracking-widest font-bold text-gray-300 mb-2">제작</div>
+      <ul class="space-y-1.5 mono">
+        <li>편성 · 김중계  / 해설 · 옴해설 위원</li>
+        <li>리포터 · 김전기 / 데이터 · 패러데이 랩</li>
+        <li>음향 · 헤르츠 사운드 / 그래픽 · 맥스웰 비주얼</li>
+      </ul>
+      <div class="mt-3 text-[11px] text-gray-500 leading-relaxed">
+        ※ 본 콘텐츠는 가상 시뮬레이션이며, 실재 구단·인물·리그·방송사와 무관합니다.
+        실재 KBO 및 어떤 프로 스포츠 리그와도 무관하며, 학습 목적의 패러디입니다.
+      </div>
+    </div>
+  </div>
+  <div class="border-t border-[var(--sb-line)]">
+    <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between text-[10px] text-gray-500 mono">
+      <div>© 2026 SPARK·SPORTS·NETWORK · 가상 채널 · 학습 콘텐츠</div>
+      <div>BUILD · ELC-2026.05.15 · v1.0</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============ LIVE CLOCK + ELAPSED ============ */
+  const clockEl = document.getElementById('liveClock');
+  const elapsedEl = document.getElementById('elapsedTime');
+  const matchStart = Date.now() - 1000 * 60 * 87; // 87 min ago
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function tick(){
+    const d = new Date();
+    if (clockEl) clockEl.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    const sec = Math.floor((Date.now() - matchStart) / 1000);
+    const h = Math.floor(sec/3600);
+    const m = Math.floor((sec%3600)/60);
+    const s = sec % 60;
+    if (elapsedEl) elapsedEl.textContent = (h>0? h+':'+pad(m) : pad(m)) + ':' + pad(s);
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ============ COMMENTARY ROTATOR ============ */
+  const casterEl = document.getElementById('casterLine');
+  const feedEl = document.getElementById('commentaryFeed');
+  const casterLines = [
+    '5회초 무사 1루 — 옴 타이거즈의 추격! 볼타 1루주자, 도루 사인이 나왔습니다.',
+    '옴의 타구! 좌중간을 가르는 안타! 1루주자 볼타, 3루까지!',
+    '아 — 패러데이의 변화구! 옴이 헛스윙, 카운트는 1볼 2스트라이크.',
+    '큰 거 나왔습니다! 앙페르의 시즌 28호 솔로 홈런! 좌측 담장 직격!',
+    '맥스웰, 깊은 좌중간 플라이! 잡힙니다 — 희생플라이, 1점 추가!',
+    '여기서 투수 교체 신호 — 패러데이 다이너스 벤치가 움직입니다.',
+    '쿨롱의 라인 드라이브! 3루수 글러브를 스쳐 좌측 안타로 연결!',
+    '와트, 풀카운트에서 침착하게 볼넷 — 만루 위기 자초입니다.',
+    '키르히호프 라이온스 더그아웃, 마운드 미팅 요청합니다.',
+    '관중석이 들썩입니다 — 옴 타이거즈 응원단, 직류 응원가 제창!',
+  ];
+  let casterIdx = 0;
+  function rotateCaster(){
+    casterIdx = (casterIdx + 1) % casterLines.length;
+    if (casterEl) {
+      casterEl.style.opacity = '0';
+      setTimeout(function(){
+        casterEl.textContent = casterLines[casterIdx];
+        casterEl.style.transition = 'opacity .4s ease';
+        casterEl.style.opacity = '1';
+      }, 200);
+    }
+    // Push to feed
+    if (feedEl){
+      const t = new Date();
+      const ts = pad(t.getHours()) + ':' + pad(t.getMinutes()) + ':' + pad(t.getSeconds());
+      const div = document.createElement('div');
+      div.className = 'sb-chat-msg';
+      div.style.borderBottom = '1px dashed var(--sb-line)';
+      div.innerHTML = '<span class="text-[var(--sb-yellow)] font-bold mr-2">[' + ts + ']</span>' +
+                      '<span class="text-gray-400 mr-2">해설</span>' +
+                      '<span>' + casterLines[casterIdx] + '</span>';
+      feedEl.insertBefore(div, feedEl.firstChild);
+      while (feedEl.children.length > 9) feedEl.removeChild(feedEl.lastChild);
+    }
+  }
+  // Seed feed
+  for (let i=0; i<3; i++) rotateCaster();
+  setInterval(rotateCaster, 6000);
+
+  /* ============ B/S/O + COUNT ANIMATION ============ */
+  const ballEls = [document.getElementById('ball-1'),document.getElementById('ball-2'),document.getElementById('ball-3')];
+  const strikeEls = [document.getElementById('strike-1'),document.getElementById('strike-2')];
+  const outEls = [document.getElementById('out-1'),document.getElementById('out-2')];
+  let count = { b: 1, s: 2, o: 0 };
+  function renderCount(){
+    ballEls.forEach((el,i)=>{ if(el){ el.classList.toggle('on-ball', i < count.b); } });
+    strikeEls.forEach((el,i)=>{ if(el){ el.classList.toggle('on-strike', i < count.s); } });
+    outEls.forEach((el,i)=>{ if(el){ el.classList.toggle('on-out', i < count.o); } });
+  }
+  renderCount();
+  function advancePitch(){
+    const r = Math.random();
+    if (r < 0.35) { // ball
+      count.b++;
+      if (count.b > 3) { count.b = 0; count.s = 0; } // walk -> reset
+    } else if (r < 0.7) { // strike
+      count.s++;
+      if (count.s > 2) { // strikeout
+        count.s = 0; count.b = 0; count.o++;
+        if (count.o > 2) { count.o = 0; } // new inning - keep simple
+      }
+    } else { // hit / out in play
+      count.b = 0; count.s = 0;
+      if (Math.random() < 0.5) {
+        count.o++;
+        if (count.o > 2) count.o = 0;
+      } else {
+        // hit -> bump score for ohm
+        bumpScore();
+      }
+    }
+    renderCount();
+  }
+  setInterval(advancePitch, 4500);
+
+  /* ============ SCORE UPDATES ============ */
+  let scOhmR = 3, scFarR = 4, scOhmH = 6, scFarH = 7;
+  const scOhmREl = document.getElementById('scOhmR');
+  const scFarREl = document.getElementById('scFarR');
+  const scOhmHEl = document.getElementById('scOhmH');
+  const scFarHEl = document.getElementById('scFarH');
+  function bumpScore(){
+    // 70% hit goes to current batting team (ohm in 5회초)
+    if (Math.random() < 0.7) {
+      scOhmH++;
+      if (Math.random() < 0.45) {
+        scOhmR++;
+        flashScore(scOhmREl);
+        // also bump 5회 cell
+        const c5 = document.getElementById('scOhm-5');
+        if (c5) {
+          const cur = parseInt(c5.textContent) || 0;
+          c5.textContent = String(cur + 1);
+          flashScore(c5);
+        }
+      }
+    } else {
+      scFarH++;
+    }
+    if (scOhmREl) scOhmREl.textContent = scOhmR;
+    if (scFarREl) scFarREl.textContent = scFarR;
+    if (scOhmHEl) scOhmHEl.textContent = scOhmH;
+    if (scFarHEl) scFarHEl.textContent = scFarH;
+  }
+  function flashScore(el){
+    if (!el) return;
+    el.style.transition = 'none';
+    el.style.background = 'rgba(255,210,74,.35)';
+    setTimeout(function(){
+      el.style.transition = 'background .9s ease';
+      el.style.background = '';
+    }, 60);
+  }
+
+  /* ============ ATTENDANCE TICK ============ */
+  const attEl = document.getElementById('attendCnt');
+  let attend = 12847;
+  setInterval(function(){
+    attend += Math.floor(Math.random() * 11) - 3;
+    if (attend < 12500) attend = 12500;
+    if (attend > 13200) attend = 13200;
+    if (attEl) attEl.textContent = attend.toLocaleString() + '명';
+  }, 3000);
+
+  /* ============ CHAT ============ */
+  const chatBox = document.getElementById('chatBox');
+  const chatInput = document.getElementById('chatInput');
+  const chatSend = document.getElementById('chatSend');
+  const chatViewers = document.getElementById('chatViewers');
+
+  const cheerUsers = [
+    {n:'전류123', c:'#ff8a2a'}, {n:'옴팬클럽', c:'#ff2233'}, {n:'코일감기', c:'#2978ff'},
+    {n:'페이저각', c:'#ffd24a'}, {n:'합격가즈아', c:'#28d96b'}, {n:'단원9왕', c:'#ff75a0'},
+    {n:'키르히토프', c:'#ffd24a'}, {n:'다이너스붐', c:'#2978ff'}, {n:'전기왕', c:'#ff2233'},
+    {n:'테슬라넘버1', c:'#28d96b'}, {n:'리액턴스', c:'#ff8a2a'}, {n:'CBT킹', c:'#9b8aff'},
+  ];
+  const cheerMsgs = [
+    '옴 타이거즈 화이팅!!! ⚡',
+    '앙페르 한 방 가즈아',
+    '직류 응원가 시작!! V=IR V=IR',
+    '오늘 합격각이다 진짜',
+    '패러데이 변화구 무섭다',
+    '키르히호프 전압 법칙으로 막아!',
+    '5회초 추격 가능?',
+    '챔피언십 시리즈 가자!!',
+    '맥스웰 4타수 무안타 ㅠㅠ',
+    '볼타 도루 가능?',
+    '오답률 2.0 미만 = 합격선이래',
+    '교류회로만 외우면 끝난다 진짜',
+    '테슬라 이글스 분발해라',
+    'CBT 뱅크 시즌권 샀다 ㅋㅋ',
+    '플립카드 240종 다 외움',
+    '단원9 헬이다',
+    '실기 모드도 중계해줘요',
+    '내일 13:00 키르히호프전 본방사수',
+  ];
+
+  function escapeHTML(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function pushChat(name, color, text){
+    if (!chatBox) return;
+    const t = new Date();
+    const ts = pad(t.getHours()) + ':' + pad(t.getMinutes());
+    const div = document.createElement('div');
+    div.className = 'sb-chat-msg';
+    div.innerHTML = '<span class="text-gray-500 mono text-[11px] mr-2">' + ts + '</span>' +
+                    '<span class="sb-chat-user" style="color:' + color + '">' + escapeHTML(name) + '</span>' +
+                    '<span class="text-gray-200">' + escapeHTML(text) + '</span>';
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    while (chatBox.children.length > 60) chatBox.removeChild(chatBox.firstChild);
+  }
+
+  // Seed
+  for (let i=0; i<6; i++){
+    const u = cheerUsers[Math.floor(Math.random()*cheerUsers.length)];
+    const m = cheerMsgs[Math.floor(Math.random()*cheerMsgs.length)];
+    pushChat(u.n, u.c, m);
+  }
+  setInterval(function(){
+    const u = cheerUsers[Math.floor(Math.random()*cheerUsers.length)];
+    const m = cheerMsgs[Math.floor(Math.random()*cheerMsgs.length)];
+    pushChat(u.n, u.c, m);
+  }, 2400);
+
+  // Viewer counter
+  let viewers = 8421;
+  setInterval(function(){
+    viewers += Math.floor(Math.random()*21) - 8;
+    if (viewers < 8000) viewers = 8000;
+    if (viewers > 9200) viewers = 9200;
+    if (chatViewers) chatViewers.textContent = '시청자 ' + viewers.toLocaleString();
+  }, 2500);
+
+  // Send handler
+  function sendChat(){
+    if (!chatInput) return;
+    const v = chatInput.value.trim();
+    if (!v) return;
+    pushChat('나', '#ffd24a', v);
+    chatInput.value = '';
+  }
+  if (chatSend) chatSend.addEventListener('click', sendChat);
+  if (chatInput) chatInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') sendChat();
+  });
+
+})();
+</script>
+</body>
+</html>

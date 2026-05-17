@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퓨즈 용단 곡선(Fuse Melting Curve) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(251, 146, 60, 0.16), transparent),
+        radial-gradient(1100px 600px at 92% 110%, rgba(244, 63, 94, 0.12), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 65% 72%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 82% 18%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 28% 82%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 72% 38%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 48% 58%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 92% 88%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 8% 62%, rgba(255,255,255,0.4), transparent);
+    background-size: 620px 620px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,146,60,0.50), rgba(244,63,94,0.42), rgba(251,191,36,0.45));
+    box-shadow: 0 30px 100px -20px rgba(251, 146, 60, 0.30), 0 0 40px rgba(244, 63, 94, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 660px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fb923c; box-shadow: 0 0 12px #fb923c;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fb923c; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(251,146,60,0.4), rgba(244,63,94,0.4), rgba(251,191,36,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fdba74, #fda4af, #fde68a);
+    box-shadow: 0 0 22px rgba(253, 186, 116, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-load   { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-in     { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.55); color: #fde68a; }
+.chip-class  { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.chip-state  { background: linear-gradient(135deg, rgba(251,146,60,0.22), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.55); color: #fed7aa; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 146, 60, 0.75);
+    box-shadow: 0 0 24px rgba(251, 146, 60, 0.45);
+}
+.live-pill.preheat {
+    border-color: rgba(251, 191, 36, 0.85);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.45);
+    background: linear-gradient(135deg, rgba(251,191,36,0.16), rgba(15,23,42,0.85));
+}
+.live-pill.melt {
+    border-color: rgba(244, 63, 94, 0.95);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.20), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fdba74, #fda4af, #fde68a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(251, 146, 60, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(251,146,60,0.16), rgba(244,63,94,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fff7ed; }
+.toggle-btn {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.toggle-btn:hover { background: rgba(148, 163, 184, 0.18); }
+.toggle-btn.active {
+    background: linear-gradient(135deg, rgba(251,146,60,0.3), rgba(244,63,94,0.25));
+    border-color: rgba(251, 146, 60, 0.65);
+    color: white;
+    box-shadow: 0 0 20px rgba(251, 146, 60, 0.4);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(251,146,60,0.18), rgba(244,63,94,0.18));
+    border: 1px solid rgba(251,146,60,0.45);
+    color: #fed7aa;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(251,146,60,0.32), rgba(244,63,94,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(251,146,60,0.45);
+}
+.class-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.3);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.class-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(139,92,246,0.25));
+    border-color: rgba(168, 139, 250, 0.85);
+    color: #ede9fe;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.stage-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.stage-card.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(15,23,42,0.75));
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.32);
+    transform: translateY(-2px);
+}
+.stage-card.warn {
+    background: linear-gradient(135deg, rgba(251,146,60,0.22), rgba(15,23,42,0.75));
+    border-color: rgba(251, 146, 60, 0.75);
+    box-shadow: 0 0 18px rgba(251, 146, 60, 0.38);
+    transform: translateY(-2px);
+}
+.stage-card.danger {
+    background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(15,23,42,0.75));
+    border-color: rgba(244, 63, 94, 0.75);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.4);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-orange-300">
+            <span class="pulse-dot"></span>
+            FUSE · MELTING CURVE · I&sup2;t &amp; INVERSE TIME
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-200 via-rose-200 to-amber-200 bg-clip-text text-transparent">
+            퓨즈 용단 곡선 (Fuse Melting Curve) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            정격 전류 <span class="text-amber-300 font-semibold">I<sub>n</sub></span> 이하는 정상.
+            과전류가 흐르면 <span class="text-orange-300 font-semibold">엘리먼트가 줄열로 가열</span>되어
+            <span class="text-rose-300 font-semibold">반비례 시간 특성</span> 으로 용단되고, 모래(석영)가 아크를 흡수해
+            <span class="text-violet-300 font-semibold">한류(current limiting)</span> 차단합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-ratio">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">전류 배율 I / I<sub>n</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="ratioDisp" class="live-num">1.00</span> <span class="text-xs opacity-60 font-normal">배</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-t">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">예상 용단 시간 t</p>
+            <p class="mt-1 text-lg font-bold"><span id="tDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-i2t">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">차단 에너지 I²t</p>
+            <p class="mt-1 text-lg font-bold"><span id="i2tDisp" class="live-num">0</span> <span class="text-xs opacity-60 font-normal">A²·s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-state">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">퓨즈 상태</p>
+            <p class="mt-1 text-lg font-bold" id="stateDisp"><span class="text-emerald-300">● 정상</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚡ MELTED — 퓨즈 엘리먼트 용단·차단 (회로 OPEN, 재투입 불가 → 퓨즈 교체)
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">SOURCE → FUSE → LOAD · 과전류 시 엘리먼트 가열 → 용단 → 아크 → 모래 흡수 → OPEN</span>
+                    <div class="flex gap-2">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="overload">과부하</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="short">⚡ 단락</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 동작 시퀀스 단계 표시 -->
+            <div class="glass rounded-2xl p-5" id="stageCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🔥</span>
+                    <span class="bg-gradient-to-r from-amber-200 to-rose-200 bg-clip-text text-transparent">퓨즈 동작 시퀀스 (Heat → Melt → Arc → Quench)</span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[11px]" id="stageList">
+                    <div class="stage-card rounded-lg p-3" data-stage="normal">
+                        <p class="font-bold text-sky-300">① 정상</p>
+                        <p class="text-slate-400 mt-0.5">I ≤ I<sub>n</sub> · 엘리먼트는 정격 발열만, 무한 통전 가능</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="preheat">
+                        <p class="font-bold text-amber-300">② 예열 (Heat)</p>
+                        <p class="text-slate-400 mt-0.5">I &gt; I<sub>n</sub> · 줄열 I²R 누적, 엘리먼트 적색 가열</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="melt">
+                        <p class="font-bold text-orange-300">③ 용단 (Melt)</p>
+                        <p class="text-slate-400 mt-0.5">금속 융점 도달 → 엘리먼트 끊김 → 아크 발생</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="open">
+                        <p class="font-bold text-rose-300">④ 차단 (Quench)</p>
+                        <p class="text-slate-400 mt-0.5">석영 모래가 아크 냉각·흡수 → 회로 OPEN</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">반비례 시간 특성 · I²t 에너지</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$\text{용단 조건}: \ I &gt; I_n, \qquad t = K \cdot \left(\frac{I}{I_n}\right)^{-n}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$I^2 t = \int_0^{t_m} i^2(\tau)\, d\tau \quad [\text{A}^2 \cdot \text{s}]$$
+                </div>
+                <div class="math-container mt-2">
+                    $$\text{한류 효과}: \ \hat I_{peak} \ll \hat I_{prospective} \ \text{(가능 단락전류 피크 제한)}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">전류가 클수록 용단이 빨라지는 <span class="text-rose-300 font-semibold">반비례 특성</span>입니다. K·n 은 퓨즈 종류(gG/aM/aR/gL)에 따라 달라지며, <span class="text-violet-300 font-semibold">I²t</span> 는 퓨즈가 보호하는 기기가 견뎌야 하는 에너지를 결정합니다.</p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-orange-200">변수 조절</h2>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 배율 I / I<sub>n</sub></span><span id="ratioVal" class="font-mono text-base">1.0</span></label>
+                <input type="range" id="ratio" min="0.1" max="50" step="0.1" value="1.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">배 · 정격 대비 흐르는 전류</p>
+            </div>
+
+            <div class="chip-in chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>정격 전류 I<sub>n</sub></span><span id="inVal" class="font-mono text-base">32</span></label>
+                <input type="range" id="in" min="6" max="200" step="2" value="32" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A · 퓨즈 정격 (이하 무한 통전)</p>
+            </div>
+
+            <div class="chip-class chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">차단 특성 (Class)</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-class="gG">gG · 일반</button>
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-class="aM">aM · 전동기</button>
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-class="aR">aR · 반도체</button>
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-class="gL">gL · 케이블</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">gG=전부보호 · aM=후위(단락만) · aR=초고속(SCR) · gL=가정용</p>
+            </div>
+
+            <div class="chip-state chip rounded-lg p-3" id="i2tBox">
+                <p class="text-[11px] font-bold tracking-wider">I²t 누적 에너지</p>
+                <div class="mt-2">
+                    <div class="h-2 bg-slate-900/80 rounded-full overflow-hidden">
+                        <div id="i2tBar" class="h-full bg-gradient-to-r from-orange-400 to-rose-400 transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                    <p class="mt-1.5 text-[10px] text-slate-500 text-right"><span id="i2tPct">0</span>% of melt-energy</p>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">엘리먼트가 융점에 도달하는 데 필요한 에너지의 누적률</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">정상</span> · I ≤ I<sub>n</sub> → 무한 통전</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">예열</span> · I &gt; I<sub>n</sub> → 엘리먼트 가열</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">용단</span> · 융점 도달 → 아크 → OPEN</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-violet-300">한류</span> · 사고 피크 전류 ↓</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const CIRCUIT_H = 380;
+const CURVE_H = 280;
+const TOTAL_H = CIRCUIT_H + CURVE_H;
+
+// 차단 특성별 K, n (반비례 시간 곡선 근사값 — 교육용)
+// t = K · M^(-n)  (M = I/In)
+// gG : 일반용 (전부 보호) — 표준 IEC SI 유사
+// aM : 전동기용 (저배수 미동작, 고배수만 빠름)
+// aR : 반도체용 (매우 빠름, 작은 I²t)
+// gL : 케이블용 (gG 와 유사하나 약간 느림)
+const FUSE_CLASS = {
+    gG: { K: 1.20, n: 1.8, i2tRef: 0.40, label: 'gG 일반', color: '#f472b6', minRatio: 1.25 },
+    aM: { K: 2.20, n: 2.4, i2tRef: 0.80, label: 'aM 전동기', color: '#a78bfa', minRatio: 4.0  },
+    aR: { K: 0.18, n: 1.6, i2tRef: 0.08, label: 'aR 반도체', color: '#fb923c', minRatio: 1.30 },
+    gL: { K: 1.60, n: 1.7, i2tRef: 0.55, label: 'gL 케이블', color: '#7dd3fc', minRatio: 1.30 }
+};
+
+const state = {
+    ratio: 1.0,        // I/In
+    In: 32,            // A
+    cls: 'gG',
+    // 동작
+    phase: 'normal',   // 'normal' | 'preheat' | 'melt' | 'open'
+    melted: false,
+    i2tAccum: 0,       // I²t 누적 (정규화, 0~1+)
+    arcLife: 0,        // 아크 잔존 frame
+    sandHeat: 0,       // 모래 가열 표시용
+    elementTemp: 0,    // 0~1 (예열도)
+    meltX: null,       // 용단 위치 (캔버스 좌표)
+    t: 0
+};
+
+// 본선 경로 (전원 → 퓨즈 → 부하 → 귀로)
+let mainPath = [], mainSegs = [], mainLen = 0, mainParts = [];
+let comp = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildCircuit();
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function buildPath(points) {
+    const segs = [];
+    let len = 0;
+    for (let k = 0; k < points.length - 1; k++) {
+        const a = points[k], b = points[k+1];
+        const sl = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, len: sl, start: len });
+        len += sl;
+    }
+    return { segs, len };
+}
+
+function buildCircuit() {
+    const W = canvas.width;
+    const top = 80;
+    const bot = CIRCUIT_H - 90;
+    const startX = 60;
+    const fuseX = W * 0.40;
+    const loadX = W - 70;
+
+    const yLine = (top + bot) / 2 - 40;
+    const yRtn  = (top + bot) / 2 + 60;
+
+    mainPath = [
+        { x: startX + 24, y: yLine },
+        { x: fuseX - 80,  y: yLine },
+        { x: fuseX + 80,  y: yLine },
+        { x: loadX - 22,  y: yLine },
+        { x: loadX - 22,  y: yRtn },
+        { x: startX + 24, y: yRtn }
+    ];
+    ({ segs: mainSegs, len: mainLen } = buildPath(mainPath));
+
+    comp = { startX, fuseX, loadX, yLine, yRtn, top, bot, W };
+}
+
+function pointAt(progress, segs, len) {
+    if (len <= 0) return segs[0].a;
+    let p = ((progress % len) + len) % len;
+    for (const s of segs) {
+        if (p <= s.start + s.len) {
+            const lp = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * lp, y: s.a.y + (s.b.y - s.a.y) * lp };
+        }
+    }
+    return segs[0].a;
+}
+
+function seedParticles() {
+    mainParts = [];
+    for (let i = 0; i < 22; i++) {
+        mainParts.push({ progress: (i / 22) * mainLen, size: 1.3 + Math.random() * 0.8, jit: Math.random() * 0.3 - 0.15 });
+    }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 용단 시간 계산 (반비례) ============
+function meltTimeFor(M, clsKey) {
+    const c = FUSE_CLASS[clsKey];
+    if (M <= 1.0) return Infinity;
+    // aM 등의 저배수 미동작 처리
+    if (M < c.minRatio) {
+        // 부드럽게 큰 값으로
+        return Math.min(60, c.K * Math.pow(c.minRatio, -c.n) * 8);
+    }
+    const t = c.K * Math.pow(M, -c.n);
+    return Math.min(60, t);
+}
+
+// 한류 피크 (가능 단락전류 → 한류된 피크)
+function clippedPeak(M, clsKey) {
+    const c = FUSE_CLASS[clsKey];
+    // 클래스별 한류성: aR이 가장 강함
+    const limitFactor = { gG: 0.55, aM: 0.65, aR: 0.30, gL: 0.62 }[clsKey];
+    // 가능전류 피크 = √2 × M (정규화)
+    const prospective = Math.SQRT2 * M;
+    // 한류된 피크 ≈ prospective × limit, 상한 적용
+    return Math.max(1.0, prospective * limitFactor);
+}
+
+// ============ 계산 ============
+function computeState() {
+    state.ratio = +$('ratio').value;
+    state.In    = +$('in').value;
+
+    const M = state.ratio;
+    const c = FUSE_CLASS[state.cls];
+
+    if (!state.melted) {
+        if (M > 1.0 && M >= c.minRatio) {
+            // 줄열 누적: I²t ~ M² · dt
+            const ratePerFrame = (M * M) / (60 * (c.K * 60)); // 60fps · K 정규화
+            // 더 단순화: 60fps에서 frame당 누적분이 meltTime(s) 만큼이면 1.0이 되도록
+            const tMelt = meltTimeFor(M, state.cls);
+            if (isFinite(tMelt) && tMelt > 0) {
+                state.i2tAccum += 1 / (tMelt * 60);
+            }
+            // 단계 결정
+            if (state.i2tAccum >= 1.0) {
+                state.melted = true;
+                state.phase = 'melt';
+                state.arcLife = 40; // 아크 ~0.66s
+                state.meltX = comp.fuseX + (Math.random() - 0.5) * 20;
+                triggerMeltEffects();
+            } else if (state.i2tAccum >= 0.55 || M >= 6) {
+                state.phase = 'preheat';
+            } else if (state.i2tAccum > 0.05) {
+                state.phase = 'preheat';
+            } else {
+                state.phase = 'preheat';
+            }
+            // 엘리먼트 온도 0~1
+            state.elementTemp = Math.min(1, state.i2tAccum + Math.min(0.3, M / 30));
+        } else {
+            // 정상 또는 미동작 영역
+            state.phase = 'normal';
+            // 살짝 식기
+            state.i2tAccum = Math.max(0, state.i2tAccum - 0.01);
+            state.elementTemp = Math.max(0, state.elementTemp - 0.02);
+        }
+    } else {
+        // 용단 이후
+        if (state.arcLife > 0) {
+            state.arcLife--;
+            state.phase = 'melt';
+            state.sandHeat = Math.min(1, state.sandHeat + 0.03);
+        } else {
+            state.phase = 'open';
+            state.sandHeat = Math.max(0, state.sandHeat - 0.003);
+            state.elementTemp = Math.max(0, state.elementTemp - 0.005);
+        }
+    }
+}
+
+function updateDisplays() {
+    $('ratioVal').textContent = state.ratio.toFixed(1);
+    $('inVal').textContent    = state.In.toFixed(0);
+
+    const M = state.ratio;
+    const tMelt = meltTimeFor(M, state.cls);
+    const Iabs = state.In * M;
+
+    // 표시
+    $('ratioDisp').textContent = (state.melted ? 0 : M).toFixed(2);
+    $('tDisp').textContent = !isFinite(tMelt) ? '미동작' :
+        (tMelt >= 60 ? '> 60' : tMelt.toFixed(tMelt < 1 ? 3 : 2));
+
+    // I²t 표시: melt 시점 ≈ I²·t_melt (A² · s)
+    let i2tDisplay;
+    if (state.melted) {
+        // 실제 차단 에너지 (한류된 피크 기준)
+        const Ipk = clippedPeak(M, state.cls) * state.In;
+        i2tDisplay = (Ipk * Ipk) * (tMelt < 60 ? tMelt : 0.05) * 0.5; // 근사
+    } else if (isFinite(tMelt)) {
+        i2tDisplay = (Iabs * Iabs) * Math.min(tMelt, 60);
+    } else {
+        i2tDisplay = 0;
+    }
+    $('i2tDisp').textContent = i2tDisplay >= 10000 ? (i2tDisplay/1000).toFixed(1) + 'k' :
+                                i2tDisplay >= 100 ? i2tDisplay.toFixed(0) : i2tDisplay.toFixed(1);
+
+    // pill 상태
+    const pillState = $('pill-state');
+    const pillRatio = $('pill-ratio');
+    const pillT = $('pill-t');
+    const pillI2t = $('pill-i2t');
+    [pillState, pillRatio, pillT, pillI2t].forEach(p => p.classList.remove('preheat','melt'));
+
+    const stateEl = $('stateDisp');
+    if (state.phase === 'melt' || state.phase === 'open') {
+        stateEl.innerHTML = '<span class="text-rose-300">⚡ 용단 · OPEN</span>';
+        [pillState, pillRatio, pillT, pillI2t].forEach(p => p.classList.add('melt'));
+    } else if (state.phase === 'preheat') {
+        stateEl.innerHTML = '<span class="text-orange-300">▲ 예열 · 용단 진행</span>';
+        [pillState, pillT, pillI2t].forEach(p => p.classList.add('preheat'));
+    } else {
+        stateEl.innerHTML = '<span class="text-emerald-300">● 정상</span>';
+    }
+
+    // 알람 배너
+    $('alarmBanner').classList.toggle('hidden', !(state.phase === 'melt' || state.phase === 'open'));
+
+    // I²t 진행 게이지
+    const pct = Math.max(0, Math.min(100, state.i2tAccum * 100));
+    $('i2tBar').style.width = pct.toFixed(1) + '%';
+    $('i2tPct').textContent = pct.toFixed(0);
+
+    // 동작 시퀀스 단계 하이라이트
+    const stages = document.querySelectorAll('#stageList .stage-card');
+    stages.forEach(el => el.classList.remove('active','warn','danger'));
+    if (state.phase === 'open') {
+        stages[0].classList.add('active');
+        stages[1].classList.add('warn');
+        stages[2].classList.add('danger');
+        stages[3].classList.add('danger');
+    } else if (state.phase === 'melt') {
+        stages[0].classList.add('active');
+        stages[1].classList.add('warn');
+        stages[2].classList.add('danger');
+    } else if (state.phase === 'preheat') {
+        stages[0].classList.add('active');
+        stages[1].classList.add('warn');
+    } else {
+        stages[0].classList.add('active');
+    }
+}
+
+// ============ 회로 배경 ============
+function drawCircuitBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, CIRCUIT_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, CIRCUIT_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CIRCUIT_H); ctx.stroke();
+    }
+    for (let i = 0; i < CIRCUIT_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 186, 116, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`▮ FUSE CIRCUIT · SOURCE → FUSE (${FUSE_CLASS[state.cls].label}) → LOAD`, 12, 10);
+    ctx.restore();
+}
+
+function strokePath(points, color, glow, lw, dash) {
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let k = 0; k < points.length; k++) {
+        const p = points[k];
+        if (k === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawMainLine() {
+    const baseColor = state.melted ? 'rgba(148, 163, 184, 0.32)' : 'rgba(253, 186, 116, 0.85)';
+    const glow      = state.melted ? 0 : 10;
+    strokePath(mainPath, baseColor, glow, 3);
+}
+
+function drawSource() {
+    const x = comp.startX, yL = comp.yLine, yR = comp.yRtn;
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(125, 211, 252, 0.55)';
+    const g = ctx.createLinearGradient(x - 22, yL, x + 22, yR);
+    g.addColorStop(0, '#0c4a6e');
+    g.addColorStop(0.5, '#0369a1');
+    g.addColorStop(1, '#082f49');
+    ctx.fillStyle = g;
+    roundRect(ctx, x - 22, yL - 18, 44, (yR - yL) + 36, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x + 22, yL); ctx.lineTo(x + 24, yL);
+    ctx.moveTo(x + 22, yR); ctx.lineTo(x + 24, yR);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#bae6fd';
+    ctx.fillText('SOURCE', x, (yL + yR) / 2 - 7);
+    ctx.fillText('AC', x, (yL + yR) / 2 + 10);
+    ctx.restore();
+}
+
+// ====== 퓨즈 단면도 ======
+function drawFuse() {
+    const cx = comp.fuseX, cy = comp.yLine;
+    const fuseW = 200, fuseH = 64;
+    const fx = cx - fuseW / 2, fy = cy - fuseH / 2;
+    const c = FUSE_CLASS[state.cls];
+
+    // 캡(양 끝 금속)
+    ctx.save();
+    ctx.fillStyle = '#94a3b8';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.6)';
+    roundRect(ctx, fx - 10, fy - 6, 16, fuseH + 12, 3);
+    ctx.fill();
+    roundRect(ctx, fx + fuseW - 6, fy - 6, 16, fuseH + 12, 3);
+    ctx.fill();
+    ctx.restore();
+
+    // 유리관(또는 세라믹) 본체
+    ctx.save();
+    ctx.shadowBlur = state.melted ? 24 : (12 + state.elementTemp * 14);
+    ctx.shadowColor = state.melted ? 'rgba(244, 63, 94, 0.7)' :
+                      state.elementTemp > 0.3 ? `rgba(251, 146, 60, ${0.4 + state.elementTemp * 0.5})` :
+                      'rgba(148, 163, 184, 0.4)';
+    const bodyGrad = ctx.createLinearGradient(fx, fy, fx, fy + fuseH);
+    bodyGrad.addColorStop(0, 'rgba(30, 41, 59, 0.92)');
+    bodyGrad.addColorStop(0.5, 'rgba(15, 23, 42, 0.85)');
+    bodyGrad.addColorStop(1, 'rgba(30, 41, 59, 0.92)');
+    ctx.fillStyle = bodyGrad;
+    roundRect(ctx, fx, fy, fuseW, fuseH, 8);
+    ctx.fill();
+    ctx.strokeStyle = state.melted ? 'rgba(244,63,94,0.85)' :
+                      state.elementTemp > 0.3 ? `rgba(251, 146, 60, ${0.5 + state.elementTemp * 0.4})` :
+                      'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 모래(석영) 충진 — 점들로 표현
+    ctx.save();
+    const sandColor = state.sandHeat > 0.1 ?
+        `rgba(${251 + state.sandHeat * 4}, ${191 - state.sandHeat * 60}, ${36 + state.sandHeat * 30}, ${0.5 + state.sandHeat * 0.4})` :
+        'rgba(168, 162, 158, 0.45)';
+    ctx.fillStyle = sandColor;
+    if (state.sandHeat > 0.1) {
+        ctx.shadowBlur = 6 + state.sandHeat * 14;
+        ctx.shadowColor = 'rgba(251, 146, 60, 0.65)';
+    }
+    // 시드 기반 결정적 모래 분포 (frame-stable)
+    const rng = (i) => {
+        const v = Math.sin(i * 12.9898) * 43758.5453;
+        return v - Math.floor(v);
+    };
+    for (let i = 0; i < 120; i++) {
+        const r1 = rng(i * 2 + 1);
+        const r2 = rng(i * 2 + 7);
+        const px = fx + 6 + r1 * (fuseW - 12);
+        const py = fy + 6 + r2 * (fuseH - 12);
+        // 엘리먼트 라인 근방은 더 밝게 표시 안함 (엘리먼트 가시화)
+        const r = 0.9 + rng(i + 99) * 0.6;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 퓨즈 엘리먼트(노치 패턴) — 가운데 가는 금속선
+    drawElement(fx, cy, fuseW);
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.melted ? '#fda4af' : '#fed7aa';
+    ctx.fillText(`FUSE · ${c.label}`, cx, fy - 16);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 230, 138, 0.85)';
+    ctx.fillText(`I_n = ${state.In} A · ${state.melted ? 'OPEN ⚡' : 'INTACT'}`, cx, fy + fuseH + 14);
+    ctx.restore();
+}
+
+function drawElement(fx, cy, fuseW) {
+    // 엘리먼트는 노치(잘록한 부분 N개) 패턴: 균일한 끊김 유도
+    const startX = fx + 14;
+    const endX   = fx + fuseW - 14;
+    const length = endX - startX;
+    const notches = 5;
+    const pts = [];
+    for (let i = 0; i <= notches * 4; i++) {
+        const t = i / (notches * 4);
+        const x = startX + t * length;
+        // 노치 위치는 cos로 잘록함 표현
+        const phase = i * Math.PI / 2;
+        const wobble = Math.sin(phase) * 1.6;
+        pts.push({ x, y: cy + wobble });
+    }
+
+    // 용단된 경우: meltX 좌·우 둘로 분리
+    const isMelted = state.melted;
+    const meltX = state.meltX ?? (fx + fuseW * 0.5);
+
+    // 색: 온도에 따라 회색 → 적색 → 백열
+    function tempColor(temp) {
+        if (state.melted) return 'rgba(148, 163, 184, 0.5)';
+        // 0 ~ 1
+        if (temp < 0.15) return 'rgba(203, 213, 225, 0.95)';
+        if (temp < 0.5)  {
+            const u = (temp - 0.15) / 0.35;
+            // 회색 → 주황
+            const r = 203 + (251 - 203) * u;
+            const g = 213 + (146 - 213) * u;
+            const b = 225 + (60 - 225) * u;
+            return `rgba(${r|0}, ${g|0}, ${b|0}, 0.98)`;
+        }
+        if (temp < 0.85) {
+            const u = (temp - 0.5) / 0.35;
+            // 주황 → 적색
+            const r = 251;
+            const g = 146 - 80 * u;
+            const b = 60 - 30 * u;
+            return `rgba(${r|0}, ${g|0}, ${b|0}, 1)`;
+        }
+        // 적색 → 백열
+        const u = Math.min(1, (temp - 0.85) / 0.15);
+        const r = 251 + (255 - 251) * u;
+        const g = 66 + (240 - 66) * u;
+        const b = 30 + (220 - 30) * u;
+        return `rgba(${r|0}, ${g|0}, ${b|0}, 1)`;
+    }
+
+    const elColor = tempColor(state.elementTemp);
+    const elGlow = state.melted ? 0 :
+                   state.elementTemp > 0.6 ? 18 + state.elementTemp * 14 :
+                   state.elementTemp > 0.3 ? 10 + state.elementTemp * 8 : 4;
+
+    ctx.save();
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = elColor;
+    ctx.shadowBlur = elGlow;
+    ctx.shadowColor = elColor;
+
+    // 왼쪽 부분
+    ctx.beginPath();
+    let started = false;
+    for (const p of pts) {
+        if (isMelted && p.x >= meltX - 8) break;
+        if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+        else ctx.lineTo(p.x, p.y);
+    }
+    if (started) ctx.stroke();
+
+    if (isMelted) {
+        // 오른쪽 부분
+        ctx.beginPath();
+        let started2 = false;
+        for (const p of pts) {
+            if (p.x < meltX + 8) continue;
+            if (!started2) { ctx.moveTo(p.x, p.y); started2 = true; }
+            else ctx.lineTo(p.x, p.y);
+        }
+        if (started2) ctx.stroke();
+
+        // 끊긴 단면 점
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+        ctx.beginPath(); ctx.arc(meltX - 8, cy, 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(meltX + 8, cy, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+
+    // 아크 (용단 직후)
+    if (isMelted && state.arcLife > 0) {
+        drawArc(meltX, cy);
+    }
+}
+
+function drawArc(cx, cy) {
+    const lifeT = state.arcLife / 40; // 1 → 0
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // 메인 아크 광선
+    const arcCount = 4;
+    for (let a = 0; a < arcCount; a++) {
+        const seed = state.t * 0.6 + a * 1.3;
+        ctx.strokeStyle = `rgba(255, ${200 + Math.sin(seed) * 30}, 120, ${0.55 * lifeT + 0.25})`;
+        ctx.shadowBlur = 22 + Math.sin(seed) * 8;
+        ctx.shadowColor = 'rgba(255, 220, 120, 0.95)';
+        ctx.lineWidth = 1.6 + (lifeT * 1.2);
+        ctx.beginPath();
+        ctx.moveTo(cx - 8, cy);
+        // 지그재그
+        let lastX = cx - 8;
+        const steps = 6;
+        for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const xx = cx - 8 + 16 * t;
+            const yy = cy + (Math.sin(seed + i * 1.4) * 6) * (1 - Math.abs(0.5 - t) * 2);
+            ctx.lineTo(xx, yy);
+            lastX = xx;
+        }
+        ctx.stroke();
+    }
+    // 중심 광원
+    const r = 6 + Math.sin(state.t * 0.5) * 2;
+    const radial = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 3);
+    radial.addColorStop(0, `rgba(255, 255, 255, ${0.8 * lifeT + 0.2})`);
+    radial.addColorStop(0.4, `rgba(253, 224, 71, ${0.6 * lifeT})`);
+    radial.addColorStop(1, 'rgba(244, 63, 94, 0)');
+    ctx.fillStyle = radial;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawLoad() {
+    const x = comp.loadX, yL = comp.yLine, yR = comp.yRtn;
+    const w = 44, h = (yR - yL) + 36;
+    const bx = x - 22, by = yL - 18;
+
+    ctx.save();
+    ctx.shadowBlur = state.melted ? 6 : 16;
+    ctx.shadowColor = state.melted ? 'rgba(148,163,184,0.4)' : 'rgba(125, 211, 252, 0.5)';
+    const g = ctx.createLinearGradient(bx, by, bx + w, by + h);
+    g.addColorStop(0, state.melted ? '#1e293b' : '#155e75');
+    g.addColorStop(1, state.melted ? '#0f172a' : '#0c4a6e');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = state.melted ? 'rgba(148,163,184,0.5)' : 'rgba(125, 211, 252, 0.75)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+
+    // 지그재그(저항)
+    ctx.save();
+    ctx.strokeStyle = state.melted ? 'rgba(148,163,184,0.5)' : 'rgba(186, 230, 253, 0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    const cx = x, top = yL + 6, bot = yR - 6;
+    const zigSteps = 5;
+    ctx.beginPath();
+    ctx.moveTo(cx, top);
+    for (let k = 0; k <= zigSteps; k++) {
+        const yy = top + ((bot - top) * k) / zigSteps;
+        const xx = cx + (k % 2 === 0 ? -8 : 8);
+        ctx.lineTo(xx, yy);
+    }
+    ctx.lineTo(cx, bot);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = state.melted ? '#94a3b8' : '#bae6fd';
+    ctx.fillText('LOAD', x, by + h + 14);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.75)';
+    const Iabs = state.melted ? 0 : state.In * state.ratio;
+    ctx.fillText(`${Iabs.toFixed(0)} A`, x, by + h + 28);
+    ctx.restore();
+}
+
+function drawFlow() {
+    if (state.melted) return;
+    if (mainLen <= 0) return;
+    const M = state.ratio;
+    const speedBase = 1.5 + Math.min(8, M * 0.8);
+    const color = M > 1.0 ? 'rgba(253, 164, 175, 0.95)' :
+                  M > 0.5 ? 'rgba(253, 230, 138, 0.95)' :
+                            'rgba(186, 230, 253, 0.95)';
+    const glow = M > 1.0 ? 14 : 10;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of mainParts) {
+        p.progress = (p.progress + speedBase) % mainLen;
+        const pt = pointAt(p.progress, mainSegs, mainLen);
+        ctx.fillStyle = color;
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jit, pt.y + p.jit, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawArrowAt(x, y, ang, color, glow) {
+    if (state.melted) return;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(ang);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(7, 0); ctx.lineTo(-5, -4.5); ctx.lineTo(-5, 4.5); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawArrows() {
+    const M = state.ratio;
+    const color = M > 1.0 ? 'rgba(253, 164, 175, 0.95)' : 'rgba(253, 230, 138, 0.95)';
+    const fuseEdgeL = comp.fuseX - 100, fuseEdgeR = comp.fuseX + 100;
+    drawArrowAt((comp.startX + fuseEdgeL) / 2 + 10, comp.yLine, 0, color, 8);
+    drawArrowAt((fuseEdgeR + comp.loadX) / 2, comp.yLine, 0, color, 8);
+    drawArrowAt((comp.startX + comp.loadX) / 2, comp.yRtn, Math.PI, color, 8);
+}
+
+// ============ 시간-전류 곡선 ============
+function drawCurveChart() {
+    const W = canvas.width;
+    const top0 = CIRCUIT_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + CURVE_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, CURVE_H);
+
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(251, 146, 60, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(251, 146, 60, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ MELTING CURVE · 가로 I/I_n (log) · 세로 t (log, s) · gG · aM · aR · gL 4종', 12, top0 + 10);
+    ctx.restore();
+
+    const padL = 60, padR = 24, padT = 38, padB = 36;
+    const x0 = padL, y0 = top0 + padT;
+    const plotW = W - padL - padR;
+    const plotH = CURVE_H - padT - padB;
+
+    const Mmin = 1, Mmax = 50;
+    const tmin = 0.001, tmax = 60;
+    const logM = m => (Math.log10(m) - Math.log10(Mmin)) / (Math.log10(Mmax) - Math.log10(Mmin));
+    const logT = t => (Math.log10(t) - Math.log10(tmin)) / (Math.log10(tmax) - Math.log10(tmin));
+    const xOf = m => x0 + logM(m) * plotW;
+    const yOf = t => y0 + plotH - logT(t) * plotH;
+
+    // 그리드
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const Mticks = [1, 2, 3, 5, 10, 20, 50];
+    Mticks.forEach(m => {
+        const xx = xOf(m);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + plotH); ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText(`${m}×`, xx, y0 + plotH + 4);
+    });
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const Tticks = [0.001, 0.01, 0.1, 1, 10, 60];
+    const Tlabels = ['1ms', '10ms', '0.1', '1', '10', '60'];
+    Tticks.forEach((tv, i) => {
+        const yy = yOf(tv);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + plotW, yy); ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText(Tlabels[i] + (i >= 2 ? 's' : ''), x0 - 4, yy);
+    });
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 + plotH); ctx.lineTo(x0 + plotW, y0 + plotH);
+    ctx.stroke();
+    ctx.restore();
+
+    // 곡선 그리기 함수
+    function plotCurve(clsKey, color, glow, dash) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = color;
+        if (dash) ctx.setLineDash(dash);
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i <= 220; i++) {
+            const m = Mmin * Math.pow(Mmax / Mmin, i / 220);
+            const tv = meltTimeFor(m, clsKey);
+            if (!isFinite(tv) || tv > tmax) continue;
+            const xx = xOf(m);
+            const yy = yOf(Math.max(tmin, tv));
+            if (!started) { ctx.moveTo(xx, yy); started = true; }
+            else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 다른 클래스 곡선 (희미하게)
+    Object.keys(FUSE_CLASS).forEach(k => {
+        if (k === state.cls) return;
+        plotCurve(k, FUSE_CLASS[k].color.replace(/^#/, '') === FUSE_CLASS[k].color.slice(1) ? FUSE_CLASS[k].color : FUSE_CLASS[k].color,
+                  null, 0, [3,3]);
+    });
+    // 위 정규식은 색을 그대로 쓰지만 투명도가 없음 → 반투명용 별도 처리:
+    Object.keys(FUSE_CLASS).forEach(k => {
+        if (k === state.cls) return;
+        // 반투명 dim
+        const dimColor = FUSE_CLASS[k].color + '55'; // 16진 알파 (이미 위에서 그렸지만 안전을 위해)
+        // 그냥 위 코드만 사용: 위 plotCurve는 dash로 약하게 표현됨 → 추가 호출 생략
+    });
+
+    // 현재 클래스 곡선 강조
+    const cur = FUSE_CLASS[state.cls];
+    plotCurve(state.cls, cur.color, 14, null);
+
+    // 현재 동작점
+    const M = state.ratio;
+    if (M >= 1) {
+        const tMelt = meltTimeFor(M, state.cls);
+        if (isFinite(tMelt) && tMelt <= tmax && M <= Mmax) {
+            const xx = xOf(Math.min(Mmax, M));
+            const yy = yOf(Math.max(tmin, tMelt));
+            ctx.save();
+            ctx.strokeStyle = 'rgba(251, 146, 60, 0.55)';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(xx, y0); ctx.lineTo(xx, yy);
+            ctx.moveTo(x0, yy); ctx.lineTo(xx, yy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = state.melted ? '#f43f5e' : '#fb923c';
+            ctx.fillStyle = state.melted ? '#f43f5e' : '#fb923c';
+            ctx.beginPath();
+            ctx.arc(xx, yy, 6 + Math.sin(state.t * 0.2) * 1.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = 'bold 11px ui-monospace, monospace';
+            ctx.fillStyle = '#fed7aa';
+            ctx.textAlign = 'left';
+            const lbl = `(${M.toFixed(2)}× , t=${tMelt < 1 ? tMelt.toFixed(3) : tMelt.toFixed(2)}s)`;
+            ctx.fillText(lbl, Math.min(xx + 10, x0 + plotW - 140), yy - 8);
+            ctx.restore();
+        } else if (M > Mmax) {
+            ctx.save();
+            ctx.fillStyle = '#fda4af';
+            ctx.font = 'bold 10px ui-monospace, monospace';
+            ctx.fillText(`M=${M.toFixed(1)}× (스케일 초과 → 즉시 용단)`, x0 + plotW - 230, y0 + 28);
+            ctx.restore();
+        }
+    } else {
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(110, 231, 183, 0.85)';
+        ctx.textAlign = 'left';
+        ctx.fillText(`I/I_n = ${M.toFixed(2)} ≤ 1 → 정상 (용단 영역 밖)`, x0 + 8, y0 + 14);
+        ctx.restore();
+    }
+
+    // 범례
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    const lx = x0 + plotW - 110, ly = y0 + 8;
+    const legend = [
+        { c: '#f472b6', t: 'gG',  k: 'gG' },
+        { c: '#a78bfa', t: 'aM',  k: 'aM' },
+        { c: '#fb923c', t: 'aR',  k: 'aR' },
+        { c: '#7dd3fc', t: 'gL',  k: 'gL' }
+    ];
+    legend.forEach((l, i) => {
+        const yy = ly + i * 14;
+        ctx.fillStyle = l.c;
+        ctx.shadowBlur = state.cls === l.k ? 8 : 0;
+        ctx.shadowColor = l.c;
+        ctx.fillRect(lx, yy, 14, 3);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = state.cls === l.k ? '#fff' : 'rgba(203, 213, 225, 0.75)';
+        ctx.fillText(l.t, lx + 20, yy + 3);
+    });
+    ctx.restore();
+}
+
+// ============ MELT 효과 ============
+function triggerMeltEffects() {
+    if (!window.gsap) return;
+    gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+        { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+    gsap.fromTo('#pill-state',
+        { scale: 1.12 },
+        { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+    gsap.fromTo('#pill-i2t',
+        { scale: 1.10 },
+        { scale: 1, duration: 0.45, ease: 'back.out(1.7)' });
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    computeState();
+    updateDisplays();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCircuitBg();
+    drawMainLine();
+    drawSource();
+    drawFuse();
+    drawLoad();
+    drawFlow();
+    drawArrows();
+    drawCurveChart();
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+['ratio','in'].forEach(id => {
+    const map = { ratio: 'pill-ratio', in: 'pill-t' };
+    $(id).addEventListener('input', () => {
+        flashPanel(map[id]);
+    });
+});
+
+document.querySelectorAll('.class-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.class-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.cls = b.dataset.class;
+        // 클래스 변경 시 누적·용단 리셋
+        resetMelt();
+        flashPanel('pill-t');
+    });
+});
+
+function resetMelt() {
+    state.melted = false;
+    state.phase = 'normal';
+    state.i2tAccum = 0;
+    state.arcLife = 0;
+    state.sandHeat = 0;
+    state.elementTemp = 0;
+    state.meltX = null;
+    $('alarmBanner').classList.add('hidden');
+}
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        if (mode === 'normal') {
+            resetMelt();
+            const target = 0.8;
+            if (window.gsap) {
+                gsap.to($('ratio'), { value: target, duration: 0.6, ease: 'power3.out',
+                    onUpdate: () => { $('ratioVal').textContent = (+$('ratio').value).toFixed(1); } });
+            } else { $('ratio').value = target; $('ratioVal').textContent = target.toFixed(1); }
+            flashPanel('pill-ratio');
+        }
+        if (mode === 'overload') {
+            resetMelt();
+            const target = 2.0;
+            if (window.gsap) {
+                gsap.to($('ratio'), { value: target, duration: 0.6, ease: 'power3.out',
+                    onUpdate: () => { $('ratioVal').textContent = (+$('ratio').value).toFixed(1); } });
+            } else { $('ratio').value = target; $('ratioVal').textContent = target.toFixed(1); }
+            flashPanel('pill-t');
+        }
+        if (mode === 'short') {
+            resetMelt();
+            const target = 20;
+            if (window.gsap) {
+                gsap.to($('ratio'), { value: target, duration: 0.5, ease: 'power3.out',
+                    onUpdate: () => { $('ratioVal').textContent = (+$('ratio').value).toFixed(1); } });
+            } else { $('ratio').value = target; $('ratioVal').textContent = target.toFixed(1); }
+            flashPanel('pill-i2t');
+        }
+        if (mode === 'reset') {
+            resetMelt();
+            const target = 1.0;
+            $('ratio').value = target; $('ratioVal').textContent = target.toFixed(1);
+            flashPanel('pill-state');
+        }
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeState();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#stageCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

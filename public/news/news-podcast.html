@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기야 놀자 · 전기기능사 팟캐스트</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sp-bg: #000000;
+    --sp-bg-2: #121212;
+    --sp-bg-3: #181818;
+    --sp-bg-4: #1f1f1f;
+    --sp-hover: #2a2a2a;
+    --sp-card: #181818;
+    --sp-card-hover: #282828;
+    --sp-text: #ffffff;
+    --sp-text-2: #b3b3b3;
+    --sp-text-3: #6a6a6a;
+    --sp-green: #1db954;
+    --sp-green-hover: #1ed760;
+    --sp-border: #282828;
+  }
+  * {
+    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  html, body {
+    background: var(--sp-bg);
+    color: var(--sp-text);
+    overflow-x: hidden;
+  }
+  body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #4d4d4d; border-radius: 6px; border: 3px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #707070; background-clip: padding-box; border: 3px solid transparent; }
+
+  /* Layout */
+  .app-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 1fr auto;
+    gap: 8px;
+    padding: 8px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--sp-bg-2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .sidebar-section {
+    padding: 8px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: var(--sp-text-2);
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+  .nav-item:hover { color: var(--sp-text); }
+  .nav-item.active { color: var(--sp-text); background: rgba(255,255,255,0.08); }
+
+  .library-card {
+    background: var(--sp-bg-2);
+    border-radius: 8px;
+    flex: 1;
+    margin-top: 8px;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 4px;
+    color: var(--sp-text-2);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .library-header:hover { color: var(--sp-text); }
+  .library-chips {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: var(--sp-bg-4);
+    color: var(--sp-text);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .chip:hover { background: #2a2a2a; }
+  .chip.active { background: #fff; color: #000; }
+  .library-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 8px;
+  }
+  .playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .playlist-item:hover { background: var(--sp-hover); }
+  .playlist-cover {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: rgba(255,255,255,0.9);
+    font-size: 18px;
+  }
+  .playlist-meta { min-width: 0; flex: 1; }
+  .playlist-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--sp-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .playlist-sub {
+    font-size: 12px;
+    color: var(--sp-text-2);
+    margin-top: 2px;
+  }
+  .playlist-item.playing .playlist-title { color: var(--sp-green); }
+
+  /* Main */
+  .main {
+    background: var(--sp-bg-3);
+    border-radius: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    position: relative;
+  }
+
+  /* Top bar inside main */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    backdrop-filter: blur(20px);
+    background: rgba(24,24,24,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    transition: background 0.2s;
+  }
+  .topbar.scrolled {
+    background: linear-gradient(180deg, #2a3a2e 0%, rgba(24,24,24,0.95) 100%);
+  }
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.6);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--sp-text);
+  }
+  .nav-btn:hover { background: rgba(0,0,0,0.8); }
+  .auth-btn {
+    background: var(--sp-text);
+    color: #000;
+    font-weight: 700;
+    padding: 8px 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: transform 0.1s;
+  }
+  .auth-btn:hover { transform: scale(1.04); }
+
+  /* Hero */
+  .hero {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    padding: 24px 32px 32px;
+    background: linear-gradient(180deg, #2a5a3d 0%, #1a3a2a 60%, var(--sp-bg-3) 100%);
+  }
+  .hero-cover {
+    width: 232px;
+    height: 232px;
+    border-radius: 8px;
+    box-shadow: 0 4px 60px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .hero-meta-type { font-size: 13px; font-weight: 600; }
+  .hero-title {
+    font-size: clamp(40px, 7vw, 88px);
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin: 8px 0 16px;
+  }
+  .hero-desc { color: var(--sp-text-2); font-size: 14px; max-width: 720px; line-height: 1.5; }
+  .hero-row { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 14px; color: var(--sp-text); }
+  .hero-row .sep { color: var(--sp-text-2); margin: 0 4px; }
+  .hero-row .muted { color: var(--sp-text-2); }
+
+  /* Action bar */
+  .action-bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 32px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%);
+  }
+  .play-fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    background: var(--sp-green);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: #000;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    transition: transform 0.15s, background 0.15s;
+  }
+  .play-fab:hover { background: var(--sp-green-hover); transform: scale(1.05); }
+  .icon-btn {
+    color: var(--sp-text-2);
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: color 0.15s, transform 0.15s;
+  }
+  .icon-btn:hover { color: var(--sp-text); transform: scale(1.05); }
+  .icon-btn.liked { color: var(--sp-green); }
+  .icon-btn.lg svg { width: 32px; height: 32px; }
+
+  /* Episodes */
+  .section {
+    padding: 8px 32px 32px;
+  }
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--sp-text);
+  }
+  .section-title:hover { text-decoration: underline; }
+  .episode-list { display: flex; flex-direction: column; }
+  .episode {
+    display: grid;
+    grid-template-columns: 112px 1fr auto;
+    gap: 20px;
+    padding: 20px 12px;
+    border-radius: 8px;
+    border-bottom: 1px solid var(--sp-border);
+    cursor: pointer;
+    transition: background 0.15s;
+    align-items: flex-start;
+  }
+  .episode:hover { background: rgba(255,255,255,0.04); }
+  .episode-cover {
+    width: 112px;
+    height: 112px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .episode-body { min-width: 0; }
+  .episode-date { font-size: 13px; color: var(--sp-text-2); margin-bottom: 6px; font-weight: 500; }
+  .episode-title { font-size: 16px; font-weight: 700; color: var(--sp-text); margin-bottom: 6px; }
+  .episode-title:hover { text-decoration: underline; }
+  .episode-desc {
+    font-size: 14px;
+    color: var(--sp-text-2);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .episode-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .ep-play {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: var(--sp-text);
+    color: #000;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .ep-play:hover { transform: scale(1.06); background: #fff; }
+  .ep-meta {
+    color: var(--sp-text-2);
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ep-icon-row { display: flex; align-items: center; gap: 16px; color: var(--sp-text-2); }
+  .ep-icon-row .icon-btn { width: 22px; height: 22px; }
+
+  .progress-track {
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 220px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--sp-text-2);
+    border-radius: 2px;
+  }
+  .episode.playing .progress-fill { background: var(--sp-green); }
+  .episode.playing .episode-title { color: var(--sp-green); }
+
+  /* Recommended grid */
+  .grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    background: var(--sp-card);
+    padding: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+  }
+  .card:hover { background: var(--sp-card-hover); }
+  .card-cover {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--sp-text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-sub {
+    font-size: 14px;
+    color: var(--sp-text-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-play {
+    position: absolute;
+    bottom: 80px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--sp-green);
+    color: #000;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s, background 0.15s;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  }
+  .card:hover .card-play { opacity: 1; transform: translateY(0); }
+  .card-play:hover { background: var(--sp-green-hover); transform: scale(1.05); }
+
+  /* Footer text in main */
+  .main-footer {
+    color: var(--sp-text-3);
+    font-size: 12px;
+    padding: 24px 32px 48px;
+    border-top: 1px solid var(--sp-border);
+    margin-top: 16px;
+  }
+
+  /* Player */
+  .player {
+    grid-column: 1 / -1;
+    background: var(--sp-bg);
+    height: 80px;
+    display: grid;
+    grid-template-columns: 30% 40% 30%;
+    align-items: center;
+    padding: 0 16px;
+  }
+  .player-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .player-cover {
+    width: 56px;
+    height: 56px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .player-meta { min-width: 0; }
+  .player-title {
+    font-size: 14px;
+    color: var(--sp-text);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .player-title:hover { text-decoration: underline; cursor: pointer; }
+  .player-author {
+    font-size: 11px;
+    color: var(--sp-text-2);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .player-author:hover { color: var(--sp-text); text-decoration: underline; cursor: pointer; }
+
+  .player-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .player-controls { display: flex; align-items: center; gap: 16px; }
+  .ctrl-btn {
+    color: var(--sp-text-2);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    transition: color 0.15s, transform 0.1s;
+  }
+  .ctrl-btn:hover { color: var(--sp-text); }
+  .ctrl-btn.active { color: var(--sp-green); position: relative; }
+  .ctrl-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--sp-green);
+  }
+  .play-main {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: var(--sp-text);
+    color: #000;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .play-main:hover { transform: scale(1.06); }
+
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 600px;
+  }
+  .player-time { font-size: 11px; color: var(--sp-text-2); min-width: 36px; text-align: center; font-variant-numeric: tabular-nums; }
+  .player-track {
+    flex: 1;
+    height: 4px;
+    background: #4d4d4d;
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .player-track:hover .player-fill { background: var(--sp-green); }
+  .player-track:hover .player-thumb { opacity: 1; }
+  .player-fill { height: 100%; background: var(--sp-text); border-radius: 2px; width: 0%; transition: width 0.1s linear; }
+  .player-thumb {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+  }
+
+  .player-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .volume-track {
+    width: 100px;
+    height: 4px;
+    background: #4d4d4d;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .volume-fill { height: 100%; background: var(--sp-text); border-radius: 2px; width: 70%; }
+  .volume-track:hover .volume-fill { background: var(--sp-green); }
+
+  /* Reusable cover gradients */
+  .gr-1 { background: linear-gradient(135deg, #1db954 0%, #168736 50%, #053b16 100%); }
+  .gr-2 { background: linear-gradient(135deg, #ffb347 0%, #ff7e5f 50%, #5a1e1e 100%); }
+  .gr-3 { background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%); }
+  .gr-4 { background: linear-gradient(135deg, #7f5af0 0%, #2cb67d 100%); }
+  .gr-5 { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); }
+  .gr-6 { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
+  .gr-7 { background: linear-gradient(135deg, #f857a6 0%, #ff5858 100%); }
+  .gr-8 { background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); }
+  .gr-9 { background: linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%); color:#7a1f29 !important; }
+  .gr-10 { background: linear-gradient(135deg, #20002c 0%, #cbb4d4 100%); }
+  .gr-11 { background: linear-gradient(135deg, #283c86 0%, #45a247 100%); }
+  .gr-12 { background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%); color:#1a3a4a !important; }
+
+  /* Cover SVG decorative pattern */
+  .cover-svg { width: 100%; height: 100%; display: block; }
+
+  /* Subtle label dot */
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 999px; background: var(--sp-green);
+    display: inline-block; margin-right: 6px;
+  }
+
+  /* Responsive (basic) */
+  @media (max-width: 900px) {
+    .app-grid { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .player { grid-template-columns: 1fr; height: auto; padding: 8px; gap: 8px; }
+    .player-right { display: none; }
+    .hero { flex-direction: column; align-items: flex-start; }
+    .hero-cover { width: 160px; height: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG sprite for reusable cover art -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Lightning bolt cover -->
+    <symbol id="cov-bolt" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <path d="M55 8 L25 55 L46 55 L40 92 L75 38 L54 38 Z" fill="rgba(255,255,255,0.95)" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    </symbol>
+    <!-- Circuit cover -->
+    <symbol id="cov-circuit" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <g stroke="rgba(255,255,255,0.85)" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M10 30 H40 V60 H70 V20 H90"/>
+        <path d="M10 80 H30 V50"/>
+        <circle cx="40" cy="30" r="4" fill="rgba(255,255,255,0.9)"/>
+        <circle cx="70" cy="20" r="4" fill="rgba(255,255,255,0.9)"/>
+        <circle cx="30" cy="50" r="4" fill="rgba(255,255,255,0.9)"/>
+      </g>
+    </symbol>
+    <!-- Wave cover -->
+    <symbol id="cov-wave" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <path d="M0 50 Q15 20 30 50 T60 50 T90 50 T120 50" stroke="rgba(255,255,255,0.95)" stroke-width="3" fill="none"/>
+      <path d="M0 65 Q15 35 30 65 T60 65 T90 65 T120 65" stroke="rgba(255,255,255,0.5)" stroke-width="2" fill="none"/>
+    </symbol>
+    <!-- Bulb -->
+    <symbol id="cov-bulb" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <path d="M50 18 C32 18 22 32 26 48 C28 56 36 62 38 70 H62 C64 62 72 56 74 48 C78 32 68 18 50 18 Z" fill="rgba(255,255,255,0.95)"/>
+      <rect x="40" y="72" width="20" height="6" rx="2" fill="rgba(0,0,0,0.5)"/>
+      <rect x="42" y="80" width="16" height="4" rx="2" fill="rgba(0,0,0,0.4)"/>
+      <line x1="50" y1="8" x2="50" y2="14" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+      <line x1="18" y1="40" x2="24" y2="40" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+      <line x1="76" y1="40" x2="82" y2="40" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+    </symbol>
+    <!-- Battery -->
+    <symbol id="cov-battery" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <rect x="20" y="30" width="55" height="40" rx="4" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3"/>
+      <rect x="75" y="42" width="6" height="16" fill="rgba(255,255,255,0.95)"/>
+      <rect x="25" y="35" width="35" height="30" fill="rgba(255,255,255,0.8)"/>
+    </symbol>
+    <!-- Plug -->
+    <symbol id="cov-plug" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <rect x="40" y="20" width="6" height="20" fill="rgba(255,255,255,0.95)" rx="2"/>
+      <rect x="54" y="20" width="6" height="20" fill="rgba(255,255,255,0.95)" rx="2"/>
+      <rect x="30" y="40" width="40" height="22" rx="6" fill="rgba(255,255,255,0.95)"/>
+      <path d="M50 62 V78 Q50 84 56 84 H70" stroke="rgba(255,255,255,0.95)" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </symbol>
+    <!-- Multimeter -->
+    <symbol id="cov-meter" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <rect x="20" y="22" width="60" height="56" rx="6" fill="rgba(255,255,255,0.95)"/>
+      <rect x="26" y="28" width="48" height="18" rx="2" fill="rgba(0,0,0,0.7)"/>
+      <text x="50" y="42" text-anchor="middle" font-family="monospace" font-weight="700" font-size="11" fill="#1db954">220V</text>
+      <circle cx="36" cy="60" r="6" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="50" cy="60" r="6" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="64" cy="60" r="6" fill="rgba(0,0,0,0.5)"/>
+    </symbol>
+    <!-- Resistor -->
+    <symbol id="cov-resistor" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <line x1="6" y1="50" x2="26" y2="50" stroke="rgba(255,255,255,0.95)" stroke-width="3"/>
+      <line x1="74" y1="50" x2="94" y2="50" stroke="rgba(255,255,255,0.95)" stroke-width="3"/>
+      <path d="M26 50 L32 38 L40 62 L48 38 L56 62 L64 38 L70 50 L74 50" stroke="rgba(255,255,255,0.95)" stroke-width="3" fill="none" stroke-linejoin="round"/>
+    </symbol>
+    <!-- Motor -->
+    <symbol id="cov-motor" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="3"/>
+      <text x="50" y="58" text-anchor="middle" font-family="serif" font-weight="900" font-size="26" fill="rgba(255,255,255,0.95)">M</text>
+      <line x1="14" y1="50" x2="22" y2="50" stroke="rgba(255,255,255,0.95)" stroke-width="3"/>
+      <line x1="78" y1="50" x2="86" y2="50" stroke="rgba(255,255,255,0.95)" stroke-width="3"/>
+    </symbol>
+    <!-- Sparkle / star -->
+    <symbol id="cov-spark" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <path d="M50 12 L56 44 L88 50 L56 56 L50 88 L44 56 L12 50 L44 44 Z" fill="rgba(255,255,255,0.95)"/>
+    </symbol>
+    <!-- Headphones -->
+    <symbol id="cov-head" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <path d="M22 56 V40 Q22 22 50 22 Q78 22 78 40 V56" stroke="rgba(255,255,255,0.95)" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <rect x="14" y="54" width="14" height="22" rx="4" fill="rgba(255,255,255,0.95)"/>
+      <rect x="72" y="54" width="14" height="22" rx="4" fill="rgba(255,255,255,0.95)"/>
+    </symbol>
+    <!-- Book / textbook -->
+    <symbol id="cov-book" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="rgba(0,0,0,0.15)"/>
+      <path d="M20 24 H46 Q50 24 50 28 V80 Q50 76 46 76 H20 Z" fill="rgba(255,255,255,0.95)"/>
+      <path d="M80 24 H54 Q50 24 50 28 V80 Q50 76 54 76 H80 Z" fill="rgba(255,255,255,0.8)"/>
+      <line x1="26" y1="36" x2="44" y2="36" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>
+      <line x1="26" y1="44" x2="44" y2="44" stroke="rgba(0,0,0,0.4)" stroke-width="2"/>
+      <line x1="56" y1="36" x2="74" y2="36" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+      <line x1="56" y1="44" x2="74" y2="44" stroke="rgba(0,0,0,0.3)" stroke-width="2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="app-grid">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <!-- Top navigation -->
+    <div class="sidebar-section">
+      <div class="nav-item active">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 3.247a1 1 0 00-1 0L4 7.577V20h4.5v-6a1 1 0 011-1h5a1 1 0 011 1v6H20V7.577l-7.5-4.33zM10.5 1.516a3 3 0 013 0L21 5.846a2 2 0 011 1.732V21a1 1 0 01-1 1h-6.5a1 1 0 01-1-1v-6h-3v6a1 1 0 01-1 1H3a1 1 0 01-1-1V7.578a2 2 0 011-1.732l7.5-4.33z"/></svg>
+        <span>홈</span>
+      </div>
+      <div class="nav-item">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M10.533 1.279c-5.18 0-9.407 4.14-9.407 9.279s4.226 9.279 9.407 9.279c2.234 0 4.29-.77 5.907-2.058l4.353 4.353a1 1 0 101.414-1.414l-4.344-4.344a9.157 9.157 0 002.077-5.816c0-5.14-4.226-9.28-9.407-9.28zm-7.407 9.279c0-4.006 3.302-7.28 7.407-7.28s7.407 3.274 7.407 7.28-3.302 7.279-7.407 7.279-7.407-3.273-7.407-7.28z"/></svg>
+        <span>검색</span>
+      </div>
+    </div>
+
+    <!-- Library card -->
+    <div class="library-card">
+      <div class="library-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 2.134a1 1 0 011 0l6 3.464a1 1 0 01.5.866V21a1 1 0 01-1 1h-6a1 1 0 01-1-1V3a1 1 0 01.5-.866zM16 4.732V20h4V7.041l-4-2.309zM3 22a1 1 0 01-1-1V3a1 1 0 012 0v18a1 1 0 01-1 1zm6 0a1 1 0 01-1-1V3a1 1 0 012 0v18a1 1 0 01-1 1z"/></svg>
+          <span>내 라이브러리</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <div class="icon-btn" title="추가">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.999 1a11 11 0 1011 11 11.013 11.013 0 00-11-11zm5.5 12h-4.5v4.5h-2V13h-4.5v-2h4.5V6.5h2V11h4.5z"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="library-chips">
+        <div class="chip active">팟캐스트</div>
+        <div class="chip">강의 모음</div>
+        <div class="chip">오디오북</div>
+      </div>
+
+      <div class="library-list" id="playlistList">
+        <!-- injected -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="mainScroll">
+    <!-- Top bar -->
+    <div class="topbar" id="topbar">
+      <div style="display:flex; gap:8px;">
+        <div class="nav-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.957 2.793a1 1 0 010 1.414L8.164 12l7.793 7.793a1 1 0 11-1.414 1.414L5.336 12l9.207-9.207a1 1 0 011.414 0z"/></svg></div>
+        <div class="nav-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.043 2.793a1 1 0 000 1.414L15.836 12l-7.793 7.793a1 1 0 101.414 1.414L18.664 12 9.457 2.793a1 1 0 00-1.414 0z"/></svg></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span style="color:var(--sp-text-2); font-size:14px; cursor:pointer;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--sp-text-2)'">요금제 알아보기</span>
+        <button class="auth-btn">구독하기</button>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-cover gr-1">
+        <svg class="cover-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1ed760"/>
+              <stop offset="60%" stop-color="#0d5f2a"/>
+              <stop offset="100%" stop-color="#031a0c"/>
+            </linearGradient>
+            <radialGradient id="heroGlow" cx="30%" cy="20%" r="60%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.35)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+          </defs>
+          <rect width="100" height="100" fill="url(#heroGrad)"/>
+          <rect width="100" height="100" fill="url(#heroGlow)"/>
+          <g opacity="0.18" stroke="#fff" stroke-width="0.6" fill="none">
+            <path d="M0 70 Q25 50 50 70 T100 70"/>
+            <path d="M0 78 Q25 58 50 78 T100 78"/>
+            <path d="M0 86 Q25 66 50 86 T100 86"/>
+          </g>
+          <path d="M60 14 L34 56 L48 56 L42 86 L70 42 L54 42 Z" fill="#fff" opacity="0.95"/>
+          <text x="50" y="96" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="3.4" font-family="Inter" font-weight="700" letter-spacing="0.4">PODCAST · addto</text>
+        </svg>
+      </div>
+      <div>
+        <div class="hero-meta-type">팟캐스트</div>
+        <h1 class="hero-title">전기야 놀자</h1>
+        <p class="hero-desc">옴의 법칙부터 자기회로까지, 야간 자율학습보다 재미있는 전기기능사 라디오. 진행자 두 명이 회로처럼 얽힌 개념을 풀어드립니다. 매주 수요일 새 에피소드.</p>
+        <div class="hero-row">
+          <strong>addto 학습 · 김전압 &amp; 박전류</strong>
+          <span class="sep">·</span>
+          <span class="muted">시즌 2 · 에피소드 12개</span>
+          <span class="sep">·</span>
+          <span class="muted">구독자 <strong style="color:var(--sp-text)">48,217</strong>명</span>
+          <span class="sep">·</span>
+          <span class="muted"><span class="live-dot"></span>매주 수요일 06:00 업데이트</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <div class="play-fab" id="heroPlayBtn" title="재생">
+        <svg id="heroPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7.05 3.606l13.49 7.788a.7.7 0 010 1.212L7.05 20.394A.7.7 0 016 19.788V4.212a.7.7 0 011.05-.606z"/></svg>
+      </div>
+      <div class="icon-btn lg" id="followBtn" title="팔로우">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      </div>
+      <div class="icon-btn lg" title="더 보기">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </div>
+      <div style="flex:1"></div>
+      <div class="icon-btn" title="정렬">
+        <span style="font-size:13px; color:var(--sp-text-2);">최신순</span>
+      </div>
+    </div>
+
+    <!-- Episodes -->
+    <section class="section">
+      <h2 class="section-title">모든 에피소드</h2>
+      <div class="episode-list" id="episodeList">
+        <!-- injected -->
+      </div>
+    </section>
+
+    <!-- Recommended -->
+    <section class="section">
+      <h2 class="section-title">비슷한 팟캐스트</h2>
+      <div class="grid-cards" id="recList">
+        <!-- injected -->
+      </div>
+    </section>
+
+    <footer class="main-footer">
+      © 2026 addto · 전기기능사 학습 서비스 · 전기야 놀자는 매주 수요일 업데이트됩니다.
+    </footer>
+  </main>
+
+  <!-- ============ PLAYER ============ -->
+  <div class="player">
+    <div class="player-left">
+      <div class="player-cover gr-2" id="playerCover">
+        <svg class="cover-svg" viewBox="0 0 100 100"><use href="#cov-bolt"/></svg>
+      </div>
+      <div class="player-meta">
+        <div class="player-title" id="playerTitle">EP.12 - 옴의 법칙을 외우지 마세요</div>
+        <div class="player-author">김전압 &amp; 박전류</div>
+      </div>
+      <div class="icon-btn" id="playerLike" title="좋아요" style="margin-left:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls">
+        <div class="ctrl-btn" id="shuffleBtn" title="셔플">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.151.922a.75.75 0 10-1.06 1.06L13.109 3H11.16a3.75 3.75 0 00-2.873 1.34l-6.173 7.356A2.25 2.25 0 01.39 12.5H0v2h.391a4.25 4.25 0 003.252-1.509l6.173-7.356a2.25 2.25 0 011.724-.806h1.95l-1.018 1.018a.75.75 0 001.06 1.06L16.43 3.86a.75.75 0 000-1.06L13.151.922zm-2.31 8.535a.75.75 0 00-1.06 0l-.485.486a.75.75 0 001.06 1.06l.485-.486a.75.75 0 000-1.06zM14 12a.75.75 0 00-1.5 0 .75.75 0 001.5 0zm-2.84-1.957a4.25 4.25 0 003.252 1.509H16v2h-1.588a4.25 4.25 0 01-3.252-1.509z"/></svg>
+        </div>
+        <div class="ctrl-btn" title="이전">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3.3 1a.7.7 0 01.7.7v5.15l9.95-5.744a.7.7 0 011.05.606v12.575a.7.7 0 01-1.05.607L4 9.149V14.3a.7.7 0 01-.7.7H1.7a.7.7 0 01-.7-.7V1.7a.7.7 0 01.7-.7h1.6z"/></svg>
+        </div>
+        <div class="play-main" id="playerPlayBtn" title="재생/일시정지">
+          <svg id="playerPlayIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7.05 3.606l13.49 7.788a.7.7 0 010 1.212L7.05 20.394A.7.7 0 016 19.788V4.212a.7.7 0 011.05-.606z"/></svg>
+        </div>
+        <div class="ctrl-btn" title="다음">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.7 1a.7.7 0 00-.7.7v5.15L2.05 1.107A.7.7 0 001 1.712v12.575a.7.7 0 001.05.607L12 9.149V14.3a.7.7 0 00.7.7h1.6a.7.7 0 00.7-.7V1.7a.7.7 0 00-.7-.7h-1.6z"/></svg>
+        </div>
+        <div class="ctrl-btn" id="repeatBtn" title="반복">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M0 4.75A3.75 3.75 0 013.75 1h8.5A3.75 3.75 0 0116 4.75v5a3.75 3.75 0 01-3.75 3.75H9.81l1.018 1.018a.75.75 0 11-1.06 1.06L6.939 12.75l2.829-2.828a.75.75 0 011.06 1.06L9.811 12h2.439a2.25 2.25 0 002.25-2.25v-5a2.25 2.25 0 00-2.25-2.25h-8.5A2.25 2.25 0 001.5 4.75v5A2.25 2.25 0 003.75 12H5v1.5H3.75A3.75 3.75 0 010 9.75v-5z"/></svg>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <span class="player-time" id="curTime">0:00</span>
+        <div class="player-track" id="playerTrack">
+          <div class="player-fill" id="playerFill"></div>
+          <div class="player-thumb" id="playerThumb" style="left:0%"></div>
+        </div>
+        <span class="player-time" id="totalTime">32:14</span>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <div class="ctrl-btn" title="가사">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.65 2.001a.75.75 0 01.7 0l8.5 4.6a.75.75 0 010 1.32l-8.5 4.6a.75.75 0 01-.7 0l-8.5-4.6a.75.75 0 010-1.32l8.5-4.6z"/><path d="M20.85 11.4a.75.75 0 01.3 1.02L12.7 17a.75.75 0 01-.71 0L3.35 12.42a.75.75 0 01.71-1.32L12 15.36l7.94-4.26a.75.75 0 01.91.3z"/></svg>
+      </div>
+      <div class="ctrl-btn" title="큐 보기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 15H1v-1.5h14V15zm0-4.5H1V9h14v1.5zM1 6V4.5h22V6H1zm14 12.75v1.5H1v-1.5h14zM17 9l5 3.5L17 16V9z"/></svg>
+      </div>
+      <div class="ctrl-btn" title="기기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3v2H4v10h16v-5h2v6a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1h11zm5 0l4 4-4 4V8h-4V6h4V3z"/></svg>
+      </div>
+      <div class="ctrl-btn" id="volIcon" title="볼륨">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9.741.85a.75.75 0 01.375.65v19a.75.75 0 01-1.125.65l-6.925-4H1.25A1.75 1.75 0 01-.5 15.4V8.6c0-.967.784-1.75 1.75-1.75h.816l6.925-4a.75.75 0 01.75 0zM3.84 8.6l5.526-3.193v13.186L3.84 15.4H1.25V8.6h2.59z"/><path d="M14.347 7.354a.75.75 0 00-1.06 1.06A4.97 4.97 0 0114.75 12a4.97 4.97 0 01-1.463 3.586.75.75 0 101.06 1.06A6.47 6.47 0 0016.25 12a6.47 6.47 0 00-1.903-4.646z"/></svg>
+      </div>
+      <div class="volume-track" id="volTrack">
+        <div class="volume-fill" id="volFill"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ========== DATA ========== */
+  const episodes = [
+    { n: 12, title: 'EP.12 - 옴의 법칙을 외우지 마세요', desc: 'V=IR을 외우는 대신 물탱크 비유로 직관적으로 이해하는 30분. 실기 회로 해석에서 가장 자주 쓰이는 핵심 공식을 일상 언어로 풀어봅니다.', len: '32:14', date: '5월 13일', cover: 'cov-bolt', grad: 'gr-1', progress: 35 },
+    { n: 11, title: 'EP.11 - 키르히호프 법칙, 가게 정산이랑 똑같아요', desc: '전류 법칙(KCL)과 전압 법칙(KVL)을 편의점 매출 정산으로 비유. 노드와 폐회로가 한 번에 정리되는 에피소드.', len: '28:47', date: '5월 6일', cover: 'cov-circuit', grad: 'gr-3', progress: 100 },
+    { n: 10, title: 'EP.10 - 콘덴서는 왜 DC를 막을까', desc: '커패시터의 충방전 메커니즘을 풍선과 댐 비유로. 시정수(τ=RC)가 갑자기 친근해지는 마법.', len: '35:02', date: '4월 29일', cover: 'cov-battery', grad: 'gr-4', progress: 100 },
+    { n: 9, title: 'EP.9 - 3상 교류, 한 번에 끝내기', desc: 'Y결선 vs Δ결선, 선간전압과 상전압의 √3 관계. 실기 시험에 직결되는 3상 회로 핵심 정리.', len: '41:18', date: '4월 22일', cover: 'cov-wave', grad: 'gr-6', progress: 62 },
+    { n: 8, title: 'EP.8 - 유도전동기 슬립, 손으로 느껴보기', desc: '회전자가 동기속도를 따라잡지 못하는 이유. 슬립(s)이 0과 1 사이를 오가는 의미를 직관적으로.', len: '30:55', date: '4월 15일', cover: 'cov-motor', grad: 'gr-8', progress: 0 },
+    { n: 7, title: 'EP.7 - 전선 굵기, 왜 자꾸 외우라고 할까', desc: 'KS C IEC 60364와 허용전류표. 6mm², 16mm²가 머릿속에 자동으로 떠오르는 암기 트릭.', len: '24:33', date: '4월 8일', cover: 'cov-resistor', grad: 'gr-5', progress: 0 },
+    { n: 6, title: 'EP.6 - 변압기 손실, 동손 vs 철손', desc: '무부하 시험과 단락 시험의 의미. 효율 계산이 갑자기 쉬워지는 분리법.', len: '27:09', date: '4월 1일', cover: 'cov-plug', grad: 'gr-7', progress: 100 },
+    { n: 5, title: 'EP.5 - 접지, 우리 집은 안전한가요', desc: 'TT/TN/IT 접지 방식의 차이. 누전 차단기가 동작하는 순간, 0.03초의 드라마.', len: '33:41', date: '3월 25일', cover: 'cov-bulb', grad: 'gr-2', progress: 0 },
+    { n: 4, title: 'EP.4 - 전력과 역률, 사장님이 화내는 이유', desc: '피상전력 S, 유효전력 P, 무효전력 Q. 공장 전기료가 비싸지는 진짜 이유.', len: '29:22', date: '3월 18일', cover: 'cov-meter', grad: 'gr-11', progress: 0 },
+    { n: 3, title: 'EP.3 - 직병렬 회로, 합성저항 한 방에', desc: '합성저항 계산을 30초 만에 끝내는 직관 트레이닝. 분압·분류 법칙도 함께.', len: '22:14', date: '3월 11일', cover: 'cov-resistor', grad: 'gr-12', progress: 0 },
+  ];
+
+  const playlists = [
+    { title: '전기야 놀자', sub: '팟캐스트 · 시즌 2', cover: 'cov-bolt', grad: 'gr-1', playing: true },
+    { title: '전기 모음 (전체)', sub: '플레이리스트 · 142개', cover: 'cov-spark', grad: 'gr-5' },
+    { title: '합격 준비 - D-30', sub: '플레이리스트 · 30개', cover: 'cov-book', grad: 'gr-7' },
+    { title: '야간 학습', sub: '플레이리스트 · 18개', cover: 'cov-head', grad: 'gr-10' },
+    { title: '실기 회로 단골', sub: '플레이리스트 · 24개', cover: 'cov-circuit', grad: 'gr-6' },
+    { title: '암기 송 모음', sub: '플레이리스트 · 12개', cover: 'cov-wave', grad: 'gr-3' },
+    { title: '오디오북 - 전기설비기준', sub: '오디오북 · 6시간 21분', cover: 'cov-book', grad: 'gr-8' },
+    { title: '쉬는 시간 BGM', sub: '플레이리스트 · 41개', cover: 'cov-spark', grad: 'gr-4' },
+    { title: '기능사 합격 후기', sub: '팟캐스트 · 8개', cover: 'cov-head', grad: 'gr-11' },
+    { title: '내가 좋아한 에피소드', sub: '자동 플레이리스트', cover: 'cov-bolt', grad: 'gr-2' },
+  ];
+
+  const recommends = [
+    { title: '회로의 정석', sub: '주 1회 · 전기 기초를 쉽게', cover: 'cov-circuit', grad: 'gr-6' },
+    { title: '기능사 합격 라디오', sub: '시험 한 달 전부터 듣는 방송', cover: 'cov-book', grad: 'gr-7' },
+    { title: '안전 첫걸음', sub: '산업안전 일반 · 매주 금요일', cover: 'cov-bulb', grad: 'gr-5' },
+    { title: 'EE 라이브', sub: '실시간 전기 Q&A', cover: 'cov-meter', grad: 'gr-11' },
+    { title: '모터의 모든 것', sub: '회전기 깊게 파기', cover: 'cov-motor', grad: 'gr-8' },
+    { title: '전선 한 가닥', sub: '배전·배선 실무 토크', cover: 'cov-plug', grad: 'gr-3' },
+  ];
+
+  /* ========== RENDER ========== */
+  function svgUse(id) {
+    return `<svg class="cover-svg" viewBox="0 0 100 100"><use href="#${id}"/></svg>`;
+  }
+
+  function renderPlaylists() {
+    const el = document.getElementById('playlistList');
+    el.innerHTML = playlists.map((p, i) => `
+      <div class="playlist-item ${p.playing ? 'playing' : ''}" data-idx="${i}">
+        <div class="playlist-cover ${p.grad}">${svgUse(p.cover)}</div>
+        <div class="playlist-meta">
+          <div class="playlist-title">${p.title}</div>
+          <div class="playlist-sub">${p.playing ? '<span class="live-dot"></span>' : ''}${p.sub}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderEpisodes() {
+    const el = document.getElementById('episodeList');
+    el.innerHTML = episodes.map((e, i) => `
+      <div class="episode ${i === 0 ? 'playing' : ''}" data-idx="${i}">
+        <div class="episode-cover ${e.grad}">${svgUse(e.cover)}</div>
+        <div class="episode-body">
+          <div class="episode-date">${e.date}</div>
+          <div class="episode-title">${e.title}</div>
+          <div class="episode-desc">${e.desc}</div>
+          <div class="episode-row">
+            <div class="ep-play" data-ep-play="${i}" title="재생">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.05 3.606l13.49 7.788a.7.7 0 010 1.212L7.05 20.394A.7.7 0 016 19.788V4.212a.7.7 0 011.05-.606z"/></svg>
+            </div>
+            <div class="ep-meta">
+              <span>${e.len}</span>
+              ${e.progress > 0 ? `<div class="progress-track"><div class="progress-fill" style="width:${e.progress}%"></div></div>` : ''}
+              ${e.progress === 100 ? '<span style="color:var(--sp-green); font-weight:600;">청취 완료</span>' : ''}
+            </div>
+            <div style="flex:1"></div>
+            <div class="ep-icon-row">
+              <div class="icon-btn" data-like="${i}" title="좋아요">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              </div>
+              <div class="icon-btn" title="다운로드">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <div class="icon-btn" title="공유">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </div>
+              <div class="icon-btn" title="더 보기">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderRecs() {
+    const el = document.getElementById('recList');
+    el.innerHTML = recommends.map((r, i) => `
+      <div class="card" data-rec="${i}">
+        <div class="card-cover ${r.grad}">${svgUse(r.cover)}</div>
+        <div class="card-title">${r.title}</div>
+        <div class="card-sub">${r.sub}</div>
+        <div class="card-play" title="재생">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7.05 3.606l13.49 7.788a.7.7 0 010 1.212L7.05 20.394A.7.7 0 016 19.788V4.212a.7.7 0 011.05-.606z"/></svg>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ========== PLAYER STATE ========== */
+  let state = {
+    playing: false,
+    progress: 0,           // 0..100
+    currentIdx: 0,
+    duration: 32 * 60 + 14,
+    likes: new Set(),
+    shuffle: false,
+    repeat: false,
+    followed: false,
+    timerId: null,
+  };
+
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  function durFromString(str) {
+    const [m, s] = str.split(':').map(Number);
+    return m * 60 + s;
+  }
+
+  function updatePlayerUI() {
+    const ep = episodes[state.currentIdx];
+    document.getElementById('playerTitle').textContent = ep.title;
+    const cover = document.getElementById('playerCover');
+    cover.className = `player-cover ${ep.grad}`;
+    cover.innerHTML = svgUse(ep.cover);
+
+    document.getElementById('totalTime').textContent = ep.len;
+    state.duration = durFromString(ep.len);
+    document.getElementById('curTime').textContent = fmt(state.duration * state.progress / 100);
+    document.getElementById('playerFill').style.width = state.progress + '%';
+    document.getElementById('playerThumb').style.left = state.progress + '%';
+
+    // Play icon swap
+    setPlayIcons(state.playing);
+
+    // Mark playing episode
+    document.querySelectorAll('.episode').forEach((node, i) => {
+      node.classList.toggle('playing', i === state.currentIdx && state.playing);
+    });
+  }
+
+  function setPlayIcons(playing) {
+    const playSvg = '<path d="M7.05 3.606l13.49 7.788a.7.7 0 010 1.212L7.05 20.394A.7.7 0 016 19.788V4.212a.7.7 0 011.05-.606z"/>';
+    const pauseSvg = '<path d="M5.7 3a.7.7 0 00-.7.7v16.6a.7.7 0 00.7.7h2.6a.7.7 0 00.7-.7V3.7a.7.7 0 00-.7-.7H5.7zm10 0a.7.7 0 00-.7.7v16.6a.7.7 0 00.7.7h2.6a.7.7 0 00.7-.7V3.7a.7.7 0 00-.7-.7h-2.6z"/>';
+    const html = playing ? pauseSvg : playSvg;
+    document.getElementById('playerPlayIcon').innerHTML = html;
+    document.getElementById('heroPlayIcon').innerHTML = html;
+  }
+
+  function play() {
+    state.playing = true;
+    setPlayIcons(true);
+    document.querySelectorAll('.episode').forEach((node, i) => {
+      node.classList.toggle('playing', i === state.currentIdx);
+    });
+    if (state.timerId) clearInterval(state.timerId);
+    state.timerId = setInterval(() => {
+      // 1 second of audio per 0.4 sec real time (sim faster)
+      state.progress += (100 / state.duration) * 2.5;
+      if (state.progress >= 100) {
+        if (state.repeat) {
+          state.progress = 0;
+        } else {
+          state.progress = 100;
+          pause();
+          return;
+        }
+      }
+      document.getElementById('playerFill').style.width = state.progress + '%';
+      document.getElementById('playerThumb').style.left = state.progress + '%';
+      document.getElementById('curTime').textContent = fmt(state.duration * state.progress / 100);
+    }, 400);
+  }
+
+  function pause() {
+    state.playing = false;
+    setPlayIcons(false);
+    if (state.timerId) { clearInterval(state.timerId); state.timerId = null; }
+    document.querySelectorAll('.episode').forEach(node => node.classList.remove('playing'));
+  }
+
+  function toggle() {
+    if (state.playing) pause(); else play();
+  }
+
+  function loadEpisode(idx) {
+    state.currentIdx = idx;
+    state.progress = 0;
+    updatePlayerUI();
+    play();
+  }
+
+  /* ========== EVENTS ========== */
+  document.addEventListener('click', (ev) => {
+    const epPlay = ev.target.closest('[data-ep-play]');
+    if (epPlay) {
+      const idx = parseInt(epPlay.dataset.epPlay, 10);
+      if (idx === state.currentIdx) toggle();
+      else loadEpisode(idx);
+      ev.stopPropagation();
+      return;
+    }
+    const ep = ev.target.closest('.episode');
+    if (ep) {
+      const idx = parseInt(ep.dataset.idx, 10);
+      if (idx === state.currentIdx) toggle();
+      else loadEpisode(idx);
+      return;
+    }
+    const like = ev.target.closest('[data-like]');
+    if (like) {
+      const idx = parseInt(like.dataset.like, 10);
+      if (state.likes.has(idx)) { state.likes.delete(idx); like.classList.remove('liked'); like.querySelector('svg').setAttribute('fill','none'); }
+      else { state.likes.add(idx); like.classList.add('liked'); like.querySelector('svg').setAttribute('fill','currentColor'); }
+      ev.stopPropagation();
+      return;
+    }
+    const rec = ev.target.closest('[data-rec]');
+    if (rec && ev.target.closest('.card-play')) {
+      // load a recommended as a "new" episode (reuse current)
+      ev.stopPropagation();
+      return;
+    }
+  });
+
+  document.getElementById('playerPlayBtn').addEventListener('click', toggle);
+  document.getElementById('heroPlayBtn').addEventListener('click', toggle);
+
+  document.getElementById('shuffleBtn').addEventListener('click', (e) => {
+    state.shuffle = !state.shuffle;
+    e.currentTarget.classList.toggle('active', state.shuffle);
+  });
+  document.getElementById('repeatBtn').addEventListener('click', (e) => {
+    state.repeat = !state.repeat;
+    e.currentTarget.classList.toggle('active', state.repeat);
+  });
+
+  document.getElementById('followBtn').addEventListener('click', (e) => {
+    state.followed = !state.followed;
+    const btn = e.currentTarget;
+    btn.classList.toggle('liked', state.followed);
+    btn.querySelector('svg').innerHTML = state.followed
+      ? '<circle cx="12" cy="12" r="10" fill="#1db954" stroke="#1db954"/><polyline points="8 12 11 15 16 9" stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+      : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
+  });
+
+  document.getElementById('playerLike').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const isLiked = btn.classList.toggle('liked');
+    btn.querySelector('svg').setAttribute('fill', isLiked ? 'currentColor' : 'none');
+  });
+
+  // Progress bar click-to-seek
+  document.getElementById('playerTrack').addEventListener('click', (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    state.progress = pct;
+    document.getElementById('playerFill').style.width = pct + '%';
+    document.getElementById('playerThumb').style.left = pct + '%';
+    document.getElementById('curTime').textContent = fmt(state.duration * pct / 100);
+  });
+
+  // Volume slider
+  document.getElementById('volTrack').addEventListener('click', (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    document.getElementById('volFill').style.width = pct + '%';
+  });
+
+  // Topbar scroll effect
+  document.getElementById('mainScroll').addEventListener('scroll', (e) => {
+    document.getElementById('topbar').classList.toggle('scrolled', e.currentTarget.scrollTop > 80);
+  });
+
+  /* ========== INIT ========== */
+  renderPlaylists();
+  renderEpisodes();
+  renderRecs();
+  updatePlayerUI();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - IGBT 스위칭 손실 시뮬레이터 (Switching & Conduction Loss)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 114, 182, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(245, 158, 11, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.5), rgba(245,158,11,0.45), rgba(168,139,250,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(244, 114, 182, 0.4),
+        0 0 40px rgba(245, 158, 11, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 780px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #f59e0b; box-shadow: 0 0 12px #f59e0b;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #f59e0b; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(245,158,11,0.4), rgba(168,139,250,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #fcd34d, #c4b5fd);
+    box-shadow: 0 0 22px rgba(252, 211, 77, 0.8);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-ic { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-f  { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-d  { background: linear-gradient(135deg, rgba(110,231,183,0.22), rgba(110,231,183,0.06)); border-color: rgba(110,231,183,0.5); color: #6ee7b7; }
+.chip-rg { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-v  { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.35);
+}
+.live-pill.danger {
+    border-color: rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.5);
+    animation: dangerGlow 1.2s ease-in-out infinite alternate;
+}
+@keyframes dangerGlow {
+    0% { box-shadow: 0 0 22px rgba(239,68,68,0.35) }
+    100% { box-shadow: 0 0 40px rgba(239,68,68,0.8) }
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fcd34d, #fda4af, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.reset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.reset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(245,158,11,0.20), rgba(244,114,182,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(252, 211, 77, 0.35);
+}
+.math-container { font-size: 1.05rem; color: #fef3c7; }
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(168,139,250,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(252,211,77,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(252, 211, 77, 0.4);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(252, 211, 77, 0.5), transparent);
+}
+.tag {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.tag-safe   { background: rgba(110,231,183,0.18); color: #6ee7b7; border: 1px solid rgba(110,231,183,0.45); }
+.tag-warn   { background: rgba(245,158,11,0.18); color: #fcd34d; border: 1px solid rgba(245,158,11,0.45); }
+.tag-danger { background: rgba(239,68,68,0.22); color: #fca5a5; border: 1px solid rgba(239,68,68,0.55); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · IGBT · SWITCHING & CONDUCTION LOSS
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent">
+            ⚡ IGBT 스위칭 손실 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">좌 — IGBT 모듈 단면 · 방열판 · 접합 온도 · 우 — V<sub>CE</sub>/I<sub>C</sub>/V<sub>GE</sub> 스위칭 파형 · 턴온·턴오프 오버랩이 곧 손실 면적입니다.</p>
+    </header>
+
+    <!-- 라이브 데이터 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-pcond">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">도통 손실 P<sub>cond</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="pcondVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-psw">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">스위칭 손실 P<sub>sw</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="pswVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-ptot">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">총 손실 P<sub>tot</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="ptotVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-tj">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">접합 온도 T<sub>j</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="tjVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">좌 — IGBT 모듈 / 방열판 · 우상 — 스위칭 파형 · 좌하 — 손실 분포 도넛</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">↺ 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-amber-300 to-pink-200 bg-clip-text text-transparent">IGBT 손실 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">도통 손실</p>
+                        <p class="mt-2 font-mono text-sm text-amber-100">P<sub>cond</sub> = V<sub>CE(sat)</sub>·I<sub>C</sub>·D</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">스위칭 손실</p>
+                        <p class="mt-2 font-mono text-sm text-amber-100">P<sub>sw</sub> = (E<sub>on</sub>+E<sub>off</sub>)·f<sub>sw</sub></p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">접합 온도</p>
+                        <p class="mt-2 font-mono text-sm text-amber-100">T<sub>j</sub> = T<sub>a</sub> + P<sub>tot</sub>·R<sub>θ,ja</sub></p>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] text-slate-300">
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-cyan-300">I<sub>C</sub> ↑</span> · P<sub>cond</sub> ↑</li>
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-indigo-300">f<sub>sw</sub> ↑</span> · P<sub>sw</sub> ↑</li>
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-amber-300">R<sub>G</sub> ↑</span> · t<sub>sw</sub> ↑ · E<sub>sw</sub> ↑</li>
+                    <li class="feature-row rounded-md p-2"><span class="font-bold text-pink-300">P<sub>tot</sub> ↑</span> · T<sub>j</sub> ↑</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-amber-200">변수 조절</h2>
+            <div class="chip-ic chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 I<sub>C</sub></span><span id="icDisp" class="font-mono text-base">50</span></label>
+                <input type="range" id="ic" min="5" max="200" value="50" step="1" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A</p>
+            </div>
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>DC 링크 V<sub>CC</sub></span><span id="vccDisp" class="font-mono text-base">600</span></label>
+                <input type="range" id="vcc" min="100" max="1200" value="600" step="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V</p>
+            </div>
+            <div class="chip-f chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>스위칭 주파수 f<sub>sw</sub></span><span id="fDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="fsw" min="1" max="50" value="10" step="1" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kHz</p>
+            </div>
+            <div class="chip-d chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>듀티 D</span><span id="dDisp" class="font-mono text-base">0.50</span></label>
+                <input type="range" id="duty" min="10" max="90" value="50" step="1" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">0.10 ~ 0.90</p>
+            </div>
+            <div class="chip-rg chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>게이트 저항 R<sub>G</sub></span><span id="rgDisp" class="font-mono text-base">10</span></label>
+                <input type="range" id="rg" min="2" max="50" value="10" step="1" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="rounded-lg p-3" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold mb-1">열 상태 판정</p>
+                <p id="thermBadge" class="font-bold text-emerald-300">정상 — 방열 여유 충분</p>
+                <p class="text-[10px] text-slate-500 mt-2" id="thermHelp">T<sub>j,max</sub> = 150 °C 기준. T<sub>a</sub> = 40 °C, R<sub>θ,ja</sub> = 0.5 °C/W (방열판 포함).</p>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="text-[10px] text-slate-500">상태:</span>
+                    <span id="thermTag" class="tag tag-safe">SAFE</span>
+                </div>
+            </div>
+
+            <div class="rounded-lg p-3" style="background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold mb-1">스위칭 에너지 (참조)</p>
+                <p class="text-[11px] text-slate-300">E<sub>on</sub> = <span id="eonDisp" class="font-mono text-amber-300">—</span></p>
+                <p class="text-[11px] text-slate-300">E<sub>off</sub> = <span id="eoffDisp" class="font-mono text-amber-300">—</span></p>
+                <p class="text-[10px] text-slate-500 mt-1">R<sub>G</sub>·V<sub>CC</sub>·I<sub>C</sub>에 비례</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 보조 카드 -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-amber-200">📐 손실 합산</h3>
+            <div class="math-container" id="mathLoss">
+                $$P_{tot} = \underbrace{V_{CE(sat)} \cdot I_C \cdot D}_{P_{cond}} + \underbrace{(E_{on} + E_{off}) \cdot f_{sw}}_{P_{sw}}$$
+            </div>
+        </div>
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-amber-200">📐 접합 온도 상승</h3>
+            <div class="math-container">
+                $$T_j = T_a + P_{tot} \cdot R_{\theta,ja}, \quad R_{\theta,ja} = R_{\theta,jc} + R_{\theta,cs} + R_{\theta,sa}$$
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const TOP_H = 420;     // 상단 영역 (모듈 + 스위칭 파형)
+const BOT_H = 360;     // 하단 영역 (손실 도넛 + 정보)
+const TOTAL_H = TOP_H + BOT_H;
+
+// 상태
+let state = {
+    Ic: 50,         // A
+    Vcc: 600,       // V (DC link)
+    fsw: 10e3,      // 10 kHz
+    D: 0.5,         // duty
+    Rg: 10,         // Ω
+    Ta: 40,         // °C 주위 온도
+    Rth: 0.5,       // °C/W 접합 → 주위
+    Vce_sat: 1.8,   // V (Ic ~ 100A 기준, 약간 변화)
+    tick: 0,
+    phase: 0,       // 0~1 스위칭 주기 위상 (시각화용)
+    swPhase: 0      // 한 스위칭 사이클 자세히 보기 위한 위상 (0~1)
+};
+
+// V_CE(sat): Ic에 따라 약간 증가 (단순 선형 근사)
+function vceSat() {
+    return 1.0 + state.Ic * 0.012;  // 5A → 1.06, 50A → 1.6, 200A → 3.4
+}
+
+// 스위칭 에너지 (단순화된 모델: t_sw ∝ R_G · C_iss, E_sw = 0.5·V·I·t_sw)
+// 일반 600V급 IGBT 표준값(예: R_G=10Ω, Vcc=600V, Ic=50A): E_on ≈ 5 mJ, E_off ≈ 3 mJ
+function tRise() {
+    // 턴온 시간 (ns) ≈ k · R_G  (게이트 충전 시정수)
+    return 8 * state.Rg + 40; // ns (R_G=10 → 120 ns)
+}
+function tFall() {
+    return 6 * state.Rg + 60; // ns (R_G=10 → 120 ns)
+}
+function Eon() {
+    // E_on = 0.5 · V_CC · I_C · t_rise
+    return 0.5 * state.Vcc * state.Ic * tRise() * 1e-9; // J
+}
+function Eoff() {
+    return 0.5 * state.Vcc * state.Ic * tFall() * 1e-9; // J
+}
+
+function Pcond() { return vceSat() * state.Ic * state.D; }
+function Psw()   { return (Eon() + Eoff()) * state.fsw; }
+function Ptot()  { return Pcond() + Psw(); }
+function Tj()    { return state.Ta + Ptot() * state.Rth; }
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+// ============================================================
+// 배경
+// ============================================================
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, TOTAL_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(0.5, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, TOTAL_H);
+
+    // 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, TOTAL_H); ctx.stroke();
+    }
+    for (let i = 0; i < TOTAL_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 상단 / 하단 분할선
+    ctx.save();
+    const divGrad = ctx.createLinearGradient(0, TOP_H, canvas.width, TOP_H);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(252, 211, 77, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, TOP_H); ctx.lineTo(canvas.width, TOP_H);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ IGBT MODULE · HEATSINK · WAVEFORM', 12, 10);
+    ctx.textAlign = 'right';
+    const onPhase = state.phase < state.D;
+    const m = onPhase ? '⚡ IGBT · ON (도통 손실)' : '↓ IGBT · OFF (전류 차단)';
+    ctx.fillStyle = onPhase ? 'rgba(110,231,183,0.95)' : 'rgba(244,114,182,0.95)';
+    ctx.fillText(m, canvas.width - 12, 10);
+    ctx.restore();
+}
+
+// ============================================================
+// 좌상: IGBT 모듈 + 방열판 + 온도 표시
+// ============================================================
+function drawIGBTModule() {
+    const W = canvas.width;
+    // 좌측 영역 (0 ~ W*0.4)
+    const areaW = W * 0.4;
+    const cx = areaW / 2;
+    const cy = TOP_H / 2 + 10;
+    const onPhase = state.phase < state.D;
+    const tjVal = Tj();
+    const heatRatio = Math.min(1, Math.max(0, (tjVal - 40) / 110)); // 40 → 0, 150 → 1
+
+    // 방열판 (아래) — 핀 그리기
+    ctx.save();
+    const hsY = cy + 70;
+    const hsW = 220;
+    const hsH = 60;
+    // 본체
+    const hsGrad = ctx.createLinearGradient(cx - hsW/2, hsY, cx + hsW/2, hsY + hsH);
+    hsGrad.addColorStop(0, '#475569');
+    hsGrad.addColorStop(0.5, '#64748b');
+    hsGrad.addColorStop(1, '#334155');
+    ctx.fillStyle = hsGrad;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = `rgba(239, 68, 68, ${heatRatio * 0.5})`;
+    roundRect(ctx, cx - hsW/2, hsY, hsW, hsH, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // 핀
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(100, 116, 139, 0.95)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    const finCount = 14;
+    const finW = (hsW - 12) / finCount;
+    for (let i = 0; i < finCount; i++) {
+        const fx = cx - hsW/2 + 6 + i * finW;
+        ctx.fillRect(fx, hsY + hsH, finW - 2, 24);
+        ctx.strokeRect(fx, hsY + hsH, finW - 2, 24);
+    }
+    ctx.restore();
+
+    // 모듈 본체 (검은색 패키지)
+    ctx.save();
+    const modW = 180;
+    const modH = 70;
+    const modY = cy - modH/2 - 25;
+    const modGrad = ctx.createLinearGradient(cx, modY, cx, modY + modH);
+    modGrad.addColorStop(0, '#1e293b');
+    modGrad.addColorStop(0.5, '#0f172a');
+    modGrad.addColorStop(1, '#020617');
+    ctx.fillStyle = modGrad;
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = onPhase ? 'rgba(110, 231, 183, 0.4)' : 'rgba(148, 163, 184, 0.2)';
+    roundRect(ctx, cx - modW/2, modY, modW, modH, 8);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(168,139,250,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 다이 (실리콘 칩) 표시
+    const dieW = 50, dieH = 30;
+    const dieGrad = ctx.createLinearGradient(cx - dieW/2, modY + 12, cx + dieW/2, modY + 12 + dieH);
+    // 온도에 따라 색상: 초록 → 노랑 → 빨강
+    const dieR = Math.round(34 + heatRatio * 200);
+    const dieG = Math.round(211 - heatRatio * 100);
+    const dieB = Math.round(238 - heatRatio * 200);
+    dieGrad.addColorStop(0, `rgba(${dieR},${dieG},${dieB}, 0.4)`);
+    dieGrad.addColorStop(0.5, `rgba(${dieR},${dieG},${dieB}, 0.85)`);
+    dieGrad.addColorStop(1, `rgba(${dieR},${dieG},${dieB}, 0.4)`);
+    ctx.fillStyle = dieGrad;
+    ctx.shadowBlur = 12 + heatRatio * 16;
+    ctx.shadowColor = `rgba(${dieR},${dieG},${dieB},0.9)`;
+    roundRect(ctx, cx - dieW/2, modY + 18, dieW, dieH, 3);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // 'IGBT' 문자
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('IGBT', cx, modY + 33);
+    ctx.restore();
+
+    // 단자 (G, C, E)
+    drawTerminal(cx - 70, modY + modH + 6, 'G', '#fcd34d');
+    drawTerminal(cx,      modY + modH + 6, 'C', '#67e8f9');
+    drawTerminal(cx + 70, modY + modH + 6, 'E', '#f9a8d4');
+
+    // 단자 → 모듈 연결선
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+    ctx.lineWidth = 2;
+    [-70, 0, 70].forEach(dx => {
+        ctx.beginPath();
+        ctx.moveTo(cx + dx, modY + modH);
+        ctx.lineTo(cx + dx, modY + modH + 4);
+        ctx.stroke();
+    });
+    ctx.restore();
+
+    // 열 화살표 (모듈 → 방열판) — 손실 비율 표시
+    ctx.save();
+    const arrowAlpha = Math.min(0.95, 0.3 + heatRatio * 0.6);
+    const arrowColor = heatRatio < 0.4 ? `rgba(110,231,183,${arrowAlpha})` :
+                       heatRatio < 0.75 ? `rgba(252,211,77,${arrowAlpha})` :
+                                          `rgba(239,68,68,${arrowAlpha})`;
+    ctx.strokeStyle = arrowColor;
+    ctx.fillStyle = arrowColor;
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = arrowColor;
+    [-30, 0, 30].forEach(dx => {
+        const ay = modY + modH + 16 + (state.tick * 0.5 % 12);
+        ctx.beginPath();
+        ctx.moveTo(cx + dx, ay);
+        ctx.lineTo(cx + dx, ay + 14);
+        ctx.stroke();
+        // 화살표 머리
+        ctx.beginPath();
+        ctx.moveTo(cx + dx, ay + 14);
+        ctx.lineTo(cx + dx - 4, ay + 9);
+        ctx.lineTo(cx + dx + 4, ay + 9);
+        ctx.closePath();
+        ctx.fill();
+    });
+    ctx.restore();
+
+    // 온도 게이지 (오른쪽 옆)
+    drawThermometer(cx + modW/2 + 32, cy, tjVal);
+
+    // 라벨: 'IGBT MODULE'
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168,139,250,0.85)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lbl = 'IGBT MODULE';
+    const lw = ctx.measureText(lbl).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, cx - lw/2 - 6, modY - 18, lw + 12, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(lbl, cx, modY - 10);
+
+    // 라벨: 'HEATSINK'
+    const lbl2 = 'HEATSINK';
+    const lw2 = ctx.measureText(lbl2).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, cx - lw2/2 - 6, hsY + hsH + 30, lw2 + 12, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(lbl2, cx, hsY + hsH + 38);
+    ctx.restore();
+}
+
+function drawTerminal(x, y, label, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.arc(x, y + 4, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(label, x, y + 14);
+    ctx.restore();
+}
+
+function drawThermometer(x, y, T) {
+    const h = 110, w = 22;
+    const bulbR = 14;
+    const top = y - h/2;
+    const bot = y + h/2;
+    ctx.save();
+    // 유리관 배경
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, x - w/2, top, w, h, w/2);
+    ctx.fill();
+    ctx.stroke();
+    // 구
+    ctx.beginPath();
+    ctx.arc(x, bot + bulbR - 6, bulbR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 수은 (T 비율)
+    const ratio = Math.min(1, Math.max(0, (T - 25) / 150));
+    const fillH = ratio * (h - 8);
+    const mY = bot - 4 - fillH;
+    const r = Math.round(120 + ratio * 130);
+    const g = Math.round(220 - ratio * 180);
+    const b = Math.round(80  - ratio * 60);
+    ctx.save();
+    const merc = ctx.createLinearGradient(x - 6, mY, x + 6, bot);
+    merc.addColorStop(0, `rgba(${r},${g},${b},0.95)`);
+    merc.addColorStop(1, `rgba(${r},${g},${b},0.65)`);
+    ctx.fillStyle = merc;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = `rgba(${r},${g},${b},0.8)`;
+    roundRect(ctx, x - 6, mY, 12, fillH + 4, 6);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, bot + bulbR - 6, bulbR - 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 눈금
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(148,163,184,0.4)';
+    ctx.lineWidth = 1;
+    [25, 50, 100, 150].forEach(t => {
+        const tr = (t - 25) / 150;
+        const ty = bot - 4 - tr * (h - 8);
+        ctx.beginPath();
+        ctx.moveTo(x + w/2, ty); ctx.lineTo(x + w/2 + 4, ty);
+        ctx.stroke();
+        ctx.fillText(`${t}°`, x + w/2 + 6, ty);
+    });
+    ctx.restore();
+
+    // T_j 값
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lbl = `T_j = ${T.toFixed(0)}°C`;
+    const lw = ctx.measureText(lbl).width;
+    ctx.fillStyle = 'rgba(15,23,42,0.9)';
+    roundRect(ctx, x - lw/2 - 6, top - 22, lw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = T > 125 ? '#fca5a5' : (T > 100 ? '#fcd34d' : '#6ee7b7');
+    ctx.fillText(lbl, x, top - 13);
+    ctx.restore();
+}
+
+// ============================================================
+// 우상: 스위칭 파형 (V_CE, I_C, V_GE)
+// ============================================================
+function drawSwitchingWaveform() {
+    const W = canvas.width;
+    const xStart = W * 0.42;
+    const xEnd = W - 30;
+    const yTop = 50;
+    const yBot = TOP_H - 20;
+    const plotW = xEnd - xStart;
+    const plotH = yBot - yTop;
+
+    // 배경 박스
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.strokeStyle = 'rgba(168,139,250,0.25)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, xStart - 6, yTop - 6, plotW + 12, plotH + 12, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 제목
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252,211,77,0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ SWITCHING WAVEFORM · V_CE · I_C · V_GE', xStart, yTop - 22);
+    ctx.restore();
+
+    // 시간 축: 한 스위칭 주기 (확대 표시: 턴온/턴오프 구간 시각화)
+    // 0~0.15: 턴온, 0.15~D: 도통, D~D+0.15: 턴오프, D+0.15~1: 오프
+    // 사용자 D를 그대로 사용, t_rise/t_fall는 R_G 비례 (정규화)
+    const D = state.D;
+    const rgNorm = state.Rg / 50;          // 0.04 ~ 1
+    const ton = 0.04 + rgNorm * 0.10;      // 턴온 구간 폭 (정규화)
+    const toff = 0.04 + rgNorm * 0.10;
+    // 보장: D+toff < 1
+    const Donn = Math.max(0.1, Math.min(0.9, D));
+    const onEnd = Math.min(0.95 - toff, ton + (Donn - ton) * 1.0); // 턴온 끝 ≈ ton
+    const offStart = Math.min(0.96 - toff, Donn);                   // 도통 끝
+    const offEnd = Math.min(0.99, offStart + toff);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    ctx.lineWidth = 1;
+    for (let k = 0; k <= 5; k++) {
+        const x = xStart + (k / 5) * plotW;
+        ctx.beginPath();
+        ctx.moveTo(x, yTop); ctx.lineTo(x, yBot);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 영역 (각 트레이스 3등분)
+    const tracks = 3;
+    const trackH = (plotH - 20) / tracks;
+    const labels = ['V_GE (게이트)', 'V_CE (콜렉터)', 'I_C (전류)'];
+    const colors = ['#fcd34d', '#7dd3fc', '#6ee7b7'];
+
+    // ===== 각 트랙 라벨 + 베이스라인 =====
+    for (let i = 0; i < tracks; i++) {
+        const trTop = yTop + 10 + i * trackH;
+        const trBot = trTop + trackH - 10;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(148,163,184,0.18)';
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xStart, trBot); ctx.lineTo(xEnd, trBot);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = colors[i];
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText(labels[i], xStart + 6, trTop);
+        ctx.restore();
+    }
+
+    // 파형 함수 (0~1 정규화 시간)
+    function vge(t) {
+        // 0~ton: 0 → 15V (램프), ton~offStart: 15V (high), offStart~offEnd: 15 → -8V, 이후 -8V
+        if (t < ton) return (t / ton) * 15;
+        if (t < offStart) return 15;
+        if (t < offEnd) return 15 - ((t - offStart) / toff) * 23;
+        return -8;
+    }
+    function vce(t) {
+        // 턴온: V_CC → V_CE(sat),  도통: V_CE(sat), 턴오프: V_CE(sat) → V_CC, 오프: V_CC
+        // 단, V_CE는 게이트보다 약간 뒤늦게 변화 (Miller plateau 후)
+        const vcc = state.Vcc;
+        const vs = vceSat();
+        if (t < ton) {
+            // V_CE 강하 (단, t<ton*0.4까지는 V_CC 유지, t>0.4*ton부터 떨어짐)
+            const t2 = (t - ton * 0.4) / (ton * 0.6);
+            if (t2 < 0) return vcc;
+            return vcc - (vcc - vs) * Math.min(1, t2);
+        }
+        if (t < offStart) return vs;
+        if (t < offEnd) {
+            // V_CE 상승 (게이트 떨어진 직후부터 빠르게)
+            const t2 = (t - offStart) / (toff * 0.8);
+            return vs + (vcc - vs) * Math.min(1, t2);
+        }
+        return vcc;
+    }
+    function ic(t) {
+        // 턴온: 0 → I_C, 도통: I_C, 턴오프: I_C → 0, 오프: 0
+        const Ic = state.Ic;
+        if (t < ton) {
+            // I_C 상승은 V_CE 강하보다 먼저 (전형적 IGBT)
+            const t2 = t / (ton * 0.7);
+            return Ic * Math.min(1, Math.max(0, t2));
+        }
+        if (t < offStart) return Ic;
+        if (t < offEnd) {
+            const t2 = (t - offStart) / toff;
+            return Ic * (1 - Math.min(1, t2));
+        }
+        return 0;
+    }
+
+    // 정규화 후 트랙별 그리기
+    const N = 400;
+    const Vcc = state.Vcc;
+    const Ic = state.Ic;
+    function drawTrace(idx, fn, yMin, yMax) {
+        const trTop = yTop + 10 + idx * trackH + 4;
+        const trBot = yTop + 10 + idx * trackH + trackH - 12;
+        const trH = trBot - trTop;
+        ctx.save();
+        ctx.strokeStyle = colors[idx];
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = colors[idx];
+        ctx.beginPath();
+        for (let k = 0; k <= N; k++) {
+            const t = k / N;
+            const v = fn(t);
+            const x = xStart + t * plotW;
+            const y = trBot - ((v - yMin) / (yMax - yMin)) * trH;
+            const yc = Math.max(trTop, Math.min(trBot, y));
+            if (k === 0) ctx.moveTo(x, yc); else ctx.lineTo(x, yc);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    drawTrace(0, vge, -10, 18);
+    drawTrace(1, vce, 0, Vcc * 1.05);
+    drawTrace(2, ic, 0, Ic * 1.1);
+
+    // ===== 손실 오버랩 영역 (V_CE × I_C가 동시 큰 구간 — 턴온/턴오프) =====
+    // 두 영역에 빨간색 음영
+    function shadeRegion(t0, t1, label) {
+        const x0 = xStart + t0 * plotW;
+        const x1 = xStart + t1 * plotW;
+        ctx.save();
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.fillRect(x0, yTop + 4, x1 - x0, plotH - 8);
+        ctx.strokeRect(x0, yTop + 4, x1 - x0, plotH - 8);
+        ctx.restore();
+        ctx.save();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(252, 165, 165, 0.95)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(label, (x0 + x1) / 2, yBot + 14);
+        ctx.restore();
+    }
+    shadeRegion(0, ton, 'E_on');
+    shadeRegion(offStart, offEnd, 'E_off');
+
+    // 도통 구간 라벨
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.9)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('도통 (P_cond)', xStart + ((ton + offStart) / 2) * plotW, yBot + 14);
+    ctx.restore();
+
+    // 현재 시간 표시줄 (스위칭 위상)
+    const xCur = xStart + state.swPhase * plotW;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xCur, yTop); ctx.lineTo(xCur, yBot);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 시간축 라벨
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148,163,184,0.75)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('0', xStart, yBot + 4);
+    ctx.fillText('T_sw', xEnd, yBot + 4);
+    ctx.restore();
+}
+
+// ============================================================
+// 좌하: 손실 분포 도넛
+// ============================================================
+function drawLossDonut() {
+    const W = canvas.width;
+    const cx = W * 0.18;
+    const cy = TOP_H + BOT_H / 2;
+    const rOut = 90;
+    const rIn = 56;
+
+    const eonV = Eon();
+    const eoffV = Eoff();
+    const ptot = Ptot();
+    const pSwOn = eonV * state.fsw;
+    const pSwOff = eoffV * state.fsw;
+    const pCond = Pcond();
+    const segs = [
+        { val: pCond,  color: '#67e8f9', label: '도통' },
+        { val: pSwOn,  color: '#fcd34d', label: '턴온' },
+        { val: pSwOff, color: '#f9a8d4', label: '턴오프' }
+    ];
+    const total = Math.max(0.001, segs.reduce((a, s) => a + s.val, 0));
+
+    // 배경 원
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(245,158,11,0.4)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, rOut + 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(15,23,42,0.6)';
+    ctx.fill();
+    ctx.restore();
+
+    let start = -Math.PI / 2;
+    segs.forEach((s, i) => {
+        const ang = (s.val / total) * Math.PI * 2;
+        if (ang < 0.001) return;
+        ctx.save();
+        const grad = ctx.createRadialGradient(cx, cy, rIn, cx, cy, rOut);
+        grad.addColorStop(0, s.color);
+        grad.addColorStop(1, s.color + 'cc');
+        ctx.fillStyle = grad;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = s.color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rOut, start, start + ang);
+        ctx.arc(cx, cy, rIn, start + ang, start, true);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        start += ang;
+    });
+
+    // 중앙 텍스트
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148,163,184,0.8)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('TOTAL', cx, cy - 14);
+    ctx.font = 'bold 18px ui-monospace, monospace';
+    const tCol = ptot > 200 ? '#fca5a5' : (ptot > 100 ? '#fcd34d' : '#6ee7b7');
+    ctx.fillStyle = tCol;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = tCol;
+    ctx.fillText(formatPower(ptot), cx, cy + 6);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(148,163,184,0.7)';
+    ctx.fillText('손실', cx, cy + 22);
+    ctx.restore();
+
+    // 범례
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    segs.forEach((s, i) => {
+        const ly = cy - 30 + i * 26;
+        const lx = cx + rOut + 28;
+        ctx.fillStyle = s.color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = s.color;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillText(s.label, lx + 14, ly);
+        ctx.fillStyle = s.color;
+        const pct = (s.val / total * 100).toFixed(1);
+        ctx.fillText(`${formatPower(s.val)} (${pct}%)`, lx + 14, ly + 13);
+    });
+    ctx.restore();
+
+    // 제목
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252,211,77,0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ LOSS BREAKDOWN', 12, TOP_H + 12);
+    ctx.restore();
+}
+
+// ============================================================
+// 우하: 정보 패널 (수치 + 가이드)
+// ============================================================
+function drawInfoPanel() {
+    const W = canvas.width;
+    const x0 = W * 0.42;
+    const y0 = TOP_H + 30;
+    const w = W - x0 - 30;
+    const h = BOT_H - 60;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.strokeStyle = 'rgba(252,211,77,0.25)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, x0, y0, w, h, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 제목
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252,211,77,0.95)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ DETAILED ANALYSIS', x0 + 14, y0 + 12);
+    ctx.restore();
+
+    // 좌측 컬럼: 항목별 수치
+    const items = [
+        ['V_CE(sat)', `${vceSat().toFixed(2)} V`,  '#67e8f9'],
+        ['I_C × D',   `${(state.Ic * state.D).toFixed(1)} A·D`, '#67e8f9'],
+        ['t_rise',    `${tRise().toFixed(0)} ns`,   '#fcd34d'],
+        ['t_fall',    `${tFall().toFixed(0)} ns`,   '#fcd34d'],
+        ['E_on',      formatEnergy(Eon()),          '#fcd34d'],
+        ['E_off',     formatEnergy(Eoff()),         '#f9a8d4'],
+        ['f_sw',      `${(state.fsw/1e3).toFixed(0)} kHz`, '#c4b5fd'],
+        ['R_θ,ja',    `${state.Rth.toFixed(2)} °C/W`, '#a5b4fc']
+    ];
+
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textBaseline = 'middle';
+    const colW = (w - 28) / 2;
+    items.forEach((it, i) => {
+        const col = Math.floor(i / 4);
+        const row = i % 4;
+        const ix = x0 + 14 + col * colW;
+        const iy = y0 + 50 + row * 32;
+        // 라벨
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(148,163,184,0.85)';
+        ctx.fillText(it[0], ix, iy);
+        // 값
+        ctx.textAlign = 'right';
+        ctx.fillStyle = it[2];
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = it[2];
+        ctx.fillText(it[1], ix + colW - 16, iy);
+        ctx.shadowBlur = 0;
+    });
+    ctx.restore();
+
+    // 하단 경고/가이드 메시지
+    const tj = Tj();
+    const ptot = Ptot();
+    let msg, msgColor;
+    if (tj > 150) {
+        msg = '⚠ 접합 온도 초과! IGBT 손상 위험 — f_sw 또는 I_C 감소 필요';
+        msgColor = '#fca5a5';
+    } else if (tj > 125) {
+        msg = '⚠ 고온 운전 — 방열 성능 점검 및 디레이팅 권장';
+        msgColor = '#fcd34d';
+    } else if (ptot > 150) {
+        msg = '· 손실 큼: 게이트 저항 ↓ 또는 f_sw ↓ 시 효율 ↑';
+        msgColor = '#c4b5fd';
+    } else {
+        msg = '✓ 안정 운전 — 방열 여유 충분';
+        msgColor = '#6ee7b7';
+    }
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = msgColor;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = msgColor;
+    ctx.fillText(msg, x0 + 14, y0 + h - 14);
+    ctx.restore();
+}
+
+// ============================================================
+// UI 갱신
+// ============================================================
+function readControls() {
+    state.Ic = +$('ic').value;
+    state.Vcc = +$('vcc').value;
+    state.fsw = (+$('fsw').value) * 1000;
+    state.D = (+$('duty').value) / 100;
+    state.Rg = +$('rg').value;
+
+    $('icDisp').textContent = state.Ic;
+    $('vccDisp').textContent = state.Vcc;
+    $('fDisp').textContent = $('fsw').value;
+    $('dDisp').textContent = state.D.toFixed(2);
+    $('rgDisp').textContent = state.Rg;
+}
+
+function updateLive() {
+    const pc = Pcond();
+    const ps = Psw();
+    const pt = pc + ps;
+    const tj = state.Ta + pt * state.Rth;
+
+    $('pcondVal').textContent = formatPower(pc);
+    $('pswVal').textContent = formatPower(ps);
+    $('ptotVal').textContent = formatPower(pt);
+    $('tjVal').textContent = `${tj.toFixed(0)} °C`;
+
+    $('eonDisp').textContent = formatEnergy(Eon());
+    $('eoffDisp').textContent = formatEnergy(Eoff());
+
+    // 위험 표시
+    $('pill-tj').classList.toggle('danger', tj > 125);
+    $('pill-ptot').classList.toggle('danger', pt > 200);
+
+    // 열 상태 뱃지
+    const tag = $('thermTag');
+    const badge = $('thermBadge');
+    const help = $('thermHelp');
+    if (tj > 150) {
+        tag.textContent = 'DANGER';
+        tag.className = 'tag tag-danger';
+        badge.textContent = '⚠ 위험 — T_j 한계 초과';
+        badge.className = 'font-bold text-red-300';
+        help.textContent = '접합 온도가 150 °C를 넘어 IGBT가 열폭주할 수 있습니다. 즉시 전류·주파수 감소 또는 방열판 성능 강화 필요.';
+    } else if (tj > 125) {
+        tag.textContent = 'WARN';
+        tag.className = 'tag tag-warn';
+        badge.textContent = '⚠ 주의 — 고온 운전';
+        badge.className = 'font-bold text-amber-300';
+        help.textContent = 'T_j > 125 °C 운전이 지속되면 수명이 단축됩니다. 디레이팅(여유율 확보)을 검토하세요.';
+    } else {
+        tag.textContent = 'SAFE';
+        tag.className = 'tag tag-safe';
+        badge.textContent = '정상 — 방열 여유 충분';
+        badge.className = 'font-bold text-emerald-300';
+        help.textContent = `T_j,max = 150 °C 기준. T_a = ${state.Ta} °C, R_θ,ja = ${state.Rth.toFixed(2)} °C/W (방열판 포함).`;
+    }
+}
+
+function formatPower(p) {
+    if (p >= 1000) return `${(p/1000).toFixed(2)} kW`;
+    if (p >= 1)    return `${p.toFixed(1)} W`;
+    return `${(p*1000).toFixed(1)} mW`;
+}
+function formatEnergy(e) {
+    // J → mJ → μJ
+    if (e >= 1) return `${e.toFixed(2)} J`;
+    if (e >= 1e-3) return `${(e*1e3).toFixed(2)} mJ`;
+    if (e >= 1e-6) return `${(e*1e6).toFixed(1)} μJ`;
+    return `${(e*1e9).toFixed(0)} nJ`;
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(252,211,77,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(252,211,77,0)', duration: 0.6 });
+    document.querySelectorAll('.live-pill').forEach(el => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 350);
+    });
+}
+
+['ic','vcc','fsw','duty','rg'].forEach(id => {
+    $(id).addEventListener('input', () => { readControls(); flashCard(); });
+});
+$('resetBtn').addEventListener('click', () => {
+    $('ic').value = 50;
+    $('vcc').value = 600;
+    $('fsw').value = 10;
+    $('duty').value = 50;
+    $('rg').value = 10;
+    readControls();
+    state.phase = 0;
+    state.swPhase = 0;
+    flashCard();
+});
+
+// ============================================================
+// 메인 루프
+// ============================================================
+let lastTime = 0;
+function animate(now) {
+    if (!lastTime) lastTime = now;
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    state.tick++;
+
+    // 두 종류 위상:
+    //  state.phase: 도통/오프 시각화 용 (모듈 LED 점멸 등) — 느리게
+    //  state.swPhase: 우상단 스위칭 파형 마커 (한 주기 자세히 보기) — 빠르게
+    state.phase   = (state.phase   + dt * 0.8) % 1;
+    state.swPhase = (state.swPhase + dt * 0.5) % 1;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawIGBTModule();
+    drawSwitchingWaveform();
+    drawLossDonut();
+    drawInfoPanel();
+    updateLive();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    readControls();
+    resize();
+    requestAnimationFrame(animate);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

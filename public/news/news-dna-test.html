@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARK DNA — 전기 학습 유전체 분석 결과지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f6fb;
+    --paper:#ffffff;
+    --ink:#1a1530;
+    --ink-mute:#5b5677;
+    --ink-soft:#8a85a4;
+    --line:#e8e4f2;
+    --line-strong:#d5cfea;
+    --violet-50:#f4efff;
+    --violet-100:#e6dcff;
+    --violet-300:#b9a3ff;
+    --violet-500:#7c5cf0;
+    --violet-600:#5e3edb;
+    --violet-700:#4727b5;
+    --violet-900:#221056;
+    --green-50:#e9f8ef;
+    --green-100:#cfeedb;
+    --green-300:#7fd6a4;
+    --green-500:#28b56f;
+    --green-600:#1a8d56;
+    --green-700:#0f6a3f;
+    --amber:#d99e2c;
+    --rose:#d6437c;
+    --shadow-card: 0 1px 0 #fff inset, 0 1px 2px rgba(20,10,60,.04), 0 14px 36px -18px rgba(60,30,160,.22);
+    --shadow-strong: 0 24px 60px -30px rgba(60,30,160,.4);
+  }
+  html,body{
+    background:
+      radial-gradient(ellipse at top left, #efeaff 0%, transparent 55%),
+      radial-gradient(ellipse at bottom right, #e3f6ec 0%, transparent 55%),
+      var(--bg);
+    min-height:100vh;
+  }
+  body{
+    font-family:'Inter','Noto Sans KR',sans-serif;
+    color:var(--ink);
+    margin:0;
+    -webkit-font-smoothing:antialiased;
+  }
+  .kr{font-family:'Noto Sans KR','Inter',sans-serif;}
+  .mono{font-family:'JetBrains Mono','Inter',ui-monospace,monospace;}
+  .display{font-family:'Inter','Noto Sans KR',sans-serif; letter-spacing:-0.02em;}
+
+  /* 종이 */
+  .paper{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow-card);
+  }
+  .paper-lg{
+    border-radius:24px;
+    box-shadow:var(--shadow-strong);
+  }
+  .hairline{border-top:1px solid var(--line);}
+  .hairline-strong{border-top:1px solid var(--line-strong);}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600;
+    letter-spacing:.05em;
+  }
+  .pill-violet{background:var(--violet-50); color:var(--violet-700); border:1px solid #ddd0ff;}
+  .pill-green{background:var(--green-50); color:var(--green-700); border:1px solid #c2e9d2;}
+  .pill-ink{background:#efedf7; color:var(--ink); border:1px solid var(--line-strong);}
+
+  /* 게이지 */
+  .gauge{
+    position:relative; height:10px; background:#efeaff; border-radius:999px; overflow:hidden;
+    border:1px solid #e3dafb;
+  }
+  .gauge > span{
+    position:absolute; top:0; left:0; bottom:0;
+    background:linear-gradient(90deg, var(--violet-500), var(--green-500));
+    border-radius:999px;
+    width:0%;
+    transition: width 1.6s cubic-bezier(.22,1,.36,1);
+  }
+  .gauge.alt > span{
+    background:linear-gradient(90deg, var(--rose), var(--violet-500));
+  }
+  .gauge.health > span{
+    background:linear-gradient(90deg, var(--green-500), var(--violet-500));
+  }
+
+  /* 카테고리 탭 */
+  .tab{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 14px; border-radius:12px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink-mute);
+    text-align:left; width:100%;
+    transition: all .2s ease;
+    cursor:pointer;
+  }
+  .tab:hover{ border-color:var(--violet-300); color:var(--ink); }
+  .tab.active{
+    background:linear-gradient(135deg, var(--violet-700), var(--violet-500));
+    color:#fff; border-color:transparent;
+    box-shadow: 0 12px 30px -14px rgba(94,62,219,.55);
+  }
+  .tab .idx{
+    width:26px; height:26px; flex:none; border-radius:8px;
+    background:#efeaff; color:var(--violet-700);
+    font-weight:700; font-size:12px;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .tab.active .idx{background:rgba(255,255,255,.18); color:#fff;}
+
+  /* DNA 회전 애니메이션 */
+  @keyframes dnaspin{
+    0%{transform:rotateY(0deg);}
+    100%{transform:rotateY(360deg);}
+  }
+  .dna-wrap{
+    perspective: 800px;
+  }
+  .dna-svg{
+    animation: dnaspin 18s linear infinite;
+    transform-style: preserve-3d;
+  }
+
+  /* 진입 페이드업 */
+  @keyframes fadeup{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .fadeup{animation: fadeup .5s ease both;}
+
+  /* 마커 차트 */
+  .marker-grid{
+    display:grid; grid-template-columns:repeat(20, 1fr); gap:3px;
+  }
+  .marker{
+    aspect-ratio:1/1; border-radius:3px; background:#efeaff;
+  }
+  .marker.on{background:var(--violet-500);}
+  .marker.alt{background:var(--green-500);}
+  .marker.warn{background:var(--rose);}
+
+  /* 가문 막대 (도넛 스택) */
+  .ancestry-bar{
+    display:flex; height:18px; border-radius:999px; overflow:hidden;
+    border:1px solid var(--line-strong);
+  }
+  .ancestry-bar > div{ height:100%; }
+
+  /* 인쇄 */
+  @media print{
+    body{background:#fff;}
+    .no-print{display:none !important;}
+    .paper, .paper-lg{box-shadow:none; border:1px solid #ccc;}
+  }
+  /* 작은 보조선 */
+  .dotline{
+    background-image: linear-gradient(to right, var(--line-strong) 50%, transparent 50%);
+    background-size: 6px 1px; background-repeat:repeat-x; background-position: 0 50%;
+    height:1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 상단 툴바 (인쇄 시 숨김) -->
+<div class="no-print sticky top-0 z-30 backdrop-blur bg-white/70 border-b border-[var(--line)]">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--violet-700)] to-[var(--green-500)] flex items-center justify-center text-white font-bold text-sm">S</div>
+      <div class="leading-tight">
+        <div class="text-[11px] tracking-[.18em] text-[var(--ink-soft)] font-semibold">SPARK DNA</div>
+        <div class="text-sm font-bold kr">전기 학습 유전체 분석 결과지</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <input id="nameInput" type="text" maxlength="20" placeholder="이름 입력 (예: 김전기)"
+             class="kr text-sm px-3 py-2 rounded-lg border border-[var(--line-strong)] bg-white focus:outline-none focus:border-[var(--violet-500)] w-44" />
+      <button id="updateBtn" class="kr text-sm px-3 py-2 rounded-lg bg-[var(--violet-700)] text-white font-semibold hover:bg-[var(--violet-600)]">갱신</button>
+      <button id="shareBtn" class="kr text-sm px-3 py-2 rounded-lg border border-[var(--line-strong)] bg-white hover:bg-[var(--violet-50)]">공유</button>
+      <button id="printBtn" class="kr text-sm px-3 py-2 rounded-lg border border-[var(--line-strong)] bg-white hover:bg-[var(--violet-50)]">인쇄</button>
+    </div>
+  </div>
+</div>
+
+<main class="max-w-6xl mx-auto px-4 py-8 lg:py-12">
+
+  <!-- 헤더 카드 -->
+  <section class="paper paper-lg p-6 lg:p-10 relative overflow-hidden">
+    <!-- 배경 도형 -->
+    <div class="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-[var(--violet-100)] opacity-50 blur-3xl"></div>
+    <div class="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-[var(--green-100)] opacity-50 blur-3xl"></div>
+
+    <div class="relative grid lg:grid-cols-[1fr_auto] gap-8 items-center">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="pill pill-violet">GENOMIC REPORT</span>
+          <span class="pill pill-green">v3.2 · 2026</span>
+        </div>
+        <h1 class="display text-4xl lg:text-6xl font-extrabold leading-[1.05] mb-3">
+          <span class="kr">당신의</span><br>
+          <span class="bg-gradient-to-r from-[var(--violet-700)] via-[var(--violet-500)] to-[var(--green-600)] bg-clip-text text-transparent kr">전기 학습 DNA</span>
+        </h1>
+        <p class="kr text-[var(--ink-mute)] text-base lg:text-lg max-w-xl leading-relaxed">
+          타액 한 방울 없이도 알 수 있는 <strong class="text-[var(--ink)]">학습 적성·약점·조상 가문·운명</strong>까지.<br>
+          SPARK 연구소가 가상으로 풀어낸 학습 유전체 보고서입니다.
+        </p>
+
+        <!-- 검사 메타 -->
+        <div class="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+          <div class="flex justify-between border-b border-dashed border-[var(--line-strong)] py-1.5">
+            <span class="text-[var(--ink-soft)] kr">피검자</span>
+            <span class="font-semibold kr" id="meta-name">김전기</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-[var(--line-strong)] py-1.5">
+            <span class="text-[var(--ink-soft)] mono">SAMPLE ID</span>
+            <span class="font-semibold mono" id="meta-id">SPK-2026-A7F39</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-[var(--line-strong)] py-1.5">
+            <span class="text-[var(--ink-soft)] kr">접수일</span>
+            <span class="font-semibold mono">2026-05-08</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-[var(--line-strong)] py-1.5">
+            <span class="text-[var(--ink-soft)] kr">결과 발행일</span>
+            <span class="font-semibold mono">2026-05-16</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-[var(--line-strong)] py-1.5">
+            <span class="text-[var(--ink-soft)] kr">분석 마커</span>
+            <span class="font-semibold mono">742,318 SNP</span>
+          </div>
+          <div class="flex justify-between border-b border-dashed border-[var(--line-strong)] py-1.5">
+            <span class="text-[var(--ink-soft)] kr">신뢰도</span>
+            <span class="font-semibold mono">99.4%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNA 이중나선 SVG -->
+      <div class="dna-wrap flex items-center justify-center">
+        <svg class="dna-svg" width="240" height="320" viewBox="0 0 200 320" aria-hidden="true">
+          <defs>
+            <linearGradient id="strandA" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7c5cf0"/>
+              <stop offset="100%" stop-color="#4727b5"/>
+            </linearGradient>
+            <linearGradient id="strandB" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#28b56f"/>
+              <stop offset="100%" stop-color="#0f6a3f"/>
+            </linearGradient>
+          </defs>
+          <!-- 두 가닥 사인파 -->
+          <path d="M40,0 C 160,40 40,80 160,120 C 40,160 160,200 40,240 C 160,280 40,320 40,320"
+                fill="none" stroke="url(#strandA)" stroke-width="4" stroke-linecap="round"/>
+          <path d="M160,0 C 40,40 160,80 40,120 C 160,160 40,200 160,240 C 40,280 160,320 160,320"
+                fill="none" stroke="url(#strandB)" stroke-width="4" stroke-linecap="round"/>
+          <!-- 가로 결합선 -->
+          <g id="rungs"></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 요약 4종 핵심 지표 -->
+  <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+    <div class="paper p-5">
+      <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">DOMINANT TYPE</div>
+      <div class="display text-2xl font-extrabold mt-1 kr">시뮬형</div>
+      <div class="text-xs text-[var(--ink-mute)] mt-1 kr">회로 직관 우세 (62%)</div>
+      <div class="gauge mt-3"><span data-pct="62"></span></div>
+    </div>
+    <div class="paper p-5">
+      <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">EXPECTED PASS</div>
+      <div class="display text-2xl font-extrabold mt-1 kr">3.4개월</div>
+      <div class="text-xs text-[var(--ink-mute)] mt-1 kr">하루 1.5시간 기준</div>
+      <div class="gauge mt-3"><span data-pct="78"></span></div>
+    </div>
+    <div class="paper p-5">
+      <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">ACCURACY</div>
+      <div class="display text-2xl font-extrabold mt-1 mono">71.2<span class="text-base text-[var(--ink-mute)]">%</span></div>
+      <div class="text-xs text-[var(--ink-mute)] mt-1 kr">최근 30일 평균 정답률</div>
+      <div class="gauge alt mt-3"><span data-pct="71"></span></div>
+    </div>
+    <div class="paper p-5">
+      <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">ANCESTRY TOP</div>
+      <div class="display text-2xl font-extrabold mt-1 kr">옴 가문</div>
+      <div class="text-xs text-[var(--ink-mute)] mt-1 kr">32% · 최대 혈통</div>
+      <div class="gauge health mt-3"><span data-pct="32"></span></div>
+    </div>
+  </section>
+
+  <!-- 본문 그리드 — 좌 탭 / 우 패널 -->
+  <section class="grid lg:grid-cols-[260px_1fr] gap-6 mt-10">
+
+    <!-- 카테고리 탭 -->
+    <aside class="space-y-2">
+      <div class="text-[11px] tracking-[.18em] text-[var(--ink-soft)] font-semibold mb-2 px-1">CATEGORY</div>
+      <button class="tab active" data-tab="trait"><span class="idx">01</span><span class="kr">학습 성향</span></button>
+      <button class="tab" data-tab="weakness"><span class="idx">02</span><span class="kr">약점 유전자</span></button>
+      <button class="tab" data-tab="ability"><span class="idx">03</span><span class="kr">학습 능력 추정</span></button>
+      <button class="tab" data-tab="ancestry"><span class="idx">04</span><span class="kr">조상 분석</span></button>
+      <button class="tab" data-tab="health"><span class="idx">05</span><span class="kr">학습 건강</span></button>
+      <button class="tab" data-tab="style"><span class="idx">06</span><span class="kr">외형 특성</span></button>
+
+      <div class="hairline my-4"></div>
+      <div class="paper p-4">
+        <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">SIMILAR COHORT</div>
+        <div class="kr text-sm font-semibold mt-2">유사 학습 유형 그룹</div>
+        <div class="kr text-xs text-[var(--ink-mute)] mt-1">시뮬-CBT 혼합형 / 직장인 20대 후반 / 합격자 12,481명과 매칭</div>
+        <a href="#" class="no-print inline-block mt-3 text-xs font-semibold text-[var(--violet-700)] hover:underline kr">→ 코호트 자세히 보기</a>
+      </div>
+    </aside>
+
+    <!-- 결과 패널 -->
+    <div class="space-y-6">
+
+      <!-- 01 학습 성향 -->
+      <div class="panel paper p-6 lg:p-8" data-panel="trait">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <span class="pill pill-violet">01 · TRAIT</span>
+            <h2 class="display text-2xl lg:text-3xl font-extrabold mt-3 kr">학습 성향 — 시뮬형 우세</h2>
+            <p class="kr text-sm text-[var(--ink-mute)] mt-1 max-w-xl">손으로 회로를 그리고 시뮬레이터로 확인할 때 가장 빠르게 학습합니다.</p>
+          </div>
+          <div class="hidden lg:block text-right">
+            <div class="text-[11px] tracking-[.18em] text-[var(--ink-soft)] font-semibold">CONFIDENCE</div>
+            <div class="mono text-3xl font-extrabold">A+</div>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-x-8 gap-y-4 mt-6">
+          <div>
+            <div class="flex items-baseline justify-between"><span class="kr text-sm font-semibold">시뮬형</span><span class="mono text-sm font-bold">62%</span></div>
+            <div class="gauge mt-1.5"><span data-pct="62"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">회로 시뮬레이터·실습 중심으로 직관 형성</div>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between"><span class="kr text-sm font-semibold">플립카드형</span><span class="mono text-sm font-bold">18%</span></div>
+            <div class="gauge mt-1.5"><span data-pct="18"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">암기 카드 반복으로 단기 기억 강화</div>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between"><span class="kr text-sm font-semibold">CBT형</span><span class="mono text-sm font-bold">14%</span></div>
+            <div class="gauge mt-1.5"><span data-pct="14"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">기출 풀이·시간 압박 적응형</div>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between"><span class="kr text-sm font-semibold">종합형</span><span class="mono text-sm font-bold">6%</span></div>
+            <div class="gauge mt-1.5"><span data-pct="6"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">모든 방식을 균일하게 활용</div>
+          </div>
+        </div>
+
+        <div class="hairline my-6"></div>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div class="rounded-xl bg-[var(--violet-50)] p-4">
+            <div class="text-[11px] tracking-[.15em] text-[var(--violet-700)] font-semibold">RECOMMEND</div>
+            <div class="kr font-semibold mt-1">회로 시뮬레이터 우선</div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">하루 30분 회로 변형 실습</div>
+          </div>
+          <div class="rounded-xl bg-[var(--green-50)] p-4">
+            <div class="text-[11px] tracking-[.15em] text-[var(--green-700)] font-semibold">BOOST</div>
+            <div class="kr font-semibold mt-1">변압기·전동기 시각화</div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">자속 흐름 애니메이션 학습</div>
+          </div>
+          <div class="rounded-xl bg-[#fff3f5] p-4">
+            <div class="text-[11px] tracking-[.15em] text-[var(--rose)] font-semibold">AVOID</div>
+            <div class="kr font-semibold mt-1">긴 텍스트 단순 암기</div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">3시간 이상 책 읽기 비효율</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 약점 유전자 -->
+      <div class="panel paper p-6 lg:p-8 hidden" data-panel="weakness">
+        <span class="pill pill-violet">02 · WEAKNESS</span>
+        <h2 class="display text-2xl lg:text-3xl font-extrabold mt-3 kr">약점 유전자</h2>
+        <p class="kr text-sm text-[var(--ink-mute)] mt-1 max-w-xl">평균 대비 약화된 학습 영역. 보충 학습 시 가장 큰 점수 상승이 기대됩니다.</p>
+
+        <div class="mt-6 space-y-4">
+          <div>
+            <div class="flex items-baseline justify-between">
+              <div><span class="mono text-xs text-[var(--ink-soft)]">SPK-OHM-04</span> <span class="kr text-sm font-bold ml-2">옴의 법칙 결핍</span></div>
+              <span class="pill pill-ink">위험도 높음</span>
+            </div>
+            <div class="gauge alt mt-2"><span data-pct="83"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">직렬·병렬 합성저항 계산에서 평균 28% 오답률. 분수 계산 회피 경향.</div>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between">
+              <div><span class="mono text-xs text-[var(--ink-soft)]">SPK-KCL-11</span> <span class="kr text-sm font-bold ml-2">키르히호프 약체</span></div>
+              <span class="pill pill-ink">위험도 중</span>
+            </div>
+            <div class="gauge alt mt-2"><span data-pct="58"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">노드 방정식 세우기에서 부호 실수 빈번. 회로 방향 직관 약함.</div>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between">
+              <div><span class="mono text-xs text-[var(--ink-soft)]">SPK-TR-07</span> <span class="kr text-sm font-bold ml-2">변압기 둔감</span></div>
+              <span class="pill pill-ink">위험도 중</span>
+            </div>
+            <div class="gauge alt mt-2"><span data-pct="64"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">권수비·전압비 헷갈림. 단상/3상 변환식 암기 부족.</div>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between">
+              <div><span class="mono text-xs text-[var(--ink-soft)]">SPK-MAG-02</span> <span class="kr text-sm font-bold ml-2">자기력 둔화</span></div>
+              <span class="pill pill-ink">위험도 낮음</span>
+            </div>
+            <div class="gauge alt mt-2"><span data-pct="34"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">오른손 법칙 적용은 양호하나 자속밀도 단위 환산 둔함.</div>
+          </div>
+        </div>
+
+        <div class="hairline my-6"></div>
+        <div class="kr text-sm text-[var(--ink-mute)] leading-relaxed">
+          ※ 본 분석은 최근 90일 CBT 응시 데이터 + 플립카드 응답 시간을 기반으로 추정한 <strong class="text-[var(--ink)]">가상 유전자 마커</strong>입니다.
+        </div>
+      </div>
+
+      <!-- 03 학습 능력 추정 -->
+      <div class="panel paper p-6 lg:p-8 hidden" data-panel="ability">
+        <span class="pill pill-green">03 · ABILITY</span>
+        <h2 class="display text-2xl lg:text-3xl font-extrabold mt-3 kr">학습 능력 추정</h2>
+        <p class="kr text-sm text-[var(--ink-mute)] mt-1 max-w-xl">현재 페이스로 학습을 지속할 경우의 예상 합격 시점과 정답률 곡선.</p>
+
+        <div class="mt-6 grid lg:grid-cols-2 gap-6">
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">PASS ETA</div>
+            <div class="display text-5xl font-extrabold mt-2 kr">3.4<span class="text-2xl text-[var(--ink-mute)]">개월</span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-2">2026-08-24 (±9일) 합격 가능 구간</div>
+            <div class="dotline my-4"></div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <div class="mono text-lg font-bold">68%</div>
+                <div class="text-[10px] tracking-[.1em] text-[var(--ink-soft)] kr">합격 확률</div>
+              </div>
+              <div>
+                <div class="mono text-lg font-bold">142h</div>
+                <div class="text-[10px] tracking-[.1em] text-[var(--ink-soft)] kr">필요 총 시간</div>
+              </div>
+              <div>
+                <div class="mono text-lg font-bold">+12%</div>
+                <div class="text-[10px] tracking-[.1em] text-[var(--ink-soft)] kr">예상 상승폭</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">ACCURACY TREND</div>
+            <svg viewBox="0 0 320 160" class="w-full h-40 mt-2">
+              <defs>
+                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#7c5cf0" stop-opacity=".4"/>
+                  <stop offset="100%" stop-color="#7c5cf0" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g stroke="#efeaff" stroke-width="1">
+                <line x1="0" y1="40" x2="320" y2="40"/>
+                <line x1="0" y1="80" x2="320" y2="80"/>
+                <line x1="0" y1="120" x2="320" y2="120"/>
+              </g>
+              <path d="M0,130 L40,118 L80,102 L120,96 L160,82 L200,70 L240,58 L280,46 L320,38 L320,160 L0,160 Z" fill="url(#trendFill)"/>
+              <path d="M0,130 L40,118 L80,102 L120,96 L160,82 L200,70 L240,58 L280,46 L320,38"
+                    fill="none" stroke="#5e3edb" stroke-width="2.5" stroke-linejoin="round"/>
+              <g fill="#5e3edb">
+                <circle cx="40" cy="118" r="3"/><circle cx="120" cy="96" r="3"/>
+                <circle cx="200" cy="70" r="3"/><circle cx="280" cy="46" r="3"/>
+              </g>
+            </svg>
+            <div class="flex justify-between text-[10px] text-[var(--ink-soft)] mono mt-1">
+              <span>W1</span><span>W3</span><span>W5</span><span>W7</span><span>W9</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04 조상 분석 -->
+      <div class="panel paper p-6 lg:p-8 hidden" data-panel="ancestry">
+        <span class="pill pill-violet">04 · ANCESTRY</span>
+        <h2 class="display text-2xl lg:text-3xl font-extrabold mt-3 kr">조상 분석 — 전기 가문</h2>
+        <p class="kr text-sm text-[var(--ink-mute)] mt-1 max-w-xl">학습 반응 패턴에서 추적한 4대 가상 가문 혈통 분포입니다.</p>
+
+        <div class="mt-6 ancestry-bar">
+          <div style="width:32%; background:#5e3edb"></div>
+          <div style="width:28%; background:#28b56f"></div>
+          <div style="width:25%; background:#d99e2c"></div>
+          <div style="width:15%; background:#d6437c"></div>
+        </div>
+        <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs mt-3 mono">
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#5e3edb"></span><span class="kr">옴 가문</span> 32%</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#28b56f"></span><span class="kr">패러데이 가문</span> 28%</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#d99e2c"></span><span class="kr">키르히호프 가문</span> 25%</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#d6437c"></span><span class="kr">테슬라 가문</span> 15%</span>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4 mt-6">
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="flex items-baseline justify-between"><span class="kr font-bold">옴 가문</span><span class="mono font-bold">32%</span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">저항·전압·전류 삼각 관계에 대한 본능적 직관. 직류 회로 강세.</div>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="flex items-baseline justify-between"><span class="kr font-bold">패러데이 가문</span><span class="mono font-bold">28%</span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">전자기 유도·자속 변화 감각. 발전기·변압기 단원에 친화.</div>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="flex items-baseline justify-between"><span class="kr font-bold">키르히호프 가문</span><span class="mono font-bold">25%</span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">노드·루프 방정식 구조화 능력. 다회로 해석에 유리.</div>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="flex items-baseline justify-between"><span class="kr font-bold">테슬라 가문</span><span class="mono font-bold">15%</span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-1">교류·3상·고주파 영역의 직관. 다소 약하나 잠재력 있음.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 학습 건강 -->
+      <div class="panel paper p-6 lg:p-8 hidden" data-panel="health">
+        <span class="pill pill-green">05 · HEALTH</span>
+        <h2 class="display text-2xl lg:text-3xl font-extrabold mt-3 kr">학습 건강</h2>
+        <p class="kr text-sm text-[var(--ink-mute)] mt-1 max-w-xl">집중·기억·피로 등 학습 컨디션 지표입니다.</p>
+
+        <div class="mt-6 grid sm:grid-cols-3 gap-4">
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">FOCUS</div>
+            <div class="display text-3xl font-extrabold mt-1 kr">집중력</div>
+            <div class="mono text-2xl font-bold mt-2">74<span class="text-base text-[var(--ink-mute)]">/100</span></div>
+            <div class="gauge health mt-3"><span data-pct="74"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-2">평균 세션 길이 28분 · 우수</div>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">MEMORY</div>
+            <div class="display text-3xl font-extrabold mt-1 kr">기억력</div>
+            <div class="mono text-2xl font-bold mt-2">68<span class="text-base text-[var(--ink-mute)]">/100</span></div>
+            <div class="gauge health mt-3"><span data-pct="68"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-2">7일 회상률 62% · 양호</div>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="text-[11px] tracking-[.15em] text-[var(--ink-soft)] font-semibold">FATIGUE</div>
+            <div class="display text-3xl font-extrabold mt-1 kr">피로도</div>
+            <div class="mono text-2xl font-bold mt-2">41<span class="text-base text-[var(--ink-mute)]">/100</span></div>
+            <div class="gauge alt mt-3"><span data-pct="41"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-2">주 4회 학습 · 휴식 권장</div>
+          </div>
+        </div>
+
+        <div class="hairline my-6"></div>
+        <div class="rounded-xl bg-[var(--green-50)] p-5">
+          <div class="text-[11px] tracking-[.15em] text-[var(--green-700)] font-semibold">PRESCRIPTION</div>
+          <div class="kr font-semibold mt-1">개인화 학습 처방</div>
+          <ul class="kr text-sm text-[var(--ink-mute)] mt-2 space-y-1 list-disc list-inside">
+            <li>매일 25분 집중 + 5분 휴식 3세트 (포모도로 시뮬형)</li>
+            <li>주 2회 회로 시뮬레이터 — 오답 문항 변형 풀이</li>
+            <li>취침 전 플립카드 20장 — 옴·키르히호프 우선</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 06 외형 특성 -->
+      <div class="panel paper p-6 lg:p-8 hidden" data-panel="style">
+        <span class="pill pill-violet">06 · STYLE</span>
+        <h2 class="display text-2xl lg:text-3xl font-extrabold mt-3 kr">외형 특성 — 학습 스타일</h2>
+        <p class="kr text-sm text-[var(--ink-mute)] mt-1 max-w-xl">감각 채널 선호도. 어떤 자극이 가장 잘 흡수되는가.</p>
+
+        <div class="mt-6 grid sm:grid-cols-2 gap-6">
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="flex items-baseline justify-between">
+              <span class="kr font-bold">시각형</span><span class="mono font-bold">71%</span>
+            </div>
+            <div class="gauge mt-2"><span data-pct="71"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-2">도식·다이어그램·색상 구분 학습 효율 +34%</div>
+            <div class="dotline my-4"></div>
+            <div class="kr text-sm">
+              <div class="font-semibold mb-1">권장 콘텐츠</div>
+              <div class="text-[var(--ink-mute)] text-xs">회로도 애니메이션 · 인포그래픽 요약 · 시뮬레이터</div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="flex items-baseline justify-between">
+              <span class="kr font-bold">청각형</span><span class="mono font-bold">29%</span>
+            </div>
+            <div class="gauge alt mt-2"><span data-pct="29"></span></div>
+            <div class="kr text-xs text-[var(--ink-mute)] mt-2">강의 음성 단독 시 회상률 평균 이하</div>
+            <div class="dotline my-4"></div>
+            <div class="kr text-sm">
+              <div class="font-semibold mb-1">보완 콘텐츠</div>
+              <div class="text-[var(--ink-mute)] text-xs">오디오북은 출퇴근 보조용 · 1.2배속 권장</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 유전자 마커 차트 (항상 표시) -->
+      <div class="paper p-6 lg:p-8">
+        <div class="flex items-end justify-between mb-4">
+          <div>
+            <span class="pill pill-ink">GENE MARKER MAP</span>
+            <h3 class="display text-xl lg:text-2xl font-extrabold mt-2 kr">유전자 마커 차트</h3>
+            <p class="kr text-xs text-[var(--ink-mute)] mt-1">200개 학습 마커 · 보라=강점 / 녹색=평균 / 분홍=약점</p>
+          </div>
+          <div class="hidden sm:flex items-center gap-3 text-[11px] mono">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[var(--violet-500)]"></span>STRONG</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[var(--green-500)]"></span>NORMAL</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[var(--rose)]"></span>WEAK</span>
+          </div>
+        </div>
+        <div class="marker-grid" id="markerGrid" aria-hidden="true"></div>
+      </div>
+
+      <!-- 권장 학습 방법 -->
+      <div class="paper p-6 lg:p-8">
+        <span class="pill pill-green">PERSONALIZED PLAN</span>
+        <h3 class="display text-xl lg:text-2xl font-extrabold mt-2 kr">권장 학습 방법</h3>
+        <div class="grid sm:grid-cols-3 gap-4 mt-5">
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="mono text-[11px] text-[var(--ink-soft)]">STEP 01</div>
+            <div class="kr font-bold mt-1">회로 시뮬형 집중 (4주)</div>
+            <p class="kr text-xs text-[var(--ink-mute)] mt-2 leading-relaxed">옴·키르히호프 약점부터. 매일 회로 5개 변형 풀이.</p>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="mono text-[11px] text-[var(--ink-soft)]">STEP 02</div>
+            <div class="kr font-bold mt-1">기출 CBT 누적 (6주)</div>
+            <p class="kr text-xs text-[var(--ink-mute)] mt-2 leading-relaxed">최근 5개년 회차별 모의고사. 오답노트 자동 생성.</p>
+          </div>
+          <div class="rounded-xl border border-[var(--line)] p-5">
+            <div class="mono text-[11px] text-[var(--ink-soft)]">STEP 03</div>
+            <div class="kr font-bold mt-1">실전 모드 & 컨디션 (4주)</div>
+            <p class="kr text-xs text-[var(--ink-mute)] mt-2 leading-relaxed">시간 압박 풀이 + 피로도 관리. D-7 최종 점검.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 푸터 -->
+  <footer class="mt-12 paper p-6 lg:p-8 text-center">
+    <div class="flex items-center justify-center gap-2 mb-3">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--violet-700)] to-[var(--green-500)] flex items-center justify-center text-white font-bold text-xs">S</div>
+      <span class="mono text-[11px] tracking-[.18em] text-[var(--ink-soft)] font-semibold">SPARK DNA · GENOMIC LEARNING REPORT</span>
+    </div>
+    <p class="kr text-xs text-[var(--ink-mute)] max-w-2xl mx-auto leading-relaxed">
+      본 보고서는 <strong class="text-[var(--ink)]">가상 학습 분석 시뮬레이션</strong>이며, 실제 의료/유전자 분석이 아닙니다.<br>
+      교육·엔터테인먼트 목적으로만 사용되며, 어떠한 의학적 진단·예측에도 사용될 수 없습니다.
+    </p>
+    <p class="mono text-[10px] text-[var(--ink-soft)] mt-4">© 2026 SPARK Laboratory · Fictional Service · v3.2.0</p>
+  </footer>
+
+</main>
+
+<!-- 토스트 -->
+<div id="toast" class="no-print fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg bg-[var(--ink)] text-white text-sm font-semibold opacity-0 transition-opacity duration-300 pointer-events-none z-50 kr"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- HTML escape ----------
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"'`=\/]/g, function(c){
+      return ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+        '`':'&#96;','=':'&#61;','/':'&#47;'
+      })[c];
+    });
+  }
+
+  // ---------- DNA rungs (가로 결합선) ----------
+  (function buildRungs(){
+    var g = document.getElementById('rungs');
+    if(!g) return;
+    var rungs = '';
+    // 0~320 사이 일정 간격
+    for(var y=10; y<=310; y+=14){
+      // 사인파 두 가닥의 x값을 근사 (cos 위상차 π)
+      var t = y/320;
+      var phase = t * Math.PI * 4; // 4번 교차
+      var x1 = 100 + 60 * Math.sin(phase);
+      var x2 = 100 - 60 * Math.sin(phase);
+      var dist = Math.abs(x1-x2);
+      var opacity = Math.max(0.15, Math.min(1, dist/120));
+      rungs += '<line x1="'+x1.toFixed(1)+'" y1="'+y+'" x2="'+x2.toFixed(1)+'" y2="'+y+
+               '" stroke="#b9a3ff" stroke-width="1.4" opacity="'+opacity.toFixed(2)+'"/>';
+    }
+    g.innerHTML = rungs;
+  })();
+
+  // ---------- 마커 차트 ----------
+  (function buildMarkers(){
+    var grid = document.getElementById('markerGrid');
+    if(!grid) return;
+    // 시드 기반 의사 난수 (재현 가능)
+    var seed = 42;
+    function rnd(){ seed = (seed*9301+49297) % 233280; return seed/233280; }
+    var html = '';
+    for(var i=0; i<200; i++){
+      var r = rnd();
+      var cls = 'marker';
+      if(r < 0.32) cls += ' on';        // 강
+      else if(r < 0.78) cls += ' alt';  // 평균
+      else if(r < 0.92) cls += ' warn'; // 약
+      // else 기본 (미발현)
+      html += '<div class="'+cls+'"></div>';
+    }
+    grid.innerHTML = html;
+  })();
+
+  // ---------- 게이지 애니메이션 (IntersectionObserver) ----------
+  (function animateGauges(){
+    var gauges = document.querySelectorAll('.gauge > span[data-pct]');
+    function play(el){
+      var pct = parseFloat(el.getAttribute('data-pct'))||0;
+      requestAnimationFrame(function(){
+        el.style.width = Math.max(0, Math.min(100, pct))+'%';
+      });
+    }
+    if('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){
+          if(en.isIntersecting){
+            play(en.target);
+            io.unobserve(en.target);
+          }
+        });
+      }, {threshold:0.2});
+      gauges.forEach(function(g){ io.observe(g); });
+    } else {
+      gauges.forEach(play);
+    }
+  })();
+
+  // ---------- 탭 전환 ----------
+  (function tabs(){
+    var tabBtns = document.querySelectorAll('.tab');
+    var panels = document.querySelectorAll('.panel');
+    tabBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var target = btn.getAttribute('data-tab');
+        tabBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        panels.forEach(function(p){
+          if(p.getAttribute('data-panel')===target){
+            p.classList.remove('hidden');
+            p.classList.remove('fadeup');
+            void p.offsetWidth; // reflow
+            p.classList.add('fadeup');
+            // 해당 패널의 게이지 재생
+            p.querySelectorAll('.gauge > span[data-pct]').forEach(function(el){
+              el.style.width = '0%';
+              requestAnimationFrame(function(){
+                requestAnimationFrame(function(){
+                  el.style.width = (parseFloat(el.getAttribute('data-pct'))||0)+'%';
+                });
+              });
+            });
+          } else {
+            p.classList.add('hidden');
+          }
+        });
+      });
+    });
+  })();
+
+  // ---------- 이름 입력 → 메타 갱신 ----------
+  (function userMeta(){
+    var input = document.getElementById('nameInput');
+    var btn   = document.getElementById('updateBtn');
+    var name  = document.getElementById('meta-name');
+    var idEl  = document.getElementById('meta-id');
+    if(!input || !btn) return;
+
+    function makeSampleId(s){
+      // 이름 → 결정적 6자 코드
+      var h = 0;
+      for(var i=0; i<s.length; i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+      var hex = h.toString(16).toUpperCase().padStart(6,'0').slice(0,5);
+      return 'SPK-2026-'+hex;
+    }
+
+    btn.addEventListener('click', function(){
+      var v = (input.value||'').trim();
+      if(!v){ toast('이름을 입력해 주세요'); return; }
+      // 길이 제한 (이미 maxlength=20)
+      var safe = escapeHTML(v);
+      name.innerHTML = safe;
+      idEl.textContent = makeSampleId(v);
+      toast('결과지가 ' + v + ' 님 기준으로 갱신되었습니다');
+    });
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter') btn.click();
+    });
+  })();
+
+  // ---------- 공유 ----------
+  (function share(){
+    var btn = document.getElementById('shareBtn');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      var fakeUrl = 'https://sparkdna.fake/r/' + Math.random().toString(36).slice(2,10);
+      // navigator.clipboard 시도
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(fakeUrl).then(function(){
+          toast('공유 링크 복사됨 · ' + fakeUrl);
+        }, function(){
+          toast('공유 링크 · ' + fakeUrl);
+        });
+      } else {
+        toast('공유 링크 · ' + fakeUrl);
+      }
+    });
+  })();
+
+  // ---------- 인쇄 ----------
+  (function print(){
+    var btn = document.getElementById('printBtn');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      // 인쇄 시 모든 패널 펼치기
+      var hidden = [];
+      document.querySelectorAll('.panel.hidden').forEach(function(p){
+        hidden.push(p);
+        p.classList.remove('hidden');
+      });
+      window.print();
+      // 복귀
+      setTimeout(function(){
+        hidden.forEach(function(p){ p.classList.add('hidden'); });
+      }, 500);
+    });
+  })();
+
+  // ---------- 토스트 ----------
+  var toastTimer = null;
+  function toast(msg){
+    var el = document.getElementById('toast');
+    if(!el) return;
+    el.textContent = msg;
+    el.style.opacity = '1';
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){
+      el.style.opacity = '0';
+    }, 2400);
+  }
+
+})();
+</script>
+
+</body>
+</html>

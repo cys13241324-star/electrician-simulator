@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>電気アドベンチャー (ELECTRIC ADVENTURES) Vol.1 — 옴의 모험·전류와 함께 합격으로</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Special+Elite&family=Shadows+Into+Light&family=Zen+Kurenaido&family=Yuji+Mai&family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:    #f3ecd9; /* 만화책 누런 종이 */
+    --paper-2:  #ebe2c8;
+    --paper-3:  #dfd2ac;
+    --ink:      #15110c;
+    --ink-2:    #2a2520;
+    --ink-soft: rgba(20,17,12,0.65);
+    --tone:     rgba(20,17,12,0.18);
+    --bind:     #2b261d;
+    --red-ink:  #8a1414; /* 단색 강조 (표지 한정) */
+  }
+
+  html, body {
+    background: #1a1812;
+    color: var(--ink);
+    font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+  }
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── 폰트 헬퍼 ─── */
+  .f-yuji      { font-family: 'Yuji Mai', 'Noto Sans JP', serif; }
+  .f-zen       { font-family: 'Zen Kurenaido', 'Noto Sans JP', cursive; }
+  .f-elite     { font-family: 'Special Elite', 'Courier New', monospace; }
+  .f-bang      { font-family: 'Bangers', 'Impact', sans-serif; letter-spacing: 0.04em; }
+  .f-hand      { font-family: 'Shadows Into Light', 'Zen Kurenaido', cursive; }
+  .f-jp        { font-family: 'Noto Sans JP', sans-serif; }
+  .f-kr        { font-family: 'Noto Sans KR', sans-serif; }
+
+  /* 세로쓰기 (일본 만화 느낌) */
+  .vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  /* ─── 종이 텍스처 ─── */
+  .paper {
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(rgba(80,55,20,0.07) 1px, transparent 1px),
+      radial-gradient(rgba(160,120,60,0.05) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255,240,200,0) 0%, rgba(170,130,70,0.10) 100%);
+    background-size: 4px 4px, 7px 7px, 100% 100%;
+    background-position: 0 0, 2px 3px, 0 0;
+  }
+  .paper-dark {
+    background-color: var(--paper-2);
+    background-image:
+      radial-gradient(rgba(50,35,15,0.10) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(120,80,40,0.05), rgba(80,55,25,0.18));
+    background-size: 5px 5px, 100% 100%;
+  }
+  .edge-fade {
+    box-shadow:
+      inset 0 0 40px rgba(70,45,15,0.25),
+      inset 0 0 90px rgba(40,25,10,0.18);
+  }
+
+  /* ─── 책 (양면 펼침) ─── */
+  .book-wrap { perspective: 2400px; }
+  .book {
+    position: relative;
+    margin: 0 auto;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,0.55),
+      0 10px 25px rgba(0,0,0,0.45);
+  }
+  .book-spine {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 14px;
+    transform: translateX(-50%);
+    background:
+      linear-gradient(90deg,
+        rgba(0,0,0,0.0) 0%,
+        rgba(0,0,0,0.45) 30%,
+        rgba(0,0,0,0.65) 50%,
+        rgba(0,0,0,0.45) 70%,
+        rgba(0,0,0,0.0) 100%);
+    z-index: 30;
+    pointer-events: none;
+  }
+  .page-shadow-l {
+    background: linear-gradient(90deg, rgba(0,0,0,0.0) 60%, rgba(0,0,0,0.25) 100%);
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .page-shadow-r {
+    background: linear-gradient(270deg, rgba(0,0,0,0.0) 60%, rgba(0,0,0,0.25) 100%);
+    position: absolute; inset: 0; pointer-events: none;
+  }
+
+  /* ─── 패널 (만화 컷) ─── */
+  .panel {
+    position: relative;
+    background: var(--paper);
+    border: 2.5px solid var(--ink);
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+    box-shadow: 2px 2px 0 0 var(--ink);
+  }
+  .panel:hover {
+    transform: scale(1.025) rotate(-0.3deg);
+    z-index: 5;
+    box-shadow: 4px 6px 0 0 var(--ink), 0 0 0 1px rgba(0,0,0,0.25);
+  }
+  .panel-thick { border-width: 4px; }
+  .panel-tilt-l { transform: rotate(-1.0deg); }
+  .panel-tilt-r { transform: rotate(1.2deg); }
+  .panel-diag-r { clip-path: polygon(0 0, 100% 0, 100% 100%, 12% 100%); }
+  .panel-diag-l { clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%); }
+  .panel-shock  {
+    clip-path: polygon(
+      4% 0%, 18% 6%, 34% 0%, 52% 8%, 70% 2%, 86% 10%, 100% 4%,
+      96% 22%, 100% 40%, 94% 58%, 100% 78%, 92% 100%,
+      72% 94%, 50% 100%, 30% 92%, 12% 100%,
+      0% 80%, 6% 60%, 0% 40%, 8% 22%
+    );
+    border: 0;
+    background: var(--ink);
+  }
+
+  /* ─── 스크린톤 (망점) ─── */
+  .tone-60 {
+    background-image:
+      radial-gradient(var(--ink) 1.2px, transparent 1.6px);
+    background-size: 5px 5px;
+  }
+  .tone-40 {
+    background-image:
+      radial-gradient(var(--ink) 0.9px, transparent 1.4px);
+    background-size: 5px 5px;
+  }
+  .tone-20 {
+    background-image:
+      radial-gradient(var(--ink) 0.7px, transparent 1.2px);
+    background-size: 6px 6px;
+  }
+  .tone-lines {
+    background-image:
+      repeating-linear-gradient(45deg,
+        var(--ink) 0 1.2px,
+        transparent 1.2px 5px);
+  }
+  .tone-lines-vert {
+    background-image:
+      repeating-linear-gradient(0deg,
+        rgba(20,17,12,0.7) 0 1px,
+        transparent 1px 5px);
+  }
+  .speed-lines {
+    background-image:
+      repeating-linear-gradient(90deg,
+        rgba(20,17,12,0.85) 0 2px,
+        transparent 2px 9px);
+  }
+
+  /* ─── 말풍선 ─── */
+  .bubble {
+    position: relative;
+    background: #fbf6e8;
+    border: 2.5px solid var(--ink);
+    border-radius: 24px / 20px;
+    padding: 8px 14px;
+    font-weight: 700;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .bubble:hover { transform: translate(-1px,-1px); background: #fff4cf; }
+  .bubble.active { background: #ffe9a8; transform: scale(1.06); }
+  .bubble-tail-bl::after {
+    content: ''; position: absolute; left: 16px; bottom: -14px;
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #fbf6e8;
+    filter: drop-shadow(0 2px 0 var(--ink));
+  }
+  .bubble-tail-br::after {
+    content: ''; position: absolute; right: 16px; bottom: -14px;
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 14px solid #fbf6e8;
+    filter: drop-shadow(0 2px 0 var(--ink));
+  }
+  .bubble-tail-tl::after {
+    content: ''; position: absolute; left: 18px; top: -14px;
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 14px solid #fbf6e8;
+    filter: drop-shadow(0 -2px 0 var(--ink));
+  }
+  .bubble-spike {
+    background: #fff;
+    clip-path: polygon(
+      0% 18%, 8% 12%, 16% 22%, 26% 8%, 38% 18%, 50% 4%, 62% 16%, 74% 6%, 86% 18%, 96% 10%, 100% 24%,
+      94% 38%, 100% 50%, 92% 62%, 100% 76%, 88% 86%,
+      80% 100%, 70% 88%, 56% 96%, 44% 86%, 32% 100%, 20% 88%, 10% 100%, 4% 84%,
+      0% 70%, 8% 56%, 0% 44%, 6% 30%
+    );
+    border: 0;
+    padding: 16px 22px;
+    box-shadow: none;
+  }
+  .bubble-think {
+    border-radius: 50% 45% 48% 52% / 60% 55% 50% 45%;
+    background: #fbf6e8;
+  }
+  .bubble-think::before {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    background: #fbf6e8;
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    left: -8px; bottom: -6px;
+  }
+  .bubble-think::after {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    background: #fbf6e8;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    left: -18px; bottom: -16px;
+  }
+  .bubble-narrate {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 0;
+    font-family: 'Special Elite', monospace;
+    font-weight: 400;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  /* ─── 효과음 (SFX) ─── */
+  .sfx {
+    font-family: 'Yuji Mai', 'Bangers', sans-serif;
+    color: var(--ink);
+    -webkit-text-stroke: 1.5px var(--ink);
+    text-shadow:
+      3px 3px 0 #fbf6e8,
+      4px 4px 0 var(--ink);
+    line-height: 0.85;
+    user-select: none;
+    pointer-events: none;
+  }
+  .sfx-white {
+    color: #fbf6e8;
+    -webkit-text-stroke: 2px var(--ink);
+    text-shadow:
+      3px 3px 0 var(--ink),
+      6px 6px 0 rgba(0,0,0,0.35);
+  }
+  .sfx-jp { font-family: 'Yuji Mai', serif; font-weight: 900; }
+
+  /* ─── 흑백 캐릭터 SVG 톤 ─── */
+  .ink-fill { fill: var(--ink); }
+  .ink-stroke { stroke: var(--ink); }
+  .paper-fill { fill: var(--paper); }
+  .white-fill { fill: #fbf6e8; }
+
+  /* ─── 표지 ─── */
+  .cover-shadow {
+    box-shadow:
+      0 40px 80px rgba(0,0,0,0.7),
+      0 15px 30px rgba(0,0,0,0.5);
+  }
+  .cover-edge {
+    background: linear-gradient(180deg, #dac9a0 0%, #c1ad7f 100%);
+  }
+
+  /* ─── 페이지 전환 ─── */
+  .page-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .page-side {
+    position: relative;
+    min-height: 760px;
+    padding: 28px 30px 40px;
+  }
+  @media (max-width: 900px) {
+    .page-stage { grid-template-columns: 1fr; }
+    .page-side { min-height: 520px; padding: 18px 16px 28px; }
+    .book-spine { display: none; }
+  }
+
+  /* 페이지 번호 (일본 만화 — 우측이 홀수) */
+  .pg-num {
+    position: absolute;
+    bottom: 10px;
+    font-family: 'Special Elite', monospace;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+  .pg-num-r { right: 18px; }
+  .pg-num-l { left: 18px; }
+
+  /* ─── 책 펼침 애니메이션 ─── */
+  .closed { transform: rotateY(0deg); }
+  .open-anim {
+    animation: bookOpen 1.1s cubic-bezier(0.7,0,0.3,1) forwards;
+    transform-origin: left center;
+  }
+  @keyframes bookOpen {
+    0%   { transform: rotateY(0deg) translateX(0); opacity: 1; }
+    50%  { transform: rotateY(-80deg) translateX(-20%); opacity: 0.5; }
+    100% { transform: rotateY(-180deg) translateX(-50%); opacity: 0; }
+  }
+  .reveal {
+    animation: reveal 0.7s ease-out forwards;
+    opacity: 0;
+  }
+  @keyframes reveal {
+    0%   { opacity: 0; transform: scale(0.96); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* 페이지 슬라이드 (좌측·우측) */
+  .slide-in-r {
+    animation: slideR 0.5s ease-out;
+  }
+  .slide-in-l {
+    animation: slideL 0.5s ease-out;
+  }
+  @keyframes slideR {
+    0% { opacity: 0; transform: translateX(60px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideL {
+    0% { opacity: 0; transform: translateX(-60px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ─── 네비게이션 버튼 ─── */
+  .nav-btn {
+    background: #1f1c16;
+    color: #fbf6e8;
+    border: 2px solid #fbf6e8;
+    padding: 10px 18px;
+    font-family: 'Special Elite', monospace;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .nav-btn:hover { background: #fbf6e8; color: #15110c; }
+  .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: rgba(251,246,232,0.25);
+    border: 1px solid rgba(251,246,232,0.5);
+  }
+  .dot.on { background: #fbf6e8; }
+
+  /* ─── 빈티지 마크 ─── */
+  .stamp {
+    border: 2px solid var(--red-ink);
+    color: var(--red-ink);
+    padding: 4px 10px;
+    font-family: 'Yuji Mai', serif;
+    transform: rotate(-8deg);
+    display: inline-block;
+    opacity: 0.85;
+  }
+
+  /* ─── 텍스트 강조 ─── */
+  .ruby {
+    font-size: 11px;
+    color: var(--ink-soft);
+    display: block;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  /* 흔들림 */
+  .wob { animation: wob 3s ease-in-out infinite; }
+  @keyframes wob {
+    0%, 100% { transform: rotate(-1deg); }
+    50%      { transform: rotate(1deg); }
+  }
+
+  /* 표지 캐릭터 펄스 */
+  .pulse-glow { animation: pulseGlow 2.4s ease-in-out infinite; }
+  @keyframes pulseGlow {
+    0%, 100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+    50%      { filter: drop-shadow(0 0 8px rgba(255,255,255,0.5)); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────── 헤더 ───────────────────────── -->
+<header class="max-w-6xl mx-auto px-4 pt-6 pb-3 flex items-center justify-between text-stone-300">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 border-2 border-stone-300 flex items-center justify-center f-yuji text-xl">電</div>
+    <div>
+      <div class="f-elite text-xs tracking-[0.25em] opacity-70">MONTHLY MANGA · 月刊コミック</div>
+      <div class="f-yuji text-base tracking-wider">전기 어드벤처 소식지</div>
+    </div>
+  </div>
+  <div class="flex items-center gap-4 text-xs f-elite opacity-70">
+    <span>VOL. 01</span>
+    <span class="hidden sm:inline">2026年 5月号</span>
+    <span class="hidden md:inline">¥580 / ₩6,000</span>
+  </div>
+</header>
+
+<!-- ───────────────────────── 표지 ───────────────────────── -->
+<section id="cover-stage" class="max-w-6xl mx-auto px-4 pt-2 pb-8">
+  <div class="text-center mb-4">
+    <div class="f-elite text-stone-400 text-xs tracking-[0.3em]">CLICK THE COVER TO OPEN</div>
+    <div class="f-yuji text-stone-300 text-lg mt-1">표지를 눌러 책을 펼치세요</div>
+  </div>
+
+  <!-- 표지 카드 -->
+  <div id="cover-card" class="book-wrap mx-auto" style="max-width: 520px;">
+    <div id="cover-book" class="closed cover-shadow paper relative cursor-pointer select-none" style="aspect-ratio: 3/4.4;">
+      <!-- 상단 라벨 -->
+      <div class="absolute top-4 left-4 right-4 flex justify-between items-start text-[10px] f-elite">
+        <div class="text-stone-700">
+          <div class="opacity-80">JUMP STYLE / 少年向け学習漫画</div>
+          <div class="opacity-60">No.01 · 2026.05</div>
+        </div>
+        <div class="stamp text-[11px]">創刊号</div>
+      </div>
+
+      <!-- 큰 표지 SVG -->
+      <div class="absolute inset-0 flex items-center justify-center pt-12 pb-32">
+        <svg viewBox="0 0 400 460" class="w-full h-full p-3 pulse-glow" aria-label="표지 일러스트">
+          <!-- 배경 방사선 -->
+          <defs>
+            <pattern id="dotBg" width="6" height="6" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1" fill="#15110c" opacity="0.5"/>
+            </pattern>
+            <radialGradient id="bgFade" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stop-color="#fbf6e8" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#fbf6e8" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- 방사선 -->
+          <g opacity="0.85">
+            <polygon points="200,230 -40,-40 60,-60" fill="#15110c"/>
+            <polygon points="200,230 100,-60 180,-80" fill="#15110c"/>
+            <polygon points="200,230 220,-80 300,-60" fill="#15110c"/>
+            <polygon points="200,230 340,-60 440,-40" fill="#15110c"/>
+            <polygon points="200,230 -40,250 -40,180" fill="#15110c"/>
+            <polygon points="200,230 440,180 440,250" fill="#15110c"/>
+            <polygon points="200,230 -40,500 30,520" fill="#15110c"/>
+            <polygon points="200,230 370,520 440,500" fill="#15110c"/>
+          </g>
+          <!-- 가운데 페이드 -->
+          <circle cx="200" cy="200" r="180" fill="url(#bgFade)"/>
+
+          <!-- 회로 모티프 (배경) -->
+          <g stroke="#15110c" stroke-width="2" fill="none" opacity="0.55">
+            <path d="M40,360 L120,360 L120,310 L180,310"/>
+            <circle cx="120" cy="360" r="4" fill="#15110c"/>
+            <path d="M260,80 L340,80 L340,140 L300,140"/>
+            <rect x="295" y="125" width="40" height="30" fill="#fbf6e8"/>
+            <text x="315" y="146" text-anchor="middle" font-size="12" font-family="Special Elite" fill="#15110c">R</text>
+          </g>
+
+          <!-- 번개 -->
+          <g class="wob" style="transform-origin: 60px 110px;">
+            <polygon points="55,30 95,30 75,90 110,90 50,180 70,120 35,120" fill="#15110c" stroke="#15110c" stroke-width="3" stroke-linejoin="bevel"/>
+            <polygon points="60,40 88,40 72,82 100,82 55,160 70,118 42,118" fill="#fbf6e8"/>
+          </g>
+          <g class="wob" style="transform-origin: 340px 350px; animation-delay: 0.6s;">
+            <polygon points="320,310 350,310 335,355 365,355 305,440 320,388 295,388" fill="#15110c" stroke="#15110c" stroke-width="3"/>
+            <polygon points="324,318 343,318 333,350 358,350 310,420 322,386 302,386" fill="#fbf6e8"/>
+          </g>
+
+          <!-- 주인공 (김전기) -->
+          <g transform="translate(200,260)">
+            <!-- 망토 (역광 실루엣) -->
+            <path d="M-60,-30 Q-90,40 -50,90 L40,90 Q70,40 50,-30 Z" fill="#15110c"/>
+            <!-- 머리 (흰색) -->
+            <ellipse cx="0" cy="-60" rx="42" ry="48" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+            <!-- 머리카락 (뾰족) -->
+            <path d="M-40,-95 L-30,-115 L-20,-95 L-10,-120 L0,-95 L10,-118 L22,-95 L34,-110 L38,-90 L40,-65 L-42,-65 Z" fill="#15110c"/>
+            <!-- 헤드밴드 -->
+            <rect x="-44" y="-75" width="88" height="10" fill="#15110c"/>
+            <path d="M-44,-75 L46,-75" stroke="#fbf6e8" stroke-width="2" stroke-dasharray="4 4"/>
+            <!-- 눈 (강렬한 시선) -->
+            <path d="M-22,-55 L-8,-50 L-22,-45 Z" fill="#15110c"/>
+            <path d="M22,-55 L8,-50 L22,-45 Z" fill="#15110c"/>
+            <!-- 눈동자 광채 -->
+            <circle cx="-15" cy="-52" r="1.5" fill="#fbf6e8"/>
+            <circle cx="15" cy="-52" r="1.5" fill="#fbf6e8"/>
+            <!-- 입 (다부지게) -->
+            <path d="M-10,-30 Q0,-22 10,-30" stroke="#15110c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <!-- 몸 (셔츠 + 전선 벨트) -->
+            <path d="M-40,-15 L-50,80 L50,80 L40,-15 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+            <!-- 가슴 마크 (Ω) -->
+            <circle cx="0" cy="20" r="20" fill="#15110c"/>
+            <text x="0" y="30" text-anchor="middle" font-size="28" font-family="Yuji Mai" fill="#fbf6e8" font-weight="900">Ω</text>
+            <!-- 팔 (든 손) -->
+            <path d="M-40,-10 L-75,30 L-65,55 L-50,30 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+            <path d="M40,-10 L80,-30 L90,-15 L60,5 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+            <!-- 손에 든 전선 (코일) -->
+            <g transform="translate(85,-22)">
+              <path d="M0,0 Q-5,-5 -10,0 Q-5,5 0,0 Q5,-5 10,0 Q5,5 0,0" fill="none" stroke="#15110c" stroke-width="2.5"/>
+              <path d="M10,0 L18,3" stroke="#15110c" stroke-width="2.5"/>
+              <circle cx="20" cy="4" r="3" fill="#15110c"/>
+            </g>
+          </g>
+
+          <!-- 가운데 큰 번개 (배경) -->
+          <g opacity="0.18">
+            <polygon points="200,40 230,40 210,210 250,210 170,420 200,250 165,250" fill="#15110c"/>
+          </g>
+
+          <!-- 작은 스파크 -->
+          <g fill="#15110c">
+            <circle cx="80" cy="240" r="3"/>
+            <circle cx="320" cy="260" r="2"/>
+            <circle cx="340" cy="200" r="3"/>
+            <circle cx="60" cy="180" r="2"/>
+            <circle cx="100" cy="300" r="2"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- 시리즈 로고 -->
+      <div class="absolute left-0 right-0 px-6 text-center" style="top: 22px;">
+        <div class="inline-block bg-stone-900 text-amber-100 px-4 py-1 f-yuji text-2xl tracking-widest" style="border: 2px solid #15110c; box-shadow: 3px 3px 0 #15110c;">
+          電気アドベンチャー
+        </div>
+        <div class="f-elite text-stone-800 text-[11px] mt-1 tracking-[0.25em]">ELECTRIC&nbsp;ADVENTURES</div>
+      </div>
+
+      <!-- 하단 정보 -->
+      <div class="absolute left-0 right-0 bottom-0 p-5">
+        <div class="border-t-2 border-stone-900 pt-3 pb-1 text-center">
+          <div class="f-yuji text-stone-900 text-2xl leading-tight">옴의 모험</div>
+          <div class="f-zen text-stone-800 text-sm">— 전류와 함께 합격으로 —</div>
+        </div>
+        <div class="flex justify-between items-end mt-3 text-[10px] f-elite text-stone-700">
+          <div>
+            <div class="opacity-80">原作 · 漫画</div>
+            <div class="font-bold text-stone-900 text-[12px]">사이토 덴키 (斎藤 電気)</div>
+          </div>
+          <div class="text-center">
+            <div class="f-bang text-stone-900 text-3xl leading-none">Vol.</div>
+            <div class="f-yuji text-stone-900 text-4xl leading-none">壱</div>
+          </div>
+          <div class="text-right">
+            <div class="opacity-80">発行</div>
+            <div class="font-bold text-stone-900 text-[12px]">2026.05.15</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 책등 그림자 -->
+      <div class="absolute top-0 bottom-0 left-0 w-3 bg-gradient-to-r from-stone-900/40 to-transparent pointer-events-none"></div>
+      <!-- 종이 가장자리 -->
+      <div class="absolute inset-0 edge-fade pointer-events-none"></div>
+    </div>
+
+    <!-- 표지 안내 -->
+    <div class="text-center mt-4 text-stone-400 f-elite text-xs tracking-[0.2em]">
+      <span class="inline-block animate-pulse">▶ TAP / CLICK ◀</span>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── 본편 (양면 펼침) ───────────────────────── -->
+<section id="reading-stage" class="max-w-6xl mx-auto px-2 pb-10 hidden">
+
+  <!-- 네비게이션 (상단) -->
+  <div class="flex items-center justify-between mb-3 px-2">
+    <div class="text-stone-300 f-elite text-xs tracking-[0.2em]">
+      <span id="spread-label">SPREAD 1 / 4</span>
+      <span class="ml-3 opacity-60">← 우→좌 ようこそ</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btn-prev" class="nav-btn" aria-label="이전 페이지">◀ NEXT</button>
+      <button id="btn-next" class="nav-btn" aria-label="다음 페이지">PREV ▶</button>
+    </div>
+  </div>
+  <!--
+    NOTE: 일본 만화는 우→좌 진행.
+    화면상 "오른쪽 화살표 = PREV(이전)", "왼쪽 화살표 = NEXT(다음)".
+  -->
+
+  <!-- 도트 인디케이터 -->
+  <div id="dots" class="flex justify-center gap-2 mb-4"></div>
+
+  <!-- 책 본체 -->
+  <div class="book-wrap">
+    <div class="book paper-dark mx-auto relative" style="max-width: 1080px;">
+      <div class="book-spine"></div>
+      <div id="spread" class="page-stage relative">
+        <!-- 페이지 좌(짝수) / 페이지 우(홀수) — JS가 채움 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단 네비 -->
+  <div class="flex items-center justify-center gap-2 mt-5">
+    <button id="btn-prev2" class="nav-btn">◀ 다음 페이지</button>
+    <button id="btn-cover" class="nav-btn">표지로</button>
+    <button id="btn-next2" class="nav-btn">이전 페이지 ▶</button>
+  </div>
+
+  <!-- 키보드 안내 -->
+  <div class="text-center mt-3 text-stone-500 f-elite text-[11px] tracking-widest">
+    KEYBOARD : ← (다음) · → (이전) · ESC (표지)
+  </div>
+</section>
+
+<!-- ───────────────────────── 작가의 후기 + 다음 권 ───────────────────────── -->
+<section id="omake-stage" class="max-w-5xl mx-auto px-4 pb-10 hidden">
+  <div class="paper edge-fade p-7 md:p-10 relative" style="border: 2px solid #15110c; box-shadow: 8px 8px 0 #15110c;">
+
+    <!-- 작가의 말 -->
+    <div class="border-b-2 border-dashed border-stone-800 pb-6 mb-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 border-2 border-stone-900 flex items-center justify-center f-yuji text-xl bg-stone-900 text-amber-100">後</div>
+        <div>
+          <div class="f-yuji text-2xl">작가의 후기 ・ あとがき</div>
+          <div class="f-elite text-xs opacity-70 tracking-widest">AUTHOR'S NOTE — by 사이토 덴키</div>
+        </div>
+      </div>
+      <div class="grid md:grid-cols-[120px_1fr] gap-5 items-start">
+        <!-- 자화상 SVG -->
+        <svg viewBox="0 0 120 140" class="w-28 h-32 mx-auto md:mx-0">
+          <rect x="2" y="2" width="116" height="136" fill="none" stroke="#15110c" stroke-width="2.5"/>
+          <!-- 머리 -->
+          <ellipse cx="60" cy="55" rx="32" ry="36" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+          <!-- 머리 (가르마) -->
+          <path d="M30,30 Q60,15 90,30 L88,40 Q60,28 32,40 Z" fill="#15110c"/>
+          <!-- 안경 -->
+          <circle cx="48" cy="55" r="10" fill="none" stroke="#15110c" stroke-width="2"/>
+          <circle cx="72" cy="55" r="10" fill="none" stroke="#15110c" stroke-width="2"/>
+          <line x1="58" y1="55" x2="62" y2="55" stroke="#15110c" stroke-width="2"/>
+          <!-- 입 -->
+          <path d="M50,75 Q60,82 70,75" stroke="#15110c" stroke-width="2" fill="none"/>
+          <!-- 몸 -->
+          <path d="M30,95 L25,135 L95,135 L90,95" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+          <!-- 펜 들고 있는 손 -->
+          <line x1="88" y1="110" x2="105" y2="95" stroke="#15110c" stroke-width="3"/>
+          <circle cx="106" cy="94" r="3" fill="#15110c"/>
+          <text x="60" y="128" text-anchor="middle" font-size="9" font-family="Special Elite" fill="#15110c">SAITO</text>
+        </svg>
+        <div class="text-stone-900 leading-relaxed f-kr text-[15px]">
+          <p class="mb-3">
+            안녕하세요, 사이토 덴키입니다. <span class="stamp text-[11px] mx-1">創刊</span> 드디어 「전기 어드벤처」 1권이 나왔습니다!
+            전기기능사 시험을 만화로 풀어내는 일은 생각보다 어려웠는데요, 옴의 법칙 한 컷을 그리는 데 콘티만 12장을
+            버렸습니다. (담당 편집자가 한숨을 쉬더군요.)
+          </p>
+          <p class="mb-3">
+            주인공 <b>김전기</b>는 사실 제가 학생 때 시험에 떨어졌던 모습을 모티프로 했습니다. 멍청하지만 끈질긴
+            친구죠. 라이벌 <b>패러데이 후예</b>는 너무 잘난 척하지 않게, 그러나 실력은 분명하게 그렸습니다.
+            <b>옴 박사</b>는 — 모두의 할아버지입니다.
+          </p>
+          <p>
+            2권에서는 <b>키르히호프의 법칙</b>과 <b>RLC 직병렬 추리극</b>이 등장합니다. 이번 권에서 김전기가
+            반쯤 정신을 잃었다면, 다음 권에서는 완전히 정신을 차립니다. 부디 끝까지 따라와 주세요.
+            <span class="f-hand text-stone-700">— 斎藤 電気 (사이토 덴키)</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 다음 권 예고 -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="panel paper p-5">
+        <div class="f-elite text-[11px] tracking-[0.25em] opacity-70 mb-1">NEXT VOLUME · 次巻予告</div>
+        <div class="f-yuji text-2xl mb-2">Vol.2 「키르히호프의 추리극」</div>
+        <ul class="f-kr text-sm space-y-1.5 text-stone-800">
+          <li>・ 사라진 전류의 미스터리 — KCL 의 비밀</li>
+          <li>・ 폐회로 속의 진실 — KVL 의 외침</li>
+          <li>・ RLC 트라이앵글 — 새 친구 등장</li>
+          <li>・ 옴 박사, 위험에 빠지다!?</li>
+        </ul>
+        <div class="mt-3 f-elite text-xs opacity-70">予定発売: 2026.07 · 가상 출간일</div>
+      </div>
+      <div class="panel paper p-5 relative">
+        <div class="f-elite text-[11px] tracking-[0.25em] opacity-70 mb-1">GOODS · 公式グッズ</div>
+        <div class="f-yuji text-2xl mb-2">한정 굿즈 안내</div>
+        <ul class="f-kr text-sm space-y-1.5 text-stone-800">
+          <li>・ 김전기 아크릴 스탠드 (옴 가슴 마크) — ¥1,800</li>
+          <li>・ 옴 박사 멀티탭 (장난감) — ¥3,200</li>
+          <li>・ V=IR 손수건 (자수) — ¥980</li>
+          <li>・ 회로도 노트 (방안 5mm) — ¥720</li>
+        </ul>
+        <div class="mt-3 stamp text-[11px]">虚構商品</div>
+      </div>
+    </div>
+
+    <!-- 독자 응모 -->
+    <div class="mt-6 panel paper p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="f-yuji text-xl">독자 엽서 응모 · 読者ハガキ</div>
+          <div class="f-elite text-xs opacity-70 tracking-widest mt-1">감상을 보내주신 분 중 추첨으로 「김전기 사인 색지」를 드립니다.</div>
+        </div>
+        <div class="f-elite text-xs opacity-70">※ 가상 이벤트입니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── 푸터 ───────────────────────── -->
+<footer class="max-w-6xl mx-auto px-4 pb-10 pt-2 text-center text-stone-500 f-elite text-[11px] tracking-[0.25em]">
+  <div class="border-t border-stone-700 pt-4">
+    <div class="mb-1">© 2026 ELECTRIC ADVENTURES — A FICTIONAL MANGA SIMULATION</div>
+    <div class="opacity-70">가상 만화 시뮬레이션 · 실재하는 출판사/시리즈와 무관합니다.</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  // ───────────────────────── 안전한 escape ─────────────────────────
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  // ───────────────────────── 페이지 데이터 ─────────────────────────
+  // 일본 만화 = 우→좌. 페이지 1이 책 우측에, 페이지 2가 좌측에.
+  // 각 spread는 [우(홀수), 좌(짝수)]
+  // page.svg(idx) → SVG, page.dialog → bubbles, page.sfx → 효과음
+  // ─────────────────────────────────────────────────────────────
+
+  const PAGES = [
+    // ──────── PAGE 1 (우측) — 발단 : 시험장 ────────
+    {
+      no: 1,
+      title: '第1話「合格への第一歩」',
+      titleKr: '제1화 「합격을 향한 첫걸음」',
+      panels: [
+        {
+          layout: 'lg', tilt: '',
+          svg: 'scene_classroom',
+          bubbles: [
+            { type:'narrate', pos:'top-3 left-3 right-3', text:'― 봄, 어느 시험장. 김전기, 15번째 도전.' },
+            { type:'bubble', tail:'bl', pos:'bottom-5 left-6 w-44', text:'드디어… 오늘이야말로 합격이다…!!' }
+          ],
+          sfx: [{ text:'ザワザワ', pos:'top-2 right-3', size:'text-2xl' }]
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-r',
+          svg: 'face_kim_sweat',
+          bubbles: [
+            { type:'think', pos:'top-2 right-2 w-36', text:'…심장이… 회로처럼 단락났다…' }
+          ],
+          sfx: [{ text:'ドキドキ', pos:'bottom-3 left-3', size:'text-xl' }]
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-l',
+          svg: 'face_paradai',
+          bubbles: [
+            { type:'spike', pos:'bottom-2 right-3 w-40', text:'또 너냐, 김전기. 16번째도 떨어지러 왔나?' }
+          ],
+          sfx: [{ text:'フッ…', pos:'top-3 left-3', size:'text-lg' }]
+        }
+      ]
+    },
+    // ──────── PAGE 2 (좌측) — V=IR 폭발 ────────
+    {
+      no: 2,
+      title: '',
+      panels: [
+        {
+          layout: 'wide', tilt: '',
+          svg: 'scene_explosion_vir',
+          bubbles: [
+            { type:'spike', pos:'top-3 left-1/2 -translate-x-1/2 w-56', text:'전압은 전류 × 저항!! V = I R !!!' }
+          ],
+          sfx: [
+            { text:'ドン!!', pos:'top-4 left-4', size:'text-5xl' },
+            { text:'BOOM', pos:'bottom-3 right-4', size:'text-4xl' }
+          ]
+        },
+        {
+          layout: 'sm', tilt: '',
+          svg: 'face_om_doctor',
+          bubbles: [
+            { type:'bubble', tail:'br', pos:'top-2 left-3 w-44', text:'잘 보거라, 김전기. 옴의 법칙은… 우주의 약속이다!' }
+          ],
+          sfx: []
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-r',
+          svg: 'circuit_diagram_basic',
+          bubbles: [
+            { type:'narrate', pos:'bottom-2 left-2 right-2', text:'V(전압) = I(전류) × R(저항). 12V를 6Ω으로 나누면? → I = 2A.' }
+          ],
+          sfx: [{ text:'ピカッ!', pos:'top-3 right-3', size:'text-2xl' }]
+        }
+      ]
+    },
+    // ──────── PAGE 3 (우측) — 키르히호프 추리 ────────
+    {
+      no: 3,
+      title: '第2話「キルヒホッフの謎」',
+      titleKr: '제2화 「키르히호프의 수수께끼」',
+      panels: [
+        {
+          layout: 'sm', tilt: '',
+          svg: 'face_kim_detective',
+          bubbles: [
+            { type:'think', pos:'top-2 right-2 w-40', text:'노드에 흘러드는 전류 = 흘러나가는 전류…?' }
+          ],
+          sfx: [{ text:'…ハッ!', pos:'bottom-3 left-3', size:'text-xl' }]
+        },
+        {
+          layout: 'lg', tilt: '',
+          svg: 'scene_kcl_kvl',
+          bubbles: [
+            { type:'bubble', tail:'tl', pos:'top-3 left-4 w-48', text:'KCL : 들어가는 전류와 나오는 전류는 같다!' },
+            { type:'bubble', tail:'br', pos:'bottom-4 right-4 w-48', text:'KVL : 폐회로 전압의 합은 0!' }
+          ],
+          sfx: [{ text:'ピシッ', pos:'top-1/2 right-4', size:'text-3xl' }]
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-l',
+          svg: 'face_paradai_shock',
+          bubbles: [
+            { type:'spike', pos:'bottom-2 left-3 w-44', text:'바…방금까지 멍청했던 그 녀석이…!?' }
+          ],
+          sfx: [{ text:'!?', pos:'top-3 right-4', size:'text-4xl' }]
+        }
+      ]
+    },
+    // ──────── PAGE 4 (좌측) — 직병렬 결투 ────────
+    {
+      no: 4,
+      title: '',
+      panels: [
+        {
+          layout: 'sm', tilt: '',
+          svg: 'circuit_series',
+          bubbles: [
+            { type:'narrate', pos:'top-2 left-2 right-2', text:'직렬 : R_t = R1 + R2 + R3. 전류는 어디서나 같다.' }
+          ],
+          sfx: []
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-r',
+          svg: 'circuit_parallel',
+          bubbles: [
+            { type:'narrate', pos:'top-2 left-2 right-2', text:'병렬 : 1/R_t = 1/R1 + 1/R2. 전압은 어디서나 같다.' }
+          ],
+          sfx: []
+        },
+        {
+          layout: 'wide', tilt: '',
+          svg: 'scene_duel',
+          bubbles: [
+            { type:'spike', pos:'top-3 left-6 w-44', text:'직렬이냐, 병렬이냐… 결판을 내자!!' },
+            { type:'bubble', tail:'br', pos:'bottom-3 right-6 w-44', text:'나는 키르히호프와 옴, 두 가지 무기를 가졌다!' }
+          ],
+          sfx: [
+            { text:'バチッ!!', pos:'top-2 right-2', size:'text-4xl', white: true },
+            { text:'ガッ!', pos:'bottom-2 left-3', size:'text-3xl' }
+          ]
+        }
+      ]
+    },
+    // ──────── PAGE 5 (우측) — 시험장 답안 ────────
+    {
+      no: 5,
+      title: '第3話「答案用紙の決断」',
+      titleKr: '제3화 「답안지의 결단」',
+      panels: [
+        {
+          layout: 'lg', tilt: '',
+          svg: 'scene_answer_sheet',
+          bubbles: [
+            { type:'narrate', pos:'top-3 left-3 right-3', text:'― 펜 끝이 답안지 위에서 떨린다. 시간은 5분 남았다.' },
+            { type:'bubble', tail:'bl', pos:'bottom-5 left-6 w-44', text:'I = V/R = 12/6 = 2A… 이거다!!' }
+          ],
+          sfx: [{ text:'カリカリ', pos:'top-1/2 right-4', size:'text-2xl' }]
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-l',
+          svg: 'face_kim_smile',
+          bubbles: [
+            { type:'bubble', tail:'br', pos:'top-2 left-3 w-40', text:'…괜찮아. 옴 박사가 가르쳐 줬으니까.' }
+          ],
+          sfx: []
+        },
+        {
+          layout: 'sm', tilt: '',
+          svg: 'clock_tense',
+          bubbles: [],
+          sfx: [{ text:'チクタク', pos:'bottom-2 left-2', size:'text-lg' }]
+        }
+      ]
+    },
+    // ──────── PAGE 6 (좌측) — 합격 발표 + 다음 화 ────────
+    {
+      no: 6,
+      title: '',
+      panels: [
+        {
+          layout: 'wide', tilt: '',
+          svg: 'scene_passlist',
+          bubbles: [
+            { type:'spike', pos:'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56', text:'합격…!! 김전기, 드디어 합격이다!!!' }
+          ],
+          sfx: [
+            { text:'パアアア', pos:'top-3 right-4', size:'text-5xl', white:true },
+            { text:'ワァァ!', pos:'bottom-3 left-4', size:'text-4xl' }
+          ]
+        },
+        {
+          layout: 'sm', tilt: 'panel-tilt-r',
+          svg: 'face_om_smile',
+          bubbles: [
+            { type:'bubble', tail:'br', pos:'bottom-3 left-3 w-44', text:'잘 했다. 진짜 모험은… 이제부터다.' }
+          ],
+          sfx: []
+        },
+        {
+          layout: 'sm', tilt: '',
+          svg: 'next_preview',
+          bubbles: [
+            { type:'narrate', pos:'top-2 left-2 right-2', text:'다음 권 「키르히호프의 추리극」 ─ 사라진 전류의 행방을 쫓아라!' }
+          ],
+          sfx: [{ text:'続く!', pos:'bottom-3 right-3', size:'text-3xl' }]
+        }
+      ]
+    }
+  ];
+
+  // ───────────────────────── 컷 SVG 정의 ─────────────────────────
+  const SVGS = {
+    // 교실 / 시험장 (와이드)
+    scene_classroom: `
+      <svg viewBox="0 0 400 240" class="w-full h-full">
+        <!-- 배경 톤 -->
+        <rect x="0" y="0" width="400" height="240" fill="#fbf6e8"/>
+        <rect x="0" y="0" width="400" height="100" fill="url(#hatch1)" opacity="0.3"/>
+        <defs>
+          <pattern id="hatch1" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="6" height="6" fill="#fbf6e8"/>
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#15110c" stroke-width="0.8"/>
+          </pattern>
+          <pattern id="dots1" width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="#15110c"/>
+          </pattern>
+        </defs>
+        <!-- 칠판 -->
+        <rect x="40" y="20" width="320" height="70" fill="#15110c"/>
+        <text x="200" y="60" text-anchor="middle" font-family="Yuji Mai" font-size="22" fill="#fbf6e8">電気技能士 試験 (전기기능사 시험)</text>
+        <!-- 책상줄 -->
+        <g stroke="#15110c" stroke-width="2" fill="#fbf6e8">
+          <rect x="40"  y="130" width="60" height="40"/>
+          <rect x="115" y="130" width="60" height="40"/>
+          <rect x="190" y="130" width="60" height="40"/>
+          <rect x="265" y="130" width="60" height="40"/>
+          <rect x="80"  y="190" width="60" height="40"/>
+          <rect x="155" y="190" width="60" height="40"/>
+          <rect x="230" y="190" width="60" height="40"/>
+        </g>
+        <!-- 학생 머리 (실루엣) -->
+        <g fill="#15110c">
+          <ellipse cx="70"  cy="125" rx="14" ry="12"/>
+          <ellipse cx="145" cy="125" rx="14" ry="12"/>
+          <ellipse cx="295" cy="125" rx="14" ry="12"/>
+          <ellipse cx="110" cy="185" rx="14" ry="12"/>
+          <ellipse cx="260" cy="185" rx="14" ry="12"/>
+        </g>
+        <!-- 주인공 (가운데, 강조) -->
+        <g transform="translate(220,115)">
+          <ellipse cx="0" cy="10" rx="16" ry="14" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+          <path d="M-16,0 L-10,-12 L-4,-2 L2,-14 L8,-2 L14,-12 L16,0 Z" fill="#15110c"/>
+          <line x1="-7" y1="12" x2="-3" y2="12" stroke="#15110c" stroke-width="2"/>
+          <line x1="3"  y1="12" x2="7"  y2="12" stroke="#15110c" stroke-width="2"/>
+          <!-- 식은땀 -->
+          <ellipse cx="18" cy="6" rx="2.5" ry="4" fill="#fbf6e8" stroke="#15110c" stroke-width="1.5"/>
+        </g>
+        <!-- 창문 빛 -->
+        <polygon points="350,90 400,90 400,240 320,240" fill="#fbf6e8" opacity="0.9" stroke="#15110c" stroke-width="1.5"/>
+        <line x1="360" y1="90" x2="360" y2="240" stroke="#15110c" stroke-width="1"/>
+      </svg>
+    `,
+    // 김전기 식은땀 클로즈업
+    face_kim_sweat: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <!-- 망점 톤 배경 -->
+        <rect x="0" y="0" width="200" height="200" fill="url(#dotsA)" opacity="0.45"/>
+        <defs>
+          <pattern id="dotsA" width="6" height="6" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="1.4" fill="#15110c"/>
+          </pattern>
+          <pattern id="speed1" width="10" height="10" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="5" x2="10" y2="5" stroke="#15110c" stroke-width="1.4"/>
+          </pattern>
+        </defs>
+        <!-- 집중선 -->
+        <g stroke="#15110c" stroke-width="2" opacity="0.85">
+          <line x1="100" y1="100" x2="0"   y2="0"/>
+          <line x1="100" y1="100" x2="200" y2="0"/>
+          <line x1="100" y1="100" x2="0"   y2="200"/>
+          <line x1="100" y1="100" x2="200" y2="200"/>
+          <line x1="100" y1="100" x2="0"   y2="100"/>
+          <line x1="100" y1="100" x2="200" y2="100"/>
+          <line x1="100" y1="100" x2="100" y2="0"/>
+          <line x1="100" y1="100" x2="100" y2="200"/>
+          <line x1="100" y1="100" x2="40"  y2="0"/>
+          <line x1="100" y1="100" x2="160" y2="0"/>
+        </g>
+        <!-- 얼굴 클로즈업 -->
+        <ellipse cx="100" cy="115" rx="62" ry="72" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <!-- 머리카락 -->
+        <path d="M50,65 L65,30 L75,60 L88,25 L100,60 L112,28 L125,60 L135,32 L150,65 L150,100 L50,100 Z" fill="#15110c"/>
+        <!-- 헤드밴드 -->
+        <rect x="42" y="90" width="116" height="9" fill="#15110c"/>
+        <!-- 눈 (불안) -->
+        <ellipse cx="78" cy="120" rx="9" ry="11" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <ellipse cx="122" cy="120" rx="9" ry="11" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <circle cx="78" cy="122" r="3" fill="#15110c"/>
+        <circle cx="122" cy="122" r="3" fill="#15110c"/>
+        <!-- 식은땀 (큰) -->
+        <path d="M150,90 Q158,105 152,120 Q142,108 150,90 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <path d="M155,90 Q158,98 153,103" stroke="#fbf6e8" stroke-width="2"/>
+        <!-- 입 (벌어진) -->
+        <ellipse cx="100" cy="160" rx="14" ry="9" fill="#15110c"/>
+        <ellipse cx="100" cy="162" rx="9" ry="4" fill="#3a2f1f"/>
+      </svg>
+    `,
+    // 패러데이 후예 (잘난 얼굴)
+    face_paradai: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <!-- 빛/배경 -->
+        <rect x="0" y="0" width="200" height="200" fill="url(#linesB)" opacity="0.4"/>
+        <defs>
+          <pattern id="linesB" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-30)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#15110c" stroke-width="0.8"/>
+          </pattern>
+        </defs>
+        <!-- 얼굴 -->
+        <ellipse cx="100" cy="110" rx="55" ry="68" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <!-- 머리 (단정·올백) -->
+        <path d="M55,60 Q100,30 145,60 Q150,85 145,100 L55,100 Q50,85 55,60 Z" fill="#15110c"/>
+        <path d="M60,70 Q100,55 140,70" stroke="#fbf6e8" stroke-width="2" fill="none"/>
+        <!-- 안경 (가는) -->
+        <line x1="70" y1="115" x2="90" y2="115" stroke="#15110c" stroke-width="2"/>
+        <line x1="110" y1="115" x2="130" y2="115" stroke="#15110c" stroke-width="2"/>
+        <line x1="90" y1="115" x2="110" y2="115" stroke="#15110c" stroke-width="1.5"/>
+        <!-- 눈 (날카로움) -->
+        <path d="M75,118 L88,120" stroke="#15110c" stroke-width="3" stroke-linecap="round"/>
+        <path d="M112,120 L125,118" stroke="#15110c" stroke-width="3" stroke-linecap="round"/>
+        <!-- 입 (조소) -->
+        <path d="M85,155 Q100,148 115,155" stroke="#15110c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <line x1="115" y1="155" x2="118" y2="152" stroke="#15110c" stroke-width="2"/>
+        <!-- 셔츠 칼라 -->
+        <path d="M65,175 L100,165 L135,175 L135,200 L65,200 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <line x1="100" y1="165" x2="100" y2="200" stroke="#15110c" stroke-width="2"/>
+        <circle cx="100" cy="180" r="2" fill="#15110c"/>
+        <!-- 빛 반사 (안경) -->
+        <line x1="73" y1="112" x2="82" y2="106" stroke="#fbf6e8" stroke-width="2"/>
+        <line x1="113" y1="112" x2="122" y2="106" stroke="#fbf6e8" stroke-width="2"/>
+      </svg>
+    `,
+    // V=IR 폭발 장면 (와이드)
+    scene_explosion_vir: `
+      <svg viewBox="0 0 480 240" class="w-full h-full">
+        <rect x="0" y="0" width="480" height="240" fill="#fbf6e8"/>
+        <!-- 폭발 셰이프 -->
+        <polygon points="240,120
+          240,0  280,30  320,5  340,40  380,20  390,55  430,50  420,90 470,90 440,120
+          470,150 420,150 430,190 390,185 380,220 340,200 320,235 280,210 240,240
+          200,210 160,235 140,200 100,220 90,185 50,190 60,150 10,150 40,120
+          10,90 60,90 50,50 90,55 100,20 140,40 160,5 200,30"
+          fill="#15110c"/>
+        <polygon points="240,120
+          240,30  280,55  310,32 332,60 370,42 380,75 415,72 405,100 450,100 425,120
+          450,140 405,140 415,168 380,165 370,198 332,180 310,208 280,185 240,210
+          200,185 170,208 148,180 110,198 100,165 65,168 75,140 30,140 55,120
+          30,100 75,100 65,72 100,75 110,42 148,60 170,32 200,55"
+          fill="#fbf6e8"/>
+        <!-- 가운데 텍스트 -->
+        <text x="240" y="115" text-anchor="middle" font-family="Yuji Mai" font-size="56" fill="#15110c" font-weight="900">V = I R</text>
+        <text x="240" y="155" text-anchor="middle" font-family="Special Elite" font-size="14" fill="#15110c">VOLTAGE · CURRENT · RESISTANCE</text>
+        <!-- 작은 번개 -->
+        <polygon points="60,20 80,20 70,55 90,55 50,110 65,72 45,72" fill="#15110c"/>
+        <polygon points="420,180 440,180 430,210 450,210 410,230 420,205 405,205" fill="#15110c"/>
+      </svg>
+    `,
+    // 옴 박사 (수염 할아버지)
+    face_om_doctor: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <rect x="0" y="0" width="200" height="200" fill="url(#tone3)" opacity="0.25"/>
+        <defs>
+          <pattern id="tone3" width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="2.5" cy="2.5" r="0.9" fill="#15110c"/>
+          </pattern>
+        </defs>
+        <!-- 얼굴 -->
+        <ellipse cx="100" cy="100" rx="55" ry="60" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <!-- 대머리(이마)·뒷머리 -->
+        <path d="M55,80 Q60,55 100,55 Q140,55 145,80 Q150,75 152,90 L155,110 Q145,80 100,77 Q55,80 45,110 L48,90 Q50,75 55,80 Z" fill="#15110c"/>
+        <!-- 눈썹 (덥수룩) -->
+        <path d="M65,95 Q78,85 90,93 Q85,98 78,96 Q72,98 65,95 Z" fill="#15110c"/>
+        <path d="M110,93 Q122,85 135,95 Q128,98 122,96 Q116,98 110,93 Z" fill="#15110c"/>
+        <!-- 눈 (지혜) -->
+        <circle cx="78" cy="108" r="3" fill="#15110c"/>
+        <circle cx="122" cy="108" r="3" fill="#15110c"/>
+        <!-- 코 -->
+        <path d="M100,115 L95,135 L105,135 Z" fill="none" stroke="#15110c" stroke-width="2"/>
+        <!-- 콧수염 + 턱수염 -->
+        <path d="M70,145 Q85,140 100,150 Q115,140 130,145 Q140,155 130,165 Q115,175 100,168 Q85,175 70,165 Q60,155 70,145 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <path d="M80,150 L75,180 Q90,195 100,182 Q110,195 125,180 L120,150" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+        <path d="M85,160 L82,180" stroke="#15110c" stroke-width="1"/>
+        <path d="M115,160 L118,180" stroke="#15110c" stroke-width="1"/>
+        <!-- 안경 (둥근) -->
+        <circle cx="78" cy="108" r="14" fill="none" stroke="#15110c" stroke-width="2"/>
+        <circle cx="122" cy="108" r="14" fill="none" stroke="#15110c" stroke-width="2"/>
+        <line x1="92" y1="108" x2="108" y2="108" stroke="#15110c" stroke-width="2"/>
+        <!-- 가운 깃 -->
+        <path d="M50,195 L85,180 L100,200 L115,180 L150,195 L150,200 L50,200 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+      </svg>
+    `,
+    // 회로도 (기본 V/R/A)
+    circuit_diagram_basic: `
+      <svg viewBox="0 0 280 200" class="w-full h-full">
+        <rect x="0" y="0" width="280" height="200" fill="#fbf6e8"/>
+        <rect x="0" y="0" width="280" height="200" fill="url(#grid1)" opacity="0.25"/>
+        <defs>
+          <pattern id="grid1" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M20,0 L0,0 0,20" fill="none" stroke="#15110c" stroke-width="0.6"/>
+          </pattern>
+        </defs>
+        <!-- 회로 -->
+        <g stroke="#15110c" stroke-width="2.5" fill="none">
+          <path d="M50,150 L50,50 L120,50"/>
+          <path d="M180,50 L230,50 L230,150 L50,150"/>
+          <!-- 전지 -->
+          <line x1="40" y1="100" x2="60" y2="100" stroke-width="3"/>
+          <line x1="45" y1="95" x2="55" y2="95" stroke-width="3"/>
+          <line x1="40" y1="110" x2="60" y2="110" stroke-width="3"/>
+          <line x1="45" y1="105" x2="55" y2="105" stroke-width="3"/>
+          <text x="25" y="105" text-anchor="middle" font-family="Special Elite" font-size="14" fill="#15110c">V</text>
+          <text x="25" y="120" text-anchor="middle" font-family="Special Elite" font-size="11" fill="#15110c">12V</text>
+          <!-- 저항 (지그재그) -->
+          <polyline points="120,50 130,40 140,60 150,40 160,60 170,40 180,50" fill="none"/>
+          <text x="150" y="30" text-anchor="middle" font-family="Special Elite" font-size="14" fill="#15110c">R = 6Ω</text>
+          <!-- 전류계 -->
+          <circle cx="140" cy="150" r="14"/>
+          <text x="140" y="155" text-anchor="middle" font-family="Special Elite" font-size="14" fill="#15110c">A</text>
+        </g>
+        <!-- 전류 화살표 -->
+        <g fill="#15110c">
+          <path d="M85,150 L100,150 L100,155 L110,148 L100,141 L100,146 L85,146 Z"/>
+        </g>
+        <text x="100" y="178" text-anchor="middle" font-family="Special Elite" font-size="13" fill="#15110c">I = 2A</text>
+      </svg>
+    `,
+    // 김전기 추리 (모자·돋보기)
+    face_kim_detective: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <rect x="0" y="0" width="200" height="200" fill="url(#hatchC)" opacity="0.35"/>
+        <defs>
+          <pattern id="hatchC" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(60)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#15110c" stroke-width="0.8"/>
+          </pattern>
+        </defs>
+        <!-- 얼굴 -->
+        <ellipse cx="95" cy="115" rx="50" ry="58" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <!-- 사냥모자 (헌팅캡) -->
+        <path d="M50,80 Q95,40 140,75 Q145,90 140,95 L50,95 Q45,90 50,80 Z" fill="#15110c"/>
+        <ellipse cx="55" cy="92" rx="14" ry="6" fill="#15110c"/>
+        <ellipse cx="135" cy="92" rx="14" ry="6" fill="#15110c"/>
+        <!-- 눈 (날카롭게) -->
+        <path d="M70,120 L85,118" stroke="#15110c" stroke-width="3" stroke-linecap="round"/>
+        <path d="M108,118 L122,120" stroke="#15110c" stroke-width="3" stroke-linecap="round"/>
+        <!-- 입 (다부지게) -->
+        <path d="M85,150 Q95,158 105,150" stroke="#15110c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- 돋보기 -->
+        <g transform="translate(140,135)">
+          <circle cx="20" cy="20" r="22" fill="none" stroke="#15110c" stroke-width="3.5"/>
+          <circle cx="20" cy="20" r="22" fill="#fbf6e8" opacity="0.4"/>
+          <line x1="35" y1="35" x2="55" y2="55" stroke="#15110c" stroke-width="6" stroke-linecap="round"/>
+          <line x1="35" y1="35" x2="55" y2="55" stroke="#fbf6e8" stroke-width="2"/>
+          <text x="20" y="26" text-anchor="middle" font-family="Yuji Mai" font-size="20" fill="#15110c" font-weight="900">!?</text>
+        </g>
+      </svg>
+    `,
+    // KCL/KVL 장면
+    scene_kcl_kvl: `
+      <svg viewBox="0 0 400 240" class="w-full h-full">
+        <rect x="0" y="0" width="400" height="240" fill="#fbf6e8"/>
+        <!-- 방사 톤 -->
+        <g stroke="#15110c" stroke-width="1" opacity="0.55">
+          <line x1="200" y1="120" x2="0"   y2="0"/>
+          <line x1="200" y1="120" x2="400" y2="0"/>
+          <line x1="200" y1="120" x2="0"   y2="240"/>
+          <line x1="200" y1="120" x2="400" y2="240"/>
+          <line x1="200" y1="120" x2="0"   y2="120"/>
+          <line x1="200" y1="120" x2="400" y2="120"/>
+          <line x1="200" y1="120" x2="200" y2="0"/>
+          <line x1="200" y1="120" x2="200" y2="240"/>
+        </g>
+        <!-- 가운데 노드 -->
+        <circle cx="200" cy="120" r="14" fill="#15110c"/>
+        <text x="200" y="125" text-anchor="middle" font-family="Special Elite" font-size="11" fill="#fbf6e8">N</text>
+        <!-- 들어오는 화살표 -->
+        <g stroke="#15110c" stroke-width="3" fill="#15110c">
+          <path d="M40,60 L180,110"/>
+          <polygon points="180,110 170,98 162,116"/>
+          <text x="80" y="55" font-family="Special Elite" font-size="14" fill="#15110c">I₁</text>
+          <path d="M40,180 L180,130"/>
+          <polygon points="180,130 168,122 168,138"/>
+          <text x="80" y="200" font-family="Special Elite" font-size="14" fill="#15110c">I₂</text>
+        </g>
+        <!-- 나가는 화살표 -->
+        <g stroke="#15110c" stroke-width="3" fill="#15110c">
+          <path d="M220,120 L360,80"/>
+          <polygon points="360,80 348,76 350,92"/>
+          <text x="320" y="70" font-family="Special Elite" font-size="14" fill="#15110c">I₃</text>
+          <path d="M220,125 L360,170"/>
+          <polygon points="360,170 348,166 348,182"/>
+          <text x="320" y="195" font-family="Special Elite" font-size="14" fill="#15110c">I₄</text>
+        </g>
+        <!-- KCL 식 -->
+        <rect x="125" y="15" width="150" height="25" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+        <text x="200" y="33" text-anchor="middle" font-family="Yuji Mai" font-size="16" fill="#15110c">I₁+I₂ = I₃+I₄</text>
+        <!-- KVL 폐회로 -->
+        <rect x="20" y="210" width="360" height="22" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+        <text x="200" y="226" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">ΣV = 0  (폐회로 전압의 합)</text>
+      </svg>
+    `,
+    // 패러데이 후예 충격
+    face_paradai_shock: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#15110c"/>
+        <!-- 흰 폭발 -->
+        <polygon points="100,100
+          100,5 130,30 155,10 165,40 195,30 185,65 195,90 165,100 195,135 165,140 175,170 145,165 130,195 100,180
+          70,195 55,165 25,170 35,140 5,135 35,100 5,90 15,65 5,30 35,40 45,10 70,30"
+          fill="#fbf6e8"/>
+        <!-- 얼굴 -->
+        <ellipse cx="100" cy="105" rx="42" ry="52" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <path d="M58,60 Q100,30 142,60 L142,95 L58,95 Z" fill="#15110c"/>
+        <!-- 눈 (충격!) -->
+        <circle cx="82" cy="105" r="11" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <circle cx="118" cy="105" r="11" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <circle cx="82" cy="105" r="3" fill="#15110c"/>
+        <circle cx="118" cy="105" r="3" fill="#15110c"/>
+        <!-- 입 (벌어진 충격) -->
+        <ellipse cx="100" cy="142" rx="9" ry="11" fill="#15110c"/>
+        <!-- 안경 깨짐 -->
+        <line x1="68" y1="100" x2="96" y2="100" stroke="#15110c" stroke-width="1.5"/>
+        <line x1="104" y1="100" x2="132" y2="100" stroke="#15110c" stroke-width="1.5"/>
+        <line x1="74" y1="92" x2="80" y2="115" stroke="#15110c" stroke-width="1"/>
+        <line x1="116" y1="92" x2="120" y2="115" stroke="#15110c" stroke-width="1"/>
+      </svg>
+    `,
+    // 직렬 회로
+    circuit_series: `
+      <svg viewBox="0 0 280 200" class="w-full h-full">
+        <rect x="0" y="0" width="280" height="200" fill="#fbf6e8"/>
+        <g stroke="#15110c" stroke-width="2.5" fill="none">
+          <path d="M30,150 L30,60 L60,60"/>
+          <path d="M220,60 L250,60 L250,150 L30,150"/>
+          <!-- 전지 -->
+          <line x1="20" y1="100" x2="40" y2="100" stroke-width="3"/>
+          <line x1="22" y1="110" x2="38" y2="110" stroke-width="3"/>
+          <!-- R1 R2 R3 -->
+          <polyline points="60,60 75,50 90,70 105,50 120,60"/>
+          <polyline points="120,60 135,50 150,70 165,50 180,60"/>
+          <polyline points="180,60 195,50 210,70 220,60"/>
+          <text x="90" y="40" text-anchor="middle" font-family="Special Elite" font-size="12" fill="#15110c">R₁</text>
+          <text x="150" y="40" text-anchor="middle" font-family="Special Elite" font-size="12" fill="#15110c">R₂</text>
+          <text x="200" y="40" text-anchor="middle" font-family="Special Elite" font-size="12" fill="#15110c">R₃</text>
+        </g>
+        <!-- 전류 화살표 -->
+        <g fill="#15110c">
+          <path d="M140,150 L155,150 L155,155 L165,148 L155,141 L155,146 L140,146 Z"/>
+        </g>
+        <text x="140" y="175" font-family="Special Elite" font-size="12" fill="#15110c">I (어디서나 같음)</text>
+        <text x="140" y="195" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">R_t = R₁ + R₂ + R₃</text>
+      </svg>
+    `,
+    // 병렬 회로
+    circuit_parallel: `
+      <svg viewBox="0 0 280 200" class="w-full h-full">
+        <rect x="0" y="0" width="280" height="200" fill="#fbf6e8"/>
+        <g stroke="#15110c" stroke-width="2.5" fill="none">
+          <path d="M30,150 L30,60 L240,60 L240,150 L30,150"/>
+          <!-- 분기 -->
+          <path d="M90,60 L90,90 L90,130 L90,150"/>
+          <path d="M150,60 L150,90 L150,130 L150,150"/>
+          <path d="M210,60 L210,90 L210,130 L210,150"/>
+          <!-- R1 R2 R3 (수직 지그재그) -->
+          <polyline points="90,90 80,98 100,106 80,114 100,122 90,130"/>
+          <polyline points="150,90 140,98 160,106 140,114 160,122 150,130"/>
+          <polyline points="210,90 200,98 220,106 200,114 220,122 210,130"/>
+          <!-- 전지 -->
+          <line x1="20" y1="100" x2="40" y2="100" stroke-width="3"/>
+          <line x1="22" y1="110" x2="38" y2="110" stroke-width="3"/>
+          <text x="110" y="105" font-family="Special Elite" font-size="11" fill="#15110c">R₁</text>
+          <text x="170" y="105" font-family="Special Elite" font-size="11" fill="#15110c">R₂</text>
+          <text x="230" y="105" font-family="Special Elite" font-size="11" fill="#15110c">R₃</text>
+        </g>
+        <text x="140" y="180" text-anchor="middle" font-family="Yuji Mai" font-size="13" fill="#15110c">1/R_t = 1/R₁ + 1/R₂ + 1/R₃</text>
+        <text x="140" y="196" text-anchor="middle" font-family="Special Elite" font-size="10" fill="#15110c">V (어디서나 같음)</text>
+      </svg>
+    `,
+    // 결투 장면 (와이드)
+    scene_duel: `
+      <svg viewBox="0 0 480 240" class="w-full h-full">
+        <rect x="0" y="0" width="480" height="240" fill="#fbf6e8"/>
+        <!-- 가운데 충돌선 -->
+        <g stroke="#15110c" stroke-width="2.5" opacity="0.9">
+          <line x1="240" y1="120" x2="180" y2="40"/>
+          <line x1="240" y1="120" x2="200" y2="20"/>
+          <line x1="240" y1="120" x2="260" y2="10"/>
+          <line x1="240" y1="120" x2="300" y2="30"/>
+          <line x1="240" y1="120" x2="180" y2="220"/>
+          <line x1="240" y1="120" x2="220" y2="230"/>
+          <line x1="240" y1="120" x2="280" y2="230"/>
+          <line x1="240" y1="120" x2="320" y2="210"/>
+        </g>
+        <!-- 충돌 폭발 -->
+        <polygon points="240,120 270,80 290,110 320,90 310,130 340,160 290,150 280,190 250,160 220,200 200,160 160,170 180,130 140,110 190,100 210,70" fill="#15110c"/>
+        <polygon points="240,120 260,95 280,115 305,100 295,130 315,150 285,145 275,170 250,155 225,180 210,155 185,165 200,135 170,120 200,115 215,90" fill="#fbf6e8"/>
+        <!-- 좌 : 김전기 (오른손 펀치) -->
+        <g transform="translate(80,120)">
+          <path d="M-30,-50 Q-40,30 -20,80 L40,80 Q60,40 50,-50 Z" fill="#15110c"/>
+          <ellipse cx="0" cy="-50" rx="28" ry="32" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+          <path d="M-26,-70 L-18,-90 L-10,-72 L-2,-92 L6,-72 L14,-90 L22,-72 L26,-86 L26,-58 L-26,-58 Z" fill="#15110c"/>
+          <rect x="-28" y="-65" width="56" height="6" fill="#15110c"/>
+          <path d="M-14,-44 L-6,-40 L-14,-36 Z" fill="#15110c"/>
+          <path d="M14,-44 L6,-40 L14,-36 Z" fill="#15110c"/>
+          <path d="M-6,-22 L0,-15 L6,-22" stroke="#15110c" stroke-width="2" fill="none"/>
+          <!-- 펀치 (앞으로) -->
+          <path d="M30,-10 L100,30 L90,50 L20,20 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+          <circle cx="105" cy="35" r="14" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        </g>
+        <!-- 우 : 패러데이 후예 -->
+        <g transform="translate(400,120)">
+          <path d="M-50,-50 Q-60,30 -40,80 L20,80 Q40,40 30,-50 Z" fill="#15110c"/>
+          <ellipse cx="-12" cy="-50" rx="26" ry="30" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+          <path d="M-36,-70 Q-12,-90 12,-70 Q14,-58 12,-55 L-36,-55 Z" fill="#15110c"/>
+          <line x1="-22" y1="-44" x2="-14" y2="-44" stroke="#15110c" stroke-width="2"/>
+          <line x1="-2" y1="-44" x2="6" y2="-44" stroke="#15110c" stroke-width="2"/>
+          <line x1="-14" y1="-44" x2="-2" y2="-44" stroke="#15110c" stroke-width="1.5"/>
+          <path d="M-20,-46 L-14,-42" stroke="#15110c" stroke-width="2"/>
+          <path d="M-2,-42 L6,-46" stroke="#15110c" stroke-width="2"/>
+          <path d="M-14,-22 Q-8,-15 -2,-22" stroke="#15110c" stroke-width="2" fill="none"/>
+          <!-- 손바닥 (전기파) -->
+          <path d="M-50,-10 L-100,15 L-95,35 L-45,15 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+          <g transform="translate(-115,15)" fill="none" stroke="#15110c" stroke-width="3">
+            <path d="M0,0 Q-8,-6 -16,0 Q-8,6 0,0 Q8,-6 16,0 Q8,6 0,0"/>
+          </g>
+        </g>
+      </svg>
+    `,
+    // 답안지 장면
+    scene_answer_sheet: `
+      <svg viewBox="0 0 400 240" class="w-full h-full">
+        <rect x="0" y="0" width="400" height="240" fill="#fbf6e8"/>
+        <!-- 책상 톤 -->
+        <rect x="0" y="160" width="400" height="80" fill="#15110c" opacity="0.18"/>
+        <!-- 답안지 -->
+        <g>
+          <rect x="60" y="40" width="280" height="170" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5" transform="rotate(-2 200 125)"/>
+          <g transform="rotate(-2 200 125)">
+            <text x="200" y="65" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">解答用紙 · 답안지</text>
+            <line x1="80" y1="80" x2="320" y2="80" stroke="#15110c" stroke-width="1.2"/>
+            <!-- 문항 -->
+            <text x="80" y="100" font-family="Special Elite" font-size="11" fill="#15110c">1. 12V, 6Ω일 때 전류는?</text>
+            <rect x="80" y="105" width="240" height="22" fill="none" stroke="#15110c" stroke-width="1"/>
+            <text x="90" y="121" font-family="Shadows Into Light" font-size="16" fill="#15110c">I = 2A</text>
+            <!-- 정답 동그라미 -->
+            <ellipse cx="115" cy="118" rx="35" ry="15" fill="none" stroke="#15110c" stroke-width="2"/>
+            <text x="80" y="148" font-family="Special Elite" font-size="11" fill="#15110c">2. 직렬 R=4,6,10Ω 합성?</text>
+            <rect x="80" y="153" width="240" height="22" fill="none" stroke="#15110c" stroke-width="1"/>
+            <text x="90" y="169" font-family="Shadows Into Light" font-size="16" fill="#15110c">R_t = 20Ω</text>
+            <ellipse cx="125" cy="166" rx="42" ry="14" fill="none" stroke="#15110c" stroke-width="2"/>
+            <text x="80" y="196" font-family="Special Elite" font-size="11" fill="#15110c">3. 키르히호프 KCL은?</text>
+          </g>
+        </g>
+        <!-- 손 + 펜 -->
+        <g transform="translate(290,180) rotate(-15)">
+          <path d="M0,0 L60,-40 L80,-20 L20,20 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+          <line x1="55" y1="-30" x2="100" y2="-70" stroke="#15110c" stroke-width="4"/>
+          <polygon points="98,-72 110,-78 108,-66" fill="#15110c"/>
+        </g>
+      </svg>
+    `,
+    // 김전기 미소
+    face_kim_smile: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <rect x="0" y="0" width="200" height="200" fill="url(#tone5)" opacity="0.2"/>
+        <defs>
+          <pattern id="tone5" width="6" height="6" patternUnits="userSpaceOnUse">
+            <circle cx="3" cy="3" r="0.7" fill="#15110c"/>
+          </pattern>
+        </defs>
+        <ellipse cx="100" cy="115" rx="55" ry="62" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <path d="M50,75 L62,40 L75,68 L88,38 L100,68 L112,38 L125,68 L138,40 L150,75 L150,100 L50,100 Z" fill="#15110c"/>
+        <rect x="42" y="90" width="116" height="9" fill="#15110c"/>
+        <!-- 눈 (호선) -->
+        <path d="M70,125 Q80,118 90,125" stroke="#15110c" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M110,125 Q120,118 130,125" stroke="#15110c" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- 입 (활짝) -->
+        <path d="M75,155 Q100,180 125,155 Q100,165 75,155 Z" fill="#15110c"/>
+        <path d="M82,158 Q100,170 118,158" stroke="#fbf6e8" stroke-width="2" fill="none"/>
+        <!-- 홍조 (선) -->
+        <line x1="60" y1="148" x2="72" y2="148" stroke="#15110c" stroke-width="1.5"/>
+        <line x1="60" y1="153" x2="68" y2="153" stroke="#15110c" stroke-width="1.5"/>
+        <line x1="128" y1="148" x2="140" y2="148" stroke="#15110c" stroke-width="1.5"/>
+        <line x1="132" y1="153" x2="140" y2="153" stroke="#15110c" stroke-width="1.5"/>
+      </svg>
+    `,
+    // 시계
+    clock_tense: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <!-- 집중선 -->
+        <g stroke="#15110c" stroke-width="1.5" opacity="0.8">
+          <line x1="100" y1="100" x2="0"   y2="20"/>
+          <line x1="100" y1="100" x2="200" y2="20"/>
+          <line x1="100" y1="100" x2="0"   y2="180"/>
+          <line x1="100" y1="100" x2="200" y2="180"/>
+          <line x1="100" y1="100" x2="20"  y2="100"/>
+          <line x1="100" y1="100" x2="180" y2="100"/>
+        </g>
+        <!-- 시계 본체 -->
+        <circle cx="100" cy="100" r="68" fill="#fbf6e8" stroke="#15110c" stroke-width="4"/>
+        <circle cx="100" cy="100" r="60" fill="none" stroke="#15110c" stroke-width="1.5"/>
+        <!-- 눈금 -->
+        <g stroke="#15110c" stroke-width="2.5">
+          <line x1="100" y1="46" x2="100" y2="54"/>
+          <line x1="100" y1="146" x2="100" y2="154"/>
+          <line x1="46" y1="100" x2="54" y2="100"/>
+          <line x1="146" y1="100" x2="154" y2="100"/>
+        </g>
+        <!-- 숫자 -->
+        <text x="100" y="64" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">12</text>
+        <text x="100" y="146" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">6</text>
+        <text x="58" y="106" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">9</text>
+        <text x="142" y="106" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#15110c">3</text>
+        <!-- 시침 (긴장) -->
+        <line x1="100" y1="100" x2="135" y2="65" stroke="#15110c" stroke-width="5" stroke-linecap="round"/>
+        <line x1="100" y1="100" x2="100" y2="55" stroke="#15110c" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="100" cy="100" r="5" fill="#15110c"/>
+        <!-- 종 흔들림 -->
+        <circle cx="65" cy="34" r="9" fill="#15110c"/>
+        <circle cx="135" cy="34" r="9" fill="#15110c"/>
+        <!-- 소리선 -->
+        <path d="M30,40 Q22,50 30,60" stroke="#15110c" stroke-width="2" fill="none"/>
+        <path d="M170,40 Q178,50 170,60" stroke="#15110c" stroke-width="2" fill="none"/>
+      </svg>
+    `,
+    // 합격자 명단
+    scene_passlist: `
+      <svg viewBox="0 0 480 240" class="w-full h-full">
+        <rect x="0" y="0" width="480" height="240" fill="#fbf6e8"/>
+        <!-- 폭발 방사선 -->
+        <g stroke="#15110c" stroke-width="3">
+          <line x1="240" y1="120" x2="40"  y2="20"/>
+          <line x1="240" y1="120" x2="120" y2="0"/>
+          <line x1="240" y1="120" x2="240" y2="0"/>
+          <line x1="240" y1="120" x2="360" y2="0"/>
+          <line x1="240" y1="120" x2="440" y2="20"/>
+          <line x1="240" y1="120" x2="0"   y2="120"/>
+          <line x1="240" y1="120" x2="480" y2="120"/>
+          <line x1="240" y1="120" x2="40"  y2="220"/>
+          <line x1="240" y1="120" x2="240" y2="240"/>
+          <line x1="240" y1="120" x2="440" y2="220"/>
+        </g>
+        <!-- 명단 종이 -->
+        <g transform="rotate(-3 240 120)">
+          <rect x="110" y="50" width="260" height="140" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+          <text x="240" y="78" text-anchor="middle" font-family="Yuji Mai" font-size="20" fill="#15110c">合格者名簿 · 합격자 명단</text>
+          <line x1="125" y1="86" x2="355" y2="86" stroke="#15110c" stroke-width="1.5"/>
+          <text x="135" y="108" font-family="Special Elite" font-size="13" fill="#15110c">No.001  キム・チョンギ (김전기)</text>
+          <ellipse cx="240" cy="105" rx="80" ry="14" fill="none" stroke="#15110c" stroke-width="3"/>
+          <text x="135" y="130" font-family="Special Elite" font-size="13" fill="#15110c">No.002  パラデイ (패러데이 후예)</text>
+          <text x="135" y="152" font-family="Special Elite" font-size="13" fill="#15110c">No.003  サトウ・リカ</text>
+          <text x="135" y="174" font-family="Special Elite" font-size="13" fill="#15110c">No.004  チョン・ハナ</text>
+        </g>
+        <!-- 주인공 (작게) -->
+        <g transform="translate(70,170)">
+          <ellipse cx="0" cy="0" rx="14" ry="12" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+          <path d="M-12,-8 L-6,-18 L-2,-8 L4,-18 L8,-8 L12,-16 L12,2 L-12,2 Z" fill="#15110c"/>
+          <!-- 만세 팔 -->
+          <line x1="-14" y1="2" x2="-22" y2="-22" stroke="#15110c" stroke-width="3"/>
+          <line x1="14" y1="2" x2="22" y2="-22" stroke="#15110c" stroke-width="3"/>
+          <path d="M-12,15 L12,15 L8,40 L-8,40 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+        </g>
+        <!-- 도장 (붉은색 X — 흑백 일관 위해 검정 윤곽) -->
+        <g transform="translate(360,180) rotate(15)">
+          <rect x="-25" y="-15" width="50" height="30" fill="none" stroke="#15110c" stroke-width="3"/>
+          <text x="0" y="6" text-anchor="middle" font-family="Yuji Mai" font-size="16" fill="#15110c">合格</text>
+        </g>
+      </svg>
+    `,
+    // 옴 박사 미소
+    face_om_smile: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#fbf6e8"/>
+        <rect x="0" y="0" width="200" height="200" fill="url(#tone6)" opacity="0.3"/>
+        <defs>
+          <pattern id="tone6" width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="2.5" cy="2.5" r="0.8" fill="#15110c"/>
+          </pattern>
+        </defs>
+        <ellipse cx="100" cy="100" rx="55" ry="60" fill="#fbf6e8" stroke="#15110c" stroke-width="3"/>
+        <path d="M55,80 Q60,55 100,55 Q140,55 145,80 Q150,75 152,90 L155,110 Q145,80 100,77 Q55,80 45,110 L48,90 Q50,75 55,80 Z" fill="#15110c"/>
+        <!-- 눈웃음 -->
+        <path d="M68,108 Q78,100 90,108" stroke="#15110c" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M110,108 Q122,100 132,108" stroke="#15110c" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- 코 -->
+        <path d="M100,115 L95,135 L105,135 Z" fill="none" stroke="#15110c" stroke-width="2"/>
+        <!-- 수염 (활짝 웃음으로 들림) -->
+        <path d="M70,145 Q100,135 130,145 Q140,155 130,170 Q100,160 70,170 Q60,155 70,145 Z" fill="#fbf6e8" stroke="#15110c" stroke-width="2.5"/>
+        <path d="M80,155 L75,185 Q90,200 100,185 Q110,200 125,185 L120,155" fill="#fbf6e8" stroke="#15110c" stroke-width="2"/>
+        <!-- 안경 -->
+        <circle cx="78" cy="108" r="14" fill="none" stroke="#15110c" stroke-width="2"/>
+        <circle cx="122" cy="108" r="14" fill="none" stroke="#15110c" stroke-width="2"/>
+        <line x1="92" y1="108" x2="108" y2="108" stroke="#15110c" stroke-width="2"/>
+        <line x1="73" y1="103" x2="82" y2="98" stroke="#fbf6e8" stroke-width="2"/>
+        <!-- 윙크 표시 (별) -->
+        <text x="160" y="60" font-family="Yuji Mai" font-size="22" fill="#15110c">☆</text>
+      </svg>
+    `,
+    // 다음 권 예고 (실루엣)
+    next_preview: `
+      <svg viewBox="0 0 200 200" class="w-full h-full">
+        <rect x="0" y="0" width="200" height="200" fill="#15110c"/>
+        <!-- 흰 텍스트 -->
+        <text x="100" y="34" text-anchor="middle" font-family="Special Elite" font-size="10" fill="#fbf6e8">NEXT VOLUME PREVIEW</text>
+        <text x="100" y="54" text-anchor="middle" font-family="Yuji Mai" font-size="14" fill="#fbf6e8">次回予告</text>
+        <!-- 실루엣 캐릭터 -->
+        <g transform="translate(100,130)">
+          <ellipse cx="0" cy="-20" rx="22" ry="26" fill="#fbf6e8"/>
+          <path d="M-22,-40 L-10,-58 L-2,-42 L6,-60 L14,-42 L22,-58 L22,-30 L-22,-30 Z" fill="#15110c"/>
+          <path d="M-30,5 L-35,60 L35,60 L30,5 Z" fill="#fbf6e8"/>
+          <!-- 망토 -->
+          <path d="M-30,5 Q-50,40 -20,70 L20,70 Q50,40 30,5 Z" fill="#15110c" opacity="0.55"/>
+          <!-- 가슴 K -->
+          <text x="0" y="40" text-anchor="middle" font-family="Yuji Mai" font-size="18" fill="#15110c">K</text>
+        </g>
+        <!-- ?? -->
+        <text x="34" y="92" font-family="Yuji Mai" font-size="40" fill="#fbf6e8">?</text>
+        <text x="156" y="92" font-family="Yuji Mai" font-size="40" fill="#fbf6e8">?</text>
+        <!-- 캡션 -->
+        <text x="100" y="186" text-anchor="middle" font-family="Special Elite" font-size="9" fill="#fbf6e8">Vol.2 · KIRCHHOFF MYSTERY</text>
+      </svg>
+    `
+  };
+
+  // ───────────────────────── 렌더링 ─────────────────────────
+  function renderBubble(b){
+    const pos = esc(b.pos || '');
+    const text = esc(b.text || '');
+    let cls = 'bubble absolute z-10 text-stone-900 text-[12.5px] md:text-[13.5px] max-w-[80%] ';
+    if (b.type === 'spike')   cls = 'bubble bubble-spike absolute z-10 text-stone-900 text-[13px] md:text-[14px] max-w-[78%] text-center f-bang ';
+    if (b.type === 'think')   cls = 'bubble bubble-think absolute z-10 text-stone-900 text-[12.5px] max-w-[70%] ';
+    if (b.type === 'narrate') cls = 'bubble bubble-narrate absolute z-10 text-stone-900 text-[11.5px] md:text-[12.5px] ';
+    if (b.tail === 'bl') cls += ' bubble-tail-bl';
+    if (b.tail === 'br') cls += ' bubble-tail-br';
+    if (b.tail === 'tl') cls += ' bubble-tail-tl';
+    return '<div class="'+cls+' '+pos+'" data-bubble="1">'+text+'</div>';
+  }
+
+  function renderSfx(s){
+    const pos = esc(s.pos || '');
+    const sz  = esc(s.size || 'text-2xl');
+    const text = esc(s.text || '');
+    const extra = s.white ? 'sfx sfx-white' : 'sfx sfx-jp';
+    return '<div class="'+extra+' absolute z-20 '+sz+' '+pos+'">'+text+'</div>';
+  }
+
+  function panelClass(p){
+    let cls = 'panel relative overflow-hidden ';
+    if (p.layout === 'sm')   cls += ' col-span-1 row-span-1 ';
+    if (p.layout === 'lg')   cls += ' col-span-2 row-span-1 ';
+    if (p.layout === 'wide') cls += ' col-span-2 row-span-1 ';
+    if (p.tilt) cls += ' ' + p.tilt;
+    return cls;
+  }
+
+  function panelHeight(p){
+    if (p.layout === 'wide') return 'min-height: 200px;';
+    if (p.layout === 'lg')   return 'min-height: 200px;';
+    return 'min-height: 200px;';
+  }
+
+  function renderPage(page, side){
+    if (!page){
+      return `
+        <div class="page-side paper relative">
+          <div class="absolute inset-0 flex items-center justify-center text-stone-700">
+            <div class="text-center">
+              <div class="f-yuji text-3xl mb-1">― 完 ―</div>
+              <div class="f-elite text-xs opacity-70">END OF VOLUME 1</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let inner = '';
+    // 제목 (있을 때)
+    if (page.title || page.titleKr){
+      inner += `
+        <div class="mb-3 border-b-2 border-stone-900 pb-2">
+          <div class="f-yuji text-stone-900 text-xl md:text-2xl leading-tight">${esc(page.title || '')}</div>
+          <div class="f-zen text-stone-800 text-sm">${esc(page.titleKr || '')}</div>
+        </div>
+      `;
+    } else {
+      inner += '<div class="mb-3 h-3"></div>';
+    }
+
+    // 패널 그리드 (2열)
+    inner += '<div class="grid grid-cols-2 gap-3 md:gap-4">';
+    page.panels.forEach((p, idx) => {
+      const svg = SVGS[p.svg] || '';
+      let bubbles = '';
+      (p.bubbles || []).forEach(b => bubbles += renderBubble(b));
+      let sfx = '';
+      (p.sfx || []).forEach(s => sfx += renderSfx(s));
+      inner += `
+        <div class="${panelClass(p)}" style="${panelHeight(p)}" data-panel="${idx}">
+          <div class="absolute inset-0">${svg}</div>
+          ${bubbles}
+          ${sfx}
+        </div>
+      `;
+    });
+    inner += '</div>';
+
+    // 페이지 번호 (우→좌)
+    const pnCls = side === 'right' ? 'pg-num pg-num-l' : 'pg-num pg-num-r';
+    inner += `<div class="${pnCls}">— ${esc(String(page.no))} —</div>`;
+
+    // 페이지 그림자
+    const shadowCls = side === 'right' ? 'page-shadow-l' : 'page-shadow-r';
+
+    return `
+      <div class="page-side paper relative">
+        ${inner}
+        <div class="${shadowCls}"></div>
+      </div>
+    `;
+  }
+
+  // ───────────────────────── 상태 + 컨트롤 ─────────────────────────
+  // 일본 만화 : 우측 페이지가 홀수 (먼저 읽음), 좌측이 짝수
+  // PAGES[0] 페이지1 → 첫 spread 의 우측
+  // PAGES[1] 페이지2 → 첫 spread 의 좌측
+  const totalPages = PAGES.length; // 6
+  const totalSpreads = Math.ceil(totalPages / 2); // 3
+  let spreadIdx = 0;
+
+  function renderSpread(animClass){
+    const stage = document.getElementById('spread');
+    const rightIdx = spreadIdx * 2;     // 우측 페이지 (홀수번호)
+    const leftIdx  = spreadIdx * 2 + 1; // 좌측 페이지 (짝수번호)
+    const rightPage = PAGES[rightIdx];
+    const leftPage  = PAGES[leftIdx];
+
+    // 일본 만화 = 우→좌 : DOM 순서는 [좌, 우] (CSS grid 1열=좌측, 2열=우측)
+    stage.innerHTML = renderPage(leftPage, 'left') + renderPage(rightPage, 'right');
+
+    // 레이블
+    document.getElementById('spread-label').textContent =
+      'SPREAD ' + (spreadIdx + 1) + ' / ' + totalSpreads;
+
+    // 도트
+    const dotsEl = document.getElementById('dots');
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < totalSpreads; i++){
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === spreadIdx ? ' on' : '');
+      dotsEl.appendChild(d);
+    }
+
+    // 버튼 상태
+    document.getElementById('btn-prev').disabled  = spreadIdx === 0;
+    document.getElementById('btn-prev2').disabled = spreadIdx === 0;
+    document.getElementById('btn-next').disabled  = spreadIdx === totalSpreads - 1;
+    document.getElementById('btn-next2').disabled = spreadIdx === totalSpreads - 1;
+
+    // 애니메이션
+    if (animClass){
+      stage.classList.remove('slide-in-r', 'slide-in-l');
+      void stage.offsetWidth;
+      stage.classList.add(animClass);
+    }
+
+    // 말풍선 클릭 (텍스트 강조)
+    stage.querySelectorAll('[data-bubble]').forEach(el => {
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
+        stage.querySelectorAll('[data-bubble].active').forEach(x => {
+          if (x !== el) x.classList.remove('active');
+        });
+        el.classList.toggle('active');
+      });
+    });
+  }
+
+  // 일본 만화 : "다음 페이지" = 왼쪽 화살표 (책이 좌측으로 넘어감)
+  function nextSpread(){
+    if (spreadIdx < totalSpreads - 1){
+      spreadIdx++;
+      renderSpread('slide-in-l');
+    } else {
+      // 마지막이면 오마케 보이기
+      showOmake();
+    }
+  }
+  function prevSpread(){
+    if (spreadIdx > 0){
+      spreadIdx--;
+      renderSpread('slide-in-r');
+    }
+  }
+
+  // ───────────────────────── 표지 → 본편 ─────────────────────────
+  const coverBook = document.getElementById('cover-book');
+  const coverStage = document.getElementById('cover-stage');
+  const readingStage = document.getElementById('reading-stage');
+  const omakeStage = document.getElementById('omake-stage');
+
+  function openBook(){
+    coverBook.classList.add('open-anim');
+    setTimeout(function(){
+      coverStage.classList.add('hidden');
+      readingStage.classList.remove('hidden');
+      readingStage.classList.add('reveal');
+      omakeStage.classList.remove('hidden');
+      omakeStage.classList.add('reveal');
+      spreadIdx = 0;
+      renderSpread('slide-in-r');
+      window.scrollTo({ top: readingStage.offsetTop - 20, behavior: 'smooth' });
+    }, 700);
+  }
+  function backToCover(){
+    coverBook.classList.remove('open-anim');
+    coverStage.classList.remove('hidden');
+    readingStage.classList.add('hidden');
+    omakeStage.classList.add('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function showOmake(){
+    omakeStage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  coverBook.addEventListener('click', openBook);
+
+  // ───────────────────────── 키보드/버튼 ─────────────────────────
+  document.getElementById('btn-prev').addEventListener('click', prevSpread);
+  document.getElementById('btn-prev2').addEventListener('click', prevSpread);
+  document.getElementById('btn-next').addEventListener('click', nextSpread);
+  document.getElementById('btn-next2').addEventListener('click', nextSpread);
+  document.getElementById('btn-cover').addEventListener('click', backToCover);
+
+  document.addEventListener('keydown', function(e){
+    if (readingStage.classList.contains('hidden')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openBook();
+      }
+      return;
+    }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); nextSpread(); } // ←=다음
+    if (e.key === 'ArrowRight') { e.preventDefault(); prevSpread(); } // →=이전
+    if (e.key === 'Escape')     { e.preventDefault(); backToCover(); }
+  });
+
+  // ───────────────────────── 초기 (표지 상태) ─────────────────────────
+  // 본편은 표지 클릭 후 렌더되지만, 일부 환경에서 미리 렌더 해두고 숨김.
+  renderSpread('');
+  readingStage.classList.add('hidden');
+  omakeStage.classList.add('hidden');
+
+})();
+</script>
+
+</body>
+</html>

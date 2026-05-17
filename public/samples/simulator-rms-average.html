@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실효값 vs 평균값 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-vm  { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-f   { background: linear-gradient(135deg, rgba(99,102,241,0.20), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.live-pill { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.15); }
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.wave-btn {
+    background: linear-gradient(135deg, rgba(244,114,182,0.12), rgba(99,102,241,0.12));
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 220ms;
+}
+.wave-btn:hover {
+    background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(99,102,241,0.22));
+    transform: translateY(-1px);
+}
+.wave-btn.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.4), rgba(168,139,250,0.4));
+    border-color: rgba(244,114,182,0.7);
+    color: #fff;
+    box-shadow: 0 0 22px rgba(244,114,182,0.5);
+}
+.live-pill.pulse {
+    border-color: rgba(244, 114, 182, 0.7);
+    box-shadow: 0 0 28px rgba(244, 114, 182, 0.45);
+    animation: glow 1.6s ease-in-out infinite alternate;
+}
+@keyframes glow {
+    0% { box-shadow: 0 0 22px rgba(244,114,182,0.35) }
+    100% { box-shadow: 0 0 40px rgba(244,114,182,0.65) }
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · RMS vs AVERAGE · WAVEFORM ANALYZER
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            ~ 실효값(RMS) vs 평균값 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">파형 1주기에서 최대값 · 실효값 · 평균값을 동시에 비교. 파형 종류 토글로 파형계수 · 파고율의 차이를 한눈에.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">최대값 V<sub>m</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="vmVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-rms">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">실효값 V<sub>rms</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="rmsVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">평균값 V<sub>avg</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="avgVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">파형계수 (V<sub>rms</sub>/V<sub>avg</sub>)</p>
+            <p class="mt-1 text-lg font-bold"><span id="ffVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 왼쪽: sticky 영역 -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">1주기 파형 · V<sub>m</sub> / V<sub>rms</sub> / V<sub>avg</sub> 동시 표시</span>
+                    <div class="flex gap-1.5" id="waveToggle">
+                        <button data-wave="sine"     class="wave-btn rounded-md px-3 py-1.5 text-[11px] font-bold active">∿ 정현파</button>
+                        <button data-wave="triangle" class="wave-btn rounded-md px-3 py-1.5 text-[11px] font-bold">⟁ 삼각파</button>
+                        <button data-wave="square"   class="wave-btn rounded-md px-3 py-1.5 text-[11px] font-bold">⎍ 구형파</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">실효값·평균값 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">정현파 실효값</p>
+                        <p class="mt-2 text-sm text-pink-200">$V_{rms}=\dfrac{V_m}{\sqrt{2}}\approx 0.707\,V_m$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">정현파 평균값</p>
+                        <p class="mt-2 text-sm text-pink-200">$V_{avg}=\dfrac{2}{\pi}V_m\approx 0.637\,V_m$</p>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">파형계수 · 파고율</p>
+                        <p class="mt-2 text-sm text-pink-200">$F_f=\dfrac{V_{rms}}{V_{avg}},\ F_c=\dfrac{V_m}{V_{rms}}$</p>
+                    </div>
+                </div>
+                <div id="waveCompareTable" class="mt-4 overflow-x-auto rounded-xl border border-white/5">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-[10px] uppercase tracking-widest text-indigo-200 bg-white/[0.03]">
+                            <tr>
+                                <th class="px-3 py-2">파형</th>
+                                <th class="px-3 py-2">V<sub>rms</sub>/V<sub>m</sub></th>
+                                <th class="px-3 py-2">V<sub>avg</sub>/V<sub>m</sub></th>
+                                <th class="px-3 py-2">파형계수 F<sub>f</sub></th>
+                                <th class="px-3 py-2">파고율 F<sub>c</sub></th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-mono text-slate-300">
+                            <tr id="row-sine"     class="border-t border-white/5"><td class="px-3 py-2 text-pink-200">정현파</td><td class="px-3 py-2">0.707</td><td class="px-3 py-2">0.637</td><td class="px-3 py-2">1.111</td><td class="px-3 py-2">1.414</td></tr>
+                            <tr id="row-triangle" class="border-t border-white/5"><td class="px-3 py-2 text-pink-200">삼각파</td><td class="px-3 py-2">0.577</td><td class="px-3 py-2">0.500</td><td class="px-3 py-2">1.155</td><td class="px-3 py-2">1.732</td></tr>
+                            <tr id="row-square"   class="border-t border-white/5"><td class="px-3 py-2 text-pink-200">구형파</td><td class="px-3 py-2">1.000</td><td class="px-3 py-2">1.000</td><td class="px-3 py-2">1.000</td><td class="px-3 py-2">1.000</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+            <div class="chip-vm chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>최대값 V<sub>m</sub></span><span id="vmDisp" class="font-mono text-base">100</span></label>
+                <input type="range" id="vm" min="10" max="311" step="1" value="100" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V</p>
+            </div>
+            <div class="chip-f chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>주파수 f</span><span id="fDisp" class="font-mono text-base">60</span></label>
+                <input type="range" id="f" min="10" max="200" step="1" value="60" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Hz</p>
+            </div>
+
+            <div class="formula-card rounded-xl p-3 space-y-1.5 text-[11px]">
+                <p class="text-slate-300"><span class="text-pink-300 font-bold">현재 파형</span> · <span id="waveLabel" class="font-mono">정현파</span></p>
+                <p class="text-slate-300">주기 T = <span id="periodDisp" class="font-mono">16.7</span> ms</p>
+                <p class="text-slate-300">파고율 F<sub>c</sub> = <span id="cfVal" class="font-mono">—</span></p>
+                <p class="text-slate-400 text-[10px] pt-1 border-t border-white/5">
+                    실효값은 같은 평균 전력을 내는 직류 값.<br>
+                    평균값은 한 주기 동안 절대값 평균(정류 기준).
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+// 파형 종류별 RMS / AVG 비율 (V_m 기준)
+const WAVE_FACTORS = {
+    sine:     { rmsK: 1 / Math.SQRT2,                 avgK: 2 / Math.PI,         label: '정현파' },
+    triangle: { rmsK: 1 / Math.sqrt(3),               avgK: 0.5,                 label: '삼각파' },
+    square:   { rmsK: 1,                              avgK: 1,                   label: '구형파' },
+};
+
+let state = {
+    Vm: 100,
+    f: 60,
+    wave: 'sine',
+    t: 0,
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 560;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// 파형 함수: phase ∈ [0, 1) → -1..+1
+function waveValue(phase, kind) {
+    if (kind === 'sine')     return Math.sin(2 * Math.PI * phase);
+    if (kind === 'triangle') {
+        // 0→1→0→-1→0 형태
+        const p = phase % 1;
+        if (p < 0.25) return p * 4;
+        if (p < 0.75) return 2 - p * 4;
+        return p * 4 - 4;
+    }
+    if (kind === 'square')   return phase % 1 < 0.5 ? 1 : -1;
+    return 0;
+}
+
+function drawBg() {
+    const W = canvas.width, H = canvas.height;
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // 미세 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ WAVEFORM · 1 PERIOD', 12, 10);
+    ctx.restore();
+}
+
+function drawAxes(plot) {
+    const { x0, y0, w, h, baseY, Vm } = plot;
+    ctx.save();
+
+    // 좌측 / 우측 여백 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.10)';
+    ctx.lineWidth = 1;
+    // x축 격자 (1주기 4분할)
+    for (let k = 0; k <= 4; k++) {
+        const x = x0 + (k / 4) * w;
+        ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + h); ctx.stroke();
+    }
+    // y축 격자 (-Vm, 0, +Vm 기준 4분할)
+    for (let k = -2; k <= 2; k++) {
+        const y = baseY - (k / 2) * (Vm);
+        ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + w, y); ctx.stroke();
+    }
+
+    // 0 라인
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x0, baseY); ctx.lineTo(x0 + w, baseY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // x축 라벨 (각도 / 시간)
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const xLabels = ['0', 'π/2', 'π', '3π/2', '2π'];
+    for (let k = 0; k <= 4; k++) {
+        const x = x0 + (k / 4) * w;
+        ctx.fillText(xLabels[k], x, y0 + h + 6);
+    }
+
+    // y축 라벨 (전압)
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const yLabels = [
+        { k:  1, txt: `+${Vm.toFixed(0)}V` },
+        { k:  0.5, txt: `+${(Vm/2).toFixed(0)}V` },
+        { k:  0, txt: '0' },
+        { k: -0.5, txt: `−${(Vm/2).toFixed(0)}V` },
+        { k: -1, txt: `−${Vm.toFixed(0)}V` },
+    ];
+    for (const yl of yLabels) {
+        const y = baseY - yl.k * Vm;
+        ctx.fillText(yl.txt, x0 - 8, y);
+    }
+
+    ctx.restore();
+}
+
+function drawWaveCurve(plot) {
+    const { x0, w, baseY, ampScale } = plot;
+    const N = 360;
+    // 양의 반주기 영역 채우기
+    ctx.save();
+    ctx.shadowBlur = 0;
+    const fillGrad = ctx.createLinearGradient(0, baseY - state.Vm * ampScale, 0, baseY);
+    fillGrad.addColorStop(0, 'rgba(244, 114, 182, 0.35)');
+    fillGrad.addColorStop(1, 'rgba(244, 114, 182, 0.02)');
+    ctx.fillStyle = fillGrad;
+    ctx.beginPath();
+    ctx.moveTo(x0, baseY);
+    for (let i = 0; i <= N; i++) {
+        const phase = i / N;
+        const v = waveValue(phase, state.wave);
+        const x = x0 + (i / N) * w;
+        const y = baseY - Math.max(0, v) * state.Vm * ampScale;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(x0 + w, baseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 메인 파형 글로우 라인
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#f472b6';
+    const lineGrad = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+    lineGrad.addColorStop(0, 'rgba(125, 211, 252, 0.95)');
+    lineGrad.addColorStop(0.5, 'rgba(244, 114, 182, 0.98)');
+    lineGrad.addColorStop(1, 'rgba(125, 211, 252, 0.95)');
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 2.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const phase = i / N;
+        const v = waveValue(phase, state.wave);
+        const x = x0 + (i / N) * w;
+        const y = baseY - v * state.Vm * ampScale;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawLevelLine(plot, valueAbs, color, dash, labelTxt, side) {
+    const { x0, w, baseY, ampScale } = plot;
+    const y = baseY - valueAbs * ampScale;
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.8;
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(x0, y); ctx.lineTo(x0 + w, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 라벨 (우측 또는 좌측)
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const tw = ctx.measureText(labelTxt).width;
+    const lx = side === 'left' ? x0 + 8 : x0 + w - tw - 16;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, lx - 4, y - 11, tw + 12, 20, 9);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(labelTxt, lx + 2, y);
+    ctx.restore();
+}
+
+function drawMarker(plot) {
+    const { x0, w, baseY, ampScale } = plot;
+    // 펄스 닷 — 한 주기를 따라 이동
+    const phase = (state.t * 0.004) % 1;
+    const v = waveValue(phase, state.wave);
+    const x = x0 + phase * w;
+    const y = baseY - v * state.Vm * ampScale;
+    ctx.save();
+    const pulse = 5 + Math.sin(state.t * 0.12) * 2;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#67e8f9';
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.95)';
+    ctx.beginPath();
+    ctx.arc(x, y, pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // 수직선
+    ctx.save();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.32)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, y); ctx.lineTo(x, baseY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 순시값 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    const txt = `v(t) = ${(v * state.Vm).toFixed(1)} V`;
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, x - tw/2 - 6, y - 28, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#bae6fd';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(txt, x, y - 19);
+    ctx.restore();
+}
+
+function drawLegend(plot) {
+    const { x0, w, y0 } = plot;
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const ly = y0 + 14;
+    let cx = x0 + w - 340;
+    const items = [
+        { c: 'rgba(252, 211, 77, 0.95)', t: '최대값 V_m',  tc: '#fde68a' },
+        { c: 'rgba(244, 114, 182, 0.95)', t: '실효값 V_rms', tc: '#f9a8d4' },
+        { c: 'rgba(110, 231, 183, 0.95)', t: '평균값 V_avg', tc: '#6ee7b7' },
+    ];
+    for (const it of items) {
+        ctx.fillStyle = it.c;
+        ctx.fillRect(cx, ly - 2, 14, 3);
+        ctx.fillStyle = it.tc;
+        ctx.fillText(it.t, cx + 18, ly);
+        cx += 112;
+    }
+    ctx.restore();
+}
+
+function drawPlot() {
+    const W = canvas.width, H = canvas.height;
+    const padL = 64, padR = 36, padT = 44, padB = 36;
+    const x0 = padL, y0 = padT;
+    const w = W - padL - padR;
+    const h = H - padT - padB;
+    const baseY = y0 + h / 2;
+    const Vm = state.Vm;
+    const ampScale = (h / 2 - 12) / Vm;
+
+    const plot = { x0, y0, w, h, baseY, Vm, ampScale };
+
+    drawAxes(plot);
+    drawWaveCurve(plot);
+
+    // 수평선: V_m, V_rms, V_avg (양쪽으로)
+    // V_m 라인 (노란/주황 톤, 굵은 실선)
+    drawLevelLine(plot, Vm,           'rgba(252, 211, 77, 0.95)', null,     `V_m = ${Vm.toFixed(0)} V`, 'right');
+    drawLevelLine(plot, -Vm,          'rgba(252, 211, 77, 0.55)', [3, 4],   `−V_m`, 'right');
+    // V_rms (핑크, 점선)
+    const rms = Vm * WAVE_FACTORS[state.wave].rmsK;
+    drawLevelLine(plot, rms,          'rgba(244, 114, 182, 0.95)', [6, 4],  `V_rms = ${rms.toFixed(1)} V`, 'left');
+    // V_avg (에메랄드, 점선)
+    const avg = Vm * WAVE_FACTORS[state.wave].avgK;
+    drawLevelLine(plot, avg,          'rgba(110, 231, 183, 0.95)', [2, 4],  `V_avg = ${avg.toFixed(1)} V`, 'right');
+
+    drawLegend(plot);
+    drawMarker(plot);
+}
+
+// ====================================================
+// 계산 + UI 갱신
+// ====================================================
+function compute() {
+    state.Vm = +$('vm').value;
+    state.f  = +$('f').value;
+
+    const wf = WAVE_FACTORS[state.wave];
+    const Vrms = state.Vm * wf.rmsK;
+    const Vavg = state.Vm * wf.avgK;
+    const Ff = Vavg > 1e-9 ? Vrms / Vavg : 0;
+    const Fc = Vrms > 1e-9 ? state.Vm / Vrms : 0;
+    const T = 1000 / state.f; // ms
+
+    $('vmDisp').textContent = state.Vm;
+    $('fDisp').textContent  = state.f;
+
+    $('vmVal').textContent  = `${state.Vm.toFixed(0)} V`;
+    $('rmsVal').textContent = `${Vrms.toFixed(1)} V`;
+    $('avgVal').textContent = `${Vavg.toFixed(1)} V`;
+    $('ffVal').textContent  = Ff.toFixed(3);
+
+    $('cfVal').textContent  = Fc.toFixed(3);
+    $('periodDisp').textContent = T.toFixed(2);
+    $('waveLabel').textContent = wf.label;
+
+    // 정현파 + 표 강조
+    document.querySelectorAll('#waveCompareTable tbody tr').forEach(tr => {
+        tr.classList.remove('bg-pink-500/10');
+    });
+    const row = document.getElementById(`row-${state.wave}`);
+    if (row) row.classList.add('bg-pink-500/10');
+
+    // 220V 권장값 근처에서 라이브 핑크 글로우
+    $('pill-rms').classList.toggle('pulse', Math.abs(Vrms - 220) < 5);
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+}
+
+['vm', 'f'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); flashCard(); });
+});
+
+// 파형 토글
+document.querySelectorAll('#waveToggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const wave = btn.getAttribute('data-wave');
+        state.wave = wave;
+        document.querySelectorAll('#waveToggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        compute();
+        flashCard();
+        if (window.gsap) gsap.fromTo('#main',
+            { opacity: 0.55 },
+            { opacity: 1, duration: 0.45, ease: 'power2.out' });
+    });
+});
+
+// ====================================================
+// 메인 루프 (절제: 마커 펄스만)
+// ====================================================
+function animate() {
+    state.t++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawPlot();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

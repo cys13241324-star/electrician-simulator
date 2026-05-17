@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>디지털 멀티미터 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.45), rgba(99,102,241,0.45), rgba(244,114,182,0.45));
+    box-shadow: 0 30px 100px -20px rgba(251, 191, 36, 0.3), 0 0 40px rgba(99, 102, 241, 0.18);
+}
+canvas#meter {
+    display: block;
+    width: 100%;
+    height: 460px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fbbf24; box-shadow: 0 0 12px #fbbf24;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fbbf24; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(59,130,246,0.4), rgba(16,185,129,0.4), rgba(245,158,11,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip-mode { background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.06)); border: 1px solid rgba(251,191,36,0.5); color: #fcd34d; }
+.chip-val { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border: 1px solid rgba(34,197,94,0.5); color: #86efac; }
+.chip-unit { background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.06)); border: 1px solid rgba(59,130,246,0.5); color: #93c5fd; }
+.chip-range { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border: 1px solid rgba(244,114,182,0.5); color: #fbcfe8; }
+.radio-pill {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.radio-pill:hover { background: rgba(148, 163, 184, 0.18); }
+.radio-pill.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.3), rgba(244,114,182,0.25));
+    border-color: rgba(251, 191, 36, 0.6);
+    color: white;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+}
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #fca5a5, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.law-card {
+    background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251,191,36,0.35);
+}
+.danger-card {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244,63,94,0.4);
+}
+.terminal-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.04)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(99,102,241,0.35);
+}
+.dial-btn {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 180ms;
+}
+.dial-btn:hover { background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.4); }
+.dial-btn.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.35), rgba(244,114,182,0.18));
+    color: white;
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
+}
+.target-btn {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 180ms;
+}
+.target-btn:hover { background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.4); }
+.target-btn.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(34,197,94,0.18));
+    color: white;
+    border-color: rgba(99, 102, 241, 0.7);
+    box-shadow: 0 0 18px rgba(99, 102, 241, 0.45);
+}
+.beep-indicator {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    box-shadow: 0 0 20px #10b981;
+    animation: beepPulse 0.4s ease-in-out infinite alternate;
+}
+@keyframes beepPulse {
+    0% { opacity: 0.6; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.15); }
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · DIGITAL MULTIMETER
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-200 via-pink-200 to-indigo-200 bg-clip-text text-transparent">
+            디지털 멀티미터 사용법 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">다이얼을 돌려 측정 모드를 선택하고, 프로브를 회로의 다른 지점에 연결해보세요. 잘못된 단자/모드 선택의 결과도 함께 확인.</p>
+    </header>
+
+    <!-- 라이브 데이터 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="chip-mode live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">측정 모드</p>
+            <p class="mt-1 text-2xl font-bold"><span id="modeDisp" class="live-num">DC V</span></p>
+        </div>
+        <div class="chip-val live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">측정값</p>
+            <p class="mt-1 text-2xl font-bold"><span id="valDisp" class="live-num">12.00</span></p>
+        </div>
+        <div class="chip-unit live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">단위</p>
+            <p class="mt-1 text-2xl font-bold"><span id="unitDisp" class="live-num">V</span></p>
+        </div>
+        <div class="chip-range live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">레인지</p>
+            <p class="mt-1 text-2xl font-bold"><span id="rangeDisp" class="live-num">Auto</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 멀티미터 캔버스 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">METER · LCD · DIAL · 적색 프로브가 회로의 측정점, 흑색 프로브는 COM(공통)</span>
+                <span id="beepLabel" class="hidden items-center gap-1 text-[11px] font-bold text-emerald-300">
+                    <span class="beep-indicator inline-block w-2 h-2 rounded-full"></span> BEEP
+                </span>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="meter"></canvas>
+            </div>
+            <div class="law-card rounded-xl p-4 mt-4">
+                <p class="text-[10px] uppercase tracking-widest text-amber-300 mb-2 font-bold">옴의 법칙 · 핵심 식</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <p class="font-mono">$V = I \cdot R$</p>
+                    <p class="font-mono">$I = V / R$</p>
+                    <p class="font-mono">$R = V / I$</p>
+                    <p class="font-mono">$P = V \cdot I$</p>
+                </div>
+            </div>
+            <div class="terminal-card rounded-xl p-4 mt-3">
+                <p class="text-[10px] uppercase tracking-widest text-indigo-300 mb-2 font-bold">단자 · 프로브 연결법</p>
+                <ul class="text-xs space-y-1 text-slate-300">
+                    <li><span class="font-bold text-slate-200">COM (검정)</span> — 모든 측정의 공통 단자, 항상 흑색 프로브 연결</li>
+                    <li><span class="font-bold text-rose-300">V·Ω·다이오드 (빨강)</span> — 전압·저항·도통·다이오드 측정 시 적색 프로브</li>
+                    <li><span class="font-bold text-amber-300">A (빨강, 큰 전류용)</span> — 전류 측정 시 적색 프로브를 이쪽으로 이동</li>
+                </ul>
+            </div>
+            <div id="dangerCard" class="danger-card rounded-xl p-4 mt-3 hidden">
+                <p class="text-[10px] uppercase tracking-widest text-rose-300 mb-2 font-bold">위험 · 잘못된 사용</p>
+                <p id="dangerMsg" class="text-xs text-rose-100"></p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-5 h-fit" id="controlPanel">
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-amber-200">다이얼 · 측정 모드</h2>
+                <p class="text-[11px] text-slate-500 mt-1">다이얼을 돌려 측정 모드 선택</p>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button class="dial-btn rounded-lg py-2 text-xs font-bold" data-mode="dcv">DC V</button>
+                    <button class="dial-btn rounded-lg py-2 text-xs font-bold" data-mode="acv">AC V</button>
+                    <button class="dial-btn rounded-lg py-2 text-xs font-bold" data-mode="dca">DC A</button>
+                    <button class="dial-btn rounded-lg py-2 text-xs font-bold" data-mode="ohm">Ω 저항</button>
+                    <button class="dial-btn rounded-lg py-2 text-xs font-bold" data-mode="cont">))) 도통</button>
+                    <button class="dial-btn rounded-lg py-2 text-xs font-bold" data-mode="diode">▶| 다이오드</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-indigo-200">적색 프로브 단자</h2>
+                <p class="text-[11px] text-slate-500 mt-1">전류 측정 시에만 A 단자로 이동</p>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-jack="vohm">V·Ω 단자</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-jack="a">A 단자</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-emerald-200">측정 대상 (회로 위치)</h2>
+                <p class="text-[11px] text-slate-500 mt-1">프로브 끝을 어디에 댈지 선택</p>
+                <div class="mt-3 grid grid-cols-1 gap-2">
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="battery">① 배터리 양단 (12 V)</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="r1">② 저항 R₁ 양단</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="r2">③ 저항 R₂ 양단</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="series">④ 회로 직렬 (전류)</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="wire">⑤ 도통 점검 (전선)</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="open">⑥ 끊긴 곳 (단선)</button>
+                </div>
+            </div>
+
+            <div class="chip-range rounded-lg p-3 space-y-2">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>Auto-range</span><span id="autoVal" class="font-mono text-base">ON</span>
+                </label>
+                <input type="range" id="autoRange" min="0" max="1" step="1" value="1" class="w-full cursor-pointer">
+                <p class="text-[10px] text-pink-100 opacity-80">OFF 시 수동 레인지 (현재 모드의 최소 분해능 사용)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('meter');
+const ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+
+// 모드: dcv, acv, dca, ohm, cont, diode
+let mode = 'dcv';
+let jack = 'vohm';   // vohm or a
+let target = 'battery';
+let autoRange = true;
+
+// 회로 상수
+const CIRC = {
+    V: 12,           // 배터리
+    R1: 100,         // 직렬 저항 1
+    R2: 200,         // 직렬 저항 2
+    diodeVf: 0.62    // 다이오드 순방향 강하 (도통 모드에서 사용)
+};
+const totalR = CIRC.R1 + CIRC.R2;
+const totalI = CIRC.V / totalR;       // 0.04 A = 40 mA
+const vR1 = totalI * CIRC.R1;          // 4 V
+const vR2 = totalI * CIRC.R2;          // 8 V
+
+let state = { t: 0, lcdVal: 0, lcdSmooth: 0, beep: false, fault: false };
+let particles = [];
+
+const MODE_LABEL = {
+    dcv: 'DC V', acv: 'AC V', dca: 'DC A',
+    ohm: 'Ω', cont: ')))', diode: '▶|'
+};
+const DIAL_ANGLES = {
+    dcv: -120, acv: -75, dca: -30, ohm: 15, cont: 60, diode: 105
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 460;
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function seedParticles() {
+    particles = [];
+    const count = 40;
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            progress: Math.random(),
+            speed: 0.001 + Math.random() * 0.002,
+            seg: Math.floor(Math.random() * 4),
+        });
+    }
+}
+
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+// === 측정 결과 계산 ===
+function compute() {
+    // 반환: { value, unit, fault: bool, faultMsg, beep, displayMode, range }
+    let value = 0, unit = '', fault = false, faultMsg = '', beep = false;
+    let displayMode = MODE_LABEL[mode];
+    let range = 'Auto';
+
+    // 잘못된 단자: 전류 측정인데 V·Ω 단자, 또는 비전류인데 A 단자
+    if (mode === 'dca' && jack !== 'a') {
+        fault = true;
+        faultMsg = '전류 측정인데 적색 프로브가 V·Ω 단자에 있습니다. 표시값은 0에 가깝게 보이지만 측정 의미 없음.';
+        value = 0.0001;
+        unit = 'A';
+        return { value, unit, fault, faultMsg, beep, displayMode, range };
+    }
+    if (mode !== 'dca' && jack === 'a') {
+        fault = true;
+        faultMsg = '전압·저항 측정 모드인데 적색 프로브가 A 단자에 있습니다. 회로에 접촉 시 단락! 퓨즈 단선·과전류 위험.';
+        value = 0;
+        unit = '!';
+        return { value, unit, fault, faultMsg, beep, displayMode, range };
+    }
+
+    // 모드별 측정값
+    switch (mode) {
+        case 'dcv':
+            unit = 'V';
+            if (target === 'battery') value = CIRC.V;
+            else if (target === 'r1') value = vR1;
+            else if (target === 'r2') value = vR2;
+            else if (target === 'series') {
+                fault = true;
+                faultMsg = '직렬 전류 측정 위치에 전압 모드로 댄 경우 — 회로를 끊지 않고 그대로 측정하면 거의 0 V (전선 양단). 측정 의미 없음.';
+                value = 0.002;
+            }
+            else if (target === 'wire') value = 0;
+            else if (target === 'open') value = CIRC.V; // 개방 단자는 전원 전압이 그대로 걸림
+            // 레인지
+            if (!autoRange) range = '200 V'; else range = (Math.abs(value) < 2 ? '2 V' : Math.abs(value) < 20 ? '20 V' : '200 V');
+            break;
+        case 'acv':
+            unit = 'V';
+            // 본 회로는 DC라서 AC 측정 시 거의 0 (DC 결합 시) — 노이즈만 표시
+            value = 0.01 + Math.sin(state.t * 0.05) * 0.005;
+            if (target === 'battery') {
+                fault = true;
+                faultMsg = '본 회로는 DC인데 AC 전압 모드 — 직류 성분은 차단되어 0에 가까운 노이즈만 표시.';
+            }
+            if (!autoRange) range = '750 V'; else range = '2 V';
+            break;
+        case 'dca':
+            unit = 'A';
+            if (target === 'series') value = totalI;
+            else if (target === 'battery' || target === 'r1' || target === 'r2') {
+                fault = true;
+                faultMsg = '전류는 회로를 끊고 직렬로 측정. 부하 양단에 병렬로 댈 경우 → 단락! 퓨즈 단선·아크 위험.';
+                value = totalI * 50; // 단락 전류 폭주 표시
+            }
+            else value = 0;
+            if (!autoRange) range = '10 A'; else range = (Math.abs(value) < 0.2 ? '200 mA' : Math.abs(value) < 2 ? '2 A' : '10 A');
+            break;
+        case 'ohm':
+            unit = 'Ω';
+            if (target === 'r1') value = CIRC.R1;
+            else if (target === 'r2') value = CIRC.R2;
+            else if (target === 'battery' || target === 'series') {
+                fault = true;
+                faultMsg = '저항 측정은 반드시 전원 OFF 상태에서. 통전 중 측정 시 멀티미터 손상 가능. 또한 부하가 회로에 연결된 채로는 정확한 값이 나오지 않습니다.';
+                value = 0.5;
+            }
+            else if (target === 'wire') value = 0.3;
+            else if (target === 'open') value = 99999; // 단선 → OL
+            if (!autoRange) range = '2 kΩ'; else range = (value < 200 ? '200 Ω' : value < 2000 ? '2 kΩ' : value < 20000 ? '20 kΩ' : 'OL');
+            break;
+        case 'cont':
+            unit = 'Ω';
+            // 도통: 저항이 50 Ω 이하면 삐~
+            if (target === 'wire') { value = 0.3; beep = true; }
+            else if (target === 'r1') { value = CIRC.R1; beep = false; }
+            else if (target === 'r2') { value = CIRC.R2; beep = false; }
+            else if (target === 'battery') { value = 0.1; beep = true; } // 배터리 양단 도통
+            else if (target === 'series') { value = 0.4; beep = true; }
+            else if (target === 'open') { value = 99999; beep = false; }
+            range = '< 50 Ω → BEEP';
+            break;
+        case 'diode':
+            unit = 'V';
+            if (target === 'wire') value = 0.001;       // 그냥 전선 → 0V
+            else if (target === 'open') value = 9.999;  // OL
+            else value = CIRC.diodeVf;                  // 시뮬: 0.62V
+            range = '순방향 전압';
+            break;
+    }
+    return { value, unit, fault, faultMsg, beep, displayMode, range };
+}
+
+// === 7-세그먼트 LCD 그리기 ===
+function drawLCD(x, y, w, h, text, subText) {
+    // LCD 배경
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(190, 242, 100, 0.4)';
+    const lcdGrad = ctx.createLinearGradient(x, y, x, y + h);
+    lcdGrad.addColorStop(0, '#1a2e0f');
+    lcdGrad.addColorStop(1, '#0d1c08');
+    ctx.fillStyle = lcdGrad;
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(190, 242, 100, 0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 흐릿한 8.8.8.8 배경
+    ctx.save();
+    ctx.font = `bold 44px ui-monospace, 'Courier New', monospace`;
+    ctx.fillStyle = 'rgba(190, 242, 100, 0.06)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('8.8.8.8', x + w - 16, y + h / 2 + 4);
+    ctx.restore();
+
+    // 실제 측정값
+    ctx.save();
+    ctx.font = `bold 44px ui-monospace, 'Courier New', monospace`;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(190, 242, 100, 0.7)';
+    ctx.fillStyle = '#bef264';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + w - 16, y + h / 2 + 4);
+    ctx.restore();
+
+    // 상단 모드 라벨
+    ctx.save();
+    ctx.font = `bold 11px ui-monospace, monospace`;
+    ctx.fillStyle = '#a3e635';
+    ctx.textAlign = 'left';
+    ctx.fillText(subText, x + 12, y + 16);
+    if (autoRange) {
+        ctx.fillStyle = '#fde68a';
+        ctx.textAlign = 'right';
+        ctx.fillText('AUTO', x + w - 14, y + 16);
+    }
+    ctx.restore();
+}
+
+// === 다이얼 그리기 ===
+function drawDial(cx, cy, r) {
+    // 외곽
+    ctx.save();
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.35)';
+    const dialGrad = ctx.createRadialGradient(cx, cy - r * 0.3, r * 0.2, cx, cy, r);
+    dialGrad.addColorStop(0, '#475569');
+    dialGrad.addColorStop(0.6, '#1e293b');
+    dialGrad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = dialGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 모드 라벨 (다이얼 둘레)
+    const modes = ['dcv', 'acv', 'dca', 'ohm', 'cont', 'diode'];
+    modes.forEach(m => {
+        const ang = DIAL_ANGLES[m] * Math.PI / 180;
+        const lx = cx + Math.cos(ang) * (r + 14);
+        const ly = cy + Math.sin(ang) * (r + 14);
+        ctx.save();
+        ctx.font = mode === m ? 'bold 11px ui-monospace, monospace' : '10px ui-monospace, monospace';
+        ctx.fillStyle = mode === m ? '#fcd34d' : 'rgba(203, 213, 225, 0.6)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(MODE_LABEL[m], lx, ly);
+        // 라벨 표시 점
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(ang) * (r - 8), cy + Math.sin(ang) * (r - 8), 2, 0, Math.PI * 2);
+        ctx.fillStyle = mode === m ? '#fbbf24' : 'rgba(148,163,184,0.5)';
+        ctx.fill();
+        ctx.restore();
+    });
+
+    // OFF 표시 (위쪽)
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148,163,184,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('OFF', cx, cy - r - 14);
+    ctx.restore();
+
+    // 화살표 (현재 모드 방향)
+    const ang = DIAL_ANGLES[mode] * Math.PI / 180;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(ang);
+    // 손잡이
+    const handleGrad = ctx.createLinearGradient(0, -8, 0, 8);
+    handleGrad.addColorStop(0, '#fef3c7');
+    handleGrad.addColorStop(0.5, '#fbbf24');
+    handleGrad.addColorStop(1, '#b45309');
+    ctx.fillStyle = handleGrad;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#fbbf24';
+    roundRect(ctx, -4, -r + 8, 8, r - 12, 4);
+    ctx.fill();
+    // 화살촉
+    ctx.beginPath();
+    ctx.moveTo(0, -r + 4);
+    ctx.lineTo(-7, -r + 16);
+    ctx.lineTo(7, -r + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 중앙 캡
+    ctx.save();
+    const capGrad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, 14);
+    capGrad.addColorStop(0, '#cbd5e1');
+    capGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = capGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+// === 입력 단자(잭) 3개 ===
+function drawJacks(cx, cy) {
+    const xs = [-70, 0, 70];
+    const labels = ['COM', 'V·Ω', 'A'];
+    const colors = ['#1f2937', '#b91c1c', '#b91c1c'];
+    const ringColors = ['#94a3b8', '#fda4af', '#fbbf24'];
+    xs.forEach((x, idx) => {
+        // 잭 외곽
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = ringColors[idx];
+        ctx.fillStyle = colors[idx];
+        ctx.beginPath();
+        ctx.arc(cx + x, cy, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = ringColors[idx];
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // 내부 구멍
+        ctx.fillStyle = '#0a0a0a';
+        ctx.beginPath();
+        ctx.arc(cx + x, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        // 라벨
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = ringColors[idx];
+        ctx.textAlign = 'center';
+        ctx.fillText(labels[idx], cx + x, cy + 28);
+        ctx.restore();
+    });
+
+    // 흑색 프로브 (COM 고정)
+    drawProbe(cx - 70, cy, '#1f2937', '#94a3b8', state.blackProbe);
+    // 적색 프로브 (V·Ω 또는 A)
+    const redIdx = jack === 'vohm' ? 1 : 2;
+    drawProbe(cx + xs[redIdx], cy, '#dc2626', '#fda4af', state.redProbe);
+}
+
+function drawProbe(jx, jy, color, ringColor, endPos) {
+    if (!endPos) return;
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = color;
+    // 케이블 (Bezier)
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(jx, jy);
+    const c1x = jx + (endPos.x - jx) * 0.3;
+    const c1y = jy + 60;
+    const c2x = jx + (endPos.x - jx) * 0.7;
+    const c2y = endPos.y + 30;
+    ctx.bezierCurveTo(c1x, c1y, c2x, c2y, endPos.x, endPos.y);
+    ctx.stroke();
+    // 프로브 팁
+    ctx.fillStyle = ringColor;
+    ctx.beginPath();
+    ctx.arc(endPos.x, endPos.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(endPos.x, endPos.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+// === 테스트 회로 ===
+function drawTestCircuit(x, y, w, h) {
+    // 좌표 정의
+    const top = y + 30, bot = y + h - 25;
+    const left = x + 20, right = x + w - 20;
+    // 배터리 위치 (좌측)
+    const batX = left + 30;
+    const batY = (top + bot) / 2;
+    // R1, R2 위치 (위쪽 라인)
+    const r1X = left + (right - left) * 0.42;
+    const r2X = left + (right - left) * 0.78;
+
+    // 배경 패널
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+    ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, x, y, w, h, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 회로 라인
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#67e8f9';
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    // 위쪽 라인: bat+ → R1 → R2 → 우측
+    ctx.moveTo(batX, batY - 14);
+    ctx.lineTo(batX, top);
+    ctx.lineTo(right - 8, top);
+    ctx.lineTo(right - 8, bot);
+    ctx.lineTo(batX, bot);
+    ctx.lineTo(batX, batY + 14);
+    ctx.stroke();
+    ctx.restore();
+
+    // 단선 표시 (target === 'open' 일 때 위쪽 라인의 한 구간 끊기)
+    if (target === 'open') {
+        const breakX = (r1X + r2X) / 2 + 30;
+        ctx.save();
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(breakX - 12, top - 4, 24, 8);
+        ctx.strokeStyle = '#f87171';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(breakX - 14, top - 8);
+        ctx.lineTo(breakX + 14, top + 8);
+        ctx.moveTo(breakX + 14, top - 8);
+        ctx.lineTo(breakX - 14, top + 8);
+        ctx.stroke();
+        // 라벨
+        ctx.font = '10px ui-monospace, monospace';
+        ctx.fillStyle = '#fca5a5';
+        ctx.textAlign = 'center';
+        ctx.fillText('단선', breakX, top + 22);
+        ctx.restore();
+    }
+
+    // === 배터리 ===
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(96, 165, 250, 0.45)';
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.95)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(batX - 16, batY - 14); ctx.lineTo(batX + 16, batY - 14);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(batX - 10, batY + 14); ctx.lineTo(batX + 10, batY + 14);
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#93c5fd';
+    ctx.textAlign = 'center';
+    ctx.fillText('12V', batX, batY + 30);
+    ctx.fillText('+', batX - 22, batY - 14);
+    ctx.fillText('−', batX - 18, batY + 14);
+    ctx.restore();
+
+    // === R1 ===
+    drawResistor(r1X, top, 'R₁ 100Ω', '#fbbf24', target === 'r1');
+    // === R2 ===
+    drawResistor(r2X, top, 'R₂ 200Ω', '#f472b6', target === 'r2');
+
+    // === 측정 지점 표시 ===
+    let probePos = { x: batX + 16, y: batY - 14 }; // 적색 프로브 끝 (위치 기본)
+    let comPos = { x: batX, y: batY + 14 };        // 흑색 프로브 끝 (배터리 - 기본)
+
+    if (target === 'battery') {
+        probePos = { x: batX, y: batY - 14 - 8 };
+        comPos = { x: batX, y: batY + 14 + 8 };
+        markDot(probePos.x, probePos.y, '#fda4af');
+        markDot(comPos.x, comPos.y, '#94a3b8');
+    } else if (target === 'r1') {
+        probePos = { x: r1X - 26, y: top };
+        comPos = { x: r1X + 26, y: top };
+        markDot(probePos.x, probePos.y, '#fda4af');
+        markDot(comPos.x, comPos.y, '#94a3b8');
+    } else if (target === 'r2') {
+        probePos = { x: r2X - 26, y: top };
+        comPos = { x: r2X + 26, y: top };
+        markDot(probePos.x, probePos.y, '#fda4af');
+        markDot(comPos.x, comPos.y, '#94a3b8');
+    } else if (target === 'series') {
+        // 직렬 측정: 회로를 끊고 전류계 삽입 — 우측 라인의 점선
+        probePos = { x: right - 8, y: top + (bot - top) * 0.35 };
+        comPos = { x: right - 8, y: top + (bot - top) * 0.65 };
+        ctx.save();
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(right - 14, top + (bot - top) * 0.4, 12, (bot - top) * 0.2);
+        ctx.restore();
+        markDot(probePos.x, probePos.y, '#fda4af');
+        markDot(comPos.x, comPos.y, '#94a3b8');
+    } else if (target === 'wire') {
+        // 좌측 아래 전선
+        probePos = { x: batX + 30, y: bot };
+        comPos = { x: batX + 60, y: bot };
+        markDot(probePos.x, probePos.y, '#fda4af');
+        markDot(comPos.x, comPos.y, '#94a3b8');
+    } else if (target === 'open') {
+        const breakX = (r1X + r2X) / 2 + 30;
+        probePos = { x: breakX - 16, y: top };
+        comPos = { x: breakX + 16, y: top };
+        markDot(probePos.x, probePos.y, '#fda4af');
+        markDot(comPos.x, comPos.y, '#94a3b8');
+    }
+
+    state.redProbe = probePos;
+    state.blackProbe = comPos;
+}
+
+function markDot(x, y, color) {
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.4 + Math.sin(state.t * 0.12) * 0.3;
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawResistor(rx, ry, label, color, highlight) {
+    ctx.save();
+    ctx.shadowBlur = highlight ? 18 : 6;
+    ctx.shadowColor = color;
+    const w = 50, h = 22;
+    const g = ctx.createLinearGradient(rx - w/2, ry - h/2, rx + w/2, ry + h/2);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(15, 23, 42, 0.4)');
+    ctx.fillStyle = g;
+    roundRect(ctx, rx - w/2, ry - h/2, w, h, 6);
+    ctx.fill();
+    ctx.strokeStyle = highlight ? '#fff' : 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = highlight ? 2 : 1;
+    ctx.stroke();
+    // zig-zag
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    const steps = 5;
+    for (let k = 0; k <= steps; k++) {
+        const x = rx - w/2 + 8 + ((w - 16) * k) / steps;
+        const y = ry + (k % 2 === 0 ? -5 : 5);
+        if (k === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    // 라벨
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, rx, ry + 22);
+    ctx.restore();
+}
+
+// 전자 입자 (회로 활성 시)
+function drawCircuitParticles(circuitBox, active) {
+    if (!active) return;
+    const { x, y, w, h } = circuitBox;
+    const top = y + 30, bot = y + h - 25;
+    const left = x + 20, right = x + w - 20;
+    const batX = left + 30;
+    const path = [
+        { ax: batX, ay: bot, bx: batX, by: top },
+        { ax: batX, ay: top, bx: right - 8, by: top },
+        { ax: right - 8, ay: top, bx: right - 8, by: bot },
+        { ax: right - 8, ay: bot, bx: batX, by: bot },
+    ];
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of particles) {
+        p.progress += p.speed;
+        if (p.progress > 1) { p.progress = 0; p.seg = (p.seg + 1) % 4; }
+        const seg = path[p.seg];
+        const px = seg.ax + (seg.bx - seg.ax) * p.progress;
+        const py = seg.ay + (seg.by - seg.ay) * p.progress;
+        ctx.fillStyle = 'rgba(110, 231, 183, 0.85)';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#10b981';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// === 메인 그리기 ===
+function drawFrame() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 멀티미터 본체 (좌측 60%)
+    const bodyW = Math.min(W * 0.55, 380);
+    const bodyX = 16;
+    const bodyY = 16;
+    const bodyH = H - 32;
+
+    ctx.save();
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.18)';
+    const bodyGrad = ctx.createLinearGradient(bodyX, bodyY, bodyX, bodyY + bodyH);
+    bodyGrad.addColorStop(0, '#fbbf24');
+    bodyGrad.addColorStop(0.06, '#f59e0b');
+    bodyGrad.addColorStop(0.08, '#1e293b');
+    bodyGrad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = bodyGrad;
+    roundRect(ctx, bodyX, bodyY, bodyW, bodyH, 18);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 브랜드 텍스트
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText('DMM-3000', bodyX + 14, bodyY + 22);
+    ctx.textAlign = 'right';
+    ctx.fillText('TRUE RMS', bodyX + bodyW - 14, bodyY + 22);
+    ctx.restore();
+
+    // LCD
+    const lcdW = bodyW - 40, lcdH = 80;
+    const lcdX = bodyX + 20, lcdY = bodyY + 36;
+    const m = compute();
+    state.fault = m.fault;
+    state.beep = m.beep;
+
+    // 표시 텍스트 포맷
+    let displayText = '';
+    if (m.fault && m.unit === '!') {
+        displayText = 'Err';
+    } else if (m.value > 9999) {
+        displayText = 'OL';
+    } else if (m.unit === 'A' && m.value < 0.2) {
+        displayText = (m.value * 1000).toFixed(1);
+    } else if (m.unit === 'V' && m.value < 2) {
+        displayText = m.value.toFixed(3);
+    } else if (m.unit === 'Ω' && m.value < 200) {
+        displayText = m.value.toFixed(1);
+    } else if (m.unit === 'Ω' && m.value >= 1000) {
+        displayText = (m.value / 1000).toFixed(2);
+    } else {
+        displayText = m.value.toFixed(2);
+    }
+    let unitDisplay = m.unit;
+    if (m.unit === 'A' && m.value < 0.2) unitDisplay = 'mA';
+    if (m.unit === 'Ω' && m.value >= 1000) unitDisplay = 'kΩ';
+
+    drawLCD(lcdX, lcdY, lcdW, lcdH, displayText, `${m.displayMode}  ${unitDisplay}`);
+
+    // 도통 BEEP 인디케이터 (LCD 옆)
+    if (m.beep) {
+        ctx.save();
+        ctx.shadowBlur = 16 + Math.sin(state.t * 0.4) * 8;
+        ctx.shadowColor = '#10b981';
+        ctx.fillStyle = `rgba(52, 211, 153, ${0.5 + Math.sin(state.t * 0.4) * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(lcdX + 22, lcdY + lcdH + 22, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = '#86efac';
+        ctx.textAlign = 'left';
+        ctx.fillText('))) BEEP', lcdX + 36, lcdY + lcdH + 26);
+        ctx.restore();
+    }
+
+    // 다이얼
+    const dialCX = bodyX + bodyW / 2;
+    const dialCY = bodyY + 220;
+    drawDial(dialCX, dialCY, 70);
+
+    // 잭 3개
+    drawJacks(dialCX, bodyY + bodyH - 60);
+
+    // ===== 테스트 회로 (우측) =====
+    const circX = bodyX + bodyW + 24;
+    const circW = W - circX - 16;
+    const circY = bodyY + 30;
+    const circH = bodyH - 60;
+    if (circW > 100) {
+        drawTestCircuit(circX, circY, circW, circH);
+        // 입자: 도통/저항/오픈 모드가 아닐 때만 (전원 ON)
+        const active = (mode === 'dcv' || mode === 'dca' || mode === 'acv') && target !== 'open';
+        drawCircuitParticles({ x: circX, y: circY, w: circW, h: circH }, active);
+    }
+
+    // 라벨: 테스트 회로
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText('TEST CIRCUIT', circX + 6, circY - 8);
+    ctx.restore();
+
+    // 잘못된 사용 시 본체 빨간 글로우
+    if (m.fault) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(244, 63, 94, ${0.4 + Math.sin(state.t * 0.2) * 0.3})`;
+        ctx.lineWidth = 2;
+        roundRect(ctx, bodyX - 1, bodyY - 1, bodyW + 2, bodyH + 2, 19);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+// === 라이브 패널 갱신 ===
+function updateLive() {
+    const m = compute();
+    $('modeDisp').textContent = m.displayMode;
+    // 값 표시
+    let v = m.value, u = m.unit;
+    let vStr;
+    if (m.fault && m.unit === '!') vStr = 'Err';
+    else if (v > 9999) vStr = 'OL';
+    else if (u === 'A' && v < 0.2) { vStr = (v * 1000).toFixed(1); u = 'mA'; }
+    else if (u === 'V' && v < 2) vStr = v.toFixed(3);
+    else if (u === 'Ω' && v >= 1000) { vStr = (v / 1000).toFixed(2); u = 'kΩ'; }
+    else if (u === 'Ω' && v < 200) vStr = v.toFixed(1);
+    else vStr = v.toFixed(2);
+    $('valDisp').textContent = vStr;
+    $('unitDisp').textContent = u;
+    $('rangeDisp').textContent = autoRange ? (m.range.includes('Auto') ? 'Auto' : 'A·' + m.range) : '수동';
+
+    // 위험 카드
+    const dc = $('dangerCard');
+    if (m.fault) {
+        dc.classList.remove('hidden');
+        $('dangerMsg').textContent = m.faultMsg;
+    } else {
+        dc.classList.add('hidden');
+    }
+    // BEEP 라벨
+    const bl = $('beepLabel');
+    if (m.beep) { bl.classList.remove('hidden'); bl.classList.add('flex'); }
+    else { bl.classList.remove('flex'); bl.classList.add('hidden'); }
+}
+
+// === 모드/대상/잭 UI ===
+function updateUI() {
+    document.querySelectorAll('.dial-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    document.querySelectorAll('.target-btn[data-target]').forEach(b => {
+        b.classList.toggle('active', b.dataset.target === target);
+    });
+    document.querySelectorAll('.target-btn[data-jack]').forEach(b => {
+        b.classList.toggle('active', b.dataset.jack === jack);
+    });
+    $('autoVal').textContent = autoRange ? 'ON' : 'OFF';
+    updateLive();
+    flashCard();
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(251, 191, 36, 0.55)' },
+        { boxShadow: '0 0 60px 4px rgba(251, 191, 36, 0)', duration: 0.6 });
+}
+
+document.querySelectorAll('.dial-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        mode = b.dataset.mode;
+        // 전류 모드 선택 시 단자 자동 안내 (잭은 유지 — 사용자가 잘못된 단자도 체험 가능)
+        updateUI();
+    });
+});
+document.querySelectorAll('.target-btn[data-target]').forEach(b => {
+    b.addEventListener('click', () => { target = b.dataset.target; updateUI(); });
+});
+document.querySelectorAll('.target-btn[data-jack]').forEach(b => {
+    b.addEventListener('click', () => { jack = b.dataset.jack; updateUI(); });
+});
+$('autoRange').addEventListener('input', e => {
+    autoRange = +e.target.value === 1;
+    updateUI();
+});
+
+function animate() {
+    state.t++;
+    drawFrame();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    updateUI();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

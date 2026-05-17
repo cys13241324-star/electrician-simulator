@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크 타로 · 전기 학습 운세</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Noto+Serif+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          night: {
+            900: '#0b0420',
+            800: '#150733',
+            700: '#1e0a44',
+            600: '#2a0f5c',
+            500: '#3a1782'
+          },
+          gold: {
+            100: '#fff5d6',
+            200: '#ffe7a3',
+            300: '#f7d56d',
+            400: '#e9bd45',
+            500: '#caa12a',
+            600: '#a17e15'
+          },
+          mystic: {
+            purple: '#8b5cf6',
+            pink:   '#f0abfc',
+            indigo: '#6366f1'
+          }
+        },
+        fontFamily: {
+          cinzel: ['Cinzel', 'serif'],
+          corm:   ['"Cormorant Garamond"', 'serif'],
+          kr:     ['"Noto Serif KR"', 'serif']
+        },
+        boxShadow: {
+          mystic: '0 20px 60px -10px rgba(139,92,246,0.45), 0 0 40px rgba(247,213,109,0.18)',
+          card:   '0 30px 60px -20px rgba(0,0,0,0.7), 0 0 30px rgba(247,213,109,0.25)'
+        }
+      }
+    }
+  };
+</script>
+<style>
+  html, body { background:#06021a; color:#f5efe2; }
+  body { font-family:'Noto Serif KR','Cormorant Garamond',serif; letter-spacing:.01em; }
+  .font-mystic-title { font-family:'Cinzel',serif; letter-spacing:.18em; }
+  .font-mystic-sub   { font-family:'Cormorant Garamond',serif; font-style:italic; }
+
+  /* Starfield background */
+  .starfield {
+    position:fixed; inset:0; z-index:-2;
+    background:
+      radial-gradient(ellipse at top, rgba(99,102,241,.25) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(202,161,42,.12) 0%, transparent 55%),
+      radial-gradient(ellipse at bottom left, rgba(139,92,246,.18) 0%, transparent 55%),
+      linear-gradient(180deg,#06021a 0%, #0b0420 40%, #150733 100%);
+  }
+  .stars, .stars-2, .stars-3 {
+    position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background-repeat:repeat;
+  }
+  .stars   { background-image: radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,.8), transparent),
+                                radial-gradient(1px 1px at 80px 120px, rgba(255,245,214,.6), transparent),
+                                radial-gradient(1.5px 1.5px at 160px 60px, rgba(255,255,255,.9), transparent),
+                                radial-gradient(1px 1px at 240px 220px, rgba(247,213,109,.5), transparent);
+            background-size:300px 300px;
+            animation: drift 60s linear infinite; }
+  .stars-2 { background-image: radial-gradient(1px 1px at 50px 200px, rgba(255,255,255,.5), transparent),
+                                radial-gradient(2px 2px at 220px 80px, rgba(247,213,109,.7), transparent),
+                                radial-gradient(1px 1px at 140px 260px, rgba(255,255,255,.6), transparent);
+            background-size:400px 400px;
+            animation: drift 90s linear infinite reverse;
+            opacity:.7; }
+  .stars-3 { background-image: radial-gradient(1.5px 1.5px at 100px 50px, rgba(240,171,252,.5), transparent),
+                                radial-gradient(1px 1px at 300px 180px, rgba(99,102,241,.6), transparent);
+            background-size:500px 500px;
+            animation: twinkle 4s ease-in-out infinite; }
+  @keyframes drift  { from { transform:translateY(0); } to { transform:translateY(-300px); } }
+  @keyframes twinkle{ 0%,100% { opacity:.45; } 50% { opacity:.85; } }
+
+  /* Gold gradient text */
+  .text-gold-grad {
+    background:linear-gradient(135deg,#fff5d6 0%, #f7d56d 35%, #caa12a 65%, #fff5d6 100%);
+    background-size:200% 200%;
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation: shimmer 6s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
+
+  /* Ornaments */
+  .ornament-divider {
+    display:flex; align-items:center; gap:1rem; color:#caa12a;
+  }
+  .ornament-divider::before, .ornament-divider::after {
+    content:''; flex:1; height:1px;
+    background:linear-gradient(90deg, transparent, #caa12a, transparent);
+  }
+
+  /* Card flip */
+  .card-perspective { perspective: 1400px; }
+  .card-inner {
+    position:relative; width:100%; height:100%;
+    transform-style: preserve-3d;
+    transition: transform .8s cubic-bezier(.6,.02,.3,1);
+  }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+  .card-face {
+    position:absolute; inset:0;
+    -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    border-radius: 14px; overflow:hidden;
+  }
+  .card-back-face { transform: rotateY(180deg); }
+
+  .card:hover .card-inner:not(.no-hover) { transform: translateY(-6px) scale(1.02); }
+  .card.flipped:hover .card-inner       { transform: rotateY(180deg) translateY(-6px) scale(1.02); }
+
+  .card-glow {
+    position:absolute; inset:-6px; border-radius:18px; z-index:-1;
+    background: radial-gradient(closest-side, rgba(247,213,109,.5), transparent 70%);
+    opacity:0; transition: opacity .4s;
+  }
+  .card:hover .card-glow { opacity:1; }
+
+  /* Tarot back pattern */
+  .tarot-back {
+    background:
+      radial-gradient(circle at 50% 18%, rgba(247,213,109,.35) 0%, transparent 45%),
+      radial-gradient(circle at 50% 82%, rgba(247,213,109,.25) 0%, transparent 45%),
+      repeating-linear-gradient(45deg, rgba(247,213,109,.06) 0 6px, transparent 6px 12px),
+      linear-gradient(160deg,#1e0a44 0%, #2a0f5c 50%, #150733 100%);
+    border: 1.5px solid rgba(247,213,109,.45);
+    box-shadow: inset 0 0 30px rgba(247,213,109,.18);
+  }
+  .tarot-face {
+    background:
+      radial-gradient(circle at 50% 35%, rgba(247,213,109,.18) 0%, transparent 60%),
+      linear-gradient(180deg,#150733 0%, #0b0420 100%);
+    border: 1.5px solid rgba(247,213,109,.5);
+    box-shadow: inset 0 0 25px rgba(99,102,241,.18);
+  }
+
+  /* Floating moon */
+  .moon-glow {
+    filter: drop-shadow(0 0 14px rgba(247,213,109,.5)) drop-shadow(0 0 30px rgba(247,213,109,.25));
+  }
+
+  /* Sparkle */
+  @keyframes sparkle { 0%,100% { transform: scale(.8); opacity:.4; } 50% { transform: scale(1.1); opacity:1; } }
+  .sparkle { animation: sparkle 3s ease-in-out infinite; transform-origin:center; }
+
+  /* Ornament corners */
+  .corner-orn {
+    position:absolute; width:30px; height:30px;
+    border:1.5px solid rgba(247,213,109,.6);
+  }
+  .corner-orn.tl { top:6px; left:6px;    border-right:none; border-bottom:none; }
+  .corner-orn.tr { top:6px; right:6px;   border-left:none;  border-bottom:none; }
+  .corner-orn.bl { bottom:6px; left:6px; border-right:none; border-top:none; }
+  .corner-orn.br { bottom:6px; right:6px;border-left:none;  border-top:none; }
+
+  /* Reading reveal animation */
+  @keyframes revealUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .reveal { animation: revealUp .6s ease both; }
+
+  /* Button mystic */
+  .btn-mystic {
+    background:linear-gradient(135deg,#caa12a 0%, #f7d56d 50%, #caa12a 100%);
+    color:#1e0a44;
+    font-family:'Cinzel',serif;
+    letter-spacing:.18em;
+    box-shadow: 0 10px 30px -10px rgba(247,213,109,.5), inset 0 1px 0 rgba(255,255,255,.4);
+    transition: transform .25s, box-shadow .25s;
+  }
+  .btn-mystic:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -10px rgba(247,213,109,.7), inset 0 1px 0 rgba(255,255,255,.4); }
+
+  .btn-ghost-mystic {
+    background: rgba(247,213,109,.08);
+    border:1px solid rgba(247,213,109,.45);
+    color:#f7d56d;
+    font-family:'Cinzel',serif;
+    letter-spacing:.16em;
+    transition: background .25s, transform .25s;
+  }
+  .btn-ghost-mystic:hover { background: rgba(247,213,109,.16); transform: translateY(-2px); }
+
+  /* Section card */
+  .panel {
+    background: linear-gradient(180deg, rgba(30,10,68,.6) 0%, rgba(11,4,32,.85) 100%);
+    border:1px solid rgba(247,213,109,.25);
+    border-radius: 18px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Toast */
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:linear-gradient(135deg,#1e0a44,#2a0f5c);
+    border:1px solid rgba(247,213,109,.5);
+    color:#fff5d6; padding:12px 22px; border-radius:10px;
+    font-family:'Cinzel',serif; letter-spacing:.14em; font-size:13px;
+    opacity:0; pointer-events:none;
+    transition: opacity .3s, transform .3s;
+    z-index:60;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Modal */
+  .modal-backdrop { background: rgba(6,2,26,.78); backdrop-filter: blur(8px); }
+
+  /* Small caps */
+  .small-caps { font-variant-caps: all-small-caps; letter-spacing:.2em; }
+
+  /* Card aspect */
+  .tarot-aspect { aspect-ratio: 5 / 8; }
+
+  /* Highlight bar */
+  .hbar {
+    width:80px; height:2px;
+    background:linear-gradient(90deg, transparent, #f7d56d, transparent);
+    margin: 0 auto;
+  }
+
+  /* Grid card minimal sizing */
+  @media (max-width: 640px) {
+    .grid-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:#0b0420; }
+  ::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#3a1782,#caa12a); border-radius:6px; }
+</style>
+</head>
+<body class="relative min-h-screen">
+
+<div class="starfield"></div>
+<div class="stars"></div>
+<div class="stars-2"></div>
+<div class="stars-3"></div>
+
+<!-- ───────────────────────── HEADER ───────────────────────── -->
+<header class="relative pt-10 pb-6 px-6">
+  <div class="max-w-6xl mx-auto flex flex-col items-center text-center">
+    <div class="flex items-center gap-3 mb-3">
+      <!-- Small moon -->
+      <svg width="22" height="22" viewBox="0 0 24 24" class="moon-glow">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="#f7d56d"/>
+      </svg>
+      <span class="font-mystic-title text-gold-300 text-xs sm:text-sm tracking-[0.35em]">SPARK · TAROT</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" class="moon-glow">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="#f7d56d" transform="scale(-1,1) translate(-24,0)"/>
+      </svg>
+    </div>
+
+    <h1 class="font-mystic-title text-4xl sm:text-5xl md:text-6xl text-gold-grad font-bold leading-tight">
+      스파크 타로
+    </h1>
+    <p class="font-mystic-sub text-gold-200 text-lg sm:text-xl mt-2 italic">
+      Spark Tarot &middot; 전기 학습 운세
+    </p>
+
+    <div class="ornament-divider w-72 max-w-full mt-5 mb-2 text-xs font-mystic-title">
+      <span class="px-1">&#10025;</span>
+    </div>
+
+    <p class="font-kr text-gold-100/80 max-w-xl mt-3 text-sm sm:text-base leading-relaxed">
+      별빛 너머에 새겨진 그대의 합격 운세 &mdash;<br/>
+      카드 세 장이 그대의 어제, 오늘, 그리고 합격의 날을 비추리라.
+    </p>
+
+    <nav class="mt-7 flex flex-wrap items-center justify-center gap-3 small-caps text-xs">
+      <a href="#today" class="px-4 py-2 rounded-full bg-night-700/60 border border-gold-500/40 hover:border-gold-300 hover:bg-night-700 text-gold-200 transition">오늘의 스프레드</a>
+      <a href="#major" class="px-4 py-2 rounded-full bg-night-700/60 border border-gold-500/40 hover:border-gold-300 hover:bg-night-700 text-gold-200 transition">메이저 아르카나</a>
+      <a href="#saju" class="px-4 py-2 rounded-full bg-night-700/60 border border-gold-500/40 hover:border-gold-300 hover:bg-night-700 text-gold-200 transition">합격 사주</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ───────────────────────── HERO ───────────────────────── -->
+<section class="relative px-6 pt-4 pb-12">
+  <div class="max-w-6xl mx-auto">
+    <div class="panel relative overflow-hidden p-8 sm:p-12">
+      <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+      <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+
+      <div class="grid md:grid-cols-2 gap-8 items-center">
+        <!-- Visual -->
+        <div class="relative flex justify-center items-center min-h-[280px]">
+          <svg viewBox="0 0 400 320" class="w-full max-w-md">
+            <!-- Background swirl -->
+            <defs>
+              <radialGradient id="moonGrad" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#fff5d6" stop-opacity="1"/>
+                <stop offset="60%" stop-color="#f7d56d" stop-opacity="0.7"/>
+                <stop offset="100%" stop-color="#caa12a" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="cardG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3a1782"/>
+                <stop offset="100%" stop-color="#150733"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Moon -->
+            <circle cx="200" cy="120" r="60" fill="url(#moonGrad)"/>
+            <circle cx="215" cy="115" r="48" fill="#0b0420"/>
+            <!-- Stars -->
+            <g fill="#f7d56d" class="sparkle">
+              <polygon points="80,40 84,52 96,52 86,60 90,72 80,64 70,72 74,60 64,52 76,52" opacity=".85"/>
+            </g>
+            <g fill="#fff5d6">
+              <circle cx="60" cy="100" r="1.6"/>
+              <circle cx="120" cy="60" r="1.2"/>
+              <circle cx="340" cy="90" r="1.8"/>
+              <circle cx="300" cy="40" r="1.2"/>
+              <circle cx="350" cy="200" r="1.4"/>
+              <circle cx="50" cy="220" r="1.4"/>
+            </g>
+            <g fill="#f0abfc" opacity=".7">
+              <circle cx="180" cy="40" r="1.1"/>
+              <circle cx="250" cy="70" r="1.1"/>
+            </g>
+
+            <!-- Three cards arranged like a fan -->
+            <g transform="translate(80,180)">
+              <g transform="rotate(-15)">
+                <rect x="-45" y="-70" width="90" height="140" rx="8" fill="url(#cardG)" stroke="#f7d56d" stroke-width="1.5"/>
+                <rect x="-38" y="-63" width="76" height="126" rx="5" fill="none" stroke="#f7d56d" stroke-opacity=".4"/>
+                <text x="0" y="0" text-anchor="middle" fill="#f7d56d" font-family="Cinzel" font-size="10" letter-spacing="1">PAST</text>
+                <circle cx="0" cy="-30" r="10" fill="none" stroke="#f7d56d" stroke-width="1"/>
+              </g>
+            </g>
+            <g transform="translate(200,180)">
+              <rect x="-50" y="-78" width="100" height="156" rx="8" fill="url(#cardG)" stroke="#f7d56d" stroke-width="1.5"/>
+              <rect x="-42" y="-70" width="84" height="140" rx="5" fill="none" stroke="#f7d56d" stroke-opacity=".5"/>
+              <text x="0" y="6" text-anchor="middle" fill="#f7d56d" font-family="Cinzel" font-size="11" letter-spacing="1">PRESENT</text>
+              <!-- Lightning bolt motif -->
+              <path d="M 0 -45 L -10 -15 L -2 -15 L -10 15 L 12 -22 L 4 -22 L 12 -45 Z" fill="#f7d56d"/>
+            </g>
+            <g transform="translate(320,180)">
+              <g transform="rotate(15)">
+                <rect x="-45" y="-70" width="90" height="140" rx="8" fill="url(#cardG)" stroke="#f7d56d" stroke-width="1.5"/>
+                <rect x="-38" y="-63" width="76" height="126" rx="5" fill="none" stroke="#f7d56d" stroke-opacity=".4"/>
+                <text x="0" y="0" text-anchor="middle" fill="#f7d56d" font-family="Cinzel" font-size="10" letter-spacing="1">FUTURE</text>
+                <polygon points="0,-32 4,-22 14,-22 6,-15 9,-5 0,-12 -9,-5 -6,-15 -14,-22 -4,-22" fill="#f7d56d" opacity=".9"/>
+              </g>
+            </g>
+
+            <!-- Smoke / aura under cards -->
+            <ellipse cx="200" cy="275" rx="170" ry="14" fill="#8b5cf6" opacity=".25"/>
+            <ellipse cx="200" cy="280" rx="120" ry="8"  fill="#f7d56d" opacity=".2"/>
+          </svg>
+        </div>
+
+        <!-- Text -->
+        <div>
+          <p class="small-caps text-gold-400 text-xs mb-3">&#10086; 2026 . 05 . 15 . MOON FORECAST</p>
+          <h2 class="font-mystic-title text-3xl sm:text-4xl text-gold-grad font-bold leading-snug">
+            오늘의 카드<br/>그대의 합격을 점치다
+          </h2>
+          <p class="font-kr mt-4 text-gold-100/80 leading-relaxed">
+            세 장의 운명 카드가 그대의 학습 여정을 비춥니다.<br/>
+            과거의 그림자, 현재의 빛, 그리고 다가올 합격의 별 &mdash; 카드를 클릭하여 운명을 뒤집어 보세요.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button id="btn-draw-hero" class="btn-mystic px-6 py-3 rounded-md text-sm">오늘의 운세 뽑기</button>
+            <a href="#major" class="btn-ghost-mystic px-6 py-3 rounded-md text-sm">22장 살펴보기</a>
+          </div>
+          <p class="text-[11px] text-gold-100/40 mt-4 italic font-mystic-sub">&#9734; 가상 운세 &middot; 학습 동기 부여용</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── TODAY 3-SPREAD ───────────────────────── -->
+<section id="today" class="relative px-6 py-14">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-10">
+      <p class="small-caps text-gold-400 text-xs">&#10038; The Three Card Spread</p>
+      <h3 class="font-mystic-title text-3xl sm:text-4xl text-gold-grad font-bold mt-2">오늘의 3장 스프레드</h3>
+      <div class="hbar mt-4"></div>
+      <p class="font-kr text-gold-100/70 mt-4 max-w-xl mx-auto text-sm sm:text-base">
+        과거 &middot; 현재 &middot; 미래 &mdash; 운명의 카드를 한 장씩 뒤집어 그대의 합격 운세를 확인하세요.
+      </p>
+    </div>
+
+    <div id="spread" class="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
+      <!-- cards injected -->
+    </div>
+
+    <div class="mt-10 flex flex-wrap justify-center gap-3">
+      <button id="btn-shuffle" class="btn-mystic px-6 py-3 rounded-md text-sm">&#10042; 카드 다시 뽑기</button>
+      <button id="btn-reveal-all" class="btn-ghost-mystic px-6 py-3 rounded-md text-sm">전부 뒤집기</button>
+      <button id="btn-share" class="btn-ghost-mystic px-6 py-3 rounded-md text-sm">결과 공유</button>
+    </div>
+
+    <div id="spread-reading" class="mt-10 max-w-3xl mx-auto hidden">
+      <div class="panel p-6 sm:p-8 relative">
+        <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+        <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+        <p class="small-caps text-gold-400 text-xs text-center">&#10038; Oracle's Reading</p>
+        <h4 class="font-mystic-title text-2xl text-gold-grad font-bold text-center mt-2">오라클의 해석</h4>
+        <div class="hbar my-4"></div>
+        <p id="reading-text" class="font-kr text-gold-100/85 leading-loose text-center"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── MAJOR ARCANA ───────────────────────── -->
+<section id="major" class="relative px-6 py-14">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-10">
+      <p class="small-caps text-gold-400 text-xs">&#10086; Major Arcana of Electricity</p>
+      <h3 class="font-mystic-title text-3xl sm:text-4xl text-gold-grad font-bold mt-2">전기 메이저 아르카나 22장</h3>
+      <div class="hbar mt-4"></div>
+      <p class="font-kr text-gold-100/70 mt-4 max-w-2xl mx-auto text-sm sm:text-base">
+        고대 전기 철학자들이 남긴 22장의 카드 &mdash; 각 카드는 그대의 학습 여정에서 한 단계를 상징합니다.
+      </p>
+    </div>
+
+    <div id="major-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5"></div>
+
+    <p class="text-center text-[11px] text-gold-100/40 italic font-mystic-sub mt-8">&#9734; 카드를 클릭하여 의미를 확인하세요</p>
+  </div>
+</section>
+
+<!-- ───────────────────────── SAJU / BIRTHDAY ───────────────────────── -->
+<section id="saju" class="relative px-6 py-14">
+  <div class="max-w-3xl mx-auto">
+    <div class="text-center mb-8">
+      <p class="small-caps text-gold-400 text-xs">&#10038; Stars of Birth &middot; Lapse of Time</p>
+      <h3 class="font-mystic-title text-3xl sm:text-4xl text-gold-grad font-bold mt-2">합격 사주 &middot; 별자리 운세</h3>
+      <div class="hbar mt-4"></div>
+      <p class="font-kr text-gold-100/70 mt-4 text-sm sm:text-base">
+        그대의 탄생 별자리가 합격에 미치는 영향을 점쳐 드립니다.
+      </p>
+    </div>
+
+    <div class="panel p-6 sm:p-8 relative">
+      <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+      <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+
+      <form id="saju-form" class="space-y-5">
+        <div>
+          <label for="saju-name" class="block small-caps text-gold-400 text-xs mb-2">그대의 이름</label>
+          <input id="saju-name" type="text" maxlength="20" autocomplete="off"
+            class="w-full bg-night-900/80 border border-gold-500/40 rounded-md px-4 py-3 text-gold-100 placeholder-gold-100/30 font-kr focus:outline-none focus:border-gold-300 transition"
+            placeholder="예: 김합격" />
+        </div>
+        <div class="grid sm:grid-cols-3 gap-4">
+          <div>
+            <label for="saju-y" class="block small-caps text-gold-400 text-xs mb-2">생년</label>
+            <input id="saju-y" type="number" min="1940" max="2026" placeholder="1998"
+              class="w-full bg-night-900/80 border border-gold-500/40 rounded-md px-4 py-3 text-gold-100 placeholder-gold-100/30 font-kr focus:outline-none focus:border-gold-300 transition"/>
+          </div>
+          <div>
+            <label for="saju-m" class="block small-caps text-gold-400 text-xs mb-2">생월</label>
+            <input id="saju-m" type="number" min="1" max="12" placeholder="3"
+              class="w-full bg-night-900/80 border border-gold-500/40 rounded-md px-4 py-3 text-gold-100 placeholder-gold-100/30 font-kr focus:outline-none focus:border-gold-300 transition"/>
+          </div>
+          <div>
+            <label for="saju-d" class="block small-caps text-gold-400 text-xs mb-2">생일</label>
+            <input id="saju-d" type="number" min="1" max="31" placeholder="14"
+              class="w-full bg-night-900/80 border border-gold-500/40 rounded-md px-4 py-3 text-gold-100 placeholder-gold-100/30 font-kr focus:outline-none focus:border-gold-300 transition"/>
+          </div>
+        </div>
+        <div class="flex justify-center">
+          <button type="submit" class="btn-mystic px-7 py-3 rounded-md text-sm">&#10042; 합격 운세 점치기</button>
+        </div>
+      </form>
+
+      <div id="saju-result" class="mt-8 hidden">
+        <div class="ornament-divider mb-5"><span class="text-xs font-mystic-title">&#10025; ORACLE &#10025;</span></div>
+        <div class="grid sm:grid-cols-3 gap-5 text-center">
+          <div>
+            <p class="small-caps text-gold-400 text-[10px]">Zodiac Sign</p>
+            <p id="r-zodiac" class="font-mystic-title text-xl text-gold-300 mt-2"></p>
+          </div>
+          <div>
+            <p class="small-caps text-gold-400 text-[10px]">Element</p>
+            <p id="r-elem" class="font-mystic-title text-xl text-gold-300 mt-2"></p>
+          </div>
+          <div>
+            <p class="small-caps text-gold-400 text-[10px]">Pass Score</p>
+            <p id="r-score" class="font-mystic-title text-3xl text-gold-grad font-bold mt-1"></p>
+          </div>
+        </div>
+        <div class="mt-6 p-5 bg-night-900/60 border border-gold-500/25 rounded-lg">
+          <p class="small-caps text-gold-400 text-xs mb-2">&#10038; The Oracle Whispers</p>
+          <p id="r-reading" class="font-kr text-gold-100/85 leading-loose"></p>
+        </div>
+        <div class="mt-5 grid sm:grid-cols-2 gap-4">
+          <div class="p-4 bg-night-900/40 border border-gold-500/20 rounded-md">
+            <p class="small-caps text-gold-400 text-[10px] mb-1">행운의 과목</p>
+            <p id="r-subject" class="font-kr text-gold-200"></p>
+          </div>
+          <div class="p-4 bg-night-900/40 border border-gold-500/20 rounded-md">
+            <p class="small-caps text-gold-400 text-[10px] mb-1">길일</p>
+            <p id="r-day" class="font-kr text-gold-200"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── CARD DETAIL MODAL ───────────────────────── -->
+<div id="modal" class="hidden fixed inset-0 z-50 modal-backdrop items-center justify-center p-4">
+  <div class="relative max-w-md w-full panel p-6 sm:p-8 reveal">
+    <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+    <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+    <button id="modal-close" class="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-night-700 border border-gold-400/60 text-gold-300 hover:bg-night-600">&#10005;</button>
+    <div class="flex flex-col items-center text-center">
+      <div id="modal-card" class="w-44 mb-5 tarot-aspect tarot-face rounded-xl flex items-center justify-center relative">
+        <!-- svg injected -->
+      </div>
+      <p class="small-caps text-gold-400 text-xs" id="modal-num"></p>
+      <h4 id="modal-name" class="font-mystic-title text-2xl text-gold-grad font-bold mt-1"></h4>
+      <p id="modal-en" class="font-mystic-sub italic text-gold-200 mt-1"></p>
+      <div class="hbar my-4"></div>
+      <p id="modal-desc" class="font-kr text-gold-100/85 leading-loose text-sm"></p>
+      <p id="modal-keywords" class="mt-4 text-[11px] small-caps text-gold-400"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── FOOTER ───────────────────────── -->
+<footer class="relative mt-16 px-6 pt-14 pb-10 border-t border-gold-500/15">
+  <div class="max-w-6xl mx-auto text-center">
+    <div class="flex justify-center items-center gap-4 mb-4">
+      <svg width="20" height="20" viewBox="0 0 24 24" class="moon-glow">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="#f7d56d"/>
+      </svg>
+      <span class="font-mystic-title text-gold-grad text-sm tracking-[0.3em]">SPARK TAROT</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" class="moon-glow">
+        <circle cx="12" cy="12" r="3" fill="#f7d56d"/>
+        <g stroke="#f7d56d" stroke-width="1.5">
+          <line x1="12" y1="3"  x2="12" y2="6"/>
+          <line x1="12" y1="18" x2="12" y2="21"/>
+          <line x1="3"  y1="12" x2="6"  y2="12"/>
+          <line x1="18" y1="12" x2="21" y2="12"/>
+          <line x1="5.6" y1="5.6"  x2="7.8" y2="7.8"/>
+          <line x1="16.2" y1="16.2" x2="18.4" y2="18.4"/>
+          <line x1="5.6" y1="18.4"  x2="7.8" y2="16.2"/>
+          <line x1="16.2" y1="7.8"  x2="18.4" y2="5.6"/>
+        </g>
+      </svg>
+    </div>
+    <p class="font-mystic-sub italic text-gold-200/80 text-sm">"별빛은 그대의 책상 위에도 내린다."</p>
+    <p class="font-kr text-gold-100/40 text-xs mt-3 leading-relaxed max-w-xl mx-auto">
+      &#9734; 가상 운세 시뮬레이션 &middot; 운세 결과는 학습 동기 부여용입니다 &middot;<br/>
+      Spark Tarot &copy; 2026 &middot; 신비주의 가상 콘텐츠 &middot; 실제 점술 서비스가 아님을 알려드립니다.
+    </p>
+    <p class="text-gold-100/30 text-[10px] mt-4 small-caps">&#10038; Moon Phase Today &middot; Waxing Gibbous &middot; Spark Tarot Vol. 1</p>
+  </div>
+</footer>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   Spark Tarot - logic
+   ============================================================ */
+
+// XSS-safe escape
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* ──────────── 22 MAJOR ARCANA ──────────── */
+const ARCANA = [
+  { n:'0',   ko:'옴',          en:'The Fool',        desc:'모든 시작의 신호. 시험 공부의 첫 페이지를 펴는 그대에게.', keys:'시작 · 가능성 · 호기심', icon:'fool' },
+  { n:'I',   ko:'패러데이',    en:'The Magician',     desc:'자속의 마법사. 그대의 손끝에서 전기가 깨어나리라.', keys:'창조 · 자기유도 · 자신감', icon:'magician' },
+  { n:'II',  ko:'키르히호프',  en:'The High Priestess', desc:'노드의 비밀을 아는 사제. 회로의 균형을 직관으로 읽어내라.', keys:'직관 · 균형 · KCL', icon:'priestess' },
+  { n:'III', ko:'변압기',      en:'The Empress',      desc:'권수비의 어머니. 풍요로운 전압이 그대 곁에 흐르리라.', keys:'풍요 · 변환 · 보살핌', icon:'empress' },
+  { n:'IV',  ko:'안전수칙',    en:'The Emperor',      desc:'규칙의 황제. 절차를 따르는 자, 합격에 가까워진다.', keys:'규율 · 권위 · 안전', icon:'emperor' },
+  { n:'V',   ko:'라플라스',    en:'The Hierophant',   desc:'변환의 사제. 시간에서 주파수로, 그대의 사고를 옮기라.', keys:'변환 · 지혜 · 전통', icon:'hierophant' },
+  { n:'VI',  ko:'RLC',         en:'The Lovers',       desc:'공명의 연인. R, L, C가 조화로울 때 진정한 합격이 찾아온다.', keys:'공명 · 선택 · 조화', icon:'lovers' },
+  { n:'VII', ko:'유도전동기',  en:'The Chariot',      desc:'회전의 마차. 슬립을 두려워 말라, 토크가 그대를 이끈다.', keys:'추진 · 회전 · 의지', icon:'chariot' },
+  { n:'VIII',ko:'절연내력',    en:'Strength',         desc:'절연의 힘. 외부 잡음에도 꺾이지 않는 내면의 절연저항.', keys:'인내 · 회복 · 절연', icon:'strength' },
+  { n:'IX',  ko:'합격의 별',   en:'The Star',         desc:'먼 길을 비추는 합격의 별. 새벽이 오면 그대 이름이 명단에 오르리.', keys:'희망 · 합격 · 영감', icon:'star' },
+  { n:'X',   ko:'옴의 바퀴',   en:'Wheel of Fortune', desc:'V=IR. 운명의 바퀴는 옴의 법칙으로 굴러간다. 흔들리지 말라.', keys:'순환 · 법칙 · 변화', icon:'wheel' },
+  { n:'XI',  ko:'역률',        en:'Justice',          desc:'무효전력의 저울. 균형 잡힌 역률만이 진정한 정의를 이룬다.', keys:'균형 · 정의 · 보상', icon:'justice' },
+  { n:'XII', ko:'정전',        en:'The Hanged Man',   desc:'잠시 멈춰 다른 시각을 보라. 정전의 순간이 깨달음을 준다.', keys:'전환 · 관점 · 휴식', icon:'hanged' },
+  { n:'XIII',ko:'단락',        en:'Death',            desc:'끝과 시작. 잘못된 회로를 끊어내야 새 길이 열린다.', keys:'재탄생 · 단절 · 전환', icon:'death' },
+  { n:'XIV', ko:'정류',        en:'Temperance',       desc:'교류를 직류로, 거친 감정을 부드러운 평정으로.', keys:'절제 · 융합 · 정류', icon:'temperance' },
+  { n:'XV',  ko:'단락사고',    en:'The Devil',        desc:'잘못된 결선의 유혹. 단락은 달콤하나 끝은 화염이라.', keys:'유혹 · 위험 · 속박', icon:'devil' },
+  { n:'XVI', ko:'낙뢰',        en:'The Tower',        desc:'무지한 회로 위에 떨어지는 번개. 무너진 뒤에 진정한 학습이 시작된다.', keys:'파괴 · 각성 · 충격', icon:'tower' },
+  { n:'XVII',ko:'태양광',      en:'The Sun',          desc:'태양의 광채. 그대의 학습 결과가 빛을 발하리라.', keys:'성공 · 활력 · 명료', icon:'sun' },
+  { n:'XVIII',ko:'심야 인덕터', en:'The Moon',        desc:'한밤의 인덕터. 흐름은 늦으나 멈추지 않는다. 야간 학습은 헛되지 않다.', keys:'직관 · 끈기 · 야간', icon:'moon' },
+  { n:'XIX', ko:'전원',        en:'The Universe',     desc:'우주의 전원. 그대가 닿는 모든 회로에 에너지가 흐른다.', keys:'완성 · 통합 · 우주', icon:'universe' },
+  { n:'XX',  ko:'점등',        en:'Judgement',        desc:'시험관이 마지막 등을 켜는 순간 &mdash; 그대의 진가가 드러난다.', keys:'평가 · 부활 · 깨달음', icon:'judgement' },
+  { n:'XXI', ko:'합격증',      en:'The World',        desc:'세상의 완성. 합격증 위에 그대 이름이 새겨질 시간이 다가온다.', keys:'완성 · 성취 · 세계', icon:'world' }
+];
+
+/* ──────────── SVG ICON FACTORY ──────────── */
+function cardSVG(icon, large) {
+  const size = large ? '70%' : '65%';
+  const common = `<rect width="100" height="100" fill="none"/>`;
+  const lib = {
+    fool:       `${common}<circle cx="50" cy="55" r="20" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M50 35 L52 45 L62 45 L54 51 L57 61 L50 55 L43 61 L46 51 L38 45 L48 45 Z" fill="#f7d56d"/>`,
+    magician:   `<path d="M30 80 L70 20 M30 20 L70 80" stroke="#f7d56d" stroke-width="3"/><circle cx="50" cy="50" r="14" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="50" r="4" fill="#f7d56d"/>`,
+    priestess:  `<rect x="35" y="25" width="30" height="50" fill="none" stroke="#f7d56d" stroke-width="2"/><line x1="35" y1="50" x2="65" y2="50" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="38" r="3" fill="#f7d56d"/><circle cx="50" cy="63" r="3" fill="#f7d56d"/>`,
+    empress:    `<path d="M30 40 Q50 25 70 40 Q70 55 50 55 Q30 55 30 40 Z" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M30 55 Q40 75 50 75 Q60 75 70 55" fill="none" stroke="#f7d56d" stroke-width="2"/><line x1="50" y1="55" x2="50" y2="75" stroke="#f7d56d" stroke-width="2"/>`,
+    emperor:    `<rect x="32" y="32" width="36" height="36" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M32 32 L50 18 L68 32" fill="none" stroke="#f7d56d" stroke-width="2"/><line x1="40" y1="50" x2="60" y2="50" stroke="#f7d56d" stroke-width="2"/>`,
+    hierophant: `<path d="M50 20 L60 50 L40 50 Z" fill="none" stroke="#f7d56d" stroke-width="2"/><rect x="35" y="50" width="30" height="30" fill="none" stroke="#f7d56d" stroke-width="2"/><line x1="50" y1="20" x2="50" y2="80" stroke="#f7d56d" stroke-width="1"/>`,
+    lovers:     `<circle cx="38" cy="55" r="14" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="62" cy="55" r="14" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M50 30 L45 38 L55 38 Z" fill="#f7d56d"/>`,
+    chariot:    `<circle cx="35" cy="70" r="10" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="65" cy="70" r="10" fill="none" stroke="#f7d56d" stroke-width="2"/><rect x="32" y="35" width="36" height="22" fill="none" stroke="#f7d56d" stroke-width="2"/><line x1="35" y1="70" x2="65" y2="70" stroke="#f7d56d" stroke-width="1.5"/>`,
+    strength:   `<path d="M30 60 Q50 30 70 60 Q70 75 50 80 Q30 75 30 60 Z" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="58" r="6" fill="#f7d56d"/><path d="M40 30 Q50 20 60 30" fill="none" stroke="#f7d56d" stroke-width="2"/>`,
+    star:       `<polygon points="50,18 56,38 76,38 60,50 66,72 50,58 34,72 40,50 24,38 44,38" fill="#f7d56d"/><circle cx="50" cy="50" r="3" fill="#150733"/>`,
+    wheel:      `<circle cx="50" cy="50" r="26" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="50" r="14" fill="none" stroke="#f7d56d" stroke-width="1.5"/><line x1="24" y1="50" x2="76" y2="50" stroke="#f7d56d" stroke-width="1.5"/><line x1="50" y1="24" x2="50" y2="76" stroke="#f7d56d" stroke-width="1.5"/><line x1="32" y1="32" x2="68" y2="68" stroke="#f7d56d" stroke-width="1.5"/><line x1="32" y1="68" x2="68" y2="32" stroke="#f7d56d" stroke-width="1.5"/>`,
+    justice:    `<path d="M50 22 L50 78" stroke="#f7d56d" stroke-width="2"/><line x1="30" y1="38" x2="70" y2="38" stroke="#f7d56d" stroke-width="2"/><circle cx="30" cy="52" r="8" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="70" cy="52" r="8" fill="none" stroke="#f7d56d" stroke-width="2"/>`,
+    hanged:     `<line x1="30" y1="25" x2="70" y2="25" stroke="#f7d56d" stroke-width="2"/><line x1="50" y1="25" x2="50" y2="50" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="58" r="8" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M50 66 L40 80 M50 66 L60 80" stroke="#f7d56d" stroke-width="2"/>`,
+    death:      `<path d="M30 50 L70 50 M50 30 L50 70" stroke="#f7d56d" stroke-width="3"/><circle cx="50" cy="50" r="4" fill="#f7d56d"/><path d="M30 30 L40 40 M70 30 L60 40 M30 70 L40 60 M70 70 L60 60" stroke="#f7d56d" stroke-width="1.5"/>`,
+    temperance: `<path d="M30 35 Q50 50 30 65" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M70 35 Q50 50 70 65" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="none" stroke="#f7d56d" stroke-width="1.5"/>`,
+    devil:      `<path d="M30 35 L40 22 L60 22 L70 35 L70 65 Q50 78 30 65 Z" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="42" cy="48" r="3" fill="#f7d56d"/><circle cx="58" cy="48" r="3" fill="#f7d56d"/><path d="M40 60 Q50 68 60 60" fill="none" stroke="#f7d56d" stroke-width="2"/>`,
+    tower:      `<rect x="38" y="30" width="24" height="50" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M30 30 L38 22 L62 22 L70 30" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M28 25 L35 40 L30 50 L40 45 L34 60" stroke="#f7d56d" stroke-width="2" fill="none"/>`,
+    sun:        `<circle cx="50" cy="50" r="14" fill="#f7d56d"/><g stroke="#f7d56d" stroke-width="2.5"><line x1="50" y1="20" x2="50" y2="30"/><line x1="50" y1="70" x2="50" y2="80"/><line x1="20" y1="50" x2="30" y2="50"/><line x1="70" y1="50" x2="80" y2="50"/><line x1="28" y1="28" x2="36" y2="36"/><line x1="64" y1="64" x2="72" y2="72"/><line x1="28" y1="72" x2="36" y2="64"/><line x1="64" y1="36" x2="72" y2="28"/></g>`,
+    moon:       `<path d="M62 30 A22 22 0 1 0 62 70 A18 18 0 1 1 62 30 Z" fill="#f7d56d"/><circle cx="30" cy="35" r="1.5" fill="#f7d56d"/><circle cx="35" cy="65" r="1.5" fill="#f7d56d"/>`,
+    universe:   `<circle cx="50" cy="50" r="26" fill="none" stroke="#f7d56d" stroke-width="2"/><ellipse cx="50" cy="50" rx="26" ry="10" fill="none" stroke="#f7d56d" stroke-width="1.5"/><ellipse cx="50" cy="50" rx="10" ry="26" fill="none" stroke="#f7d56d" stroke-width="1.5"/><circle cx="50" cy="50" r="3" fill="#f7d56d"/>`,
+    judgement:  `<path d="M30 40 L50 22 L70 40 L70 70 L30 70 Z" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M30 40 L50 50 L70 40" fill="none" stroke="#f7d56d" stroke-width="2"/><circle cx="50" cy="60" r="4" fill="#f7d56d"/>`,
+    world:      `<circle cx="50" cy="50" r="22" fill="none" stroke="#f7d56d" stroke-width="2"/><path d="M28 50 Q50 35 72 50 Q50 65 28 50" fill="none" stroke="#f7d56d" stroke-width="1.5"/><circle cx="50" cy="50" r="4" fill="#f7d56d"/><path d="M42 22 L46 18 L50 24 L54 18 L58 22" fill="none" stroke="#f7d56d" stroke-width="1.5"/>`
+  };
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true">${lib[icon] || lib.star}</svg>`;
+}
+
+/* ──────────── CARD HTML ──────────── */
+function renderCard(card, idx, opts = {}) {
+  const { small = false } = opts;
+  const back = `
+    <div class="card-face tarot-back flex items-center justify-center">
+      <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+      <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+      <svg viewBox="0 0 100 100" width="60%" height="60%" aria-hidden="true">
+        <circle cx="50" cy="50" r="32" fill="none" stroke="#f7d56d" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="22" fill="none" stroke="#f7d56d" stroke-width="1"/>
+        <polygon points="50,20 54,36 70,36 57,46 62,62 50,52 38,62 43,46 30,36 46,36" fill="#f7d56d" opacity=".85"/>
+        <circle cx="50" cy="50" r="3" fill="#caa12a"/>
+        <path d="M20 50 L30 50 M70 50 L80 50 M50 20 L50 30 M50 70 L50 80" stroke="#f7d56d" stroke-width="1.2"/>
+      </svg>
+    </div>`;
+  const face = `
+    <div class="card-face card-back-face tarot-face flex flex-col items-center justify-center p-3">
+      <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+      <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+      <p class="small-caps text-gold-400 text-[10px]">${esc(card.n)}</p>
+      ${cardSVG(card.icon, !small)}
+      <p class="font-mystic-title text-gold-300 ${small ? 'text-xs' : 'text-sm'} text-center leading-tight">${esc(card.ko)}</p>
+      <p class="font-mystic-sub italic text-gold-200/70 text-[10px] text-center">${esc(card.en)}</p>
+    </div>`;
+  return `
+    <div class="card tarot-aspect card-perspective cursor-pointer relative" data-idx="${idx}">
+      <div class="card-glow"></div>
+      <div class="card-inner shadow-card rounded-xl">
+        ${back}
+        ${face}
+      </div>
+    </div>`;
+}
+
+/* ──────────── 3-CARD SPREAD ──────────── */
+const POSITIONS = [
+  { label:'Past',    ko:'과거' },
+  { label:'Present', ko:'현재' },
+  { label:'Future',  ko:'미래' }
+];
+let currentSpread = [];
+
+function drawSpread() {
+  const shuffled = [...ARCANA].sort(() => Math.random() - 0.5);
+  currentSpread = shuffled.slice(0, 3);
+  const spread = document.getElementById('spread');
+  spread.innerHTML = currentSpread.map((c, i) => `
+    <div class="text-center">
+      <p class="small-caps text-gold-400 text-[11px] mb-3">&#10038; ${POSITIONS[i].label} &middot; ${POSITIONS[i].ko}</p>
+      ${renderCard(c, i)}
+    </div>
+  `).join('');
+  spread.querySelectorAll('.card').forEach(el => {
+    el.addEventListener('click', () => {
+      el.classList.add('flipped');
+      checkAllRevealed();
+    });
+  });
+  document.getElementById('spread-reading').classList.add('hidden');
+}
+
+function checkAllRevealed() {
+  const cards = document.querySelectorAll('#spread .card');
+  const allFlipped = [...cards].every(c => c.classList.contains('flipped'));
+  if (allFlipped && cards.length) showReading();
+}
+
+function showReading() {
+  const text = currentSpread.map((c, i) => `<strong class="text-gold-300">${esc(POSITIONS[i].ko)}</strong> &mdash; ${esc(c.ko)}: ${esc(c.desc)}`).join('<br/><br/>');
+  const finale = chooseFinale();
+  document.getElementById('reading-text').innerHTML =
+    text + `<br/><br/><span class="font-mystic-sub italic text-gold-200">&#10042; ${esc(finale)}</span>`;
+  document.getElementById('spread-reading').classList.remove('hidden');
+  document.getElementById('spread-reading').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+const FINALES = [
+  '오늘 새벽, 그대의 노트 위에 별빛이 머무르리라.',
+  '한 문제를 더 풀면, 합격의 문이 한 뼘 더 열리노라.',
+  '교과서를 덮기 전, 한 번 더 펼쳐보라 &mdash; 그곳에 답이 숨어 있다.',
+  '오늘 외운 한 공식이, 시험장에서 그대를 구원하리라.',
+  '의심하지 말라. 그대의 학습은 이미 별의 인정을 받았노라.'
+];
+function chooseFinale() { return FINALES[Math.floor(Math.random() * FINALES.length)]; }
+
+/* ──────────── MAJOR GRID ──────────── */
+function renderMajor() {
+  const grid = document.getElementById('major-grid');
+  grid.innerHTML = ARCANA.map((c, i) => `
+    <div class="major-card-wrap text-center" data-major="${i}">
+      ${renderCard(c, i, { small:true })}
+    </div>
+  `).join('');
+  grid.querySelectorAll('.major-card-wrap').forEach(wrap => {
+    const card = wrap.querySelector('.card');
+    card.addEventListener('click', () => {
+      if (!card.classList.contains('flipped')) {
+        card.classList.add('flipped');
+        setTimeout(() => openModal(parseInt(wrap.dataset.major, 10)), 700);
+      } else {
+        openModal(parseInt(wrap.dataset.major, 10));
+      }
+    });
+  });
+}
+
+/* ──────────── MODAL ──────────── */
+function openModal(i) {
+  const c = ARCANA[i];
+  document.getElementById('modal-num').textContent = `Arcana ${c.n}`;
+  document.getElementById('modal-name').textContent = c.ko;
+  document.getElementById('modal-en').textContent = c.en;
+  document.getElementById('modal-desc').textContent = c.desc;
+  document.getElementById('modal-keywords').innerHTML = `&#10025; ${esc(c.keys)} &#10025;`;
+  document.getElementById('modal-card').innerHTML = `
+    <span class="corner-orn tl"></span><span class="corner-orn tr"></span>
+    <span class="corner-orn bl"></span><span class="corner-orn br"></span>
+    <div class="flex flex-col items-center">
+      <p class="small-caps text-gold-400 text-[10px]">${esc(c.n)}</p>
+      ${cardSVG(c.icon, true)}
+      <p class="font-mystic-title text-gold-300 text-sm">${esc(c.ko)}</p>
+    </div>`;
+  const m = document.getElementById('modal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+}
+function closeModal() {
+  const m = document.getElementById('modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+}
+
+/* ──────────── SAJU FORM ──────────── */
+const ZODIAC = [
+  { sign:'염소자리',   en:'Capricorn',  start:[12,22], end:[1,19],  elem:'직류 · 끈기', subject:'전기설비',         dayHint:'화요일' },
+  { sign:'물병자리',   en:'Aquarius',   start:[1,20],  end:[2,18],  elem:'교류 · 혁신', subject:'전자기학',         dayHint:'수요일' },
+  { sign:'물고기자리', en:'Pisces',     start:[2,19],  end:[3,20],  elem:'유체 · 직관', subject:'전기기기',         dayHint:'목요일' },
+  { sign:'양자리',     en:'Aries',      start:[3,21],  end:[4,19],  elem:'점화 · 추진', subject:'회로이론',         dayHint:'금요일' },
+  { sign:'황소자리',   en:'Taurus',     start:[4,20],  end:[5,20],  elem:'안정 · 토대', subject:'기초전기',         dayHint:'토요일' },
+  { sign:'쌍둥이자리', en:'Gemini',     start:[5,21],  end:[6,21],  elem:'이중 · 통신', subject:'제어공학',         dayHint:'수요일' },
+  { sign:'게자리',     en:'Cancer',     start:[6,22],  end:[7,22],  elem:'유도 · 보호', subject:'전기기기',         dayHint:'월요일' },
+  { sign:'사자자리',   en:'Leo',        start:[7,23],  end:[8,22],  elem:'태양 · 광채', subject:'발전공학',         dayHint:'일요일' },
+  { sign:'처녀자리',   en:'Virgo',      start:[8,23],  end:[9,22],  elem:'정밀 · 분석', subject:'계측 · 측정',     dayHint:'수요일' },
+  { sign:'천칭자리',   en:'Libra',      start:[9,23],  end:[10,22], elem:'균형 · 역률', subject:'전기응용',         dayHint:'금요일' },
+  { sign:'전갈자리',   en:'Scorpio',    start:[10,23], end:[11,21], elem:'심층 · 변환', subject:'반도체',           dayHint:'화요일' },
+  { sign:'사수자리',   en:'Sagittarius',start:[11,22], end:[12,21], elem:'화살 · 방향', subject:'송배전 · 전력',   dayHint:'목요일' }
+];
+
+function zodiacOf(m, d) {
+  for (const z of ZODIAC) {
+    const [sm, sd] = z.start, [em, ed] = z.end;
+    if (sm === em) {
+      if (m === sm && d >= sd && d <= ed) return z;
+    } else {
+      if ((m === sm && d >= sd) || (m === em && d <= ed)) return z;
+    }
+  }
+  return ZODIAC[0];
+}
+
+const READINGS = [
+  '그대의 별은 두 번째 회로를 만났을 때 가장 밝게 빛난다. 인내심이 최상위 덕목이다.',
+  '교과서 가장자리의 메모가 시험장에서 부적이 되리라. 손글씨를 게을리하지 말라.',
+  '오답노트는 단순한 노트가 아니라 그대의 부적이다. 매일 한 번씩 펼쳐 보라.',
+  '시험 전날 밤, 회로도를 손가락으로 따라 그려 보라. 그것이 그대의 행운 의식이 된다.',
+  '약점 단원을 외면하지 말라. 별빛은 가장 어두운 곳을 가장 환히 비춘다.',
+  '동료와의 짧은 대화 한 마디가 그대의 마지막 한 문제를 구원하리라.'
+];
+
+function pickPassScore(seed) {
+  // Pseudo-deterministic based on seed
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return 72 + (h % 25); // 72 ~ 96
+}
+
+function pickReading(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 17 + seed.charCodeAt(i)) >>> 0;
+  return READINGS[h % READINGS.length];
+}
+
+function pickLuckyDay(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 23 + seed.charCodeAt(i)) >>> 0;
+  return (h % 28) + 1;
+}
+
+document.getElementById('saju-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = document.getElementById('saju-name').value.trim() || '익명의 수험자';
+  const y = parseInt(document.getElementById('saju-y').value, 10);
+  const m = parseInt(document.getElementById('saju-m').value, 10);
+  const d = parseInt(document.getElementById('saju-d').value, 10);
+  if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) {
+    showToast('생년월일을 정확히 입력하세요');
+    return;
+  }
+  const z = zodiacOf(m, d);
+  const seed = `${name}|${y}-${m}-${d}`;
+  const score = pickPassScore(seed);
+  const reading = pickReading(seed);
+  const luckyDay = pickLuckyDay(seed);
+
+  document.getElementById('r-zodiac').innerHTML = `${esc(z.sign)}<br/><span class="text-xs font-mystic-sub italic text-gold-200/60">${esc(z.en)}</span>`;
+  document.getElementById('r-elem').textContent = z.elem;
+  document.getElementById('r-score').innerHTML = `${score}<span class="text-base">점</span>`;
+  document.getElementById('r-reading').textContent = `${name}님 — ${reading}`;
+  document.getElementById('r-subject').textContent = z.subject;
+  document.getElementById('r-day').textContent = `매월 ${luckyDay}일 · ${z.dayHint}`;
+  const result = document.getElementById('saju-result');
+  result.classList.remove('hidden');
+  result.classList.remove('reveal'); void result.offsetWidth; result.classList.add('reveal');
+});
+
+/* ──────────── TOAST ──────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ──────────── BUTTONS ──────────── */
+document.getElementById('btn-draw-hero').addEventListener('click', () => {
+  drawSpread();
+  document.getElementById('today').scrollIntoView({ behavior:'smooth' });
+  setTimeout(() => autoFlip(), 700);
+});
+document.getElementById('btn-shuffle').addEventListener('click', () => {
+  drawSpread();
+  setTimeout(() => autoFlip(), 400);
+});
+document.getElementById('btn-reveal-all').addEventListener('click', autoFlip);
+document.getElementById('btn-share').addEventListener('click', () => {
+  showToast('운명이 클립보드에 새겨졌습니다 (가상)');
+});
+
+function autoFlip() {
+  const cards = document.querySelectorAll('#spread .card');
+  cards.forEach((c, i) => setTimeout(() => { c.classList.add('flipped'); }, i * 350));
+  setTimeout(checkAllRevealed, cards.length * 350 + 200);
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target.id === 'modal') closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ──────────── INIT ──────────── */
+drawSpread();
+renderMajor();
+</script>
+</body>
+</html>

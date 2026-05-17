@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크쌤 LIVE — 전기기능사 합격방송 · 라이브 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root {
+    --tw-bg:        #0e0e10;
+    --tw-bg-2:      #18181b;
+    --tw-bg-3:      #1f1f23;
+    --tw-bg-4:      #26262c;
+    --tw-hover:     #2a2a32;
+    --tw-border:    #2f2f37;
+    --tw-text:      #efeff1;
+    --tw-text-2:    #adadb8;
+    --tw-text-3:    #7a7a85;
+    --tw-purple:    #9146ff;
+    --tw-purple-h:  #772ce8;
+    --tw-purple-d:  #5c16c5;
+    --tw-red:       #eb0400;
+    --tw-green:     #00f593;
+    --tw-yellow:    #ffca3a;
+    --tw-pink:      #ff75a0;
+    --tw-blue:      #1f69ff;
+  }
+  * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+  html, body { background: var(--tw-bg); color: var(--tw-text); height: 100%; }
+  body { overflow-x: hidden; }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #3a3a44; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4d4d5a; }
+
+  /* Top bar */
+  .tw-topbar {
+    background: var(--tw-bg-2);
+    border-bottom: 1px solid var(--tw-border);
+    height: 50px;
+  }
+  .tw-logo {
+    width: 30px; height: 30px;
+    background: var(--tw-purple);
+    border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    color: white;
+  }
+  .tw-pill {
+    background: var(--tw-bg-3);
+    color: var(--tw-text);
+    border-radius: 4px;
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  .tw-pill:hover { background: var(--tw-hover); }
+  .tw-btn-purple {
+    background: var(--tw-purple);
+    color: white;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .tw-btn-purple:hover { background: var(--tw-purple-h); }
+  .tw-btn-ghost {
+    background: var(--tw-bg-3);
+    color: var(--tw-text);
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .tw-btn-ghost:hover { background: var(--tw-hover); }
+
+  /* Sidebar */
+  .tw-sidebar {
+    background: var(--tw-bg-2);
+    border-right: 1px solid var(--tw-border);
+    width: 240px;
+    flex-shrink: 0;
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .channel-row:hover { background: var(--tw-bg-3); }
+  .channel-row.live .live-dot {
+    width: 8px; height: 8px;
+    background: var(--tw-red);
+    border-radius: 50%;
+  }
+  .channel-row.live .viewer-count {
+    color: var(--tw-text-2);
+    font-size: 12px;
+    margin-left: auto;
+  }
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    color: white;
+    font-size: 13px;
+  }
+  .avatar.online {
+    box-shadow: 0 0 0 2px var(--tw-red);
+  }
+  .channel-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--tw-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .channel-game {
+    font-size: 12px;
+    color: var(--tw-text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Video area */
+  .video-frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: radial-gradient(ellipse at center, #1a1530 0%, #0a0814 70%, #000 100%);
+    overflow: hidden;
+  }
+  .video-frame.playing .pulse-ring,
+  .video-frame.playing .play-overlay { opacity: 0; pointer-events: none; }
+
+  .play-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.35);
+    transition: opacity 0.25s;
+    z-index: 6;
+    cursor: pointer;
+  }
+  .play-overlay-btn {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: rgba(145, 70, 255, 0.9);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 40px rgba(145, 70, 255, 0.5);
+  }
+
+  /* Live indicator */
+  .live-badge {
+    position: absolute;
+    top: 14px; left: 14px;
+    background: var(--tw-red);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    z-index: 5;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .live-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: white;
+    border-radius: 50%;
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .viewer-pill {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 5;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .viewer-pill .eye {
+    width: 6px; height: 6px;
+    background: var(--tw-red);
+    border-radius: 50%;
+  }
+
+  /* Pulse animation behind play button */
+  .pulse-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(145,70,255,0.4) 0%, transparent 60%);
+    animation: pulse 2.4s ease-out infinite;
+    z-index: 4;
+  }
+  @keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+  }
+
+  /* Studio scene SVG container */
+  .studio-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+  }
+
+  /* Video controls */
+  .video-controls {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+    padding: 20px 14px 10px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .video-frame:hover .video-controls { opacity: 1; }
+  .ctrl-btn {
+    background: transparent;
+    border: 0;
+    color: white;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+  }
+  .ctrl-btn:hover { color: var(--tw-purple); }
+  .progress-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    position: relative;
+    cursor: pointer;
+  }
+  .progress-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--tw-red);
+    border-radius: 3px;
+    width: 100%;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px; height: 12px;
+    background: white;
+    border-radius: 50%;
+  }
+
+  /* Stream info */
+  .stream-info {
+    background: var(--tw-bg-2);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--tw-border);
+  }
+  .stream-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--tw-text);
+    margin-bottom: 4px;
+  }
+  .stream-meta {
+    font-size: 14px;
+    color: var(--tw-text-2);
+  }
+  .stream-tag {
+    display: inline-block;
+    background: var(--tw-bg-3);
+    color: var(--tw-text);
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-right: 4px;
+    margin-top: 6px;
+  }
+  .stream-tag:hover { background: var(--tw-hover); cursor: pointer; }
+
+  /* Channel header bar */
+  .channel-header {
+    background: var(--tw-bg-2);
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--tw-border);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .channel-header .avatar-lg {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--tw-purple), var(--tw-pink));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    box-shadow: 0 0 0 3px var(--tw-red);
+    flex-shrink: 0;
+  }
+  .follow-btn {
+    background: var(--tw-purple);
+    color: white;
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+  .follow-btn:hover { background: var(--tw-purple-h); }
+  .sub-btn {
+    background: var(--tw-bg-3);
+    color: var(--tw-text);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .sub-btn:hover { background: var(--tw-hover); }
+
+  /* Chat panel */
+  .chat-panel {
+    background: var(--tw-bg-2);
+    border-left: 1px solid var(--tw-border);
+    width: 340px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-header {
+    height: 50px;
+    border-bottom: 1px solid var(--tw-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tw-text);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 0;
+  }
+  .chat-msg {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.45;
+    word-wrap: break-word;
+  }
+  .chat-msg:hover { background: var(--tw-bg-3); }
+  .chat-msg .name {
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .chat-msg .badge {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    background: var(--tw-purple);
+    color: white;
+    font-size: 9px;
+    text-align: center;
+    line-height: 16px;
+    font-weight: 700;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .chat-msg .badge.mod { background: var(--tw-green); }
+  .chat-msg .badge.vip { background: var(--tw-pink); }
+  .chat-msg .badge.sub { background: var(--tw-blue); }
+  .chat-msg .text { color: var(--tw-text); }
+  .chat-msg.highlight {
+    background: linear-gradient(90deg, rgba(145,70,255,0.15), transparent);
+    border-left: 3px solid var(--tw-purple);
+    padding-left: 8px;
+  }
+  .chat-msg.donation {
+    background: linear-gradient(135deg, rgba(255,202,58,0.18), rgba(235,4,0,0.10));
+    border: 1px solid rgba(255,202,58,0.4);
+    padding: 8px 10px;
+    margin: 4px 0;
+  }
+  .chat-msg.donation .name { color: var(--tw-yellow); }
+  .chat-msg.donation .amount {
+    display: inline-block;
+    background: var(--tw-yellow);
+    color: #1a1a1a;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 800;
+    margin-left: 4px;
+  }
+  .chat-msg.system {
+    background: rgba(145,70,255,0.10);
+    color: var(--tw-text-2);
+    font-style: italic;
+    font-size: 13px;
+    padding: 6px 10px;
+    text-align: center;
+  }
+  .emote {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    text-align: center;
+    line-height: 18px;
+    font-size: 11px;
+    vertical-align: middle;
+    margin: 0 1px;
+  }
+
+  /* Chat input */
+  .chat-input-area {
+    padding: 10px;
+    border-top: 1px solid var(--tw-border);
+  }
+  .chat-input-wrap {
+    background: var(--tw-bg-3);
+    border: 2px solid transparent;
+    border-radius: 4px;
+    padding: 8px 10px;
+    transition: border 0.15s;
+  }
+  .chat-input-wrap:focus-within { border-color: var(--tw-purple); }
+  .chat-input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    color: var(--tw-text);
+    outline: none;
+    font-size: 14px;
+  }
+  .chat-input::placeholder { color: var(--tw-text-3); }
+  .chat-send {
+    background: var(--tw-purple);
+    color: white;
+    border: 0;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .chat-send:hover { background: var(--tw-purple-h); }
+  .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Donation modal */
+  .donation-toast {
+    position: fixed;
+    top: 70px;
+    right: 24px;
+    background: linear-gradient(135deg, #ffca3a, #ff8c00);
+    color: #1a1a1a;
+    padding: 14px 18px;
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(255, 140, 0, 0.4);
+    font-weight: 700;
+    z-index: 100;
+    transform: translateY(-150%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .donation-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .donation-toast .icon {
+    display: inline-block;
+    margin-right: 8px;
+    font-size: 20px;
+    vertical-align: middle;
+  }
+
+  /* About section under video */
+  .about-card {
+    background: var(--tw-bg-2);
+    border-radius: 6px;
+    padding: 18px;
+    margin: 18px 24px;
+  }
+  .about-card h3 {
+    font-size: 14px;
+    color: var(--tw-text-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .stat-pill {
+    display: inline-block;
+    background: var(--tw-bg-3);
+    color: var(--tw-text);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* Tip cards row */
+  .tip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 18px 24px;
+  }
+  .tip-card {
+    background: var(--tw-bg-2);
+    border-radius: 6px;
+    padding: 14px;
+    border-top: 3px solid var(--tw-purple);
+  }
+  .tip-card .label {
+    font-size: 11px;
+    color: var(--tw-purple);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .tip-card .body {
+    font-size: 14px;
+    color: var(--tw-text);
+    line-height: 1.5;
+  }
+
+  /* Helpers */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--tw-text-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 12px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* New message slide-in */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .chat-msg.new { animation: slideIn 0.22s ease-out; }
+
+  /* Hidden by default on mobile sidebar etc */
+  @media (max-width: 1024px) {
+    .tw-sidebar { display: none; }
+    .chat-panel { width: 300px; }
+  }
+  @media (max-width: 768px) {
+    .chat-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="tw-topbar flex items-center px-4 gap-4 sticky top-0 z-50">
+  <div class="flex items-center gap-2">
+    <div class="tw-logo">S</div>
+    <span class="text-sm font-bold tracking-tight" style="color: var(--tw-text);">SparkTV</span>
+  </div>
+  <nav class="hidden md:flex items-center gap-1 text-sm font-semibold" style="color: var(--tw-text);">
+    <button class="tw-pill">팔로잉</button>
+    <button class="tw-pill">탐색</button>
+  </nav>
+  <div class="flex-1 max-w-xl mx-auto hidden md:block">
+    <div class="relative">
+      <input
+        type="text"
+        placeholder="채널, 카테고리, 태그 검색"
+        class="w-full bg-[#1f1f23] text-sm text-white placeholder-[#7a7a85] rounded-l px-3 py-2 outline-none border border-transparent focus:border-[#9146ff]"
+        style="border-radius: 4px 0 0 4px;"
+      />
+      <button class="absolute right-0 top-0 h-full px-3" style="background: var(--tw-bg-3); border-radius: 0 4px 4px 0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="ml-auto flex items-center gap-2">
+    <button class="tw-btn-ghost hidden md:inline-flex">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="inline-block mr-1"><path d="M12 8c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm0 2c-2.21 0-4 1.79-4 4v6h8v-6c0-2.21-1.79-4-4-4z"/></svg>
+      구독
+    </button>
+    <button class="tw-btn-purple">로그인</button>
+    <button class="tw-btn-ghost">회원가입</button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="flex" style="min-height: calc(100vh - 50px);">
+
+  <!-- LEFT SIDEBAR — Recommended channels -->
+  <aside class="tw-sidebar overflow-y-auto" style="height: calc(100vh - 50px); position: sticky; top: 50px;">
+    <div class="section-title">
+      추천 채널
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <div class="px-1 pb-3 flex flex-col gap-0.5" id="channelList">
+      <!-- channels injected by JS -->
+    </div>
+
+    <div class="section-title border-t" style="border-color: var(--tw-border);">
+      카테고리
+    </div>
+    <div class="px-1 flex flex-col gap-0.5">
+      <a class="channel-row" href="#">
+        <div class="avatar" style="background: linear-gradient(135deg, #9146ff, #5c16c5); width:30px; height:30px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="channel-name">전기기능사</div>
+          <div class="channel-game">시청자 8,421명</div>
+        </div>
+      </a>
+      <a class="channel-row" href="#">
+        <div class="avatar" style="background: linear-gradient(135deg, #ffca3a, #ff8c00);">계</div>
+        <div class="flex-1 min-w-0">
+          <div class="channel-name">계산문제풀이</div>
+          <div class="channel-game">시청자 1,205명</div>
+        </div>
+      </a>
+      <a class="channel-row" href="#">
+        <div class="avatar" style="background: linear-gradient(135deg, #00f593, #1f69ff);">시</div>
+        <div class="flex-1 min-w-0">
+          <div class="channel-name">실기 시뮬레이션</div>
+          <div class="channel-game">시청자 622명</div>
+        </div>
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 min-w-0 flex flex-col">
+
+    <!-- Video frame -->
+    <div class="video-frame" id="videoFrame">
+      <!-- Studio scene SVG -->
+      <svg class="studio-svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a0f3a"/>
+            <stop offset="50%" stop-color="#0d0820"/>
+            <stop offset="100%" stop-color="#000"/>
+          </linearGradient>
+          <linearGradient id="deskGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3a2766"/>
+            <stop offset="100%" stop-color="#1a0f3a"/>
+          </linearGradient>
+          <radialGradient id="screenGlow" cx="0.5" cy="0.5" r="0.6">
+            <stop offset="0%" stop-color="#9146ff" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#9146ff" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="boardGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a3a5a"/>
+            <stop offset="100%" stop-color="#0d1f33"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Background -->
+        <rect width="1280" height="720" fill="url(#bgGrad)"/>
+
+        <!-- Wall: ambient lights -->
+        <circle cx="120" cy="120" r="180" fill="#9146ff" opacity="0.18"/>
+        <circle cx="1160" cy="180" r="220" fill="#ff75a0" opacity="0.10"/>
+        <circle cx="640" cy="480" r="260" fill="#9146ff" opacity="0.07"/>
+
+        <!-- Wall decor: SparkTV neon sign -->
+        <g transform="translate(80,80)">
+          <text x="0" y="40" font-family="sans-serif" font-size="44" font-weight="900" fill="#9146ff" opacity="0.85">SparkTV</text>
+          <text x="0" y="40" font-family="sans-serif" font-size="44" font-weight="900" fill="none" stroke="#fff" stroke-width="0.5" opacity="0.6">SparkTV</text>
+        </g>
+
+        <!-- Whiteboard / circuit -->
+        <g transform="translate(820,150)">
+          <rect width="380" height="220" rx="8" fill="url(#boardGrad)" stroke="#5566aa" stroke-width="2"/>
+          <text x="14" y="28" font-family="sans-serif" font-size="14" fill="#9ad8ff" font-weight="700">옴의 법칙 회로</text>
+          <!-- Circuit diagram -->
+          <g stroke="#ffca3a" stroke-width="2.5" fill="none" stroke-linecap="round">
+            <path d="M40 80 L40 160 L340 160 L340 80 Z"/>
+            <!-- Battery -->
+            <line x1="40" y1="120" x2="20" y2="120"/>
+            <line x1="20" y1="110" x2="20" y2="130"/>
+            <line x1="14" y1="105" x2="14" y2="135"/>
+            <!-- Resistor zigzag -->
+            <path d="M150 80 L160 70 L175 90 L190 70 L205 90 L220 70 L230 80"/>
+            <text x="158" y="60" font-size="11" fill="#fff">R = 10Ω</text>
+            <!-- Bulb -->
+            <circle cx="280" cy="80" r="14" stroke="#ffca3a" fill="#3a2a0a"/>
+            <circle cx="280" cy="80" r="6" fill="#ffca3a" opacity="0.8"/>
+          </g>
+          <text x="14" y="200" font-family="monospace" font-size="13" fill="#fff">V = IR = 2A × 10Ω = 20V</text>
+        </g>
+
+        <!-- Desk -->
+        <rect x="0" y="540" width="1280" height="180" fill="url(#deskGrad)"/>
+        <line x1="0" y1="540" x2="1280" y2="540" stroke="#5c16c5" stroke-width="2" opacity="0.6"/>
+
+        <!-- Monitor on desk (LEFT) -->
+        <g transform="translate(120,380)">
+          <rect width="200" height="130" rx="6" fill="#000" stroke="#444" stroke-width="2"/>
+          <rect x="6" y="6" width="188" height="118" rx="3" fill="#0a0a1f"/>
+          <rect x="6" y="6" width="188" height="118" rx="3" fill="url(#screenGlow)"/>
+          <text x="14" y="28" font-family="sans-serif" font-size="11" fill="#9146ff" font-weight="700">CHAT</text>
+          <rect x="14" y="40" width="100" height="6" rx="2" fill="#444"/>
+          <rect x="14" y="52" width="160" height="6" rx="2" fill="#444"/>
+          <rect x="14" y="64" width="120" height="6" rx="2" fill="#9146ff" opacity="0.7"/>
+          <rect x="14" y="76" width="140" height="6" rx="2" fill="#444"/>
+          <rect x="14" y="88" width="90" height="6" rx="2" fill="#444"/>
+          <rect x="14" y="100" width="120" height="6" rx="2" fill="#444"/>
+          <!-- Stand -->
+          <rect x="80" y="130" width="40" height="20" fill="#222"/>
+          <rect x="50" y="148" width="100" height="6" rx="2" fill="#222"/>
+        </g>
+
+        <!-- Host avatar (CENTER) -->
+        <g transform="translate(560,300)">
+          <!-- Body -->
+          <path d="M0 240 Q0 140 80 140 L80 140 Q160 140 160 240 Z" fill="#9146ff"/>
+          <rect x="20" y="180" width="120" height="60" fill="#fff" opacity="0.1"/>
+          <!-- Shirt logo -->
+          <text x="80" y="220" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#fff" font-weight="800">SPARK</text>
+          <!-- Neck -->
+          <rect x="65" y="120" width="30" height="30" fill="#f5d5a8"/>
+          <!-- Head -->
+          <circle cx="80" cy="90" r="50" fill="#f5d5a8"/>
+          <!-- Hair -->
+          <path d="M30 80 Q30 30 80 30 Q130 30 130 80 L130 60 Q100 50 80 55 Q60 60 30 60 Z" fill="#3a2515"/>
+          <!-- Glasses -->
+          <circle cx="62" cy="90" r="11" fill="none" stroke="#222" stroke-width="2"/>
+          <circle cx="98" cy="90" r="11" fill="none" stroke="#222" stroke-width="2"/>
+          <line x1="73" y1="90" x2="87" y2="90" stroke="#222" stroke-width="2"/>
+          <!-- Eyes through glasses -->
+          <circle cx="62" cy="90" r="2.5" fill="#1a1a1a"/>
+          <circle cx="98" cy="90" r="2.5" fill="#1a1a1a"/>
+          <!-- Smile -->
+          <path d="M65 110 Q80 122 95 110" stroke="#3a1a1a" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <!-- Headset -->
+          <path d="M28 70 Q80 20 132 70" stroke="#1a1a1a" stroke-width="6" fill="none"/>
+          <rect x="22" y="76" width="14" height="20" rx="4" fill="#1a1a1a"/>
+          <rect x="124" y="76" width="14" height="20" rx="4" fill="#1a1a1a"/>
+          <!-- Mic boom -->
+          <path d="M22 90 Q5 105 5 130" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+          <ellipse cx="5" cy="135" rx="10" ry="6" fill="#1a1a1a"/>
+          <circle cx="5" cy="135" r="4" fill="#eb0400"/>
+        </g>
+
+        <!-- Right side: keyboard + multimeter -->
+        <g transform="translate(960,440)">
+          <!-- Keyboard -->
+          <rect width="220" height="60" rx="6" fill="#0a0a0a" stroke="#333"/>
+          <g fill="#9146ff" opacity="0.7">
+            <rect x="10" y="10" width="14" height="14" rx="2"/>
+            <rect x="28" y="10" width="14" height="14" rx="2"/>
+            <rect x="46" y="10" width="14" height="14" rx="2"/>
+            <rect x="64" y="10" width="14" height="14" rx="2"/>
+            <rect x="82" y="10" width="14" height="14" rx="2"/>
+            <rect x="100" y="10" width="14" height="14" rx="2"/>
+            <rect x="118" y="10" width="14" height="14" rx="2"/>
+            <rect x="136" y="10" width="14" height="14" rx="2"/>
+            <rect x="154" y="10" width="14" height="14" rx="2"/>
+            <rect x="172" y="10" width="14" height="14" rx="2"/>
+            <rect x="190" y="10" width="14" height="14" rx="2"/>
+            <rect x="10" y="32" width="200" height="14" rx="2" opacity="0.4"/>
+          </g>
+          <!-- Multimeter -->
+          <g transform="translate(-180,-60)">
+            <rect width="120" height="120" rx="10" fill="#ffca3a"/>
+            <rect x="14" y="14" width="92" height="40" rx="4" fill="#1a1a1a"/>
+            <text x="100" y="42" text-anchor="end" font-family="monospace" font-size="20" fill="#00f593" font-weight="700">220V</text>
+            <circle cx="40" cy="80" r="18" fill="#1a1a1a"/>
+            <circle cx="40" cy="80" r="14" fill="none" stroke="#fff" stroke-width="1"/>
+            <line x1="40" y1="80" x2="40" y2="68" stroke="#fff" stroke-width="2"/>
+            <circle cx="80" cy="80" r="6" fill="#eb0400"/>
+            <circle cx="100" cy="80" r="6" fill="#1a1a1a"/>
+          </g>
+        </g>
+
+        <!-- Floating equation -->
+        <g transform="translate(420,140)" opacity="0.9">
+          <text font-family="monospace" font-size="22" fill="#9146ff" font-weight="700">P = V × I</text>
+        </g>
+        <g transform="translate(380,200)" opacity="0.6">
+          <text font-family="monospace" font-size="14" fill="#ff75a0">cos θ = 0.85</text>
+        </g>
+      </svg>
+
+      <!-- Live + viewer -->
+      <div class="live-badge">LIVE</div>
+      <div class="viewer-pill"><span class="eye"></span><span id="viewerCount">1,247</span></div>
+
+      <!-- Pulse + play overlay -->
+      <div class="pulse-ring"></div>
+      <div class="play-overlay" id="playOverlay">
+        <div class="play-overlay-btn">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+
+      <!-- Video controls -->
+      <div class="video-controls">
+        <button class="ctrl-btn" id="playBtn" title="재생/일시정지">
+          <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <span class="text-xs font-mono" id="liveTime">LIVE · 01:23:45</span>
+        <button class="ctrl-btn" id="volBtn" title="음량">
+          <svg id="volIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        </button>
+        <div class="w-20 h-1 rounded bg-white/20 hidden md:block">
+          <div class="h-full bg-white rounded" style="width: 70%"></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <button class="ctrl-btn" title="설정">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+        </button>
+        <button class="ctrl-btn" id="fsBtn" title="전체화면">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stream info -->
+    <div class="stream-info">
+      <h1 class="stream-title">[합격특강] 전기기능사 핵심요약 — 옴의 법칙부터 3상 결선까지 한 번에!</h1>
+      <div class="stream-meta">전기기능사 · 합격대비 · 한국어</div>
+      <div>
+        <span class="stream-tag">#전기기능사</span>
+        <span class="stream-tag">#필기합격</span>
+        <span class="stream-tag">#실기특강</span>
+        <span class="stream-tag">#옴의법칙</span>
+        <span class="stream-tag">#3상결선</span>
+        <span class="stream-tag">#무료강의</span>
+      </div>
+    </div>
+
+    <!-- Channel header -->
+    <div class="channel-header">
+      <div class="avatar-lg">스</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <h2 class="text-lg font-bold" style="color: var(--tw-text);">스파크쌤 LIVE</h2>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#9146ff"><path d="M22.25 7.6l-1.68-1.69a2.07 2.07 0 0 0-2.93 0L8.96 14.6l-1.69-1.69a2.07 2.07 0 0 0-2.93 0L2.65 14.6c-.81.81-.81 2.13 0 2.94l4.62 4.62c.81.81 2.13.81 2.94 0L22.25 10.54c.81-.81.81-2.13 0-2.94z"/></svg>
+        </div>
+        <p class="text-sm" style="color: var(--tw-text-2);">팔로워 42.8K · 평균 시청자 1.2K · 매일 19시 라이브</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="follow-btn" id="followBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z"/></svg>
+          <span id="followLabel">팔로우</span>
+        </button>
+        <button class="sub-btn" id="donateBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffca3a"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>
+          후원하기
+        </button>
+        <button class="sub-btn hidden md:inline-flex">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>
+          공유
+        </button>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="about-card">
+      <h3>방송 정보</h3>
+      <p class="text-sm leading-relaxed mb-3" style="color: var(--tw-text);">
+        안녕하세요, 매일 저녁 7시 전기기능사 합격을 위한 라이브 강의를 진행하는 <b style="color: var(--tw-purple);">스파크쌤</b>입니다.
+        오늘은 옴의 법칙·키르히호프 법칙부터 3상 결선(Y결선·Δ결선)까지 핵심만 추려서 풀어드립니다.
+        채팅으로 질문 남겨주시면 실시간으로 답변드려요!
+      </p>
+      <div>
+        <span class="stat-pill">시청자 1,247명</span>
+        <span class="stat-pill">방송 시간 1시간 23분</span>
+        <span class="stat-pill">팔로워 42,800명</span>
+        <span class="stat-pill">한국어</span>
+        <span class="stat-pill">1080p60</span>
+      </div>
+    </div>
+
+    <!-- Tip grid -->
+    <div class="tip-grid">
+      <div class="tip-card">
+        <div class="label">오늘의 핵심 1</div>
+        <div class="body">
+          <b>옴의 법칙: V = IR</b><br/>
+          전압·전류·저항 중 두 값만 알면 나머지 한 값은 무조건 나옵니다. 단위 헷갈리지 마세요(V, A, Ω).
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="label">오늘의 핵심 2</div>
+        <div class="body">
+          <b>전력: P = VI = I²R</b><br/>
+          저항에서 소비되는 전력은 전류의 제곱에 비례. 실기 과제 케이블 굵기 선정 때 꼭 등장합니다.
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="label">오늘의 핵심 3</div>
+        <div class="body">
+          <b>Y결선 vs Δ결선</b><br/>
+          Y결선: 선전압 = √3 × 상전압, 선전류 = 상전류<br/>
+          Δ결선: 선전압 = 상전압, 선전류 = √3 × 상전류
+        </div>
+      </div>
+      <div class="tip-card">
+        <div class="label">오늘의 핵심 4</div>
+        <div class="body">
+          <b>역률 개선</b><br/>
+          역률(cos θ)이 낮으면 같은 전력을 보내기 위해 더 큰 전류가 필요. → 콘덴서로 무효전력 보상.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT CHAT PANEL -->
+  <aside class="chat-panel" style="height: calc(100vh - 50px); position: sticky; top: 50px;">
+    <div class="chat-header">스트리밍 채팅</div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg system">스파크쌤 LIVE 채팅에 오신 것을 환영합니다. 자율 규칙을 지켜주세요.</div>
+      <!-- messages injected by JS -->
+    </div>
+    <div class="chat-input-area">
+      <form id="chatForm">
+        <div class="chat-input-wrap">
+          <input
+            id="chatInput"
+            type="text"
+            class="chat-input"
+            placeholder="채팅 메시지 보내기"
+            maxlength="500"
+          />
+        </div>
+        <div class="flex items-center justify-between mt-2">
+          <div class="flex items-center gap-2 text-[#7a7a85]">
+            <button type="button" class="ctrl-btn" title="이모티콘"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM8.5 8C9.33 8 10 8.67 10 9.5S9.33 11 8.5 11 7 10.33 7 9.5 7.67 8 8.5 8zm3.5 9.5c-2.33 0-4.32-1.45-5.12-3.5h10.24c-.8 2.05-2.79 3.5-5.12 3.5zm3.5-6.5c-.83 0-1.5-.67-1.5-1.5S14.67 8 15.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></button>
+            <button type="button" class="ctrl-btn" title="비트"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffca3a"><path d="M12 2L9 9H2l5.5 4.5L5 21l7-4 7 4-2.5-7.5L22 9h-7z"/></svg></button>
+          </div>
+          <button type="submit" class="chat-send" id="chatSend">채팅하기</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<!-- Donation toast -->
+<div class="donation-toast" id="donationToast">
+  <span class="icon">⚡</span>
+  <span id="donationText">5,000 비트로 후원했어요!</span>
+</div>
+
+<script>
+/* ===========================================================
+   채널 목록 시드
+=========================================================== */
+const channels = [
+  { name: '스파크쌤 LIVE', game: '전기기능사 · 합격대비', viewers: 1247, color: 'linear-gradient(135deg,#9146ff,#ff75a0)', initial: '스', live: true, current: true },
+  { name: '전기쟁이TV',     game: '실기 시뮬레이션',     viewers: 832,  color: 'linear-gradient(135deg,#1f69ff,#5c16c5)', initial: '전', live: true },
+  { name: '합격이라이브',   game: '필기 문제풀이',       viewers: 614,  color: 'linear-gradient(135deg,#00f593,#1f69ff)', initial: '합', live: true },
+  { name: '옴의친구',       game: '회로이론 기초',       viewers: 422,  color: 'linear-gradient(135deg,#ffca3a,#ff8c00)', initial: '옴', live: true },
+  { name: '전공자 김기사',  game: '실기 작업형',         viewers: 318,  color: 'linear-gradient(135deg,#eb0400,#9146ff)', initial: '김', live: true },
+  { name: '전기 두루',      game: '계산문제 풀이',       viewers: 207,  color: 'linear-gradient(135deg,#ff75a0,#9146ff)', initial: '두', live: true },
+  { name: '볼트쌤',         game: '전기설비',           viewers: 151,  color: 'linear-gradient(135deg,#5c16c5,#1f69ff)', initial: '볼', live: true },
+  { name: '암페어 채널',    game: '오프라인 — 휴방',    viewers: null, color: 'linear-gradient(135deg,#444,#222)',       initial: '암', live: false }
+];
+
+function renderChannels() {
+  const list = document.getElementById('channelList');
+  list.innerHTML = channels.map(ch => `
+    <a class="channel-row ${ch.live ? 'live' : ''}" href="#" data-channel="${ch.name}">
+      <div class="avatar ${ch.live ? 'online' : ''}" style="background: ${ch.color};">${ch.initial}</div>
+      <div class="flex-1 min-w-0">
+        <div class="channel-name" style="color: ${ch.current ? '#fff' : ''}">${ch.name}${ch.current ? ' <span style=\"color:var(--tw-purple);font-size:11px\">시청 중</span>' : ''}</div>
+        <div class="channel-game">${ch.game}</div>
+      </div>
+      ${ch.live ? `<span class="live-dot"></span><span class="viewer-count">${ch.viewers.toLocaleString()}</span>` : '<span style="color:var(--tw-text-3);font-size:11px;margin-left:auto;">오프라인</span>'}
+    </a>
+  `).join('');
+}
+renderChannels();
+
+/* ===========================================================
+   비디오 재생 토글
+=========================================================== */
+const videoFrame = document.getElementById('videoFrame');
+const playBtn = document.getElementById('playBtn');
+const playOverlay = document.getElementById('playOverlay');
+const playIcon = document.getElementById('playIcon');
+const ICON_PLAY  = '<path d="M8 5v14l11-7z"/>';
+const ICON_PAUSE = '<path d="M6 5h4v14H6zm8 0h4v14h-4z"/>';
+let playing = false;
+
+function togglePlay() {
+  playing = !playing;
+  videoFrame.classList.toggle('playing', playing);
+  playIcon.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+}
+playBtn.addEventListener('click', togglePlay);
+playOverlay.addEventListener('click', togglePlay);
+
+/* 음량 토글 */
+const volBtn = document.getElementById('volBtn');
+const volIcon = document.getElementById('volIcon');
+let muted = false;
+volBtn.addEventListener('click', () => {
+  muted = !muted;
+  volIcon.innerHTML = muted
+    ? '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>'
+    : '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>';
+});
+
+/* 전체화면 */
+document.getElementById('fsBtn').addEventListener('click', () => {
+  if (!document.fullscreenElement) videoFrame.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+
+/* ===========================================================
+   라이브 시청자 수 변동
+=========================================================== */
+let viewerCount = 1247;
+const viewerEl = document.getElementById('viewerCount');
+setInterval(() => {
+  const delta = Math.floor(Math.random() * 21) - 10; // -10 ~ +10
+  viewerCount = Math.max(800, viewerCount + delta);
+  viewerEl.textContent = viewerCount.toLocaleString();
+}, 3000);
+
+/* ===========================================================
+   LIVE 경과시간
+=========================================================== */
+let startMs = Date.now() - (1 * 3600 + 23 * 60 + 45) * 1000;
+const liveTimeEl = document.getElementById('liveTime');
+function pad(n) { return String(n).padStart(2, '0'); }
+setInterval(() => {
+  const s = Math.floor((Date.now() - startMs) / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  liveTimeEl.textContent = `LIVE · ${pad(h)}:${pad(m)}:${pad(sec)}`;
+}, 1000);
+
+/* ===========================================================
+   채팅 시스템 — 시드 7명, 자동 메시지, 사용자 메시지
+=========================================================== */
+const chatUsers = [
+  { name: '저항왕_민수',   color: '#ff75a0', badges: ['sub'] },
+  { name: '옴의친구',       color: '#9146ff', badges: ['mod'] },
+  { name: '합격기원99',     color: '#00f593', badges: [] },
+  { name: '전기뉴비',       color: '#ffca3a', badges: [] },
+  { name: '볼트헌터',       color: '#1f69ff', badges: ['vip'] },
+  { name: '실기준비중',     color: '#ff8c00', badges: ['sub'] },
+  { name: '암페어_지수',    color: '#eb0400', badges: [] }
+];
+
+const seedMessages = [
+  { user: 0, text: '쌤 오늘도 출석합니다! 시험 D-7 ㅠㅠ' },
+  { user: 1, text: '여러분 채팅 규칙 지켜주세요. 욕설/도배 금지!', highlight: true },
+  { user: 2, text: '오늘 옴의법칙 정주행 가능?' },
+  { user: 3, text: '저항 직렬 vs 병렬 헷갈리는데 다시 설명 부탁드려요' },
+  { user: 4, text: 'V=IR 외웠는데 P=I²R은 또 뭔가요 ㅠ' },
+  { user: 5, text: 'Y결선 √3 어디서 나오는지 진짜 이해 안 됨' },
+  { user: 6, text: '쌤 시그니처 사인 \"전기는 즐거워\" 띄워주세요 ㅋㅋ' },
+  { user: 1, text: '★공지★ 라이브 끝나고 요약본 카페에 올라갑니다', highlight: true },
+  { user: 0, text: '한국어 쌤 발음 너무 또렷해서 좋아요' },
+  { user: 2, text: '⚡⚡⚡' },
+  { user: 3, text: '@옴의친구 모더님 친절하세요 감사합니다' },
+  { user: 4, text: '필기 모의고사 60점인데 합격 가능한가요?' },
+  { user: 5, text: '내일 실기 시험인데 보고 가야겠어요!' }
+];
+
+const randomMessages = [
+  '진짜 핵심만 콕콕 짚어주시네요',
+  '쌤 목소리 좋다 ASMR',
+  '저는 이 채널 덕분에 작년에 합격함',
+  'cos θ 0.85가 왜 중요한지 처음 알았어요',
+  'Δ결선 → Y결선 변환은 1/3배 ㄱㄱ',
+  '키르히호프 1법칙: 들어간 전류 = 나간 전류',
+  '실기 시뮬레이터 어디서 받나요?',
+  '잠깐 화장실 다녀올게요 ㅈㅅ',
+  '카메라 살짝 흔들리는 듯',
+  '오늘 강의 진짜 알찬데요',
+  '@스파크쌤 질문있어요',
+  '단답형도 정리해주세요',
+  '결선도 손그림으로 보여주세요',
+  '⚡💡🔌',
+  '필기 합격하고 실기 망함 ㅠㅠ',
+  '60Hz 220V 상용주파수 외우세요',
+  '저는 진짜 코딩 학원생인데 왜 여기 있지 ㅋㅋ',
+  '쌤 합격하면 진짜 술 한잔 살게요',
+  '오늘 자료 다운로드 가능?',
+  '댓글로 질문 받나요?'
+];
+
+const donationUsers = [
+  { name: '익명의 합격생', amount: 5000 },
+  { name: '전기쟁이TV', amount: 10000 },
+  { name: '볼트헌터', amount: 3000 },
+  { name: '합격기원_김', amount: 50000 },
+  { name: '저항왕_민수', amount: 1000 }
+];
+
+const chatBox = document.getElementById('chatMessages');
+
+function emoteHTML(text) {
+  // 이모티콘 강조: ⚡ 💡 🔌 위주
+  return text
+    .replace(/(⚡)/g, '<span class="emote" style="background:#9146ff;">$1</span>')
+    .replace(/(💡)/g, '<span class="emote" style="background:#ffca3a;">$1</span>')
+    .replace(/(🔌)/g, '<span class="emote" style="background:#1f69ff;">$1</span>')
+    .replace(/(@\S+)/g, '<span style="color:#9146ff;font-weight:700;">$1</span>')
+    .replace(/(★[^★]+★)/g, '<span style="color:#ffca3a;font-weight:700;">$1</span>');
+}
+
+function badgeHTML(badges) {
+  return badges.map(b => {
+    const label = b === 'mod' ? 'M' : b === 'vip' ? 'V' : 'S';
+    return `<span class="badge ${b}">${label}</span>`;
+  }).join('');
+}
+
+function appendMessage({ userIdx, text, highlight = false, system = false, isUserSelf = false }) {
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg new' + (highlight ? ' highlight' : '');
+  if (system) {
+    msg.classList.remove('new');
+    msg.classList.add('system');
+    msg.textContent = text;
+  } else {
+    const user = isUserSelf
+      ? { name: '나', color: '#efeff1', badges: [] }
+      : chatUsers[userIdx];
+    msg.innerHTML = `
+      ${badgeHTML(user.badges)}
+      <span class="name" style="color: ${user.color};">${user.name}</span>
+      <span style="color: var(--tw-text-2);">:</span>
+      <span class="text">${emoteHTML(text)}</span>
+    `;
+  }
+  chatBox.appendChild(msg);
+  // 메시지 너무 많아지면 앞쪽 정리
+  while (chatBox.children.length > 80) chatBox.removeChild(chatBox.children[1]);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  // 새 메시지 클래스 제거 (다음 GC를 위해)
+  setTimeout(() => msg.classList.remove('new'), 300);
+}
+
+function appendDonation(donor, amount, text) {
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg donation new';
+  msg.innerHTML = `
+    <span class="name">⭐ ${donor}</span>
+    <span class="amount">${amount.toLocaleString()}원</span>
+    <div style="margin-top:4px;color:var(--tw-text);">${emoteHTML(text)}</div>
+  `;
+  chatBox.appendChild(msg);
+  while (chatBox.children.length > 80) chatBox.removeChild(chatBox.children[1]);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  setTimeout(() => msg.classList.remove('new'), 300);
+}
+
+/* 시드 메시지 차례로 띄우기 (0.4s 간격) */
+seedMessages.forEach((m, i) => {
+  setTimeout(() => {
+    appendMessage({ userIdx: m.user, text: m.text, highlight: m.highlight });
+  }, 400 + i * 400);
+});
+
+/* 1초마다 랜덤 메시지 */
+let randomChatTimer = setInterval(() => {
+  const userIdx = Math.floor(Math.random() * chatUsers.length);
+  const text = randomMessages[Math.floor(Math.random() * randomMessages.length)];
+  appendMessage({ userIdx, text });
+}, 1100);
+
+/* 12초마다 후원 메시지 */
+setInterval(() => {
+  const donor = donationUsers[Math.floor(Math.random() * donationUsers.length)];
+  const phrases = ['오늘 강의 감사해요!', '실기 합격 기원!', '⚡ 응원합니다 쌤!', '항상 잘 보고 있어요', '커피값 보태드려요'];
+  appendDonation(donor.name, donor.amount, phrases[Math.floor(Math.random() * phrases.length)]);
+  flashDonation(`${donor.name}님이 ${donor.amount.toLocaleString()}원 후원!`);
+}, 12000);
+
+/* ===========================================================
+   사용자 채팅 입력
+=========================================================== */
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+
+chatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = chatInput.value.trim();
+  if (!text) return;
+  appendMessage({ text, isUserSelf: true });
+  chatInput.value = '';
+});
+
+/* ===========================================================
+   팔로우 토글
+=========================================================== */
+let followed = false;
+const followBtn = document.getElementById('followBtn');
+const followLabel = document.getElementById('followLabel');
+followBtn.addEventListener('click', () => {
+  followed = !followed;
+  followLabel.textContent = followed ? '팔로잉' : '팔로우';
+  followBtn.style.background = followed ? '#26262c' : 'var(--tw-purple)';
+  if (followed) appendMessage({ system: true, text: '스파크쌤 LIVE를 팔로우했습니다! 다음 방송 알림을 받아요.' });
+});
+
+/* ===========================================================
+   도네이션 버튼
+=========================================================== */
+const donateBtn = document.getElementById('donateBtn');
+const donationToast = document.getElementById('donationToast');
+const donationText = document.getElementById('donationText');
+
+function flashDonation(text) {
+  donationText.textContent = text;
+  donationToast.classList.add('show');
+  if (window.gsap) {
+    gsap.fromTo(donationToast, { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: 'back.out(1.6)' });
+  }
+  clearTimeout(flashDonation._t);
+  flashDonation._t = setTimeout(() => {
+    donationToast.classList.remove('show');
+  }, 3200);
+}
+
+donateBtn.addEventListener('click', () => {
+  const amount = 5000;
+  appendDonation('나', amount, '쌤 응원합니다! 시험 잘 보고 올게요!');
+  flashDonation(`${amount.toLocaleString()}원 후원했어요!`);
+});
+
+/* ===========================================================
+   비디오 영역 클릭으로도 시작
+=========================================================== */
+videoFrame.addEventListener('click', (e) => {
+  // 컨트롤 버튼 클릭은 제외
+  if (e.target.closest('.video-controls') || e.target.closest('.play-overlay')) return;
+  // 첫 클릭만 재생 시작
+  if (!playing) togglePlay();
+});
+</script>
+
+</body>
+</html>

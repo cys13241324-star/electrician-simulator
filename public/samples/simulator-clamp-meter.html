@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>클램프미터 시뮬레이터 — CT 원리로 활선 전류 측정</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(99, 102, 241, 0.45),
+        0 0 40px rgba(244, 114, 182, 0.15);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 620px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#waveCanvas {
+    display: block;
+    width: 100%;
+    height: 160px;
+    border-radius: 12px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(34,197,94,0.4), rgba(59,130,246,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #86efac, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-i { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-w { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.chip-c { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-m { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-pill.warn {
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+}
+.live-pill.ok {
+    border-color: rgba(34, 197, 94, 0.6);
+    box-shadow: 0 0 22px rgba(34, 197, 94, 0.3);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.preset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.seg-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.25);
+    color: #c4b5fd;
+    transition: all 200ms;
+}
+.seg-btn.active {
+    background: linear-gradient(135deg, rgba(168,85,247,0.4), rgba(99,102,241,0.4));
+    border-color: rgba(216, 180, 254, 0.8);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.5);
+}
+.math-container { font-size: 1.1rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.seven-seg {
+    font-family: 'Courier New', monospace;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    color: #fde047;
+    text-shadow: 0 0 12px rgba(253, 224, 71, 0.7), 0 0 24px rgba(253, 224, 71, 0.4);
+    font-variant-numeric: tabular-nums;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · CLAMP METER · CT PRINCIPLE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            🧲 클램프미터 (CT) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">활선 도선을 자르지 않고 둘러싸기만 하면, 변류기(CT) 원리로 자속을 측정해 전류값을 화면에 표시합니다. 클램프 위치와 도선 종류에 따라 오차가 어떻게 변하는지 직접 만져 보세요.</p>
+    </header>
+
+    <!-- 라이브 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-iTrue">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">실제 전류 I</p>
+            <p class="mt-1 text-lg font-bold"><span id="iTrueVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-iMeas">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">측정값 I̅</p>
+            <p class="mt-1 text-lg font-bold"><span id="iMeasVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-err">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">오차 ε</p>
+            <p class="mt-1 text-lg font-bold"><span id="errVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">측정 모드</p>
+            <p class="mt-1 text-lg font-bold"><span id="modeVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">클램프 조 ↻ 열기/닫기 · 도선을 둘러싸 자속 측정</span>
+                    <div class="flex items-center gap-2">
+                        <button id="presetCenter" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">중심 (정확)</button>
+                        <button id="presetMisalign" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">엇갈림 (오차)</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- AC 파형 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">측정 신호 — 1차 도선 전류 vs 클램프 측정</span>
+                    <span class="text-[10px] text-slate-500 font-mono">CT: N₁I₁ = N₂I₂</span>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(244,63,94,0.4), rgba(34,197,94,0.4), rgba(59,130,246,0.4));">
+                    <canvas id="waveCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">클램프미터 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">CT 변류비</p>
+                        <div class="math-container mt-2">\(\dfrac{I_2}{I_1} = \dfrac{N_1}{N_2}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">암페어 법칙</p>
+                        <div class="math-container mt-2">\(\oint \vec{B}\cdot d\vec{l} = \mu_0 I_{enc}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">유도 기전력</p>
+                        <div class="math-container mt-2">\(e = -N\dfrac{d\Phi}{dt}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">AC 클램프</span> · 자속 변화 → 2차 코일 유도 기전력 사용</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">DC 클램프</span> · 홀 효과(Hall) 센서로 정자속 측정</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-sky-300">3상 일괄 클램프</span> · 벡터합 ≈ 0 → 누전 검출용 ZCT 원리</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">중요</span> · 도선이 클램프 중심에서 벗어날수록 자속 분포가 비대칭 → 측정 오차 증가</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip-i chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 I</span><span id="iDisp" class="font-mono text-base">30.0</span></label>
+                <input type="range" id="iRange" min="0" max="200" step="0.5" value="30" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A (rms)</p>
+            </div>
+
+            <div class="chip-w chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">도선 구성</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button data-wire="single" class="seg-btn rounded-md py-1.5 text-xs font-bold active">단상</button>
+                    <button data-wire="three" class="seg-btn rounded-md py-1.5 text-xs font-bold">3상</button>
+                    <button data-wire="both" class="seg-btn rounded-md py-1.5 text-xs font-bold">왕복</button>
+                </div>
+                <p id="wireHint" class="text-[10px] text-slate-500 mt-2 leading-snug">단상 1선만 둘러싸기 — 정상 측정.</p>
+            </div>
+
+            <div class="chip-c chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>클램프 위치 오프셋</span><span id="offDisp" class="font-mono text-base">0.0</span></label>
+                <input type="range" id="offRange" min="-30" max="30" step="0.5" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mm (중심 = 0)</p>
+            </div>
+
+            <div class="chip-c chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>클램프 각도</span><span id="angDisp" class="font-mono text-base">0</span></label>
+                <input type="range" id="angRange" min="-30" max="30" step="1" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">° (수직 = 0)</p>
+            </div>
+
+            <div class="chip-m chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">측정 모드</label>
+                <div class="grid grid-cols-5 gap-1">
+                    <button data-mode="A"   class="seg-btn rounded-md py-1.5 text-[11px] font-bold active">A</button>
+                    <button data-mode="V"   class="seg-btn rounded-md py-1.5 text-[11px] font-bold">V</button>
+                    <button data-mode="kW"  class="seg-btn rounded-md py-1.5 text-[11px] font-bold">kW</button>
+                    <button data-mode="Hz"  class="seg-btn rounded-md py-1.5 text-[11px] font-bold">Hz</button>
+                    <button data-mode="cos" class="seg-btn rounded-md py-1.5 text-[11px] font-bold">cosφ</button>
+                </div>
+            </div>
+
+            <div class="chip-m chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">센서 종류</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button data-ct="AC" class="seg-btn rounded-md py-1.5 text-xs font-bold active">AC (CT)</button>
+                    <button data-ct="DC" class="seg-btn rounded-md py-1.5 text-xs font-bold">DC (Hall)</button>
+                </div>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-indigo-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-rose-300 font-bold">왕복 2선</span>을 함께 둘러싸면 벡터합 ≈ 0 → 측정값이 거의 0 (누전 시에만 0이 아님)</p>
+                <p class="feature-row rounded-md p-2"><span class="text-amber-300 font-bold">엇갈림/기울임</span>은 자속 분포 비대칭 → 오차 ↑ (일반 클램프 ±2~5% 등급)</p>
+                <p class="feature-row rounded-md p-2"><span class="text-emerald-300 font-bold">DC 측정</span>은 자속 변화가 없어 일반 CT 불가 → 홀 센서 사용</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const waveCv = $('waveCanvas');
+const wctx = waveCv.getContext('2d');
+
+let state = {
+    I: 30,              // A rms
+    offset: 0,          // mm (도선이 클램프 중심에서 떨어진 거리)
+    angle: 0,           // 도 (클램프가 도선축에 대해 기울어진 각)
+    wire: 'single',     // single | three | both
+    mode: 'A',          // A | V | kW | Hz | cos
+    sensor: 'AC',       // AC | DC
+    f: 60,
+    V: 220,
+    cosphi: 0.85,
+    jaw: 1,             // 0(열림) ~ 1(닫힘)
+    t: 0
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 620;
+    waveCv.width = waveCv.parentElement.clientWidth - 2;
+    waveCv.height = 160;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ===== 측정값 계산 =====
+function computeMeasurement() {
+    // 기본 오차 모델
+    // - 단상: 1선만 → 정상 측정
+    // - 3상: 1선만 → 정상 측정 (3상 중 1상 측정)
+    // - both(왕복): 2선 같이 → 벡터합 ~ 0 → 거의 0 측정 (잘못된 사용)
+    // - 오프셋/각도: 비대칭 → 측정 오차
+    let factor = 1;
+    if (state.wire === 'both') {
+        // 두 선의 합 (반대 방향) — 미세한 위치 차이로 0이 아닌 작은 값
+        // 위치/각도가 비대칭일수록 더 비대칭 자속
+        factor = 0.02 + Math.abs(state.offset) / 500 + Math.abs(state.angle) / 600;
+    } else {
+        // 오프셋: ±30mm → 최대 약 ±6% 오차
+        const offErr = (state.offset / 30) * 0.06;
+        // 각도: ±30° → 최대 약 ±4% 오차 (cos(θ)-1)
+        const rad = state.angle * Math.PI / 180;
+        const angErr = -(1 - Math.cos(rad)) * 0.7;
+        factor = 1 + offErr + angErr;
+    }
+
+    // DC 모드: AC 부하인데 DC 클램프로 보면 → 평균 ~0 (DC 성분 없음)
+    let dcCorrection = 1;
+    if (state.sensor === 'DC') {
+        // AC 신호의 DC 성분은 0 → 측정값은 거의 0 (드리프트만)
+        dcCorrection = 0.03;
+    }
+
+    // 측정 모드별 표시값
+    const Imeas = state.I * factor * dcCorrection;
+    let displayVal = 0, unit = '', trueVal = state.I, unitTrue = 'A';
+    switch (state.mode) {
+        case 'A':
+            displayVal = Imeas; unit = 'A'; trueVal = state.I; unitTrue = 'A';
+            break;
+        case 'V':
+            displayVal = state.V * (factor === 0 ? 0 : 1); unit = 'V'; trueVal = state.V; unitTrue = 'V';
+            break;
+        case 'kW':
+            displayVal = (state.V * Imeas * state.cosphi) / 1000;
+            unit = 'kW';
+            trueVal = (state.V * state.I * state.cosphi) / 1000;
+            unitTrue = 'kW';
+            break;
+        case 'Hz':
+            displayVal = state.f; unit = 'Hz'; trueVal = state.f; unitTrue = 'Hz';
+            break;
+        case 'cos':
+            displayVal = state.cosphi; unit = '';
+            trueVal = state.cosphi; unitTrue = '';
+            break;
+    }
+    const errPct = trueVal === 0 ? 0 : ((displayVal - trueVal) / trueVal) * 100;
+    return { Imeas, displayVal, unit, trueVal, unitTrue, errPct, factor };
+}
+
+// ===== 자기장 파티클 (도선 주위 자속) =====
+let fluxParticles = [];
+function seedFlux() {
+    fluxParticles = [];
+    for (let k = 0; k < 60; k++) {
+        fluxParticles.push({
+            r: 24 + Math.random() * 90,
+            a: Math.random() * Math.PI * 2,
+            speed: 0.5 + Math.random() * 0.8,
+            phase: Math.random() * Math.PI * 2,
+            size: 0.7 + Math.random() * 1.4,
+            wire: Math.random() < 0.5 ? 0 : 1 // 왕복용
+        });
+    }
+}
+seedFlux();
+
+// ===== 메인 캔버스 =====
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 헤더 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ CLAMP METER · CT TRANSFORMER · LIVE CURRENT', 12, 10);
+    ctx.restore();
+
+    // 도선·클램프 영역 (좌측 2/3) · 디스플레이 (우측 1/3)
+    const splitX = W * 0.62;
+    const cx = splitX * 0.5;
+    const cy = H * 0.5;
+
+    // === 도선 (수직 통과) ===
+    const wireR = 14;
+    const offsetPx = state.offset * 3;   // 1mm = 3px
+    drawWires(cx, cy, wireR, offsetPx);
+
+    // === 자기장 파티클 (도선 주위 회전) ===
+    drawFluxParticles(cx, cy, offsetPx);
+
+    // === 자기력선 (도선 주위 동심원) ===
+    drawFluxRings(cx, cy, offsetPx);
+
+    // === 클램프 ===
+    drawClamp(cx, cy, state.jaw, state.angle);
+
+    // === 측정값 디스플레이 (우측) ===
+    drawDisplay(splitX + 8, 20, W - splitX - 28, H - 40);
+
+    // === 우상단 정보 ===
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    const sensorTxt = `센서: ${state.sensor === 'AC' ? 'AC · CT(변류기)' : 'DC · Hall 효과'}`;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    roundRect(ctx, splitX - 220, 8, 210, 22, 8);
+    ctx.fill();
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(sensorTxt, splitX - 16, 14);
+    ctx.restore();
+}
+
+function drawWires(cx, cy, R, off) {
+    // 도선 구성에 따라 그림
+    if (state.wire === 'single') {
+        drawSingleWire(cx + off, cy, R, '#f59e0b', '#fcd34d', 1);
+    } else if (state.wire === 'three') {
+        // 3상 R / S / T (좌우 배치)
+        const gap = 80;
+        drawSingleWire(cx - gap + off, cy, R, '#ef4444', '#fca5a5', 1, 'R');
+        drawSingleWire(cx + off,       cy, R, '#22c55e', '#86efac', 1, 'S');
+        drawSingleWire(cx + gap + off, cy, R, '#3b82f6', '#93c5fd', 1, 'T');
+    } else if (state.wire === 'both') {
+        // 왕복 — 한 쌍 (가까이 붙어 있음, 반대 방향)
+        const gap = 24;
+        drawSingleWire(cx - gap/2 + off, cy, R, '#ef4444', '#fca5a5',  1, 'L');
+        drawSingleWire(cx + gap/2 + off, cy, R, '#3b82f6', '#93c5fd', -1, 'N');
+    }
+}
+
+function drawSingleWire(x, y, R, col, light, dir, label) {
+    const W = canvas.width, H = canvas.height;
+    // 도선 (수직 — 화면 위아래 끝까지)
+    ctx.save();
+    // 그림자
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = col;
+    const grad = ctx.createLinearGradient(x - R, 0, x + R, 0);
+    grad.addColorStop(0, '#1e293b');
+    grad.addColorStop(0.4, col);
+    grad.addColorStop(0.6, light);
+    grad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x - R, 0, R * 2, H);
+    // 외곽
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - R, 0, R * 2, H);
+    ctx.restore();
+
+    // 도선 위·아래 라벨 + 전류 방향
+    const ac = state.sensor === 'AC';
+    // AC: 시점에 따라 + / - 깜빡임
+    const sign = ac ? Math.sin(state.t * 0.12 * (state.f / 60)) >= 0 ? dir : -dir : dir;
+
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = col;
+    // 위쪽 — 화살표 또는 +/-
+    if (sign > 0) {
+        // 위로 올라감 → 위에 ↑
+        ctx.fillText('↑', x - 4, 22);
+        ctx.fillText('↑', x - 4, H - 12);
+    } else {
+        ctx.fillText('↓', x - 4, 22);
+        ctx.fillText('↓', x - 4, H - 12);
+    }
+    if (label) {
+        ctx.fillStyle = light;
+        ctx.fillText(label, x - 4, 44);
+    }
+    ctx.restore();
+}
+
+function drawFluxParticles(cx, cy, off) {
+    // 자기장이 도선을 둘러싼 동심원 — 파티클이 원주를 따라 회전
+    const ac = state.sensor === 'AC';
+    const phase = ac ? Math.sin(state.t * 0.12 * (state.f / 60)) : 1;  // AC면 부호 진동
+    const intensity = Math.abs(phase) * (state.I / 100);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    const wires = getWirePositions(cx, off);
+    for (const w of wires) {
+        for (const p of fluxParticles) {
+            // wire 인덱스에 따라 파티클 분배 (3상은 균등하게, 왕복은 절반씩)
+            if (state.wire === 'three') {
+                // 모든 파티클이 각자 도선 주위에서 회전 (총 60개 → 각 20개)
+                if ((p.wire % 3) !== w.idx) continue;
+            } else if (state.wire === 'both') {
+                if (p.wire !== w.idx) continue;
+            }
+
+            const rotDir = w.dir * (ac ? (phase >= 0 ? 1 : -1) : 1);
+            const a = p.a + state.t * 0.012 * p.speed * rotDir;
+            const r = p.r + Math.sin(state.t * 0.05 + p.phase) * 3;
+            const x = w.x + Math.cos(a) * r;
+            const y = cy + Math.sin(a) * r;
+            // 도선 너무 가까이/멀리면 페이드
+            const fade = Math.max(0, Math.min(1, (r - 18) / 30));
+            const alpha = (0.35 + 0.4 * intensity) * fade;
+            ctx.fillStyle = w.col === 'mix'
+                ? `rgba(216, 180, 254, ${alpha})`
+                : `${w.col}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = w.glow || '#a78bfa';
+            ctx.beginPath();
+            ctx.arc(x, y, p.size + intensity * 1.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+function drawFluxRings(cx, cy, off) {
+    // 도선 주위 동심원 (자기장)
+    const ac = state.sensor === 'AC';
+    const phase = ac ? Math.sin(state.t * 0.12 * (state.f / 60)) : 1;
+    const intensity = Math.abs(phase) * (state.I / 100);
+    const wires = getWirePositions(cx, off);
+
+    ctx.save();
+    for (const w of wires) {
+        for (let k = 1; k <= 4; k++) {
+            const rr = 28 + k * 18;
+            ctx.strokeStyle = `rgba(186, 230, 253, ${0.12 + intensity * 0.18 / k})`;
+            ctx.lineWidth = 1 + intensity * 0.5;
+            ctx.beginPath();
+            ctx.arc(w.x, cy, rr, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function getWirePositions(cx, off) {
+    if (state.wire === 'single') {
+        return [{ x: cx + off, idx: 0, dir: 1, col: '#fcd34d', glow: '#f59e0b' }];
+    } else if (state.wire === 'three') {
+        const gap = 80;
+        return [
+            { x: cx - gap + off, idx: 0, dir: 1, col: '#fca5a5', glow: '#ef4444' },
+            { x: cx + off,       idx: 1, dir: 1, col: '#86efac', glow: '#22c55e' },
+            { x: cx + gap + off, idx: 2, dir: 1, col: '#93c5fd', glow: '#3b82f6' }
+        ];
+    } else {
+        const gap = 24;
+        return [
+            { x: cx - gap/2 + off, idx: 0, dir:  1, col: '#fca5a5', glow: '#ef4444' },
+            { x: cx + gap/2 + off, idx: 1, dir: -1, col: '#93c5fd', glow: '#3b82f6' }
+        ];
+    }
+}
+
+function drawClamp(cx, cy, openAmt, angleDeg) {
+    // 클램프 (집게 모양) — 중심 cx, cy
+    // openAmt = 1 → 완전히 닫힘 (도선 둘러쌈), 0 → 완전히 열림 (앞쪽 열림)
+    // 각도: 도선축(수직)에 대해 시계 방향 기울기
+    const rad = angleDeg * Math.PI / 180;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+
+    const jawR = 110;       // 클램프 외경
+    const jawT = 26;         // 두께
+    const innerR = 36;       // 클램프 내경 (도선이 들어가는 공간)
+    const gap = (1 - openAmt) * 60;  // 열린 정도
+
+    // 본체 (회색 플라스틱 + 코어)
+    // 아래쪽 반원 (고정)
+    ctx.save();
+    ctx.shadowBlur = 26;
+    ctx.shadowColor = 'rgba(168, 139, 250, 0.4)';
+
+    // 하부 조 (closed half)
+    const grad1 = ctx.createLinearGradient(0, -jawR, 0, jawR);
+    grad1.addColorStop(0, '#475569');
+    grad1.addColorStop(0.5, '#334155');
+    grad1.addColorStop(1, '#1e293b');
+    ctx.fillStyle = grad1;
+
+    ctx.beginPath();
+    ctx.arc(0, 0, jawR, 0, Math.PI * 2);
+    ctx.arc(0, 0, innerR, Math.PI * 2, 0, true);
+    ctx.fill();
+    ctx.restore();
+
+    // 클램프 외곽선
+    ctx.strokeStyle = 'rgba(216, 180, 254, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, jawR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, innerR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 위쪽 분리 갭 (집게가 열려서 도선이 들어가는 곳)
+    if (openAmt < 0.999) {
+        // 위쪽 절반을 살짝 들어올려 사선으로 표시 (시각적 표현)
+        ctx.save();
+        ctx.fillStyle = 'rgba(5, 7, 20, 0.95)';
+        // 위에서 갭만큼 두 조 사이 잘라냄
+        const wHalf = jawR;
+        ctx.fillRect(-wHalf, -jawR - 4, wHalf * 2, gap);
+        ctx.restore();
+
+        // 윗조를 갭만큼 위로 이동시킨 위치에 그림
+        ctx.save();
+        ctx.translate(0, -gap);
+
+        // 윗조 (반원 위쪽)
+        const grad2 = ctx.createLinearGradient(0, -jawR, 0, 0);
+        grad2.addColorStop(0, '#64748b');
+        grad2.addColorStop(0.5, '#475569');
+        grad2.addColorStop(1, '#334155');
+        ctx.fillStyle = grad2;
+        ctx.beginPath();
+        ctx.arc(0, 0, jawR, Math.PI, 0, false);
+        ctx.lineTo(innerR, 0);
+        ctx.arc(0, 0, innerR, 0, Math.PI, true);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(216, 180, 254, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 자기 코어 (내부 링 — 페라이트)
+    ctx.save();
+    const coreR = innerR + 8;
+    const coreOuter = innerR + 16;
+    ctx.beginPath();
+    ctx.arc(0, 0, coreOuter, 0, Math.PI * 2);
+    ctx.arc(0, 0, coreR, Math.PI * 2, 0, true);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.fill();
+    // 페라이트 코어 색
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.55)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 코어 위 코일 (2차) — 작은 사각형들이 둘레에 감김
+    const nTurns = 18;
+    for (let i = 0; i < nTurns; i++) {
+        const a = (i / nTurns) * Math.PI * 2;
+        const cxk = Math.cos(a) * ((coreR + coreOuter) / 2);
+        const cyk = Math.sin(a) * ((coreR + coreOuter) / 2);
+        ctx.save();
+        ctx.translate(cxk, cyk);
+        ctx.rotate(a);
+        ctx.fillStyle = 'rgba(252, 211, 77, 0.7)';
+        ctx.fillRect(-4, -2.5, 8, 5);
+        ctx.restore();
+    }
+    ctx.restore();
+
+    // 클램프 손잡이 (아래 사각)
+    ctx.save();
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.95)';
+    roundRect(ctx, -42, jawR - 4, 84, 56, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // 트리거
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.6)';
+    roundRect(ctx, -26, jawR + 10, 52, 14, 4);
+    ctx.fill();
+    ctx.restore();
+
+    // CT 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText('CT CORE', 0, jawR + 38);
+    ctx.restore();
+
+    ctx.restore(); // 회전 해제
+
+    // 오프셋 표시 (가이드)
+    if (Math.abs(state.offset) > 0.5) {
+        const offPx = state.offset * 3;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + offPx, cy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = '#fcd34d';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${state.offset.toFixed(1)} mm`, cx + offPx / 2, cy - 8);
+        ctx.restore();
+    }
+}
+
+// === 디스플레이 (LCD 풍) ===
+function drawDisplay(x, y, w, h) {
+    // 외부 케이스
+    ctx.save();
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = 'rgba(99, 102, 241, 0.5)';
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, '#1e293b');
+    grad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y, w, h, 14);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // LCD 영역
+    const lcdX = x + 12, lcdY = y + 12;
+    const lcdW = w - 24, lcdH = h * 0.42;
+    ctx.save();
+    const lcdGrad = ctx.createLinearGradient(lcdX, lcdY, lcdX, lcdY + lcdH);
+    lcdGrad.addColorStop(0, '#1c2638');
+    lcdGrad.addColorStop(1, '#0c1426');
+    ctx.fillStyle = lcdGrad;
+    roundRect(ctx, lcdX, lcdY, lcdW, lcdH, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // 측정값 표시
+    const m = computeMeasurement();
+    const valTxt = formatVal(m.displayVal, m.unit);
+
+    // 큰 7세그 숫자
+    ctx.save();
+    ctx.font = 'bold 38px Courier New, monospace';
+    ctx.fillStyle = '#fde047';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(253, 224, 71, 0.7)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(valTxt.num, lcdX + lcdW - 50, lcdY + lcdH * 0.5);
+    // 단위
+    ctx.font = 'bold 16px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillText(valTxt.unit, lcdX + lcdW - 12, lcdY + lcdH * 0.5 + 2);
+
+    // 모드 라벨 (왼상단)
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#67e8f9';
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const modeLabel = ({A:'AC AMPS', V:'AC VOLTS', kW:'POWER', Hz:'FREQ', cos:'POWER FACTOR'})[state.mode];
+    ctx.fillText(modeLabel, lcdX + 10, lcdY + 8);
+
+    // AC/DC 표시
+    ctx.fillStyle = state.sensor === 'AC' ? '#a78bfa' : '#fca5a5';
+    ctx.textAlign = 'right';
+    ctx.fillText(state.sensor, lcdX + lcdW - 10, lcdY + 8);
+    ctx.restore();
+
+    // 정보 패널 (LCD 아래)
+    const infoY = lcdY + lcdH + 14;
+    const lh = 22;
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+
+    // 실제값
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('실제값', lcdX + 4, infoY);
+    ctx.fillStyle = '#86efac';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${formatNum(m.trueVal)} ${m.unitTrue}`, lcdX + lcdW - 4, infoY);
+
+    // 측정값
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('측정값', lcdX + 4, infoY + lh);
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${formatNum(m.displayVal)} ${m.unit}`, lcdX + lcdW - 4, infoY + lh);
+
+    // 오차
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('오차 ε', lcdX + 4, infoY + lh * 2);
+    const errAbs = Math.abs(m.errPct);
+    let errCol = '#86efac';
+    if (errAbs > 5) errCol = '#fca5a5';
+    else if (errAbs > 2) errCol = '#fcd34d';
+    ctx.fillStyle = errCol;
+    ctx.textAlign = 'right';
+    ctx.fillText(`${m.errPct >= 0 ? '+' : ''}${m.errPct.toFixed(2)} %`, lcdX + lcdW - 4, infoY + lh * 2);
+
+    // 자속 게이지
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('자속 Φ', lcdX + 4, infoY + lh * 3);
+    // 바
+    const barX = lcdX + 4, barY = infoY + lh * 3 + 14;
+    const barW = lcdW - 8;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    roundRect(ctx, barX, barY, barW, 8, 4);
+    ctx.fill();
+    const fluxRatio = Math.abs(state.I) / 200;
+    const ac = state.sensor === 'AC' ? Math.abs(Math.sin(state.t * 0.12 * (state.f / 60))) : 1;
+    const filled = Math.min(1, fluxRatio * ac) * barW;
+    const fGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+    fGrad.addColorStop(0, 'rgba(99, 102, 241, 0.8)');
+    fGrad.addColorStop(0.5, 'rgba(244, 114, 182, 0.8)');
+    fGrad.addColorStop(1, 'rgba(34, 211, 238, 0.8)');
+    ctx.fillStyle = fGrad;
+    roundRect(ctx, barX, barY, filled, 8, 4);
+    ctx.fill();
+    ctx.restore();
+
+    // 풋터 — 브랜드 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('★ CT-CLAMP DMM · 600A AC/1000A DC', x + w/2, y + h - 14);
+    ctx.restore();
+}
+
+function formatVal(v, unit) {
+    if (unit === '') {
+        return { num: v.toFixed(2), unit: '' };
+    }
+    if (Math.abs(v) >= 1000) return { num: (v / 1000).toFixed(2), unit: 'k' + unit };
+    if (Math.abs(v) >= 100)  return { num: v.toFixed(1), unit };
+    if (Math.abs(v) >= 10)   return { num: v.toFixed(2), unit };
+    return { num: v.toFixed(2), unit };
+}
+
+function formatNum(v) {
+    if (Math.abs(v) >= 100) return v.toFixed(1);
+    if (Math.abs(v) >= 1) return v.toFixed(2);
+    return v.toFixed(3);
+}
+
+// ===== 파형 캔버스 =====
+function drawWave() {
+    const W = waveCv.width, H = waveCv.height;
+    wctx.clearRect(0, 0, W, H);
+
+    const bg = wctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    wctx.fillStyle = bg;
+    wctx.fillRect(0, 0, W, H);
+
+    // 격자
+    wctx.save();
+    wctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    wctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { wctx.beginPath(); wctx.moveTo(i, 0); wctx.lineTo(i, H); wctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { wctx.beginPath(); wctx.moveTo(0, i); wctx.lineTo(W, i); wctx.stroke(); }
+    wctx.restore();
+
+    // 중앙선
+    wctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    wctx.lineWidth = 1;
+    wctx.beginPath();
+    wctx.moveTo(0, H/2); wctx.lineTo(W, H/2);
+    wctx.stroke();
+
+    const cy = H / 2;
+    const amp = H * 0.36;
+    const cyclesShown = 2;
+    const m = computeMeasurement();
+
+    // === 1차 전류 (실제) — 두꺼운 라인
+    wctx.save();
+    wctx.shadowBlur = 12;
+    wctx.shadowColor = '#f59e0b';
+    wctx.strokeStyle = '#fcd34d';
+    wctx.lineWidth = 2.4;
+    wctx.lineCap = 'round';
+    wctx.beginPath();
+    for (let x = 0; x <= W; x++) {
+        const phase = (x / W) * cyclesShown * Math.PI * 2;
+        const yVal = (state.sensor === 'AC')
+            ? Math.sin(state.t * 0.012 * (state.f / 60) - phase)
+            : 1; // DC면 일정값
+        const y = cy - yVal * amp * (state.I / 100);
+        if (x === 0) wctx.moveTo(x, y); else wctx.lineTo(x, y);
+    }
+    wctx.stroke();
+    wctx.restore();
+
+    // === 2차 측정 신호 (점선)
+    wctx.save();
+    wctx.shadowBlur = 10;
+    wctx.shadowColor = '#a78bfa';
+    wctx.strokeStyle = '#c4b5fd';
+    wctx.lineWidth = 1.8;
+    wctx.setLineDash([6, 4]);
+    wctx.beginPath();
+    for (let x = 0; x <= W; x++) {
+        const phase = (x / W) * cyclesShown * Math.PI * 2;
+        const yVal = (state.sensor === 'AC')
+            ? Math.sin(state.t * 0.012 * (state.f / 60) - phase) * m.factor
+            : (state.sensor === 'DC' ? 0.03 : 1);   // DC 보정
+        // 2차는 1/N비로 축소된다고 보고 시각화는 같은 진폭에 factor 적용
+        const y = cy - yVal * amp * (state.I / 100);
+        if (x === 0) wctx.moveTo(x, y); else wctx.lineTo(x, y);
+    }
+    wctx.stroke();
+    wctx.setLineDash([]);
+    wctx.restore();
+
+    // 라벨
+    wctx.save();
+    wctx.font = 'bold 10px ui-monospace, monospace';
+    wctx.textAlign = 'left'; wctx.textBaseline = 'top';
+    wctx.fillStyle = '#fcd34d';
+    wctx.fillText('● 1차 도선 전류 I₁', 14, 8);
+    wctx.fillStyle = '#c4b5fd';
+    wctx.fillText('┄ 클램프 측정 I₂', 130, 8);
+
+    wctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    wctx.textAlign = 'right';
+    wctx.fillText(`f = ${state.f} Hz · ${state.sensor}`, W - 12, 8);
+    wctx.restore();
+}
+
+// ===== 계산 + UI 갱신 =====
+function compute() {
+    state.I = +$('iRange').value;
+    state.offset = +$('offRange').value;
+    state.angle = +$('angRange').value;
+
+    $('iDisp').textContent = state.I.toFixed(1);
+    $('offDisp').textContent = state.offset.toFixed(1);
+    $('angDisp').textContent = state.angle.toFixed(0);
+
+    const m = computeMeasurement();
+
+    $('iTrueVal').textContent = `${formatNum(state.I)} A`;
+    $('iMeasVal').textContent = `${formatNum(m.Imeas)} A`;
+    $('errVal').textContent = `${m.errPct >= 0 ? '+' : ''}${m.errPct.toFixed(2)} %`;
+    const modeName = ({A:'전류 (A)', V:'전압 (V)', kW:'전력 (kW)', Hz:'주파수 (Hz)', cos:'역률 cosφ'})[state.mode];
+    $('modeVal').textContent = modeName;
+
+    // 색상
+    const errAbs = Math.abs(m.errPct);
+    $('pill-err').classList.remove('warn', 'ok', 'flash');
+    if (state.wire === 'both') $('pill-err').classList.add('warn');
+    else if (errAbs < 1.5) $('pill-err').classList.add('ok');
+    else if (errAbs < 5) $('pill-err').classList.add('flash');
+    else $('pill-err').classList.add('warn');
+
+    // 도선 힌트
+    const hints = {
+        single: '단상 1선만 둘러싸기 — 정상 측정.',
+        three: '3상 중 1선 (S상) 둘러싸기 — 해당 상 전류 측정.',
+        both: '왕복(L+N) 둘러쌈 → 벡터합 ≈ 0. 누전 시에만 값 발생 (ZCT 원리).'
+    };
+    $('wireHint').textContent = hints[state.wire];
+
+    // DC 센서 + 단상 AC → 측정값 거의 0 → 경고
+    $('pill-iMeas').classList.remove('warn');
+    if (state.sensor === 'DC' && state.wire !== 'both') {
+        $('pill-iMeas').classList.add('warn');
+    }
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+}
+
+// === 이벤트 ===
+$('iRange').addEventListener('input', () => { compute(); flashCard(); });
+$('offRange').addEventListener('input', () => { compute(); flashCard(); });
+$('angRange').addEventListener('input', () => { compute(); flashCard(); });
+
+// 도선 종류
+document.querySelectorAll('[data-wire]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-wire]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.wire = btn.dataset.wire;
+        // 닫힘/열림 애니메이션
+        if (window.gsap) {
+            gsap.fromTo(state, { jaw: 0 }, { jaw: 1, duration: 0.7, ease: 'power3.out',
+                onUpdate: () => {} });
+        }
+        compute();
+        flashCard();
+    });
+});
+
+// 측정 모드
+document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.mode = btn.dataset.mode;
+        compute();
+        flashCard();
+    });
+});
+
+// 센서 종류
+document.querySelectorAll('[data-ct]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-ct]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.sensor = btn.dataset.ct;
+        compute();
+        flashCard();
+    });
+});
+
+// 프리셋
+$('presetCenter').addEventListener('click', () => {
+    if (window.gsap) {
+        gsap.to(state, { duration: 0.7, ease: 'power3.out', onUpdate: () => compute() });
+        gsap.to('#offRange', { duration: 0.7, ease: 'power3.out',
+            onUpdate: function() { $('offRange').value = gsap.getProperty(this.targets()[0], 'value'); compute(); } });
+        gsap.fromTo($('offRange'), { value: state.offset }, { value: 0, duration: 0.7, ease: 'power3.out',
+            onUpdate: () => compute() });
+        gsap.fromTo($('angRange'), { value: state.angle }, { value: 0, duration: 0.7, ease: 'power3.out',
+            onUpdate: () => compute() });
+    } else {
+        $('offRange').value = 0; $('angRange').value = 0; compute();
+    }
+    flashCard();
+});
+
+$('presetMisalign').addEventListener('click', () => {
+    if (window.gsap) {
+        gsap.fromTo($('offRange'), { value: state.offset }, { value: 24, duration: 0.7, ease: 'power3.out',
+            onUpdate: () => compute() });
+        gsap.fromTo($('angRange'), { value: state.angle }, { value: 22, duration: 0.7, ease: 'power3.out',
+            onUpdate: () => compute() });
+    } else {
+        $('offRange').value = 24; $('angRange').value = 22; compute();
+    }
+    flashCard();
+});
+
+// 메인 루프
+function animate() {
+    state.t++;
+    drawMain();
+    drawWave();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

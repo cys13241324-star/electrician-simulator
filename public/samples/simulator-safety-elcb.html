@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>감전 보호 · 누전차단기(ELCB/RCD) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 63, 94, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(16, 185, 129, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,63,94,0.45), rgba(251,191,36,0.40), rgba(16,185,129,0.45));
+    box-shadow: 0 30px 100px -20px rgba(244, 63, 94, 0.28), 0 0 40px rgba(16, 185, 129, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 660px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #f43f5e; box-shadow: 0 0 12px #f43f5e;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #f43f5e; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(251,191,36,0.4), rgba(16,185,129,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #fde68a, #6ee7b7);
+    box-shadow: 0 0 22px rgba(252, 165, 165, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-load { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-leak { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fda4af; }
+.chip-sens { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.55); color: #fde68a; }
+.chip-resp { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 63, 94, 0.7);
+    box-shadow: 0 0 24px rgba(244, 63, 94, 0.45);
+}
+.live-pill.trip {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fda4af, #fde68a, #6ee7b7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(244, 114, 182, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 63, 94, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #ffe4e6; }
+.toggle-btn {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.toggle-btn:hover { background: rgba(148, 163, 184, 0.18); }
+.toggle-btn.active {
+    background: linear-gradient(135deg, rgba(244,63,94,0.3), rgba(251,113,133,0.25));
+    border-color: rgba(244, 63, 94, 0.65);
+    color: white;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(251,191,36,0.18));
+    border: 1px solid rgba(244,63,94,0.45);
+    color: #fda4af;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(244,63,94,0.32), rgba(251,191,36,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(244,63,94,0.45);
+}
+.sens-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fde68a;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.sens-btn.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.30), rgba(245,158,11,0.25));
+    border-color: rgba(251, 191, 36, 0.75);
+    color: #fef3c7;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.45);
+}
+.shock-stage {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.shock-stage.active {
+    background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(15,23,42,0.75));
+    border-color: rgba(244,63,94,0.7);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.35);
+    transform: translateY(-2px);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-rose-300">
+            <span class="pulse-dot"></span>
+            SAFETY · GROUND FAULT PROTECTION · ELCB / RCD
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-rose-200 via-amber-200 to-emerald-200 bg-clip-text text-transparent">
+            ⚡ 감전 보호 · 누전차단기(ELCB) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            정상이면 활선 전류 = 중성선 전류 → 영상 변류기(ZCT) ΔI = 0.
+            <span class="text-rose-300 font-semibold">누설이 생기면</span> ZCT가 그 차이를 감지해 <span class="text-amber-300 font-semibold">정격 감도 이상</span>이면 차단.
+            인체로 누설될 때 <span class="text-emerald-300 font-semibold">생명을 구하는</span> 장치입니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-iin">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">들어가는 I (활선)</p>
+            <p class="mt-1 text-lg font-bold"><span id="iInDisp" class="live-num">10.00</span> <span class="text-xs opacity-60 font-normal">A</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-iout">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">나오는 I (중성선)</p>
+            <p class="mt-1 text-lg font-bold"><span id="iOutDisp" class="live-num">10.00</span> <span class="text-xs opacity-60 font-normal">A</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-di">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">영상 전류 ΔI (ZCT)</p>
+            <p class="mt-1 text-lg font-bold"><span id="diDisp" class="live-num">0.0</span> <span class="text-xs opacity-60 font-normal">mA</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-state">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">ELCB 상태</p>
+            <p class="mt-1 text-lg font-bold" id="stateDisp"><span class="text-emerald-300">● ON</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ TRIP — 누전 차단됨 (ΔI &gt; 정격 감도)
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">SOURCE → ELCB(ZCT) → LOAD · ΔI 감지 시 즉시 차단</span>
+                    <div class="flex gap-2">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상 운전</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="touch">⚠ 인체 접촉</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 인체 감전 단계 -->
+            <div class="glass rounded-2xl p-5" id="shockCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🫀</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-amber-200 bg-clip-text text-transparent">인체 감전 위험 단계 (60Hz 교류, 통전 시간 1초 기준)</span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[11px]" id="shockStages">
+                    <div class="shock-stage rounded-lg p-3" data-min="0" data-max="0.5">
+                        <p class="font-bold text-slate-300">~ 0.5 mA</p>
+                        <p class="text-slate-500 mt-0.5">무감각</p>
+                        <p class="text-slate-600 mt-1 text-[10px]">최소 감지 한계 미만</p>
+                    </div>
+                    <div class="shock-stage rounded-lg p-3" data-min="0.5" data-max="5">
+                        <p class="font-bold text-emerald-300">1 ~ 5 mA</p>
+                        <p class="text-emerald-200 mt-0.5">지각 (Perception)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">"찌릿" 느낌, 자력 이탈 가능</p>
+                    </div>
+                    <div class="shock-stage rounded-lg p-3" data-min="5" data-max="15">
+                        <p class="font-bold text-amber-300">5 ~ 15 mA</p>
+                        <p class="text-amber-200 mt-0.5">고통 (Painful)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">근육 경련 시작, 이탈 어려움</p>
+                    </div>
+                    <div class="shock-stage rounded-lg p-3" data-min="15" data-max="50">
+                        <p class="font-bold text-orange-300">15 ~ 50 mA</p>
+                        <p class="text-orange-200 mt-0.5">위험 (Let-go 초과)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">불수전류, 호흡 곤란 가능</p>
+                    </div>
+                    <div class="shock-stage rounded-lg p-3" data-min="50" data-max="100">
+                        <p class="font-bold text-rose-300">50 ~ 100 mA</p>
+                        <p class="text-rose-200 mt-0.5">심각 (Ventricular)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">심실 세동 위험 ↑↑</p>
+                    </div>
+                    <div class="shock-stage rounded-lg p-3" data-min="100" data-max="1000">
+                        <p class="font-bold text-rose-400">100 mA 이상</p>
+                        <p class="text-rose-300 mt-0.5">치명 (Fatal)</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">심정지·화상, 사망 가능</p>
+                    </div>
+                    <div class="shock-stage rounded-lg p-3 col-span-2" data-min="-1" data-max="-1">
+                        <p class="font-bold text-sky-300">🛡 ELCB 보호 원리</p>
+                        <p class="text-sky-200 mt-0.5">정격 감도 15·30 mA · 동작 0.03 s</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">치명 단계 도달 전에 회로를 끊음</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-amber-200 bg-clip-text text-transparent">ZCT 영상 전류 · 차단 조건</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$\Delta I = |I_{line} - I_{neutral}| = I_{leak}, \qquad \text{TRIP if } \Delta I \ge I_{\Delta n}, \ t \le t_{op}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$I_{body} = \frac{V}{R_{body} + R_{ground}} \quad \text{(인체 통과 전류)}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">정상 시 두 전선의 전류는 같아 자속이 상쇄(<span class="text-emerald-300 font-semibold">ΔI = 0</span>). 한쪽에서 누설이 빠져나가면 균형이 깨져 ZCT 2차 측에 유도 전류가 생기고, 트립 코일이 즉시 동작합니다.</p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-rose-200">변수 조절</h2>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 I_load</span><span id="loadVal" class="font-mono text-base">10</span></label>
+                <input type="range" id="load" min="1" max="30" step="0.5" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A · 가전제품 정상 사용 전류</p>
+            </div>
+
+            <div class="chip-leak chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>누전(인체) 전류 I_leak</span>
+                    <span id="leakVal" class="font-mono text-base">0</span>
+                </label>
+                <input type="range" id="leak" min="0" max="300" step="1" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mA · 활선 → 인체 → 대지로 빠지는 전류</p>
+            </div>
+
+            <div class="chip-sens chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">정격 감도 I<sub>Δn</sub></p>
+                <div class="grid grid-cols-3 gap-1.5 mt-2">
+                    <button class="sens-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-sens="15">15 mA</button>
+                    <button class="sens-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-sens="30">30 mA</button>
+                    <button class="sens-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-sens="100">100 mA</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">15·30 mA = 인체 보호용(고감도) / 100 mA = 기기 보호용</p>
+            </div>
+
+            <div class="chip-resp chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">동작 시간 t<sub>op</sub></p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="time-btn sens-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-time="0.03">0.03 s (고속)</button>
+                    <button class="time-btn sens-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-time="0.1">0.1 s (일반)</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">트립 신호 ~ 차단 완료까지의 시간</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-xs tracking-wider text-rose-200">⚠ 인체 접촉 시뮬레이션</h3>
+                    <button id="bodyToggle" class="toggle-btn rounded-md px-2 py-1 text-[10px] font-bold">OFF</button>
+                </div>
+                <p class="text-[10px] text-slate-500">ON 시 인체가 활선에 접촉. 누전 전류 슬라이더가 인체로 흐르는 전류가 됩니다.</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">정상</span> · I_line = I_neutral → ΔI ≈ 0</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">누전</span> · ΔI = I_leak 만큼 발생</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">TRIP</span> · ΔI ≥ I_Δn 이면 t_op 후 차단</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const CIRCUIT_H = 420;
+const ZCT_H = 240;
+const TOTAL_H = CIRCUIT_H + ZCT_H;
+
+const state = {
+    Iload: 10,       // A
+    Ileak: 0,        // mA
+    sens: 30,        // mA  정격 감도
+    top: 0.03,       // s   동작 시간
+    bodyOn: false,
+    tripped: false,
+    tripT: null,     // s (누전 시작 후 차단까지)
+    leakStartT: null,
+    t: 0,            // animation frames
+    // 시각화용
+    flashAlpha: 0
+};
+
+// 본선 / 누설 경로
+let lineLPath = [], lineNPath = [], leakPath = [];
+let lineLSegs = [], lineNSegs = [], leakSegs = [];
+let lineLLen = 0, lineNLen = 0, leakLen = 0;
+let lineLParts = [], lineNParts = [], leakParts = [];
+
+let comp = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildCircuit();
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function buildPath(points) {
+    const segs = [];
+    let len = 0;
+    for (let k = 0; k < points.length - 1; k++) {
+        const a = points[k], b = points[k+1];
+        const sl = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, len: sl, start: len });
+        len += sl;
+    }
+    return { segs, len };
+}
+
+function buildCircuit() {
+    const W = canvas.width;
+    const top = 80;
+    const bot = CIRCUIT_H - 80;
+    const startX = 60;       // 전원
+    const elcbX  = W * 0.34; // ELCB 위치
+    const loadX  = W * 0.78; // 부하 위치
+    const endX   = W - 60;
+
+    const yLine = top + 30;     // 활선(L, 위)
+    const yNeut = bot - 30;     // 중성선(N, 아래)
+
+    // 활선 경로 (전원+ → ELCB → 부하 → 부하 내부)
+    lineLPath = [
+        { x: startX + 24, y: yLine },
+        { x: elcbX - 50,  y: yLine },
+        { x: elcbX + 50,  y: yLine },
+        { x: loadX - 32,  y: yLine },
+        { x: loadX - 8,   y: yLine }
+    ];
+    ({ segs: lineLSegs, len: lineLLen } = buildPath(lineLPath));
+
+    // 중성선 경로 (부하 → ELCB → 전원-)
+    lineNPath = [
+        { x: loadX - 8,   y: yNeut },
+        { x: loadX - 32,  y: yNeut },
+        { x: elcbX + 50,  y: yNeut },
+        { x: elcbX - 50,  y: yNeut },
+        { x: startX + 24, y: yNeut }
+    ];
+    ({ segs: lineNSegs, len: lineNLen } = buildPath(lineNPath));
+
+    // 누설 경로 (활선 우측 → 인체 머리 → 발 → 대지)
+    const bodyX = (loadX + elcbX) / 2 + 30;
+    const groundY = bot + 28;
+    leakPath = [
+        { x: bodyX, y: yLine + 6 },     // 활선에 손 접촉
+        { x: bodyX, y: yLine + 28 },    // 팔
+        { x: bodyX, y: bot - 10 },      // 몸통
+        { x: bodyX - 14, y: bot + 6 },  // 다리 한쪽
+        { x: bodyX - 14, y: groundY }   // 대지
+    ];
+    ({ segs: leakSegs, len: leakLen } = buildPath(leakPath));
+
+    comp = {
+        startX, elcbX, loadX, endX,
+        yLine, yNeut,
+        bodyX, groundY,
+        bot, top
+    };
+}
+
+function pointAt(progress, segs, len) {
+    if (len <= 0) return segs[0].a;
+    let p = ((progress % len) + len) % len;
+    for (const s of segs) {
+        if (p <= s.start + s.len) {
+            const lp = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * lp, y: s.a.y + (s.b.y - s.a.y) * lp };
+        }
+    }
+    return segs[0].a;
+}
+
+function seedParticles() {
+    const make = (n, len) => {
+        const arr = [];
+        for (let i = 0; i < n; i++) {
+            arr.push({ progress: (i / n) * len, size: 1.3 + Math.random() * 0.7, jit: Math.random() * 0.3 - 0.15 });
+        }
+        return arr;
+    };
+    lineLParts = make(16, lineLLen);
+    lineNParts = make(16, lineNLen);
+    leakParts  = make(8, leakLen);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 계산 ============
+function computeState() {
+    state.Iload = +$('load').value;
+    state.Ileak = +$('leak').value;
+
+    // 차단 판정
+    const sensA = state.sens / 1000; // mA → A
+    const leakA = state.Ileak / 1000;
+    const exceeded = state.bodyOn && leakA >= sensA;
+
+    if (exceeded && !state.tripped) {
+        if (state.leakStartT === null) state.leakStartT = state.t;
+        const elapsed = (state.t - state.leakStartT) / 60; // 초 (60fps 가정)
+        if (elapsed >= state.top) {
+            state.tripped = true;
+            triggerTripEffects();
+        }
+    }
+    if (!exceeded) {
+        state.leakStartT = null;
+    }
+}
+
+function updateDisplays() {
+    $('loadVal').textContent = state.Iload.toFixed(1);
+    $('leakVal').textContent = state.Ileak.toFixed(0);
+
+    const showLeakA = state.bodyOn ? state.Ileak / 1000 : 0;
+    const Iin  = state.tripped ? 0 : state.Iload;
+    const Iout = state.tripped ? 0 : (state.Iload - showLeakA);
+    const dI   = state.tripped ? 0 : showLeakA * 1000; // mA
+
+    $('iInDisp').textContent  = Iin.toFixed(2);
+    $('iOutDisp').textContent = Iout.toFixed(2);
+    $('diDisp').textContent   = dI.toFixed(0);
+
+    const stateEl = $('stateDisp');
+    const pillState = $('pill-state');
+    pillState.classList.remove('trip');
+    if (state.tripped) {
+        stateEl.innerHTML = '<span class="text-rose-300">⚡ TRIP</span>';
+        pillState.classList.add('trip');
+    } else if (state.bodyOn && state.Ileak > 0 && state.Ileak < state.sens) {
+        stateEl.innerHTML = '<span class="text-amber-300">▲ 누전 감지</span>';
+    } else {
+        stateEl.innerHTML = '<span class="text-emerald-300">● ON</span>';
+    }
+
+    // 알람 배너
+    $('alarmBanner').classList.toggle('hidden', !state.tripped);
+
+    // 인체 감전 단계 하이라이트
+    const bodyMa = state.bodyOn && !state.tripped ? state.Ileak : 0;
+    document.querySelectorAll('#shockStages .shock-stage').forEach(el => {
+        const lo = +el.dataset.min, hi = +el.dataset.max;
+        if (lo < 0) return; // ELCB 정보 카드는 제외
+        el.classList.toggle('active', bodyMa > lo && bodyMa <= hi);
+    });
+}
+
+// ============ 회로 배경 ============
+function drawCircuitBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, CIRCUIT_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, CIRCUIT_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CIRCUIT_H); ctx.stroke();
+    }
+    for (let i = 0; i < CIRCUIT_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 164, 175, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ ELCB CIRCUIT · 220V SOURCE → ZCT → APPLIANCE → GND', 12, 10);
+
+    // 대지(GND) 표시
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, comp.groundY); ctx.lineTo(canvas.width, comp.groundY);
+    ctx.stroke();
+    // 해치
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    for (let x = 10; x < canvas.width; x += 16) {
+        ctx.beginPath();
+        ctx.moveTo(x, comp.groundY);
+        ctx.lineTo(x - 8, comp.groundY + 12);
+        ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.65)';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('대지 (GND)', 8, comp.groundY + 16);
+    ctx.restore();
+}
+
+function strokePath(points, color, glow, lw, dash) {
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let k = 0; k < points.length; k++) {
+        const p = points[k];
+        if (k === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawWires() {
+    // 활선 (L, 빨강)
+    const lineColor = state.tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(253, 164, 175, 0.85)';
+    const neutColor = state.tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(186, 230, 253, 0.85)';
+    strokePath(lineLPath, lineColor, state.tripped ? 0 : 10, 3);
+    strokePath(lineNPath, neutColor, state.tripped ? 0 : 10, 3);
+
+    // 부하 ~ GND (어플라이언스 회로 닫힘): 부하 우측에서 중성선 진입
+    // 시각적 연결: 부하 박스 내부에서 L→N 연결되도록 부하 박스가 처리
+
+    // 누설 경로 (인체)
+    if (state.bodyOn && state.Ileak > 0 && !state.tripped) {
+        strokePath(leakPath, 'rgba(244, 63, 94, 0.85)', 14, 2.4, [6, 4]);
+    }
+}
+
+function drawSource() {
+    const x = comp.startX, yL = comp.yLine, yN = comp.yNeut;
+    ctx.save();
+    // 전원 박스
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(125, 211, 252, 0.55)';
+    const g = ctx.createLinearGradient(x - 22, yL, x + 22, yN);
+    g.addColorStop(0, '#0c4a6e');
+    g.addColorStop(0.5, '#0369a1');
+    g.addColorStop(1, '#082f49');
+    ctx.fillStyle = g;
+    roundRect(ctx, x - 22, yL - 18, 44, (yN - yL) + 36, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 단자 출력선 (전원에서 활선·중성선으로 짧게)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x + 22, yL); ctx.lineTo(x + 24, yL);
+    ctx.moveTo(x + 22, yN); ctx.lineTo(x + 24, yN);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#bae6fd';
+    ctx.fillText('AC', x, (yL + yN) / 2 - 7);
+    ctx.fillText('220V', x, (yL + yN) / 2 + 10);
+    // L/N 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#fda4af';
+    ctx.fillText('L', x - 30, yL);
+    ctx.fillStyle = '#bae6fd';
+    ctx.fillText('N', x - 30, yN);
+    ctx.restore();
+}
+
+function drawELCB() {
+    const x = comp.elcbX, yL = comp.yLine, yN = comp.yNeut;
+    const w = 100, h = (yN - yL) + 40;
+    const boxX = x - w/2, boxY = yL - 20;
+
+    // 본체
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = state.tripped ? 'rgba(244, 63, 94, 0.7)' : 'rgba(251, 191, 36, 0.5)';
+    const g = ctx.createLinearGradient(boxX, boxY, boxX + w, boxY + h);
+    g.addColorStop(0, '#1f2937');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, boxX, boxY, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = state.tripped ? 'rgba(244,63,94,0.85)' : 'rgba(251,191,36,0.75)';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+
+    // ZCT (영상 변류기) — 활선·중성선을 동시에 감싸는 토로이드
+    const zctY = (yL + yN) / 2;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.85)';
+    ctx.lineWidth = 2.2;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(168, 139, 250, 0.6)';
+    ctx.beginPath();
+    ctx.ellipse(x, zctY, 26, 44, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // 내부 코어
+    ctx.strokeStyle = 'rgba(168, 139, 250, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.ellipse(x, zctY, 19, 36, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // ZCT 라벨
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText('ZCT', x, boxY - 4);
+    ctx.restore();
+
+    // 스위치 표시 (TRIP되면 끊김)
+    drawSwitch(x - 32, yL, state.tripped);
+    drawSwitch(x - 32, yN, state.tripped);
+
+    // 누전 감지 시 빛남
+    const sensA = state.sens / 1000;
+    const leakA = state.bodyOn ? state.Ileak / 1000 : 0;
+    if (leakA > 0 && !state.tripped) {
+        const intensity = Math.min(1, leakA / sensA);
+        ctx.save();
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = `rgba(244, 63, 94, ${0.4 + intensity * 0.5})`;
+        ctx.strokeStyle = `rgba(244, 63, 94, ${0.4 + intensity * 0.5})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(x, zctY, 30 + Math.sin(state.t * 0.2) * 3, 48 + Math.sin(state.t * 0.2) * 3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 본체 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.tripped ? '#fda4af' : '#fde68a';
+    ctx.fillText('ELCB', x, boxY + h - 14);
+    // 정격 감도 라벨
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 230, 138, 0.8)';
+    ctx.fillText(`I_Δn ${state.sens}mA · ${(state.top*1000).toFixed(0)}ms`, x, boxY + h + 12);
+
+    // 상태 LED
+    const ledX = x + w/2 - 12, ledY = boxY + 12;
+    const ledColor = state.tripped ? '#f43f5e' : '#34d399';
+    ctx.shadowBlur = 12; ctx.shadowColor = ledColor;
+    ctx.fillStyle = ledColor;
+    ctx.beginPath();
+    ctx.arc(ledX, ledY, 4 + Math.sin(state.t * 0.15) * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawSwitch(cx, cy, opened) {
+    // 양 끝 단자
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.9)';
+    ctx.beginPath(); ctx.arc(cx - 14, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 14, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+    // 접점
+    ctx.strokeStyle = opened ? 'rgba(244, 63, 94, 0.9)' : 'rgba(110, 231, 183, 0.95)';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = opened ? 10 : 6;
+    ctx.shadowColor = opened ? 'rgba(244,63,94,0.8)' : 'rgba(110,231,183,0.6)';
+    ctx.beginPath();
+    if (opened) {
+        // 끊긴 스위치: 위로 들림
+        ctx.moveTo(cx - 14, cy);
+        ctx.lineTo(cx + 9, cy - 12);
+    } else {
+        ctx.moveTo(cx - 14, cy);
+        ctx.lineTo(cx + 14, cy);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawLoad() {
+    const x = comp.loadX, yL = comp.yLine, yN = comp.yNeut;
+    const w = 78, h = (yN - yL) + 40;
+    const boxX = x - 10, boxY = yL - 20;
+
+    // 본체 (가전제품)
+    ctx.save();
+    ctx.shadowBlur = state.tripped ? 6 : 16;
+    ctx.shadowColor = state.tripped ? 'rgba(148,163,184,0.4)' : 'rgba(125, 211, 252, 0.55)';
+    const g = ctx.createLinearGradient(boxX, boxY, boxX + w, boxY + h);
+    g.addColorStop(0, state.tripped ? '#1e293b' : '#155e75');
+    g.addColorStop(1, state.tripped ? '#0f172a' : '#0c4a6e');
+    ctx.fillStyle = g;
+    roundRect(ctx, boxX, boxY, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = state.tripped ? 'rgba(148,163,184,0.5)' : 'rgba(125, 211, 252, 0.75)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+
+    // 내부 회로 표현 (L과 N 잇는 부하 저항)
+    ctx.save();
+    ctx.strokeStyle = state.tripped ? 'rgba(148,163,184,0.5)' : 'rgba(186, 230, 253, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    const zigX = boxX + 20, zigY1 = yL + 10, zigY2 = yN - 10;
+    const zigSteps = 5;
+    ctx.beginPath();
+    ctx.moveTo(boxX + 8, yL); ctx.lineTo(zigX + 22, yL); ctx.lineTo(zigX + 22, zigY1);
+    for (let k = 0; k <= zigSteps; k++) {
+        const y = zigY1 + ((zigY2 - zigY1) * k) / zigSteps;
+        const x2 = zigX + 22 + (k % 2 === 0 ? -8 : 8);
+        ctx.lineTo(x2, y);
+    }
+    ctx.lineTo(zigX + 22, zigY2); ctx.lineTo(zigX + 22, yN); ctx.lineTo(boxX + 8, yN);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.tripped ? '#94a3b8' : '#bae6fd';
+    ctx.fillText('가전제품', x + 28, boxY + h + 14);
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.75)';
+    ctx.fillText(`${state.Iload.toFixed(1)} A`, x + 28, boxY + h + 28);
+    ctx.restore();
+}
+
+function drawHumanBody() {
+    if (!state.bodyOn) return;
+    const x = comp.bodyX, yLine = comp.yLine, bot = comp.bot;
+    const headY = yLine + 36;
+    const torsoY = (headY + bot) / 2 - 8;
+    const colorBase = state.tripped ? 'rgba(148, 163, 184, 0.55)' : 'rgba(244, 63, 94, 0.85)';
+    const colorOutline = state.tripped ? 'rgba(148, 163, 184, 0.7)' : 'rgba(254, 205, 211, 0.95)';
+    const glow = state.tripped ? 0 : 12 + Math.sin(state.t * 0.2) * 4;
+
+    ctx.save();
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = colorBase;
+    ctx.strokeStyle = colorOutline;
+    ctx.fillStyle = colorBase;
+    ctx.lineWidth = 1.8;
+
+    // 머리
+    ctx.beginPath();
+    ctx.arc(x, headY, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 팔 (위로 뻗어 활선에 접촉)
+    ctx.beginPath();
+    ctx.moveTo(x, headY + 8);
+    ctx.lineTo(x, yLine + 4);
+    ctx.stroke();
+
+    // 몸통
+    ctx.beginPath();
+    roundRect(ctx, x - 8, headY + 8, 16, torsoY - headY - 8, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // 다리
+    ctx.beginPath();
+    ctx.moveTo(x - 5, torsoY + 8); ctx.lineTo(x - 14, bot + 6);
+    ctx.moveTo(x + 5, torsoY + 8); ctx.lineTo(x + 14, bot + 6);
+    ctx.stroke();
+    ctx.restore();
+
+    // 감전 효과 (스파크)
+    if (!state.tripped && state.Ileak > 0) {
+        const sparkN = Math.min(5, Math.floor(state.Ileak / 8) + 1);
+        ctx.save();
+        for (let i = 0; i < sparkN; i++) {
+            const a = (state.t * 0.3 + i * 1.7) % (Math.PI * 2);
+            const r = 12 + (i % 2) * 4;
+            const sx = x + Math.cos(a) * r;
+            const sy = headY + 4 + Math.sin(a) * r * 0.4;
+            ctx.fillStyle = `rgba(252, 211, 77, ${0.6 + Math.sin(state.t * 0.4 + i) * 0.3})`;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#fcd34d';
+            ctx.beginPath();
+            ctx.arc(sx, sy, 1.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // 인체 감전 단계 라벨
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        const stage = shockStageOf(state.Ileak);
+        ctx.fillStyle = stage.color;
+        const txt = `${state.Ileak.toFixed(0)} mA · ${stage.label}`;
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, x - tw/2 - 8, headY - 30, tw + 16, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = stage.color;
+        ctx.fillText(txt, x, headY - 21 + 4);
+        ctx.restore();
+    }
+}
+
+function shockStageOf(mA) {
+    if (mA < 1)   return { label: '무감각', color: '#94a3b8' };
+    if (mA < 5)   return { label: '지각 1~5mA', color: '#6ee7b7' };
+    if (mA < 15)  return { label: '고통 5~15mA', color: '#fde68a' };
+    if (mA < 50)  return { label: '위험 15~50mA', color: '#fdba74' };
+    if (mA < 100) return { label: '심실세동 50~100mA', color: '#fda4af' };
+    return { label: '치명 100mA+', color: '#f43f5e' };
+}
+
+function drawFlowOn(parts, segs, len, speedFactor, color, glow) {
+    if (state.tripped) return;
+    if (len <= 0) return;
+    const speed = Math.min(7, 0.3 + speedFactor * 1.8);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of parts) {
+        p.progress = (p.progress + speed) % len;
+        const pt = pointAt(p.progress, segs, len);
+        ctx.fillStyle = color;
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jit, pt.y + p.jit, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawFlow() {
+    // 활선·중성선
+    drawFlowOn(lineLParts, lineLSegs, lineLLen, state.Iload, 'rgba(253, 164, 175, 0.95)', 10);
+    drawFlowOn(lineNParts, lineNSegs, lineNLen, Math.max(0, state.Iload - (state.bodyOn ? state.Ileak/1000 : 0)), 'rgba(186, 230, 253, 0.95)', 10);
+    // 누설
+    if (state.bodyOn && state.Ileak > 0) {
+        const lf = Math.min(8, 0.5 + state.Ileak / 30);
+        drawFlowOn(leakParts, leakSegs, leakLen, lf, 'rgba(244, 63, 94, 0.95)', 12);
+    }
+}
+
+function drawArrowAt(x, y, ang, color, glow) {
+    if (state.tripped) return;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(ang);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(7, 0); ctx.lineTo(-5, -4.5); ctx.lineTo(-5, 4.5); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawArrowHeads() {
+    // 활선 (왼쪽→오른쪽)
+    drawArrowAt((comp.startX + comp.elcbX) / 2, comp.yLine, 0, 'rgba(253, 164, 175, 0.95)', 8);
+    drawArrowAt((comp.elcbX + comp.loadX) / 2, comp.yLine, 0, 'rgba(253, 164, 175, 0.95)', 8);
+    // 중성선 (오른쪽→왼쪽)
+    drawArrowAt((comp.loadX + comp.elcbX) / 2, comp.yNeut, Math.PI, 'rgba(186, 230, 253, 0.95)', 8);
+    drawArrowAt((comp.elcbX + comp.startX) / 2, comp.yNeut, Math.PI, 'rgba(186, 230, 253, 0.95)', 8);
+}
+
+// ============ ZCT 메터: ΔI 표시 ============
+function drawZctMeter() {
+    const W = canvas.width;
+    const top0 = CIRCUIT_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + ZCT_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, ZCT_H);
+
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(168, 139, 250, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.75)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ ZCT METER · 영상 전류 ΔI 측정 (정상 0 · 누전 시 차이)', 12, top0 + 10);
+    ctx.restore();
+
+    const splitX = W * 0.52;
+    drawCurrentBars(top0, splitX);
+    drawSensGauge(top0, splitX, W);
+}
+
+function drawCurrentBars(top0, leftEndX) {
+    const padL = 60, padT = 50, padB = 44;
+    const barAreaTop = top0 + padT;
+    const barAreaBot = top0 + ZCT_H - padB;
+    const barAreaH = barAreaBot - barAreaTop;
+
+    const leakA = state.bodyOn && !state.tripped ? state.Ileak / 1000 : 0;
+    const Iin = state.tripped ? 0 : state.Iload;
+    const Iout = state.tripped ? 0 : state.Iload - leakA;
+
+    const items = [
+        { label: 'I_line',   v: Iin,   color: '#f43f5e', topColor: '#fecaca', glow: 'rgba(244,63,94,0.6)', unit: 'A', max: Math.max(state.Iload, 0.01) },
+        { label: 'I_neutral',v: Iout,  color: '#3b82f6', topColor: '#dbeafe', glow: 'rgba(59,130,246,0.6)', unit: 'A', max: Math.max(state.Iload, 0.01) }
+    ];
+
+    const N = items.length;
+    const barW = Math.min(70, (leftEndX - padL - 60) / N - 18);
+    const slotGap = (leftEndX - padL - 30) / N;
+
+    // 축 라벨
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const maxI = Math.max(state.Iload, 0.01);
+    for (let k = 0; k <= 4; k++) {
+        const frac = k / 4;
+        const yLine = barAreaBot - barAreaH * frac;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(padL, yLine); ctx.lineTo(leftEndX - 10, yLine);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText((maxI * frac).toFixed(1) + 'A', padL - 4, yLine);
+    }
+    ctx.restore();
+
+    items.forEach((s, idx) => {
+        const x = padL + 20 + idx * slotGap;
+        const h = barAreaH * Math.min(1, s.v / s.max);
+        const y = barAreaBot - h;
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        roundRect(ctx, x, barAreaTop, barW, barAreaH, 6);
+        ctx.fill();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = s.glow;
+        const g = ctx.createLinearGradient(x, y, x, barAreaBot);
+        g.addColorStop(0, s.topColor);
+        g.addColorStop(1, s.color);
+        ctx.fillStyle = g;
+        roundRect(ctx, x, y, barW, h, 6);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillStyle = '#e5e7eb';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(s.v.toFixed(2) + ' ' + s.unit, x + barW/2, y - 4);
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.85)';
+        ctx.textBaseline = 'top';
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillText(s.label, x + barW/2, barAreaBot + 6);
+        ctx.restore();
+    });
+
+    // ΔI 검증
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.95)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const di = (Iin - Iout) * 1000; // mA
+    const sumStr = `ΔI = I_line - I_neutral = ${di.toFixed(0)} mA`;
+    ctx.fillText(sumStr, padL, top0 + 26);
+    ctx.restore();
+}
+
+function drawSensGauge(top0, leftEndX, totalW) {
+    const cx = (leftEndX + totalW) / 2;
+    const cy = top0 + ZCT_H / 2 + 6;
+    const r = Math.min(74, (totalW - leftEndX) / 2.6);
+
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`SENSITIVITY GAUGE · ΔI vs I_Δn(${state.sens}mA)`, leftEndX + 20, top0 + 26);
+    ctx.restore();
+
+    // 반원 게이지
+    const di = state.tripped ? 0 : (state.bodyOn ? state.Ileak : 0);
+    const sensM = state.sens;
+    const maxDisplay = Math.max(sensM * 1.8, 60);
+    const frac = Math.min(1, di / maxDisplay);
+    const sensFrac = Math.min(1, sensM / maxDisplay);
+
+    // 외곽 가이드
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+    ctx.lineWidth = 22;
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // 안전 영역 (0 ~ sens)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.55)';
+    ctx.lineWidth = 22;
+    ctx.lineCap = 'butt';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(16, 185, 129, 0.4)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, Math.PI + Math.PI * sensFrac);
+    ctx.stroke();
+    ctx.restore();
+
+    // 위험 영역 (sens 이상)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+    ctx.lineWidth = 22;
+    ctx.lineCap = 'butt';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(244, 63, 94, 0.4)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI + Math.PI * sensFrac, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // 측정 ΔI 호 (위에 덮음)
+    if (di > 0) {
+        ctx.save();
+        ctx.strokeStyle = di >= sensM ? '#f43f5e' : '#fde68a';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'butt';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = di >= sensM ? 'rgba(244,63,94,0.7)' : 'rgba(251,191,36,0.6)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI, Math.PI + Math.PI * frac);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 침
+    const needleA = Math.PI + Math.PI * frac;
+    ctx.save();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(needleA) * (r - 4), cy + Math.sin(needleA) * (r - 4));
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 중앙 수치
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('ΔI', cx, cy + 14);
+    ctx.font = 'bold 22px ui-monospace, monospace';
+    const grd = ctx.createLinearGradient(cx - 40, cy, cx + 40, cy);
+    grd.addColorStop(0, '#fda4af');
+    grd.addColorStop(0.5, '#fde68a');
+    grd.addColorStop(1, '#6ee7b7');
+    ctx.fillStyle = grd;
+    ctx.fillText(di.toFixed(0) + ' mA', cx, cy + 38);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = di >= sensM ? '#f43f5e' : (di > 0 ? '#fde68a' : '#6ee7b7');
+    ctx.fillText(di >= sensM ? '⚡ TRIP 조건' : (di > 0 ? '▲ 누전 진행' : '● 안전'), cx, cy + 56);
+    ctx.restore();
+
+    // 끝점 라벨
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'center';
+    ctx.fillText('0', cx - r, cy + 16);
+    ctx.fillText(maxDisplay.toFixed(0) + 'mA', cx + r, cy + 16);
+    // 임계점 라벨
+    const tx = cx + Math.cos(Math.PI + Math.PI * sensFrac) * (r + 14);
+    const ty = cy + Math.sin(Math.PI + Math.PI * sensFrac) * (r + 14);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText(`I_Δn=${sensM}`, tx, ty);
+    ctx.restore();
+}
+
+// ============ TRIP 효과 ============
+function triggerTripEffects() {
+    if (!window.gsap) return;
+    gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+        { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+    gsap.fromTo('#pill-state',
+        { scale: 1.12 },
+        { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    computeState();
+    updateDisplays();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCircuitBg();
+    drawWires();
+    drawSource();
+    drawLoad();
+    drawHumanBody();
+    drawELCB();
+    drawFlow();
+    drawArrowHeads();
+    drawZctMeter();
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    if (!window.gsap) return;
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+['load','leak'].forEach(id => {
+    const map = { load: 'pill-iin', leak: 'pill-di' };
+    $(id).addEventListener('input', () => {
+        // 누전 슬라이더 만지면 자동으로 인체 ON (편의)
+        if (id === 'leak' && +$('leak').value > 0 && !state.bodyOn) {
+            setBody(true);
+        }
+        // 사용자가 조절하면 트립 자동 리셋 안 함 (명시적 RESET 사용)
+        flashPanel(map[id]);
+    });
+});
+
+document.querySelectorAll('.sens-btn[data-sens]').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.sens-btn[data-sens]').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.sens = +b.dataset.sens;
+        flashPanel('pill-di');
+    });
+});
+document.querySelectorAll('.time-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.time-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.top = +b.dataset.time;
+    });
+});
+
+function setBody(on) {
+    state.bodyOn = on;
+    const btn = $('bodyToggle');
+    if (on) {
+        btn.classList.add('active');
+        btn.textContent = 'ON';
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = 'OFF';
+    }
+}
+
+$('bodyToggle').addEventListener('click', () => {
+    setBody(!state.bodyOn);
+    if (!state.bodyOn) {
+        // 인체 OFF면 누전도 0으로 자동 복귀
+        $('leak').value = 0;
+        $('leakVal').textContent = 0;
+    }
+});
+
+function resetTrip() {
+    state.tripped = false;
+    state.leakStartT = null;
+    $('alarmBanner').classList.add('hidden');
+}
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        if (mode === 'normal') {
+            resetTrip();
+            setBody(false);
+            if (window.gsap) {
+                gsap.to($('leak'), { value: 0, duration: 0.5, ease: 'power3.out',
+                    onUpdate: () => { $('leakVal').textContent = Math.round($('leak').value); } });
+            } else { $('leak').value = 0; $('leakVal').textContent = 0; }
+            flashPanel('pill-iout');
+        }
+        if (mode === 'touch') {
+            resetTrip();
+            setBody(true);
+            // 누전 40mA로 자동 설정 → 30mA 정격에서 트립
+            if (window.gsap) {
+                gsap.to($('leak'), { value: 40, duration: 0.7, ease: 'power3.out',
+                    onUpdate: () => { $('leakVal').textContent = Math.round($('leak').value); } });
+            } else { $('leak').value = 40; $('leakVal').textContent = 40; }
+            flashPanel('pill-di');
+        }
+        if (mode === 'reset') {
+            resetTrip();
+            flashPanel('pill-state');
+        }
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeState();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#shockCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

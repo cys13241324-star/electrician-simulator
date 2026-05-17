@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 홀 효과 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border-radius: 17px;
+    background: #050714;
+    touch-action: none;
+}
+canvas#mini {
+    display: block;
+    width: 100%;
+    height: 140px;
+    border-radius: 12px;
+    background: #050714;
+}
+
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px;
+    border-radius: 9999px; border: 2px solid #34d399;
+    opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-i { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-b { background: linear-gradient(135deg, rgba(168,85,247,0.20), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-t { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-c { background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.05)); border-color: rgba(251,191,36,0.5); color: #fcd34d; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-pill.zero {
+    border-color: rgba(148, 163, 184, 0.4);
+    opacity: 0.85;
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num.zero {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #e0e7ff; }
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.mode-btn {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.mode-btn:hover, .mode-btn.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.3), rgba(168,139,250,0.25));
+    transform: translateY(-1px);
+    border-color: rgba(244,114,182,0.6);
+    box-shadow: 0 0 22px rgba(244,114,182,0.4);
+    color: #fce7f3;
+}
+.carrier-btn {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    transition: all 200ms;
+}
+.carrier-btn.active-n {
+    background: linear-gradient(135deg, #06b6d4, #0e7490);
+    border-color: rgba(34, 211, 238, 0.7);
+    color: white;
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.45);
+}
+.carrier-btn.active-p {
+    background: linear-gradient(135deg, #f472b6, #be185d);
+    border-color: rgba(244, 114, 182, 0.7);
+    color: white;
+    box-shadow: 0 0 24px rgba(244, 114, 182, 0.45);
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.alert-zero {
+    background: linear-gradient(135deg, rgba(148,163,184,0.18), rgba(71,85,105,0.12));
+    border: 1px dashed rgba(148,163,184,0.4);
+    color: #cbd5e1;
+}
+.alert-active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(168,139,250,0.12));
+    border: 1px solid rgba(244,114,182,0.45);
+    color: #fbcfe8;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · HALL EFFECT · 3D AXONOMETRIC
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            🧲 홀 효과 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">자기장 속 도체에서 전류가 흐를 때 횡방향으로 전압이 나타납니다. 캐리어(n/p)·전류·자속밀도·시편 두께를 조절하며 홀 전압 V<sub>H</sub>의 발생 원리를 관찰하세요.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-vh">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">홀 전압 V<sub>H</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="vhVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">mV</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-rh">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">홀 계수 R<sub>H</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="rhVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">m³/C</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-n">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">캐리어 농도 n</p>
+            <p class="mt-1 text-lg font-bold"><span id="nVal" class="live-num">—</span> <span class="text-[10px] text-slate-400">/m³</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-sign">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">V<sub>H</sub> 부호 · 캐리어</p>
+            <p class="mt-1 text-lg font-bold"><span id="signVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 영역 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">3D · 도체 시편 + 전류 + B 벡터</span>
+                <div class="flex gap-2">
+                    <button id="carrierN" class="carrier-btn active-n rounded-md px-3 py-1.5 text-xs font-bold">n형 (전자)</button>
+                    <button id="carrierP" class="carrier-btn rounded-md px-3 py-1.5 text-xs font-bold">p형 (양공)</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <!-- 상태 알림 -->
+            <div id="zeroAlert" class="mt-3 rounded-lg px-3 py-2 text-xs alert-active">
+                <span class="font-bold">홀 효과 진행 중</span> · 자기력으로 캐리어가 한쪽으로 쏠려 횡방향 전압이 발생
+            </div>
+
+            <!-- V_H 미니 그래프 -->
+            <div class="mt-3 canvas-wrap" style="border-radius: 13px;">
+                <canvas id="mini"></canvas>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 tracking-wider">◯ V<sub>H</sub> · B SWEEP — 자속밀도에 따른 홀 전압 변화</p>
+
+            <!-- 컨트롤 -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="chip-i chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>전류 I</span><span id="iDisp" class="font-mono text-base">5.0</span></label>
+                    <input type="range" id="iRange" min="0" max="10" step="0.1" value="5.0" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">A · 0 = 정지</p>
+                </div>
+                <div class="chip-b chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>자속밀도 B</span><span id="bDisp" class="font-mono text-base">0.5</span></label>
+                    <input type="range" id="bRange" min="-1.0" max="1.0" step="0.05" value="0.5" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">T · ± 방향 가능</p>
+                </div>
+                <div class="chip-t chip rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시편 두께 t</span><span id="tDisp" class="font-mono text-base">0.5</span></label>
+                    <input type="range" id="tRange" min="0.1" max="2.0" step="0.05" value="0.5" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">mm · 얇을수록 V<sub>H</sub> ↑</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사이드 -->
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="text-lg">💡</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">홀 효과 핵심 5</span>
+                </h2>
+                <ul class="mt-4 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">1. 로런츠 힘</span> · 전류 방향과 자기장의 외적으로 캐리어에 횡방향 힘 F = qv×B 작용</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">2. 전하 축적</span> · 한쪽 면에 (+), 반대 면에 (−) 캐리어 쏠림 → 횡방향 전기장</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">3. n형 vs p형</span> · 캐리어 부호가 반대 → 같은 I, B에서도 V<sub>H</sub> 부호가 반대</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">4. 두께 의존</span> · t가 얇을수록 V<sub>H</sub> ↑ (홀 센서를 얇게 만드는 이유)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">5. 응용</span> · DC 전류 측정(클램프 미터), 자기장 측정, 위치/속도 센서</li>
+                </ul>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">📐 홀 전압</h3>
+                <div class="math-container">
+                    $$V_H = \frac{I\,B}{n\,q\,t}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">I: 전류, B: 자속밀도, n: 캐리어 농도, q: 전하량, t: 두께</p>
+                <p class="text-[11px] text-slate-400 mt-2">홀 계수 $R_H = \dfrac{1}{n\,q}$ (n형은 $-$, p형은 $+$)</p>
+            </div>
+
+            <div class="formula-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">⚡ 지금 이 순간</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between"><span class="text-slate-400">캐리어</span><span id="carrierLabel" class="font-mono text-cyan-200">n형 · 전자</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">로런츠 힘 방향</span><span id="forceLabel" class="font-mono text-pink-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">상단 면 전하</span><span id="topLabel" class="font-mono text-indigo-200">—</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">하단 면 전하</span><span id="botLabel" class="font-mono text-indigo-200">—</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const mini = $('mini');
+const mctx = mini.getContext('2d');
+
+// ============================================
+// 상태
+// ============================================
+let state = {
+    I: 5.0,         // 전류 (A)
+    B: 0.5,         // 자속밀도 (T) · ±
+    t: 0.5,         // 시편 두께 (mm)
+    carrier: 'n',   // 'n' | 'p'
+    // 시편 치수 (시각화 단위)
+    blockL: 280,    // x축 길이 (전류 방향)
+    blockH: 100,    // z축 높이 (홀 전압 방향) — 시각화 상수
+    // 캐리어 입자
+    particles: [],
+    t_anim: 0,
+    // 라이브 결과
+    Vh: 0,
+    Rh: 0,
+    nDensity: 0,
+};
+
+// V_H vs B 그래프 (B 스윕 곡선 — 실시간 점)
+const VH_BUF_LEN = 200;
+const vhBuf = new Array(VH_BUF_LEN).fill(0);
+
+// 물리 상수 (실제 단위)
+const Q_E = 1.602e-19;          // C
+const N_E_TYPICAL = 8.5e28;     // Cu 자유전자 농도 (m^-3) — 너무 큼
+// 홀 센서용 반도체 농도 사용 (작게 → V_H가 mV~V 단위로 보임)
+const N_SEMICOND = 1.0e22;      // m^-3 (인듐 안티몬화물 InSb 정도)
+
+// ============================================
+// 3D 축각도 투영 (axonometric)
+// ============================================
+// 축: x = 전류 방향(우측), y = B 방향(뒤쪽), z = 홀 전압 방향(위)
+// 카메라 각도 (살짝 위에서 + 옆에서)
+const ALPHA = -0.45;  // x축 기울기 (라디안)
+const BETA = -0.35;   // y축 기울기
+function project(x, y, z) {
+    // y는 화면 안쪽으로 들어가는 깊이
+    const cosA = Math.cos(ALPHA), sinA = Math.sin(ALPHA);
+    const cosB = Math.cos(BETA), sinB = Math.sin(BETA);
+    // 단순한 카발리에 투영: y 축은 (cosB, sinB) 방향
+    const px = x + y * cosB * 0.6;
+    const py = -z + y * sinB * 0.6;
+    return { x: px, y: py };
+}
+
+// 시편 좌표계 — 중심을 (0,0,0)으로
+function blockBounds() {
+    const L = state.blockL;
+    const W = 120; // y축 폭
+    const H = state.blockH * (state.t / 0.5); // 두께에 따라 변함 (시각적 힌트)
+    return { L, W, H, hl: L/2, hw: W/2, hh: H/2 };
+}
+
+// ============================================
+// 컨트롤
+// ============================================
+$('iRange').addEventListener('input', e => {
+    state.I = +e.target.value;
+    $('iDisp').textContent = state.I.toFixed(1);
+    flashCard();
+});
+$('bRange').addEventListener('input', e => {
+    state.B = +e.target.value;
+    $('bDisp').textContent = state.B.toFixed(2);
+    flashCard();
+});
+$('tRange').addEventListener('input', e => {
+    state.t = +e.target.value;
+    $('tDisp').textContent = state.t.toFixed(2);
+    flashCard();
+});
+$('carrierN').addEventListener('click', () => {
+    state.carrier = 'n';
+    $('carrierN').classList.add('active-n');
+    $('carrierP').classList.remove('active-p');
+    seedParticles();
+});
+$('carrierP').addEventListener('click', () => {
+    state.carrier = 'p';
+    $('carrierP').classList.add('active-p');
+    $('carrierN').classList.remove('active-n');
+    seedParticles();
+});
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+}
+
+// ============================================
+// 리사이즈
+// ============================================
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 560;
+    mini.width = mini.parentElement.clientWidth - 2;
+    mini.height = 140;
+}
+window.addEventListener('resize', resize);
+
+// ============================================
+// 캐리어 입자 시드
+// ============================================
+function seedParticles() {
+    state.particles = [];
+    const { hl, hw, hh } = blockBounds();
+    const NP = 70;
+    for (let i = 0; i < NP; i++) {
+        state.particles.push({
+            x: (Math.random() * 2 - 1) * hl * 0.95,
+            y: (Math.random() * 2 - 1) * hw * 0.85,
+            z: (Math.random() * 2 - 1) * hh * 0.85,
+            jitter: Math.random() * 0.3 + 0.7,
+            phase: Math.random() * Math.PI * 2,
+        });
+    }
+}
+
+// ============================================
+// 물리 계산
+// ============================================
+function updatePhysics() {
+    // 실제 단위 계산:
+    // V_H = I·B / (n·q·t)
+    // 단, n형은 부호 반전, t는 mm → m
+    state.nDensity = N_SEMICOND;
+    const tM = Math.max(state.t, 0.05) * 1e-3; // mm -> m
+    let vh_raw = (state.I * state.B) / (state.nDensity * Q_E * tM); // V
+    // n형: 전자(q=-e) → R_H < 0 → V_H 부호 반전
+    if (state.carrier === 'n') vh_raw = -vh_raw;
+    state.Vh = vh_raw;
+    state.Rh = (state.carrier === 'n' ? -1 : 1) / (state.nDensity * Q_E);
+
+    // V_H 그래프 push
+    vhBuf.shift();
+    vhBuf.push(state.Vh);
+
+    // 캐리어 입자 업데이트 — 전류 방향(x)으로 이동 + 로런츠 힘으로 z축 쏠림
+    state.t_anim += 0.016;
+    const speedX = state.I * 0.6; // px/frame · 전류 클수록 빠름
+    // 캐리어 부호: n형은 전자 흐름(전류 반대), p형은 양공(전류 방향)
+    // 통상 시각화는 양 캐리어를 표현하지만 여기서는 운동 방향 차이를 명확히 보임
+    const carrierDir = state.carrier === 'n' ? -1 : 1; // 전류 방향(+x) 기준 캐리어 운동
+    // 로런츠: F = qv×B. v는 ±x, B는 +y. v×B = ±z.
+    // n형: q<0, v in -x → F = qv×B = (-)(-x̂)(+ŷ) = +ẑ × scalar...
+    // 더 간단히: V_H 부호와 일치하는 방향으로 캐리어를 쏠리게 함
+    // 우리는 "캐리어가 쏠려서 V_H가 생긴다"는 인과 표현이 중요하므로 부호를 결합
+    const driftZ = -Math.sign(state.Vh) * 0.5 * (Math.abs(state.B) > 0.02 ? 1 : 0);
+    const { hl, hw, hh } = blockBounds();
+    for (const p of state.particles) {
+        // 전류 방향 운동
+        p.x += carrierDir * speedX * p.jitter * 0.5;
+        if (p.x > hl) p.x -= hl * 2;
+        if (p.x < -hl) p.x += hl * 2;
+        // 로런츠 표류 (z축)
+        p.z += driftZ * p.jitter;
+        // 경계
+        if (p.z > hh * 0.9) p.z = hh * 0.9;
+        if (p.z < -hh * 0.9) p.z = -hh * 0.9;
+        // 약간의 y 방향 산란
+        p.y += Math.sin(state.t_anim * 2 + p.phase) * 0.1;
+        if (p.y > hw * 0.85) p.y = hw * 0.85;
+        if (p.y < -hw * 0.85) p.y = -hw * 0.85;
+    }
+}
+
+// ============================================
+// 그리기 헬퍼
+// ============================================
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+function drawArrow3D(cx, cy, x1, y1, z1, x2, y2, z2, color, label, lineW = 2.5) {
+    const p1 = project(x1, y1, z1);
+    const p2 = project(x2, y2, z2);
+    const ax = cx + p1.x, ay = cy + p1.y;
+    const bx = cx + p2.x, by = cy + p2.y;
+
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lineW;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+    // 화살촉
+    const dx = bx - ax, dy = by - ay;
+    const len = Math.hypot(dx, dy);
+    if (len > 1) {
+        const ux = dx / len, uy = dy / len;
+        const headL = 10;
+        const nx = -uy, ny = ux;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx - ux * headL + nx * 5, by - uy * headL + ny * 5);
+        ctx.lineTo(bx - ux * headL - nx * 5, by - uy * headL - ny * 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+    if (label) {
+        ctx.font = 'bold 12px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, bx + (ux || 0) * 14, by + (uy || 0) * 14);
+    }
+    ctx.restore();
+}
+
+// ============================================
+// 메인 캔버스 그리기
+// ============================================
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ HALL EFFECT · AXONOMETRIC VIEW', 12, 10);
+    ctx.restore();
+}
+
+function drawBlock(cx, cy) {
+    const { L, W, H, hl, hw, hh } = blockBounds();
+    // 8개 꼭짓점
+    const v = [
+        [-hl, -hw, -hh], [ hl, -hw, -hh], [ hl,  hw, -hh], [-hl,  hw, -hh], // 아래 4
+        [-hl, -hw,  hh], [ hl, -hw,  hh], [ hl,  hw,  hh], [-hl,  hw,  hh], // 위 4
+    ].map(p => {
+        const pr = project(p[0], p[1], p[2]);
+        return { x: cx + pr.x, y: cy + pr.y };
+    });
+
+    // 6개 면 — 뒤쪽 면부터 그려서 깊이 표현
+    // y < 0이 앞면(가까이), y > 0이 뒷면
+    // 뒷면(y=+hw): v[3]-v[2]-v[6]-v[7]
+    // 앞면(y=-hw): v[0]-v[1]-v[5]-v[4]
+    // 상단(z=+hh): v[4]-v[5]-v[6]-v[7]  ← 홀 전압 (+ or -)
+    // 하단(z=-hh): v[0]-v[1]-v[2]-v[3]
+    // 좌측(x=-hl): v[0]-v[3]-v[7]-v[4]  ← 전류 입구
+    // 우측(x=+hl): v[1]-v[2]-v[6]-v[5]  ← 전류 출구
+
+    // 시편 색 — n형(파랑) / p형(분홍)
+    const isN = state.carrier === 'n';
+    const baseColor = isN ? 'rgba(34, 211, 238, 0.18)' : 'rgba(244, 114, 182, 0.18)';
+    const edgeColor = isN ? 'rgba(125, 211, 252, 0.8)' : 'rgba(249, 168, 212, 0.8)';
+
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = isN ? 'rgba(34, 211, 238, 0.4)' : 'rgba(244, 114, 182, 0.4)';
+    // 뒷면 (어둡게)
+    ctx.fillStyle = isN ? 'rgba(8, 47, 73, 0.85)' : 'rgba(80, 7, 36, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(v[3].x, v[3].y);
+    ctx.lineTo(v[2].x, v[2].y);
+    ctx.lineTo(v[6].x, v[6].y);
+    ctx.lineTo(v[7].x, v[7].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 하단 면
+    ctx.save();
+    ctx.fillStyle = isN ? 'rgba(14, 116, 144, 0.4)' : 'rgba(157, 23, 77, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(v[0].x, v[0].y);
+    ctx.lineTo(v[1].x, v[1].y);
+    ctx.lineTo(v[2].x, v[2].y);
+    ctx.lineTo(v[3].x, v[3].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 좌측 면 (전류 입구) — 약간 강조
+    ctx.save();
+    const lg = ctx.createLinearGradient(v[0].x, v[0].y, v[4].x, v[4].y);
+    lg.addColorStop(0, isN ? 'rgba(8, 47, 73, 0.7)' : 'rgba(80, 7, 36, 0.7)');
+    lg.addColorStop(1, isN ? 'rgba(14, 116, 144, 0.5)' : 'rgba(157, 23, 77, 0.5)');
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.moveTo(v[0].x, v[0].y);
+    ctx.lineTo(v[3].x, v[3].y);
+    ctx.lineTo(v[7].x, v[7].y);
+    ctx.lineTo(v[4].x, v[4].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 우측 면 (전류 출구)
+    ctx.save();
+    const rg = ctx.createLinearGradient(v[1].x, v[1].y, v[5].x, v[5].y);
+    rg.addColorStop(0, isN ? 'rgba(8, 47, 73, 0.7)' : 'rgba(80, 7, 36, 0.7)');
+    rg.addColorStop(1, isN ? 'rgba(14, 116, 144, 0.5)' : 'rgba(157, 23, 77, 0.5)');
+    ctx.fillStyle = rg;
+    ctx.beginPath();
+    ctx.moveTo(v[1].x, v[1].y);
+    ctx.lineTo(v[2].x, v[2].y);
+    ctx.lineTo(v[6].x, v[6].y);
+    ctx.lineTo(v[5].x, v[5].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    return v;
+}
+
+function drawBlockFront(cx, cy, v) {
+    // 앞면(y=-hw)과 상단면(z=+hh)을 입자/화살표 뒤에 그릴지 위에 그릴지가 중요
+    // 여기서는 상단/앞면을 반투명으로 그려 입자가 비치게 함
+    const isN = state.carrier === 'n';
+
+    // 상단 면 — 상단 전하 색 (V_H 부호에 따라)
+    let topCharge = state.Vh > 0 ? '+' : '-';
+    let topColor = state.Vh > 0
+        ? 'rgba(248, 113, 113, 0.30)'  // + 빨강
+        : 'rgba(96, 165, 250, 0.30)';  // - 파랑
+    if (Math.abs(state.Vh) < 0.0005) topColor = 'rgba(148, 163, 184, 0.15)';
+
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = state.Vh > 0 ? '#f87171' : '#60a5fa';
+    ctx.fillStyle = topColor;
+    ctx.beginPath();
+    ctx.moveTo(v[4].x, v[4].y);
+    ctx.lineTo(v[5].x, v[5].y);
+    ctx.lineTo(v[6].x, v[6].y);
+    ctx.lineTo(v[7].x, v[7].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 앞면 — 반투명
+    ctx.save();
+    ctx.fillStyle = isN ? 'rgba(34, 211, 238, 0.10)' : 'rgba(244, 114, 182, 0.10)';
+    ctx.beginPath();
+    ctx.moveTo(v[0].x, v[0].y);
+    ctx.lineTo(v[1].x, v[1].y);
+    ctx.lineTo(v[5].x, v[5].y);
+    ctx.lineTo(v[4].x, v[4].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 모서리
+    ctx.save();
+    ctx.strokeStyle = isN ? 'rgba(125, 211, 252, 0.85)' : 'rgba(249, 168, 212, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = ctx.strokeStyle;
+    // 12 모서리
+    const edges = [
+        [0,1],[1,2],[2,3],[3,0],
+        [4,5],[5,6],[6,7],[7,4],
+        [0,4],[1,5],[2,6],[3,7]
+    ];
+    for (const [a, b] of edges) {
+        ctx.beginPath();
+        ctx.moveTo(v[a].x, v[a].y);
+        ctx.lineTo(v[b].x, v[b].y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 상단/하단 면에 ± 부호
+    if (Math.abs(state.Vh) > 0.0005) {
+        const topMid = {
+            x: (v[4].x + v[5].x + v[6].x + v[7].x) / 4,
+            y: (v[4].y + v[5].y + v[6].y + v[7].y) / 4
+        };
+        const botMid = {
+            x: (v[0].x + v[1].x + v[2].x + v[3].x) / 4,
+            y: (v[0].y + v[1].y + v[2].y + v[3].y) / 4
+        };
+        ctx.save();
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 14;
+        // 상단
+        ctx.shadowColor = state.Vh > 0 ? '#f87171' : '#60a5fa';
+        ctx.fillStyle = state.Vh > 0 ? '#fca5a5' : '#93c5fd';
+        // 여러 개의 +/− 분포
+        for (let k = -2; k <= 2; k++) {
+            ctx.fillText(state.Vh > 0 ? '+' : '−', topMid.x + k * 38, topMid.y);
+        }
+        // 하단 (반대 부호)
+        ctx.shadowColor = state.Vh > 0 ? '#60a5fa' : '#f87171';
+        ctx.fillStyle = state.Vh > 0 ? '#93c5fd' : '#fca5a5';
+        for (let k = -2; k <= 2; k++) {
+            ctx.fillText(state.Vh > 0 ? '−' : '+', botMid.x + k * 38, botMid.y);
+        }
+        ctx.restore();
+    }
+}
+
+function drawParticles(cx, cy) {
+    // 캐리어 입자 — 깊이순(y) 정렬 후 그려 가까운 게 위에 오게
+    const sorted = state.particles.slice().sort((a, b) => b.y - a.y);
+    const isN = state.carrier === 'n';
+    const pcolor = isN ? '#22d3ee' : '#f472b6';
+    const pglow = isN ? 'rgba(34, 211, 238, 0.9)' : 'rgba(244, 114, 182, 0.9)';
+    ctx.save();
+    for (const p of sorted) {
+        const pr = project(p.x, p.y, p.z);
+        const x = cx + pr.x, y = cy + pr.y;
+        // 깊이에 따른 크기 (y가 작을수록 가까움 → 크게)
+        const depth = (p.y + 60) / 120; // 0~1
+        const size = 3.2 - depth * 1.2;
+        const alpha = 0.65 + (1 - depth) * 0.3;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = pglow;
+        ctx.fillStyle = pcolor;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+        // 캐리어 부호 표시 (작게)
+        if (Math.abs(p.x) < 4) {
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 8px ui-monospace, monospace';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(isN ? '−' : '+', x, y);
+        }
+    }
+    ctx.restore();
+}
+
+function drawAxes(cx, cy) {
+    const { hl, hw, hh } = blockBounds();
+    // 전류 I 화살표 (도선 — 좌→우 또는 우→좌, 전류는 항상 +x로 가정)
+    // 시편 왼쪽 바깥에서 들어와서 오른쪽 바깥으로 나감
+    const iAlpha = state.I < 0.05 ? 0.25 : 1.0;
+    ctx.globalAlpha = iAlpha;
+    // 입력 도선
+    const lead1 = project(-hl - 70, 0, 0);
+    const lead2 = project(-hl - 5, 0, 0);
+    const out1 = project(hl + 5, 0, 0);
+    const out2 = project(hl + 70, 0, 0);
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#fbbf24';
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx + lead1.x, cy + lead1.y);
+    ctx.lineTo(cx + lead2.x, cy + lead2.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + out1.x, cy + out1.y);
+    ctx.lineTo(cx + out2.x, cy + out2.y);
+    ctx.stroke();
+    // 전류 I 화살표 (도선 위에)
+    drawArrow3D(cx, cy, hl + 30, 0, 0, hl + 70, 0, 0, '#fbbf24', 'I', 3);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // 자기장 B 벡터 — B>0이면 +y(뒤로), B<0이면 -y(앞으로)
+    // 시편을 관통하는 평행한 화살표 여러 개 (그리드)
+    const bSign = Math.sign(state.B) || 1;
+    const bMag = Math.min(1, Math.abs(state.B));
+    if (Math.abs(state.B) > 0.02) {
+        ctx.save();
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#a855f7';
+        const alpha = 0.4 + bMag * 0.4;
+        ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+        ctx.fillStyle = `rgba(168, 85, 247, ${alpha + 0.15})`;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        // 5개 평행 화살표 (시편 주변)
+        const gridXs = [-hl - 30, -hl/2, 0, hl/2, hl + 30];
+        const gridZs = [-hh - 30, 0, hh + 30];
+        for (const gx of gridXs) {
+            for (const gz of gridZs) {
+                // 시편 안쪽은 건너뜀
+                if (Math.abs(gx) < hl - 5 && Math.abs(gz) < hh + 10 && gz === 0) continue;
+                const start = project(gx, bSign > 0 ? -hw - 50 : hw + 50, gz);
+                const end = project(gx, bSign > 0 ? hw + 50 : -hw - 50, gz);
+                ctx.beginPath();
+                ctx.moveTo(cx + start.x, cy + start.y);
+                ctx.lineTo(cx + end.x, cy + end.y);
+                ctx.stroke();
+                // 화살촉
+                const dx = end.x - start.x, dy = end.y - start.y;
+                const len = Math.hypot(dx, dy);
+                if (len > 1) {
+                    const ux = dx/len, uy = dy/len;
+                    const nx = -uy, ny = ux;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + end.x, cy + end.y);
+                    ctx.lineTo(cx + end.x - ux * 8 + nx * 4, cy + end.y - uy * 8 + ny * 4);
+                    ctx.lineTo(cx + end.x - ux * 8 - nx * 4, cy + end.y - uy * 8 - ny * 4);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+        ctx.restore();
+    }
+
+    // B 라벨
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#a855f7';
+    ctx.fillStyle = '#d8b4fe';
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    const bLabel = project(0, bSign > 0 ? hw + 70 : -hw - 70, hh + 50);
+    ctx.fillText(`B = ${state.B.toFixed(2)} T`, cx + bLabel.x, cy + bLabel.y);
+    ctx.restore();
+
+    // 홀 전압 측정 — 상단/하단 면에서 외부로 연결되는 도선
+    const isVhBig = Math.abs(state.Vh) > 0.0005;
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = isVhBig ? '#f472b6' : '#475569';
+    ctx.strokeStyle = isVhBig ? 'rgba(244, 114, 182, 0.85)' : 'rgba(100, 116, 139, 0.6)';
+    ctx.lineWidth = 2;
+    // 상단 도선
+    const topW1 = project(0, 0, hh + 5);
+    const topW2 = project(0, 0, hh + 55);
+    const topW3 = project(80, 0, hh + 55);
+    ctx.beginPath();
+    ctx.moveTo(cx + topW1.x, cy + topW1.y);
+    ctx.lineTo(cx + topW2.x, cy + topW2.y);
+    ctx.lineTo(cx + topW3.x, cy + topW3.y);
+    ctx.stroke();
+    // 하단 도선
+    const botW1 = project(0, 0, -hh - 5);
+    const botW2 = project(0, 0, -hh - 55);
+    const botW3 = project(80, 0, -hh - 55);
+    ctx.beginPath();
+    ctx.moveTo(cx + botW1.x, cy + botW1.y);
+    ctx.lineTo(cx + botW2.x, cy + botW2.y);
+    ctx.lineTo(cx + botW3.x, cy + botW3.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 전압계 (오른쪽)
+    const vmCenter = project(110, 0, 0);
+    const vmX = cx + vmCenter.x;
+    const vmY = cy + vmCenter.y;
+    ctx.save();
+    ctx.shadowBlur = isVhBig ? 14 : 6;
+    ctx.shadowColor = isVhBig ? '#f472b6' : '#475569';
+    const vmR = 24;
+    const vg = ctx.createRadialGradient(vmX - 6, vmY - 8, 2, vmX, vmY, vmR);
+    vg.addColorStop(0, isVhBig ? '#fce7f3' : '#cbd5e1');
+    vg.addColorStop(0.6, isVhBig ? '#f472b6' : '#475569');
+    vg.addColorStop(1, isVhBig ? '#831843' : '#1e293b');
+    ctx.fillStyle = vg;
+    ctx.beginPath();
+    ctx.arc(vmX, vmY, vmR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // V 글자
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('V', vmX, vmY);
+    // 바늘
+    const needle = Math.atan2(state.Vh, 0.005) * 0.7;
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(vmX, vmY);
+    ctx.lineTo(vmX + Math.sin(needle) * (vmR - 6), vmY - Math.cos(needle) * (vmR - 6));
+    ctx.stroke();
+    // V_H 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#f9a8d4';
+    ctx.shadowBlur = 0;
+    ctx.fillText('V_H', vmX, vmY + vmR + 12);
+    ctx.restore();
+
+    // 로런츠 힘 벡터 (시편 중심에서)
+    if (Math.abs(state.B) > 0.02 && state.I > 0.05) {
+        // 캐리어 운동 방향
+        // n형: 캐리어 전자 q=-, v= -x, B= +y(또는 -y)
+        // F = qv×B = (-)(-x̂×ŷ) = -(-ẑ) = +ẑ → 위로 (B>0일 때)
+        // p형: q=+, v= +x, B= +y → +x̂×ŷ = +ẑ → 위로
+        // 결과적으로 두 캐리어 모두 같은 방향으로 쏠리지만 부호가 반대라 V_H 부호 반대
+        // 시각화: 힘 화살표는 캐리어가 쏠리는 방향
+        const fDir = -Math.sign(state.Vh); // V_H>0이면 (+) 캐리어가 상단(=+z)에... 부호 일관성 위해
+        // 더 정확히: 우리 정의에서 V_H = 상단(+z) − 하단(-z) 전위차 부호
+        // 상단이 (+)가 되려면 양전하가 상단에 쏠려야 함 → 캐리어 부호와 무관하게 양전하 분포 방향
+        // 위 코드(driftZ = -sign(Vh) * 0.5)에서 캐리어 좌표 자체는 양전하 등가로 이동시킴
+        // 따라서 입자가 쏠리는 방향 = -sign(Vh) (양전하 기준)
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#34d399';
+        const f1 = { x: 0, y: 0, z: 0 };
+        const f2 = { x: 0, y: 0, z: -Math.sign(state.Vh) * 60 };
+        const p1 = project(f1.x, f1.y, f1.z);
+        const p2 = project(f2.x, f2.y, f2.z);
+        ctx.strokeStyle = '#34d399';
+        ctx.fillStyle = '#34d399';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx + p1.x, cy + p1.y);
+        ctx.lineTo(cx + p2.x, cy + p2.y);
+        ctx.stroke();
+        // 화살촉
+        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 1) {
+            const ux = dx/len, uy = dy/len;
+            const nx = -uy, ny = ux;
+            ctx.beginPath();
+            ctx.moveTo(cx + p2.x, cy + p2.y);
+            ctx.lineTo(cx + p2.x - ux * 10 + nx * 5, cy + p2.y - uy * 10 + ny * 5);
+            ctx.lineTo(cx + p2.x - ux * 10 - nx * 5, cy + p2.y - uy * 10 - ny * 5);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.font = 'bold 12px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('F = qv×B', cx + p2.x + 8, cy + p2.y);
+        ctx.restore();
+    }
+
+    // 좌표축 표시 (왼쪽 아래 코너)
+    drawCoordSystem(60, canvas.height - 60);
+}
+
+function drawCoordSystem(cx, cy) {
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    // x (전류)
+    const xa = project(0, 0, 0);
+    const xb = project(40, 0, 0);
+    ctx.strokeStyle = '#fbbf24';
+    ctx.fillStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + xa.x, cy + xa.y);
+    ctx.lineTo(cx + xb.x, cy + xb.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + xb.x, cy + xb.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText('x (I)', cx + xb.x + 5, cy + xb.y + 4);
+
+    // y (B)
+    const ya = project(0, 0, 0);
+    const yb = project(0, 40, 0);
+    ctx.strokeStyle = '#a855f7';
+    ctx.fillStyle = '#a855f7';
+    ctx.beginPath();
+    ctx.moveTo(cx + ya.x, cy + ya.y);
+    ctx.lineTo(cx + yb.x, cy + yb.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + yb.x, cy + yb.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText('y (B)', cx + yb.x + 5, cy + yb.y + 4);
+
+    // z (V_H)
+    const za = project(0, 0, 0);
+    const zb = project(0, 0, 40);
+    ctx.strokeStyle = '#f472b6';
+    ctx.fillStyle = '#f472b6';
+    ctx.beginPath();
+    ctx.moveTo(cx + za.x, cy + za.y);
+    ctx.lineTo(cx + zb.x, cy + zb.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + zb.x, cy + zb.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText('z (V_H)', cx + zb.x + 5, cy + zb.y + 4);
+    ctx.restore();
+}
+
+// ============================================
+// 미니 그래프 — V_H vs B sweep
+// ============================================
+function drawMiniGraph() {
+    const W = mini.width, H = mini.height;
+    mctx.save();
+    const grad = mctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    mctx.fillStyle = grad;
+    mctx.fillRect(0, 0, W, H);
+    // 격자
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 30) {
+        mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke();
+    }
+    for (let i = 0; i < H; i += 28) {
+        mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke();
+    }
+    // 0축
+    mctx.strokeStyle = 'rgba(168, 139, 250, 0.4)';
+    mctx.setLineDash([4, 4]);
+    mctx.beginPath();
+    mctx.moveTo(0, H/2); mctx.lineTo(W, H/2);
+    mctx.stroke();
+    mctx.setLineDash([]);
+
+    // 라벨
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(244, 114, 182, 0.7)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillText('◯ V_H(t) · 실시간 홀 전압', 8, 6);
+
+    // 이론 곡선 — V_H = I·B/(n·q·t) 를 B 함수로 (현재 I, t, carrier 기준)
+    mctx.save();
+    mctx.strokeStyle = 'rgba(125, 211, 252, 0.4)';
+    mctx.lineWidth = 1.5;
+    mctx.setLineDash([3, 3]);
+    mctx.beginPath();
+    const Bmax = 1.0;
+    const tM = Math.max(state.t, 0.05) * 1e-3;
+    let theoryMaxV = (state.I * Bmax) / (state.nDensity * Q_E * tM);
+    if (state.carrier === 'n') theoryMaxV = -theoryMaxV;
+    const scaleV = Math.max(Math.abs(theoryMaxV), 0.001);
+    for (let xi = 0; xi <= W; xi += 2) {
+        const Bx = (xi / W) * 2 - 1; // -1 ~ +1
+        let vy = (state.I * Bx) / (state.nDensity * Q_E * tM);
+        if (state.carrier === 'n') vy = -vy;
+        const y = H/2 - (vy / scaleV) * (H/2 - 14);
+        if (xi === 0) mctx.moveTo(xi, y); else mctx.lineTo(xi, y);
+    }
+    mctx.stroke();
+    mctx.setLineDash([]);
+    mctx.restore();
+
+    // 현재 (B, V_H) 점
+    const curX = ((state.B + 1) / 2) * W;
+    const curY = H/2 - (state.Vh / scaleV) * (H/2 - 14);
+    mctx.save();
+    mctx.shadowBlur = 16;
+    mctx.shadowColor = '#f472b6';
+    mctx.fillStyle = '#f472b6';
+    mctx.beginPath();
+    mctx.arc(curX, curY, 6, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.strokeStyle = 'white';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.restore();
+
+    // B축 라벨
+    mctx.font = '9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(216, 180, 254, 0.7)';
+    mctx.textAlign = 'right'; mctx.textBaseline = 'bottom';
+    mctx.fillText('+B', W - 6, H - 4);
+    mctx.textAlign = 'left';
+    mctx.fillText('−B', 6, H - 4);
+
+    mctx.restore();
+}
+
+// ============================================
+// 라이브 패널 갱신
+// ============================================
+function updateLivePanel() {
+    const vhMv = state.Vh * 1000;
+    $('vhVal').textContent = vhMv.toFixed(2);
+    $('rhVal').textContent = state.Rh.toExponential(2);
+    // n: 1.0e22 표시
+    $('nVal').textContent = state.nDensity.toExponential(1);
+    const sign = state.Vh > 0.0001 ? '+ (상단)' : state.Vh < -0.0001 ? '− (상단)' : '0';
+    $('signVal').textContent = `${sign} · ${state.carrier === 'n' ? '전자' : '양공'}`;
+
+    const isZero = Math.abs(state.Vh) < 0.0005;
+    ['pill-vh', 'pill-rh', 'pill-sign'].forEach(id => {
+        const el = $(id);
+        el.classList.toggle('zero', isZero && id !== 'pill-rh');
+        const ln = el.querySelector('.live-num');
+        if (ln) ln.classList.toggle('zero', isZero && id !== 'pill-rh');
+    });
+
+    // 알림 전환
+    const alert = $('zeroAlert');
+    if (isZero) {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-zero';
+        if (state.I < 0.05) {
+            alert.innerHTML = '<span class="font-bold">전류 0</span> · 캐리어가 움직이지 않으면 자기력도 0 → 홀 전압 없음';
+        } else if (Math.abs(state.B) < 0.05) {
+            alert.innerHTML = '<span class="font-bold">자기장 0</span> · B = 0이면 로런츠 힘이 없어 횡방향 쏠림이 없음';
+        } else {
+            alert.innerHTML = '<span class="font-bold">미세 신호</span> · V<sub>H</sub>가 매우 작습니다';
+        }
+    } else {
+        alert.className = 'mt-3 rounded-lg px-3 py-2 text-xs alert-active';
+        const topSign = state.Vh > 0 ? '(+)' : '(−)';
+        const botSign = state.Vh > 0 ? '(−)' : '(+)';
+        alert.innerHTML = `<span class="font-bold">홀 효과 진행 중</span> · 상단 ${topSign}, 하단 ${botSign} · V<sub>H</sub> ≈ ${(state.Vh * 1000).toFixed(2)} mV`;
+    }
+
+    // 사이드 정보
+    $('carrierLabel').textContent = state.carrier === 'n' ? 'n형 · 전자 (q < 0)' : 'p형 · 양공 (q > 0)';
+    if (state.I < 0.05 || Math.abs(state.B) < 0.05) {
+        $('forceLabel').textContent = '0';
+        $('topLabel').textContent = '중성';
+        $('botLabel').textContent = '중성';
+    } else {
+        $('forceLabel').textContent = state.Vh > 0 ? '↑ 상단으로' : '↓ 하단으로';
+        $('topLabel').textContent = state.Vh > 0 ? '(+) 양전하 누적' : '(−) 음전하 누적';
+        $('botLabel').textContent = state.Vh > 0 ? '(−) 음전하 누적' : '(+) 양전하 누적';
+    }
+}
+
+// ============================================
+// 메인 루프
+// ============================================
+function animate() {
+    updatePhysics();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2 + 20;
+
+    // 1) 시편 뒷면/측면
+    const v = drawBlock(cx, cy);
+    // 2) B 자기장 화살표 + 좌표축 + 도선 (뒤쪽 절반)
+    drawAxes(cx, cy);
+    // 3) 캐리어 입자
+    drawParticles(cx, cy);
+    // 4) 시편 앞면 + 모서리 + ± 부호
+    drawBlockFront(cx, cy, v);
+
+    drawMiniGraph();
+    updateLivePanel();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    seedParticles();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

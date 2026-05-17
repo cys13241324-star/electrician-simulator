@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>에너지저장장치 (ESS / BESS) 시뮬레이터 · 피크 셰이빙 / SOC · DOD · 사이클</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 197, 94, 0.10), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(168, 85, 247, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(168,85,247,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(168, 85, 247, 0.35);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 600px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#dayCanvas {
+    display: block;
+    width: 100%;
+    height: 300px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #c084fc; box-shadow: 0 0 12px #c084fc;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #c084fc; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,197,94,0.4), rgba(168,85,247,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #86efac, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 22px rgba(192, 132, 252, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-cap { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #c4b5fd; }
+.chip-c   { background: linear-gradient(135deg, rgba(34,197,94,0.22),  rgba(34,197,94,0.06));  border-color: rgba(34,197,94,0.5);  color: #86efac; }
+.chip-mode{ background: linear-gradient(135deg, rgba(244,114,182,0.22),rgba(244,114,182,0.06));border-color: rgba(244,114,182,0.5);color: #f9a8d4; }
+.chip-t   { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-peak{ background: linear-gradient(135deg, rgba(251,113,133,0.22),rgba(251,113,133,0.06));border-color: rgba(251,113,133,0.5);color: #fda4af; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash { border-color: rgba(110, 231, 183, 0.7); box-shadow: 0 0 24px rgba(110, 231, 183, 0.45); }
+.live-pill.discharge { border-color: rgba(251, 113, 133, 0.7); box-shadow: 0 0 24px rgba(251, 113, 133, 0.45); }
+.live-pill.warn  { border-color: rgba(245, 158, 11, 0.7); box-shadow: 0 0 22px rgba(245, 158, 11, 0.45); }
+.live-pill.danger{ border-color: rgba(244, 63, 94, 0.7);  box-shadow: 0 0 22px rgba(244, 63, 94, 0.45); }
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #86efac, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.16), rgba(34,197,94,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(196,181,253,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(196, 181, 253, 0.4);
+}
+.preset-btn {
+    background: rgba(168, 85, 247, 0.16);
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    color: #ddd6fe;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(168, 85, 247, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.4);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    font-size: 11px;
+}
+.mode-btn:hover {
+    border-color: rgba(196, 181, 253, 0.5);
+    color: #fff;
+}
+.mode-btn.active.peak {
+    background: linear-gradient(135deg, rgba(168,85,247,0.4), rgba(99,102,241,0.4));
+    border-color: rgba(196, 181, 253, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.5);
+}
+.mode-btn.active.smooth {
+    background: linear-gradient(135deg, rgba(34,211,238,0.4), rgba(20,184,166,0.4));
+    border-color: rgba(103, 232, 249, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.5);
+}
+.mode-btn.active.arbi {
+    background: linear-gradient(135deg, rgba(245,158,11,0.4), rgba(244,114,182,0.4));
+    border-color: rgba(252, 211, 77, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.5);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196, 181, 253, 0.5), transparent);
+}
+.region-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.region-charge    { background: rgba(34,197,94,0.18);  color: #86efac; border: 1px solid rgba(34,197,94,0.45); }
+.region-discharge { background: rgba(251,113,133,0.18);color: #fda4af; border: 1px solid rgba(251,113,133,0.45); }
+.region-idle      { background: rgba(148,163,184,0.18);color: #cbd5e1; border: 1px solid rgba(148,163,184,0.45); }
+.tag {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.tag-soc { background: rgba(34, 197, 94, 0.22); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.5); }
+.tag-dod { background: rgba(244, 114, 182, 0.22); color: #f9a8d4; border: 1px solid rgba(244, 114, 182, 0.5); }
+.tag-cyc { background: rgba(168, 85, 247, 0.22); color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.5); }
+.tag-eta { background: rgba(34, 211, 238, 0.22); color: #67e8f9; border: 1px solid rgba(34, 211, 238, 0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-purple-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · ESS / BESS · PEAK SHAVING · SOC · DOD · CYCLE LIFE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-300 via-purple-200 to-cyan-200 bg-clip-text text-transparent">
+            🔋 에너지저장장치 (ESS / BESS) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">야간 <span class="text-emerald-300 font-semibold">충전</span> · 피크시간 <span class="text-rose-300 font-semibold">방전</span>으로 부하 평탄화 (Peak Shaving). 신재생(태양광/풍력) 변동을 흡수하고 <span class="text-purple-300 font-semibold">SOC · DOD · η · 사이클 수명</span>을 자동 관리합니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-soc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">SOC 상태</p>
+            <p class="mt-1 text-lg font-bold"><span id="socVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-p">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">충방전 전력 P</p>
+            <p class="mt-1 text-lg font-bold"><span id="pVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-eta">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">왕복 효율 η</p>
+            <p class="mt-1 text-lg font-bold"><span id="etaVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-cyc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">누적 사이클</p>
+            <p class="mt-1 text-lg font-bold"><span id="cycVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">그리드 + 태양광/풍력 + ESS + 부하 — 시간대별 자동 운영</span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnRun"   class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">▶ 운영 시작</button>
+                        <button id="btnPause" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⏸ 일시 정지</button>
+                        <button id="btnReset" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⟲ 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 24시간 일일 운영 그래프 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">24시간 일일 운영 — 시간 vs SOC · 충방전 전력 · 부하</span>
+                    <div class="flex items-center gap-2">
+                        <span class="region-badge region-charge">충전</span>
+                        <span class="region-badge region-discharge">방전</span>
+                        <span class="region-badge region-idle">대기</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(34,197,94,0.4), rgba(168,85,247,0.4), rgba(251,113,133,0.4));">
+                    <canvas id="dayCanvas"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">24시간 누적 데이터. 야간(저단가 + 신재생 잉여) 충전 → 피크 시간(고단가 + 부하 집중) 방전으로 그리드 부담을 평탄화합니다.</p>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-emerald-300 to-purple-200 bg-clip-text text-transparent">ESS / BESS 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-purple-200">SOC (State of Charge)</p>
+                        <div class="math-container mt-2">\(\text{SOC}(t) = \dfrac{E_{\text{rem}}}{E_{\text{rated}}}\times 100\) <span class="text-[10px] text-slate-400">[%]</span></div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-purple-200">DOD · 왕복 효율</p>
+                        <div class="math-container mt-2">\(\text{DOD} = 100 - \text{SOC}_{\min}\) · \(\eta_{rt} = \eta_{c}\cdot\eta_{d}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-purple-200">C-rate · 사이클 수명</p>
+                        <div class="math-container mt-2">\(C = \dfrac{P}{E_{\text{rated}}}\) · \(N_{\text{cyc}} \propto \text{DOD}^{-k}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-soc mr-1">SOC</span> 잔존용량 비율 · <span class="font-bold text-emerald-300">10~90 %</span> 영역 사용 권장 (수명 보호)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-dod mr-1">DOD</span> 방전 깊이 · DOD↑ 가용 에너지↑ 그러나 <span class="text-rose-300 font-bold">사이클 수명↓</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-eta mr-1">η</span> 왕복 효율 (RTE) · 리튬이온 <span class="text-cyan-300 font-bold">85~95 %</span>, 변환·열손실 포함</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-cyc mr-1">N</span> 사이클 수 · 누적 방전량 / 정격 용량 · 80% 용량 도달 시 EOL</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-purple-300">Peak Shaving</span> · 피크 시간 방전 → <span class="text-amber-300">계약전력</span> 절감</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">PCS</span> · 전력변환장치 (AC↔DC) · <span class="text-amber-300">BMS</span>가 셀 전압·온도·SOC 관리</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-purple-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">운영 모드</label>
+                <div class="grid grid-cols-1 gap-1.5">
+                    <button data-mode="peak"   data-kind="peak"   class="mode-btn rounded-md py-1.5 font-bold active peak">⚡ 피크 셰이빙 (Peak Shaving)</button>
+                    <button data-mode="smooth" data-kind="smooth" class="mode-btn rounded-md py-1.5 font-bold">〰 신재생 평활 (Smoothing)</button>
+                    <button data-mode="arbi"   data-kind="arbi"   class="mode-btn rounded-md py-1.5 font-bold">💱 차익거래 (Arbitrage)</button>
+                </div>
+                <p id="modeDesc" class="text-[10px] text-slate-400 mt-2">피크 시간 부하의 일부를 ESS가 방전으로 보조 → 그리드 인입 전력 평탄화</p>
+            </div>
+
+            <div class="chip-cap chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>ESS 용량 E_rated</span><span id="capDisp" class="font-mono text-base">2.0</span></label>
+                <input type="range" id="cap" min="0.5" max="10" step="0.1" value="2.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">MWh</p>
+            </div>
+
+            <div class="chip-c chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>C-rate (충방전 비율)</span><span id="crDisp" class="font-mono text-base">0.5</span></label>
+                <input type="range" id="cr" min="0.1" max="2" step="0.05" value="0.5" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">C · 최대전력 = C × E_rated</p>
+            </div>
+
+            <div class="chip-peak chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>피크 시간대 시작</span><span id="peakStartDisp" class="font-mono text-base">13</span></label>
+                <input type="range" id="peakStart" min="8" max="18" step="1" value="13" class="w-full mt-2 cursor-pointer">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider mt-3"><span>피크 시간대 종료</span><span id="peakEndDisp" class="font-mono text-base">17</span></label>
+                <input type="range" id="peakEnd" min="9" max="22" step="1" value="17" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">시 (24h)</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시뮬 속도</span><span id="spdDisp" class="font-mono text-base">600</span></label>
+                <input type="range" id="speed" min="60" max="3600" step="60" value="600" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">× (실시간 대비) · 600× = 1분 = 10시간</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-purple-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-emerald-300 font-bold">충전</span>: 야간 (00~07시) + 신재생 잉여 → SOC ↑</p>
+                <p class="feature-row rounded-md p-2"><span class="text-rose-300 font-bold">방전</span>: 피크 (13~17시) → SOC ↓, 부하 보조</p>
+                <p class="feature-row rounded-md p-2">SOC <span class="text-amber-300 font-bold">10~90%</span> 영역 유지 → 사이클 수명 연장</p>
+                <p class="feature-row rounded-md p-2">왕복 효율 <span class="text-cyan-300 font-bold">η = η_c × η_d</span> · 0.92 × 0.92 ≈ 0.85</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const dayCv = $('dayCanvas');
+const dctx = dayCv.getContext('2d');
+
+// ===== 운영 모드 사양 =====
+const MODES = {
+    peak:   { label: '피크 셰이빙',   desc: '피크 시간 부하의 일부를 ESS가 방전으로 보조 → 그리드 인입 전력 평탄화' },
+    smooth: { label: '신재생 평활',   desc: '태양광·풍력의 분 단위 변동을 ESS가 흡수·방출하여 그리드 안정도 ↑' },
+    arbi:   { label: '차익거래',       desc: '저단가 시간(야간) 충전 → 고단가 시간(피크) 방전으로 전기요금 차익 실현' }
+};
+
+// ===== 모델 상수 =====
+const ETA_C = 0.93;         // 충전 효율
+const ETA_D = 0.93;         // 방전 효율
+const ETA_RT = ETA_C * ETA_D; // 왕복 효율 ≈ 0.865
+const SOC_MIN = 10;
+const SOC_MAX = 90;
+const SECONDS_PER_DAY = 86400;
+
+let state = {
+    mode: 'peak',
+    cap: 2.0,            // ESS 정격 [MWh]
+    cRate: 0.5,          // C-rate
+    peakStart: 13,
+    peakEnd: 17,
+    speed: 600,
+    running: false,
+    t: 0,                // 실측 누적 [s] (렌더 보조)
+    simSeconds: 0,       // 시뮬 누적 시간 [s]
+    hour: 0,             // 현재 시각 (24h, 실수)
+    soc: 50,             // 현재 SOC [%]
+    power: 0,            // 현재 충방전 전력 [MW] (충전 +, 방전 -)
+    flow: 'idle',        // 'charge' | 'discharge' | 'idle'
+    cellTemp: 25,
+    cumDischargeMWh: 0,  // 누적 방전량 [MWh] → 사이클 환산
+    particles: [],
+    history: [],         // 24h 데이터: [{h, soc, pv, wind, load, ess}]
+    dayInited: false
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 600;
+    dayCv.width  = dayCv.parentElement.clientWidth - 2;
+    dayCv.height = 300;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ===== 일일 부하·신재생 프로파일 (정규화 0~1, 24개 지점) =====
+// 부하: 새벽 낮음, 오후 피크
+function loadProfile(h) {
+    // h: 0~24, 베이스 + 정오/저녁 피크
+    const base = 0.40;
+    const day  = 0.45 * Math.max(0, Math.sin(((h - 6) / 12) * Math.PI));        // 6~18시 낮 사용
+    const eve  = 0.25 * Math.exp(-Math.pow((h - 19) / 2.0, 2));                  // 저녁 피크
+    const night= 0.10 * Math.exp(-Math.pow((h - 2) / 3.0, 2));                   // 야간 베이스
+    return Math.max(0.20, Math.min(1.0, base + day + eve + night - 0.15));
+}
+// 태양광: 일출~일몰
+function pvProfile(h) {
+    if (h < 6 || h > 19) return 0;
+    return Math.max(0, Math.sin(((h - 6) / 13) * Math.PI)) * 0.85;
+}
+// 풍력: 야간 강풍 경향
+function windProfile(h) {
+    const noise = 0.10 * Math.sin(h * 1.7 + 0.3) + 0.06 * Math.sin(h * 0.5);
+    const base  = 0.35;
+    const night = 0.20 * Math.exp(-Math.pow((h - 23) / 4, 2));
+    return Math.max(0.05, Math.min(1.0, base + night + noise));
+}
+
+// ===== 운영 정책 (자동 제어) =====
+// 모드에 따라 ESS의 충방전 명령을 결정.
+// return P_cmd [MW]: 충전 +, 방전 -
+function controlPolicy() {
+    const h = state.hour;
+    const pMax = state.cRate * state.cap;   // 최대 전력 [MW]
+    const m = state.mode;
+
+    // SOC 보호 한계
+    const canCharge    = state.soc < SOC_MAX;
+    const canDischarge = state.soc > SOC_MIN;
+
+    let cmd = 0; // MW (양 = 충전, 음 = 방전)
+
+    if (m === 'peak') {
+        // 피크 시간대 방전, 그 외 시간대 + 야간 충전
+        const inPeak = (h >= state.peakStart && h < state.peakEnd);
+        if (inPeak && canDischarge) {
+            const load = loadProfile(h);
+            cmd = -pMax * (0.7 + 0.3 * load); // 부하 클수록 강하게
+        } else if (h >= 0 && h < 7 && canCharge) {
+            cmd = pMax * 0.85; // 야간 충전
+        } else {
+            cmd = 0;
+        }
+    } else if (m === 'smooth') {
+        // 신재생 평활: PV+풍력의 평균 대비 편차를 흡수
+        const ren = pvProfile(h) + windProfile(h);
+        const renAvg = 0.6; // 기준 평균
+        const dev = ren - renAvg;
+        // 잉여 (dev > 0) → 충전 (+), 부족 (dev < 0) → 방전 (-)
+        cmd = pMax * dev * 1.4;
+        // SOC 미세 균형 보정
+        if (state.soc > 70) cmd -= 0.1 * pMax;
+        if (state.soc < 30) cmd += 0.1 * pMax;
+    } else if (m === 'arbi') {
+        // 차익거래: 저단가(00~06, 22~24) 충전, 고단가(11~21) 방전
+        const inLow  = (h < 6 || h >= 22);
+        const inHigh = (h >= 11 && h < 21);
+        if (inLow && canCharge) cmd = pMax * 0.85;
+        else if (inHigh && canDischarge) cmd = -pMax * 0.7;
+        else cmd = 0;
+    }
+
+    // 한계 클램프
+    if (cmd > 0 && !canCharge) cmd = 0;
+    if (cmd < 0 && !canDischarge) cmd = 0;
+    cmd = Math.max(-pMax, Math.min(pMax, cmd));
+    return cmd;
+}
+
+// ===== 라인 / 모드 색상 =====
+function modeColor(m) {
+    if (m === 'peak')   return ['#c4b5fd', '#a78bfa'];
+    if (m === 'smooth') return ['#67e8f9', '#2dd4bf'];
+    return ['#fcd34d', '#f9a8d4'];
+}
+
+// ===== 시간 포맷 =====
+function fmtHour(h) {
+    const hh = Math.floor(h) % 24;
+    const mm = Math.floor((h - Math.floor(h)) * 60);
+    return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+// ===== 메인 캔버스 =====
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경 그라데이션
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(45, 25, 65, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 헤더 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ ESS / BESS · GRID + RENEWABLES · PEAK SHAVING', 12, 10);
+    ctx.restore();
+
+    // 시간·모드 패널 (우상단)
+    drawTopPanel(W, H);
+
+    // ===== 레이아웃 =====
+    // 좌상: 태양광/풍력 (신재생)
+    // 좌중: 그리드 (인입)
+    // 중앙: ESS (PCS + 배터리)
+    // 우: 부하 (공장/빌딩)
+    // 화살표가 노드 간 흐름 시각화
+    const cx = W * 0.50, cy = H * 0.50;
+    // 노드 좌표
+    const nodes = {
+        pv:   { x: W * 0.16, y: H * 0.22, w: 130, h: 100, label: '☀ 태양광', sub: 'PV ARRAY' },
+        wind: { x: W * 0.16, y: H * 0.55, w: 130, h: 100, label: '🌪 풍력',   sub: 'WIND' },
+        grid: { x: W * 0.16, y: H * 0.84, w: 130, h: 60,  label: '⚡ 그리드', sub: 'UTILITY' },
+        ess:  { x: W * 0.42, y: H * 0.18, w: 200, h: 360, label: 'ESS / BESS', sub: 'PCS + BATTERY' },
+        load: { x: W * 0.78, y: H * 0.30, w: 150, h: 200, label: '🏭 부하',   sub: 'INDUSTRIAL LOAD' }
+    };
+
+    // 흐름 계산 (간단 모델, MW 단위)
+    const flow = computeFlows();
+
+    // 노드 간 화살표 (배경)
+    drawFlowArrow(nodes.pv.x + nodes.pv.w/2,   nodes.pv.y + nodes.pv.h,
+                  nodes.ess.x + 30,            nodes.ess.y + 60,
+                  flow.pv2bus, '#fde68a', 'PV → BUS');
+    drawFlowArrow(nodes.wind.x + nodes.wind.w/2,nodes.wind.y + nodes.wind.h,
+                  nodes.ess.x + 30,             nodes.ess.y + 110,
+                  flow.wind2bus, '#7dd3fc', 'WIND → BUS');
+    drawFlowArrow(nodes.grid.x + nodes.grid.w/2,nodes.grid.y,
+                  nodes.ess.x + 30,             nodes.ess.y + 160,
+                  flow.grid2bus, '#f9a8d4', 'GRID → BUS');
+    // ESS 양방향
+    if (state.flow === 'charge') {
+        drawFlowArrow(nodes.ess.x + nodes.ess.w * 0.5, nodes.ess.y + 230,
+                      nodes.ess.x + nodes.ess.w * 0.5, nodes.ess.y + 290,
+                      flow.ess, '#86efac', '⇩ 충전');
+    } else if (state.flow === 'discharge') {
+        drawFlowArrow(nodes.ess.x + nodes.ess.w * 0.5, nodes.ess.y + 290,
+                      nodes.ess.x + nodes.ess.w * 0.5, nodes.ess.y + 230,
+                      flow.ess, '#fda4af', '⇧ 방전');
+    }
+    // BUS → LOAD
+    drawFlowArrow(nodes.ess.x + nodes.ess.w,  nodes.ess.y + 200,
+                  nodes.load.x,               nodes.load.y + nodes.load.h * 0.5,
+                  flow.bus2load, '#a5b4fc', 'BUS → LOAD');
+
+    // 노드 그리기
+    drawSourceNode(nodes.pv, pvProfile(state.hour), '#fde68a', '#fbbf24');
+    drawSourceNode(nodes.wind, windProfile(state.hour), '#7dd3fc', '#22d3ee');
+    drawGridNode(nodes.grid);
+    drawESSNode(nodes.ess);
+    drawLoadNode(nodes.load, loadProfile(state.hour));
+}
+
+// 흐름 계산: PV+풍력 → 부하/ESS, ESS ↔ 그리드 잔량
+function computeFlows() {
+    const h = state.hour;
+    const pMax = state.cRate * state.cap;
+    // 정규화 0~1 → MW 환산 (참고 스케일)
+    const SCALE_PV   = state.cap * 0.6;
+    const SCALE_WIND = state.cap * 0.3;
+    const SCALE_LOAD = state.cap * 0.7;
+    const pv   = pvProfile(h) * SCALE_PV;
+    const wind = windProfile(h) * SCALE_WIND;
+    const load = loadProfile(h) * SCALE_LOAD;
+
+    const ess = state.power; // MW (+ 충전, - 방전)
+    // 신재생 발전 - 부하 = 잔량
+    const gen = pv + wind;
+    // ESS 충전(+)은 입력, 방전(-)은 출력
+    // 그리드는 나머지 잔량을 보충/방출
+    const grid2bus = (load - gen) + ess; // 양 = 그리드 인입, 음 = 역송
+    return {
+        pv2bus: pv,
+        wind2bus: wind,
+        grid2bus: Math.max(0, grid2bus),
+        bus2load: load,
+        ess: Math.abs(ess)
+    };
+}
+
+function drawTopPanel(W, H) {
+    ctx.save();
+    const pw = 240, ph = 78;
+    const px = W - pw - 10, py = 8;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, px, py, pw, ph, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.5)';
+    ctx.stroke();
+    // 시각
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(`TIME ${fmtHour(state.hour)}`, px + 10, py + 8);
+    // 모드
+    ctx.fillStyle = '#fde68a';
+    ctx.fillText(`MODE · ${MODES[state.mode].label}`, px + 10, py + 26);
+    // SOC 상태
+    let socStateText, socColor;
+    if (state.flow === 'charge')      { socStateText = '⇩ CHARGING'; socColor = '#86efac'; }
+    else if (state.flow === 'discharge'){socStateText = '⇧ DISCHARGING'; socColor = '#fda4af'; }
+    else                              { socStateText = '○ IDLE';     socColor = '#cbd5e1'; }
+    ctx.fillStyle = socColor;
+    ctx.fillText(socStateText, px + 10, py + 44);
+    // 셀 온도
+    ctx.fillStyle = state.cellTemp > 38 ? '#fbbf24' : '#67e8f9';
+    ctx.fillText(`🌡 셀 ${state.cellTemp.toFixed(1)}°C`, px + 10, py + 62);
+    ctx.restore();
+}
+
+function drawSourceNode(n, intensity, c1, c2) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = c2;
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 14 * intensity;
+    ctx.shadowColor = c2;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 라벨
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 10, n.y + 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 10, n.y + 24);
+
+    // 출력 게이지
+    const gx = n.x + 10, gy = n.y + n.h - 24, gw = n.w - 20, gh = 14;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.7)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    roundRect(ctx, gx, gy, gw, gh, 4);
+    ctx.fill(); ctx.stroke();
+    const fillW = (gw - 4) * intensity;
+    const grad = ctx.createLinearGradient(gx, 0, gx + gw, 0);
+    grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+    ctx.fillStyle = grad;
+    roundRect(ctx, gx + 2, gy + 2, fillW, gh - 4, 2);
+    ctx.fill();
+
+    // 출력값
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${(intensity * 100).toFixed(0)}%`, gx + gw - 4, gy + gh / 2);
+
+    // PV 패널 미니 그래픽
+    if (n.label.includes('태양광')) {
+        const pX = n.x + n.w * 0.55, pY = n.y + 28, pW = n.w * 0.38, pH = 30;
+        ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1;
+        roundRect(ctx, pX, pY, pW, pH, 3);
+        ctx.fill(); ctx.stroke();
+        // 셀 격자
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
+            const cx = pX + 3 + c * ((pW - 6) / 4);
+            const cy = pY + 3 + r * ((pH - 6) / 2);
+            ctx.fillStyle = `rgba(252, 211, 77, ${0.2 + 0.6 * intensity})`;
+            ctx.fillRect(cx, cy, (pW - 6) / 4 - 2, (pH - 6) / 2 - 2);
+        }
+    } else if (n.label.includes('풍력')) {
+        // 회전 블레이드
+        const cx = n.x + n.w * 0.72, cy = n.y + n.h * 0.42, R = 18;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(state.t * (0.6 + intensity * 2));
+        ctx.strokeStyle = c2;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 8 * intensity;
+        ctx.shadowColor = c2;
+        for (let i = 0; i < 3; i++) {
+            ctx.rotate(Math.PI * 2 / 3);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(R * 0.3, R * 0.1, R, 0);
+            ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        // 폴
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 4);
+        ctx.lineTo(cx, n.y + n.h - 26);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawGridNode(n) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = '#f9a8d4';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 12);
+    ctx.fill(); ctx.stroke();
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#f9a8d4';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 10, n.y + 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 10, n.y + 24);
+
+    // 송전탑 미니 아이콘
+    const tx = n.x + n.w - 28, ty = n.y + 14;
+    ctx.strokeStyle = '#f9a8d4';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty + 30); ctx.lineTo(tx + 6, ty + 4); ctx.lineTo(tx + 12, ty + 30);
+    ctx.moveTo(tx - 2, ty + 12); ctx.lineTo(tx + 14, ty + 12);
+    ctx.moveTo(tx - 1, ty + 20); ctx.lineTo(tx + 13, ty + 20);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function drawLoadNode(n, intensity) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = '#a5b4fc';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 14 * intensity;
+    ctx.shadowColor = '#a5b4fc';
+    roundRect(ctx, n.x, n.y, n.w, n.h, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#a5b4fc';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + 10, n.y + 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + 10, n.y + 24);
+
+    // 빌딩 미니 아이콘
+    const bx = n.x + 14, by = n.y + 44, bW = n.w - 28, bH = n.h - 80;
+    ctx.fillStyle = 'rgba(51, 65, 85, 0.6)';
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1;
+    roundRect(ctx, bx, by, bW, bH, 4);
+    ctx.fill(); ctx.stroke();
+    // 창문
+    const cols = 5, rows = Math.max(3, Math.floor(bH / 22));
+    const cw = (bW - 12) / cols, ch = (bH - 12) / rows;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const px = bx + 6 + c * cw, py = by + 6 + r * ch;
+        // 켜진 창은 부하 강도와 시간(밤이면 더 많음)에 따라
+        const lit = (Math.sin(c * 1.7 + r * 2.3 + state.t * 0.5) + 1) * 0.5;
+        const alpha = (lit < intensity + 0.2) ? (0.4 + 0.5 * intensity) : 0.08;
+        ctx.fillStyle = `rgba(252, 211, 77, ${alpha})`;
+        ctx.fillRect(px, py, cw - 4, ch - 4);
+    }
+
+    // 부하 게이지
+    const gx = n.x + 10, gy = n.y + n.h - 24, gw = n.w - 20, gh = 14;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.7)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    roundRect(ctx, gx, gy, gw, gh, 4);
+    ctx.fill(); ctx.stroke();
+    const fillW = (gw - 4) * intensity;
+    const grad = ctx.createLinearGradient(gx, 0, gx + gw, 0);
+    grad.addColorStop(0, '#818cf8'); grad.addColorStop(1, '#c4b5fd');
+    ctx.fillStyle = grad;
+    roundRect(ctx, gx + 2, gy + 2, fillW, gh - 4, 2);
+    ctx.fill();
+
+    // 부하 값
+    const loadMW = intensity * state.cap * 0.7;
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${loadMW.toFixed(2)} MW`, gx + gw - 4, gy + gh / 2);
+    ctx.restore();
+}
+
+// ===== ESS 노드 (PCS + 배터리 셀 격자 + SOC 게이지) =====
+function drawESSNode(n) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    const [c1, c2] = modeColor(state.mode);
+    ctx.strokeStyle = c2;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = c2;
+    roundRect(ctx, n.x, n.y, n.w, n.h, 14);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 라벨
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(n.label, n.x + n.w/2, n.y + 10);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText(n.sub, n.x + n.w/2, n.y + 26);
+
+    // 상단: PCS (전력변환장치)
+    const pcsX = n.x + 12, pcsY = n.y + 46, pcsW = n.w - 24, pcsH = 70;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.7)';
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.4)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, pcsX, pcsY, pcsW, pcsH, 6);
+    ctx.fill(); ctx.stroke();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('PCS · AC ↔ DC', pcsX + 8, pcsY + 6);
+    // 다이오드/IGBT 심볼 미니
+    for (let i = 0; i < 4; i++) {
+        const sx = pcsX + 14 + i * 38, sy = pcsY + 28;
+        ctx.fillStyle = (i % 2 === 0) ? 'rgba(34, 211, 238, 0.8)' : 'rgba(196, 181, 253, 0.8)';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx - 4, sy + 8);
+        ctx.lineTo(sx + 4, sy + 8);
+        ctx.closePath();
+        ctx.fill();
+    }
+    // 전력 표시
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillStyle = state.flow === 'charge' ? '#86efac' : (state.flow === 'discharge' ? '#fda4af' : '#cbd5e1');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    const sign = state.flow === 'discharge' ? '−' : (state.flow === 'charge' ? '+' : '·');
+    ctx.fillText(`${sign} ${Math.abs(state.power).toFixed(2)} MW`, pcsX + pcsW/2, pcsY + pcsH - 6);
+
+    // 중앙: 배터리 셀 격자 (8x6 = 48셀)
+    const cellsX = n.x + 12, cellsY = pcsY + pcsH + 12;
+    const cellsW = n.w - 24, cellsH = 140;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.85)';
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.35)';
+    roundRect(ctx, cellsX, cellsY, cellsW, cellsH, 6);
+    ctx.fill(); ctx.stroke();
+
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('BATTERY CELLS', cellsX + 6, cellsY + 4);
+
+    const cols = 8, rows = 6;
+    const padX = 6, padY = 18;
+    const cellW = (cellsW - padX * 2) / cols - 2;
+    const cellH = (cellsH - padY - 8) / rows - 2;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const px = cellsX + padX + c * (cellW + 2);
+        const py = cellsY + padY + r * (cellH + 2);
+        const idx = r * cols + c;
+        const noise = Math.sin(state.t * 0.6 + idx * 0.7) * 1.5;
+        const cellSoc = Math.max(0, Math.min(100, state.soc + noise));
+        // 배경
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.5)';
+        ctx.lineWidth = 0.5;
+        roundRect(ctx, px, py, cellW, cellH, 2);
+        ctx.fill(); ctx.stroke();
+        // 채움 (수직)
+        const ch = (cellH - 2) * (cellSoc / 100);
+        let col;
+        if (cellSoc < 15) col = 'rgba(248, 113, 113, 0.85)';
+        else if (cellSoc < 40) col = 'rgba(252, 211, 77, 0.85)';
+        else col = 'rgba(134, 239, 172, 0.85)';
+        ctx.fillStyle = col;
+        ctx.fillRect(px + 1, py + cellH - ch - 1, cellW - 2, ch);
+        // 충방전 깜빡임
+        if (state.running && state.flow !== 'idle') {
+            const speed = state.flow === 'charge' ? 4 : 6;
+            const flash = (Math.sin(state.t * speed + idx * 0.5) + 1) * 0.5;
+            const flashCol = state.flow === 'charge' ? 'rgba(187, 247, 208, ' : 'rgba(254, 205, 211, ';
+            ctx.fillStyle = `${flashCol}${0.12 * flash})`;
+            ctx.fillRect(px + 1, py + 1, cellW - 2, cellH - 2);
+        }
+    }
+
+    // 하단: SOC 게이지 (큰 수평 바)
+    const gaX = n.x + 12, gaY = cellsY + cellsH + 10;
+    const gaW = n.w - 24, gaH = 38;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, gaX, gaY, gaW, gaH, 6);
+    ctx.fill(); ctx.stroke();
+
+    // 채움
+    const ratio = state.soc / 100;
+    const fillW = (gaW - 6) * ratio;
+    let socColors;
+    if (state.soc < 20) socColors = ['#dc2626', '#f87171'];
+    else if (state.soc < 50) socColors = ['#f59e0b', '#fcd34d'];
+    else socColors = ['#16a34a', '#86efac'];
+    const grad = ctx.createLinearGradient(gaX, 0, gaX + gaW, 0);
+    grad.addColorStop(0, socColors[0]); grad.addColorStop(1, socColors[1]);
+    ctx.fillStyle = grad;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = socColors[1];
+    roundRect(ctx, gaX + 3, gaY + 3, Math.max(0, fillW), gaH - 6, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // SOC 텍스트
+    ctx.font = 'bold 18px ui-monospace, monospace';
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`SOC ${state.soc.toFixed(1)}%`, gaX + gaW/2, gaY + gaH/2);
+
+    // SOC_MIN / SOC_MAX 마커
+    [SOC_MIN, SOC_MAX].forEach(s => {
+        const mx = gaX + 3 + (gaW - 6) * (s / 100);
+        ctx.strokeStyle = '#fcd34d';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(mx, gaY);
+        ctx.lineTo(mx, gaY + gaH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 8px ui-monospace, monospace';
+        ctx.fillStyle = '#fcd34d';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(`${s}%`, mx, gaY + gaH + 1);
+    });
+
+    // 우상단: 용량 표시
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(`${state.cap.toFixed(2)} MWh / C=${state.cRate}`, n.x + n.w - 12, n.y + 12);
+
+    ctx.restore();
+}
+
+// ===== 화살표 + 입자 흐름 =====
+function drawFlowArrow(x1, y1, x2, y2, magnitude, color, label) {
+    if (magnitude < 0.001) return;
+    const intensity = Math.min(1, magnitude / Math.max(0.001, state.cap * 0.8));
+    ctx.save();
+    // 라인
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1 + 2 * intensity;
+    ctx.globalAlpha = 0.4 + 0.4 * intensity;
+    ctx.shadowBlur = 6 + 8 * intensity;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    // 화살촉
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const ah = 8 + 4 * intensity;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ah * Math.cos(ang - 0.4), y2 - ah * Math.sin(ang - 0.4));
+    ctx.lineTo(x2 - ah * Math.cos(ang + 0.4), y2 - ah * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    // 라벨 (mag > 0 일 때)
+    if (magnitude > 0.005) {
+        const lx = (x1 + x2) / 2, ly = (y1 + y2) / 2;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        const lw = 60;
+        roundRect(ctx, lx - lw/2, ly - 9, lw, 18, 4);
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(`${magnitude.toFixed(2)} MW`, lx, ly);
+    }
+
+    // 흐르는 입자 (운영 중일 때)
+    if (state.running) {
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        const nDots = Math.floor(3 + 6 * intensity);
+        for (let i = 0; i < nDots; i++) {
+            const phase = (state.t * (0.4 + intensity * 0.8) + i / nDots) % 1;
+            const px = x1 + dx * phase;
+            const py = y1 + dy * phase;
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.8 + 1.2 * intensity, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+}
+
+// ===== 24시간 일일 운영 그래프 =====
+function drawDayChart() {
+    const W = dayCv.width, H = dayCv.height;
+    dctx.clearRect(0, 0, W, H);
+    dctx.fillStyle = '#050714';
+    dctx.fillRect(0, 0, W, H);
+
+    const padL = 50, padR = 50, padT = 24, padB = 32;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    // 축
+    dctx.save();
+    dctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    dctx.lineWidth = 1;
+    dctx.beginPath();
+    dctx.moveTo(padL, padT); dctx.lineTo(padL, padT + plotH); dctx.lineTo(padL + plotW, padT + plotH);
+    dctx.stroke();
+
+    // 격자
+    dctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    for (let i = 1; i <= 4; i++) {
+        const yy = padT + plotH * i / 4;
+        dctx.beginPath(); dctx.moveTo(padL, yy); dctx.lineTo(padL + plotW, yy); dctx.stroke();
+    }
+    for (let i = 1; i <= 8; i++) {
+        const xx = padL + plotW * i / 8;
+        dctx.beginPath(); dctx.moveTo(xx, padT); dctx.lineTo(xx, padT + plotH); dctx.stroke();
+    }
+
+    // 피크 시간대 음영
+    const ps = padL + plotW * (state.peakStart / 24);
+    const pe = padL + plotW * (state.peakEnd / 24);
+    dctx.fillStyle = 'rgba(251, 113, 133, 0.10)';
+    dctx.fillRect(ps, padT, pe - ps, plotH);
+    dctx.font = 'bold 9px ui-monospace, monospace';
+    dctx.fillStyle = '#fda4af';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'top';
+    dctx.fillText('피크 시간대', (ps + pe) / 2, padT + 2);
+    // 야간 충전 구간 (00~07)
+    dctx.fillStyle = 'rgba(34, 197, 94, 0.07)';
+    dctx.fillRect(padL, padT, padL + plotW * 7 / 24 - padL, plotH);
+    dctx.fillStyle = '#86efac';
+    dctx.fillText('야간 충전', padL + plotW * 3.5 / 24, padT + 2);
+
+    // 이론 곡선들 (24시간 정규화)
+    const N = 200;
+    // 부하 (보라)
+    dctx.strokeStyle = '#a5b4fc';
+    dctx.lineWidth = 2;
+    dctx.shadowBlur = 8;
+    dctx.shadowColor = '#a5b4fc';
+    dctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const h = i / N * 24;
+        const v = loadProfile(h);
+        const px = padL + (h / 24) * plotW;
+        const py = padT + plotH - v * plotH * 0.85;
+        if (i === 0) dctx.moveTo(px, py);
+        else dctx.lineTo(px, py);
+    }
+    dctx.stroke();
+    dctx.shadowBlur = 0;
+
+    // 태양광 (노랑, 점선)
+    dctx.strokeStyle = '#fcd34d';
+    dctx.lineWidth = 1.5;
+    dctx.setLineDash([4, 3]);
+    dctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const h = i / N * 24;
+        const v = pvProfile(h);
+        const px = padL + (h / 24) * plotW;
+        const py = padT + plotH - v * plotH * 0.85;
+        if (i === 0) dctx.moveTo(px, py);
+        else dctx.lineTo(px, py);
+    }
+    dctx.stroke();
+
+    // 풍력 (시안, 점선)
+    dctx.strokeStyle = '#22d3ee';
+    dctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const h = i / N * 24;
+        const v = windProfile(h);
+        const px = padL + (h / 24) * plotW;
+        const py = padT + plotH - v * plotH * 0.85;
+        if (i === 0) dctx.moveTo(px, py);
+        else dctx.lineTo(px, py);
+    }
+    dctx.stroke();
+    dctx.setLineDash([]);
+
+    // SOC 히스토리 (보라, 우측 Y축)
+    if (state.history.length > 1) {
+        dctx.strokeStyle = '#c4b5fd';
+        dctx.lineWidth = 2.5;
+        dctx.shadowBlur = 12;
+        dctx.shadowColor = '#c4b5fd';
+        dctx.beginPath();
+        for (let i = 0; i < state.history.length; i++) {
+            const p = state.history[i];
+            const px = padL + (p.h / 24) * plotW;
+            const py = padT + plotH - (p.soc / 100) * plotH;
+            if (i === 0) dctx.moveTo(px, py);
+            else dctx.lineTo(px, py);
+        }
+        dctx.stroke();
+        dctx.shadowBlur = 0;
+
+        // ESS 전력 (영역 그래프, 중앙 기준선)
+        const midY = padT + plotH * 0.5;
+        const maxP = state.cRate * state.cap * 1.05;
+        for (let i = 1; i < state.history.length; i++) {
+            const p0 = state.history[i - 1];
+            const p1 = state.history[i];
+            const x0 = padL + (p0.h / 24) * plotW;
+            const x1 = padL + (p1.h / 24) * plotW;
+            const yMid = midY;
+            // 평균 전력
+            const pAvg = (p0.ess + p1.ess) / 2;
+            const yPwr = midY - (pAvg / maxP) * (plotH * 0.35);
+            dctx.fillStyle = pAvg > 0 ? 'rgba(110, 231, 183, 0.35)' : 'rgba(251, 113, 133, 0.35)';
+            dctx.beginPath();
+            dctx.moveTo(x0, yMid);
+            dctx.lineTo(x0, yMid - (p0.ess / maxP) * (plotH * 0.35));
+            dctx.lineTo(x1, yMid - (p1.ess / maxP) * (plotH * 0.35));
+            dctx.lineTo(x1, yMid);
+            dctx.closePath();
+            dctx.fill();
+        }
+    }
+
+    // 현재 시각 마커
+    const curX = padL + (state.hour / 24) * plotW;
+    dctx.strokeStyle = '#fff';
+    dctx.lineWidth = 1.5;
+    dctx.shadowBlur = 10;
+    dctx.shadowColor = '#fff';
+    dctx.beginPath();
+    dctx.moveTo(curX, padT); dctx.lineTo(curX, padT + plotH);
+    dctx.stroke();
+    dctx.shadowBlur = 0;
+    dctx.fillStyle = '#fff';
+    dctx.beginPath(); dctx.arc(curX, padT + 8, 4, 0, Math.PI * 2); dctx.fill();
+
+    // 축 라벨
+    dctx.font = '10px ui-monospace, monospace';
+    dctx.fillStyle = '#94a3b8';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'top';
+    dctx.fillText('시간 [h]', padL + plotW / 2, padT + plotH + 16);
+
+    for (let i = 0; i <= 8; i++) {
+        const h = i * 3;
+        const xx = padL + (h / 24) * plotW;
+        dctx.fillText(`${h}`, xx, padT + plotH + 16);
+    }
+
+    // 좌측 Y축
+    dctx.save();
+    dctx.translate(padL - 36, padT + plotH / 2);
+    dctx.rotate(-Math.PI / 2);
+    dctx.fillStyle = '#c4b5fd';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText('SOC [%] · 부하·신재생 [pu]', 0, 0);
+    dctx.restore();
+    // 우측 Y축
+    dctx.save();
+    dctx.translate(padL + plotW + 36, padT + plotH / 2);
+    dctx.rotate(Math.PI / 2);
+    dctx.fillStyle = '#6ee7b7';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText('ESS 충방전 [MW]', 0, 0);
+    dctx.restore();
+
+    // 좌측 눈금
+    dctx.fillStyle = '#c4b5fd';
+    dctx.textAlign = 'right'; dctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const yy = padT + plotH - (i / 4) * plotH;
+        dctx.fillText(`${i * 25}`, padL - 6, yy);
+    }
+
+    // 우측 눈금 (ESS 전력)
+    dctx.fillStyle = '#6ee7b7';
+    dctx.textAlign = 'left'; dctx.textBaseline = 'middle';
+    const maxP = state.cRate * state.cap;
+    for (let i = -2; i <= 2; i++) {
+        const yy = padT + plotH * 0.5 - (i / 2) * (plotH * 0.35);
+        const val = (i / 2) * maxP;
+        dctx.fillText(`${val >= 0 ? '+' : ''}${val.toFixed(1)}`, padL + plotW + 6, yy);
+    }
+
+    // 범례
+    dctx.font = 'bold 10px ui-monospace, monospace';
+    dctx.textAlign = 'left'; dctx.textBaseline = 'top';
+    let lx = padL + 6, ly = padT + plotH - 60;
+    dctx.fillStyle = '#c4b5fd'; dctx.fillText('━ SOC', lx, ly);
+    dctx.fillStyle = '#a5b4fc'; dctx.fillText('━ 부하', lx, ly + 12);
+    dctx.fillStyle = '#fcd34d'; dctx.fillText('┄ PV',   lx + 60, ly);
+    dctx.fillStyle = '#22d3ee'; dctx.fillText('┄ 풍력', lx + 60, ly + 12);
+    dctx.fillStyle = '#6ee7b7'; dctx.fillText('▰ 충전', lx + 110, ly);
+    dctx.fillStyle = '#fda4af'; dctx.fillText('▰ 방전', lx + 110, ly + 12);
+
+    dctx.restore();
+}
+
+// ===== 시뮬레이션 스텝 =====
+function simulationStep(realDt) {
+    if (!state.running) return;
+    // 가속된 시뮬 시간 [s]
+    const simDt = realDt * state.speed;
+    state.simSeconds += simDt;
+    // 시각 갱신 (0~24 순환)
+    state.hour = (state.simSeconds / 3600) % 24;
+
+    // 운영 제어로부터 ESS 전력 명령 [MW]
+    let pCmd = controlPolicy();
+
+    // SOC 한계 근처에서는 자연스럽게 감속
+    if (pCmd > 0) {
+        // 충전: SOC_MAX 근접 시 감속
+        if (state.soc > SOC_MAX - 5) pCmd *= Math.max(0, (SOC_MAX - state.soc) / 5);
+    } else if (pCmd < 0) {
+        if (state.soc < SOC_MIN + 5) pCmd *= Math.max(0, (state.soc - SOC_MIN) / 5);
+    }
+    state.power = pCmd;
+    state.flow = Math.abs(pCmd) < 0.005 ? 'idle' : (pCmd > 0 ? 'charge' : 'discharge');
+
+    // 에너지 갱신: dE = P × dt[h]
+    const dEgross = pCmd * (simDt / 3600); // MWh, 부호 포함
+    let dEnet;
+    if (dEgross >= 0) {
+        // 충전: 효율 손실 → 저장 전력 = 입력 × η_c
+        dEnet = dEgross * ETA_C;
+    } else {
+        // 방전: 출력 = 셀에서 빠지는 양 / η_d (셀이 더 많이 소모) → SOC 더 감소
+        dEnet = dEgross / ETA_D;
+    }
+    const dSoc = (dEnet / state.cap) * 100;
+    state.soc = Math.max(0, Math.min(100, state.soc + dSoc));
+
+    // 누적 방전량 (사이클 계산용)
+    if (dEgross < 0) {
+        state.cumDischargeMWh += -dEgross; // 출력 기준 (그리드로 나가는 양)
+    }
+
+    // 셀 온도 모델: |P| 비례 가열, 자연 냉각
+    const maxP = state.cRate * state.cap;
+    const ambient = 25;
+    const heatGen = (Math.abs(pCmd) / Math.max(maxP, 1e-3)) * 0.005 * simDt;
+    const cooling = (state.cellTemp - ambient) * 0.0003 * simDt;
+    state.cellTemp = Math.max(ambient, state.cellTemp + heatGen - cooling);
+
+    // 24h 히스토리 (1분 간격으로 샘플)
+    const lastH = state.history.length ? state.history[state.history.length - 1].h : -1;
+    if (state.hour - lastH > (1/60) || state.hour < lastH) {
+        // 24시 경계에서 리셋: 새로운 일자
+        if (state.hour < lastH) state.history = [];
+        state.history.push({
+            h: state.hour,
+            soc: state.soc,
+            pv: pvProfile(state.hour),
+            wind: windProfile(state.hour),
+            load: loadProfile(state.hour),
+            ess: state.power
+        });
+        // 최대 1500개 유지
+        if (state.history.length > 1500) state.history.shift();
+    }
+}
+
+// ===== UI 업데이트 =====
+function updateLiveChips() {
+    $('socVal').textContent  = `${state.soc.toFixed(1)} %`;
+    const sign = state.flow === 'discharge' ? '−' : (state.flow === 'charge' ? '+' : '');
+    $('pVal').textContent  = `${sign}${Math.abs(state.power).toFixed(2)} MW`;
+    $('etaVal').textContent = `${(ETA_RT * 100).toFixed(1)} %`;
+    const cycles = state.cumDischargeMWh / Math.max(state.cap, 1e-3);
+    $('cycVal').textContent = cycles.toFixed(2);
+
+    // 플래시 효과
+    const ps = $('pill-soc');
+    ps.classList.toggle('warn', state.soc < SOC_MIN + 3 || state.soc > SOC_MAX - 3);
+    ps.classList.toggle('danger', state.soc < 5 || state.soc > 95);
+    const pp = $('pill-p');
+    pp.classList.toggle('flash', state.flow === 'charge');
+    pp.classList.toggle('discharge', state.flow === 'discharge');
+    const pe = $('pill-eta');
+    pe.classList.toggle('flash', state.running);
+    const pc = $('pill-cyc');
+    pc.classList.toggle('warn', cycles > 1.5);
+}
+
+function updateButtons() {
+    $('btnRun').textContent = state.running ? '⏸ 운영 중...' : '▶ 운영 시작';
+}
+
+// ===== 루프 =====
+let lastTime = 0;
+function loop(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = Math.min(0.1, (ts - lastTime) / 1000);
+    lastTime = ts;
+    state.t += dt;
+
+    simulationStep(dt);
+    drawMain();
+    drawDayChart();
+    updateLiveChips();
+
+    requestAnimationFrame(loop);
+}
+
+// ===== 이벤트 =====
+document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(b => {
+            b.classList.remove('active', 'peak', 'smooth', 'arbi');
+        });
+        const kind = btn.dataset.kind;
+        btn.classList.add('active', kind);
+        state.mode = btn.dataset.mode;
+        $('modeDesc').textContent = MODES[state.mode].desc;
+    });
+});
+
+$('cap').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.cap = v;
+    $('capDisp').textContent = v.toFixed(1);
+});
+
+$('cr').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.cRate = v;
+    $('crDisp').textContent = v.toFixed(2);
+});
+
+$('peakStart').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.peakStart = v;
+    $('peakStartDisp').textContent = v;
+    if (state.peakEnd <= v) {
+        state.peakEnd = Math.min(22, v + 1);
+        $('peakEnd').value = state.peakEnd;
+        $('peakEndDisp').textContent = state.peakEnd;
+    }
+});
+
+$('peakEnd').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.peakEnd = v;
+    $('peakEndDisp').textContent = v;
+    if (state.peakStart >= v) {
+        state.peakStart = Math.max(8, v - 1);
+        $('peakStart').value = state.peakStart;
+        $('peakStartDisp').textContent = state.peakStart;
+    }
+});
+
+$('speed').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.speed = v;
+    $('spdDisp').textContent = v;
+});
+
+$('btnRun').addEventListener('click', () => {
+    state.running = !state.running;
+    updateButtons();
+});
+
+$('btnPause').addEventListener('click', () => {
+    state.running = false;
+    updateButtons();
+});
+
+$('btnReset').addEventListener('click', () => {
+    state.running = false;
+    state.soc = 50;
+    state.simSeconds = 0;
+    state.hour = 0;
+    state.cumDischargeMWh = 0;
+    state.cellTemp = 25;
+    state.history = [];
+    state.power = 0;
+    state.flow = 'idle';
+    updateButtons();
+});
+
+// 초기화
+resize();
+updateButtons();
+
+// 헤더 등장
+if (typeof gsap !== 'undefined') {
+    gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+    gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.5, stagger: 0.08, delay: 0.2, ease: 'power2.out' });
+    gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    gsap.from('#controlPanel', { x: 24, opacity: 0, duration: 0.7, delay: 0.4, ease: 'power3.out' });
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

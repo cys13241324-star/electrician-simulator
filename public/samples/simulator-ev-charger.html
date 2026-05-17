@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기차 충전기 시뮬레이터 (AC 완속 / DC 급속 · CC-CV)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 197, 94, 0.10), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(34, 197, 94, 0.35);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 620px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#curveCanvas {
+    display: block;
+    width: 100%;
+    height: 260px;
+    border-radius: 12px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,197,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #86efac, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 22px rgba(134, 239, 172, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-soc { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border-color: rgba(34,197,94,0.5); color: #86efac; }
+.chip-cap { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.chip-mode { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-t { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-pill.warn {
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+}
+.live-pill.danger {
+    border-color: rgba(244, 63, 94, 0.7);
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.45);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #86efac, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(34,197,94,0.16), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(134,239,172,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(134, 239, 172, 0.4);
+}
+.preset-btn {
+    background: rgba(34, 197, 94, 0.16);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    color: #bbf7d0;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(34, 197, 94, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.4);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    font-size: 11px;
+}
+.mode-btn:hover {
+    border-color: rgba(134, 239, 172, 0.5);
+    color: #fff;
+}
+.mode-btn.active.ac {
+    background: linear-gradient(135deg, rgba(34,197,94,0.4), rgba(16,185,129,0.4));
+    border-color: rgba(134, 239, 172, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.5);
+}
+.mode-btn.active.dc {
+    background: linear-gradient(135deg, rgba(244,114,182,0.4), rgba(168,85,247,0.4));
+    border-color: rgba(249, 168, 212, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(244, 114, 182, 0.5);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(134, 239, 172, 0.5), transparent);
+}
+.region-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.region-cc { background: rgba(34, 197, 94, 0.18); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.45); }
+.region-cv { background: rgba(244, 114, 182, 0.18); color: #f9a8d4; border: 1px solid rgba(244, 114, 182, 0.45); }
+.region-tap { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.45); }
+.tag-ac { background: rgba(34, 197, 94, 0.22); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.5); }
+.tag-dc { background: rgba(244, 114, 182, 0.22); color: #f9a8d4; border: 1px solid rgba(244, 114, 182, 0.5); }
+.tag {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-emerald-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · EV CHARGER · AC SLOW & DC FAST · CC-CV CURVE
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            🔋 전기차 충전기 시뮬레이터 (AC 완속 / DC 급속)
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">AC 완속은 차내 <span class="text-emerald-300 font-semibold">OBC</span>가 AC→DC 변환, DC 급속은 <span class="text-pink-300 font-semibold">외부 변환기</span>가 직접 배터리에 공급. 배터리 SOC에 따라 <span class="text-amber-300 font-semibold">CC (정전류) → CV (정전압)</span>로 자동 천이됩니다.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-p">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">충전 전력 P</p>
+            <p class="mt-1 text-lg font-bold"><span id="pVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-i">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">충전 전류 I</p>
+            <p class="mt-1 text-lg font-bold"><span id="iVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-soc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">배터리 SOC</p>
+            <p class="mt-1 text-lg font-bold"><span id="socVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-time">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">남은 시간 (→ 80%)</p>
+            <p class="mt-1 text-lg font-bold"><span id="timeVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">충전기 (전원/변환기) → 케이블·커넥터 → 차량(OBC/BMS) → 배터리 셀</span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnRun" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">▶ 충전 시작</button>
+                        <button id="btnPause" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⏸ 일시 정지</button>
+                        <button id="btnReset" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⟲ 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 충전 곡선 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">충전 곡선 — 시간 vs 전류·전압 (CC → CV 분기)</span>
+                    <div class="flex items-center gap-2">
+                        <span class="region-badge region-cc">CC 정전류</span>
+                        <span class="region-badge region-cv">CV 정전압</span>
+                        <span class="region-badge region-tap">테이퍼링</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(34,197,94,0.4), rgba(245,158,11,0.4), rgba(244,114,182,0.4));">
+                    <canvas id="curveCanvas"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">실제 곡선은 셀 화학·BMS 정책·온도에 따라 다르며, 본 시뮬은 CC(정전류) 80%까지·CV(정전압) 80→100%의 간이 모델입니다.</p>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-emerald-300 to-indigo-200 bg-clip-text text-transparent">EV 충전 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-emerald-200">충전 전력</p>
+                        <div class="math-container mt-2">\(P = V \cdot I \cdot \eta\) <span class="text-[10px] text-slate-400">[kW]</span></div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-emerald-200">충전 시간 (이상)</p>
+                        <div class="math-container mt-2">\(t = \dfrac{E_{\text{batt}} \cdot \Delta\text{SOC}}{P_{\text{eff}}}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-emerald-200">C-rate</p>
+                        <div class="math-container mt-2">\(C = \dfrac{I_{\text{charge}}}{C_{\text{nom}}}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-ac mr-1">AC</span> <span class="font-bold text-emerald-300">완속 (Level 1·2)</span> · 차내 <span class="text-amber-300">OBC</span>가 AC→DC 변환 · 3~22 kW</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-dc mr-1">DC</span> <span class="font-bold text-pink-300">급속 (Level 3)</span> · 외부 변환기가 DC 직접 공급 · 50~350 kW</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">CC 정전류</span> · SOC ≤ 80%, 큰 일정 전류로 빠르게 충전</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">CV 정전압</span> · SOC ≥ 80%, 전압 일정 유지하며 전류 감소 (테이퍼링)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">BMS</span> · 셀 밸런싱·온도·전압 모니터링 → 보호·차단</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">변환 손실</span> · OBC η ≈ 0.92, DC 급속 η ≈ 0.95 (배선·열 손실 포함)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-emerald-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">충전기 모드</label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button data-mode="ac3"   data-kind="ac" class="mode-btn rounded-md py-1.5 font-bold">AC 3kW</button>
+                    <button data-mode="ac7"   data-kind="ac" class="mode-btn rounded-md py-1.5 font-bold active ac">AC 7kW</button>
+                    <button data-mode="ac22"  data-kind="ac" class="mode-btn rounded-md py-1.5 font-bold">AC 22kW</button>
+                    <button data-mode="dc50"  data-kind="dc" class="mode-btn rounded-md py-1.5 font-bold">DC 50kW</button>
+                    <button data-mode="dc100" data-kind="dc" class="mode-btn rounded-md py-1.5 font-bold">DC 100kW</button>
+                    <button data-mode="dc350" data-kind="dc" class="mode-btn rounded-md py-1.5 font-bold">DC 350kW</button>
+                </div>
+                <p id="modeDesc" class="text-[10px] text-slate-400 mt-2">완속 Level 2 · 가정·직장 일반 · 차내 OBC 변환</p>
+            </div>
+
+            <div class="chip-soc chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>초기 SOC</span><span id="socDisp" class="font-mono text-base">20</span></label>
+                <input type="range" id="soc0" min="0" max="95" step="1" value="20" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">%</p>
+            </div>
+
+            <div class="chip-cap chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>배터리 용량</span><span id="capDisp" class="font-mono text-base">77</span></label>
+                <input type="range" id="cap" min="20" max="120" step="1" value="77" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kWh</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시뮬 속도</span><span id="spdDisp" class="font-mono text-base">120</span></label>
+                <input type="range" id="speed" min="10" max="600" step="10" value="120" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">× (실시간 대비)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-emerald-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">AC 완속: 콘센트 220V·32A → 7kW (단상) · <span class="text-emerald-300 font-bold">OBC가 병목</span></p>
+                <p class="feature-row rounded-md p-2">DC 급속: 외부 변환기 직결 → <span class="text-pink-300 font-bold">OBC 우회</span></p>
+                <p class="feature-row rounded-md p-2">SOC 80% 이상은 <span class="text-amber-300 font-bold">전류 급감</span> → 0→80% 만 광고 시간</p>
+                <p class="feature-row rounded-md p-2">고출력 충전은 <span class="text-rose-300 font-bold">셀 온도</span> 상승 → BMS가 자동 감속</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const curveCv = $('curveCanvas');
+const cctx = curveCv.getContext('2d');
+
+// ===== 충전 모드 사양 =====
+const MODES = {
+    ac3:   { kind: 'ac', maxKW: 3.3,  v: 230,  i: 14.4, eta: 0.92, label: 'AC 3 kW',   desc: '완속 Level 1 · 220V 단상 · 콘센트' },
+    ac7:   { kind: 'ac', maxKW: 7.4,  v: 230,  i: 32,   eta: 0.92, label: 'AC 7 kW',   desc: '완속 Level 2 · 가정·직장 일반 · 차내 OBC 변환' },
+    ac22:  { kind: 'ac', maxKW: 22,   v: 400,  i: 32,   eta: 0.92, label: 'AC 22 kW',  desc: '완속 Level 2 · 3상 380V · OBC 22kW급 필요' },
+    dc50:  { kind: 'dc', maxKW: 50,   v: 400,  i: 125,  eta: 0.95, label: 'DC 50 kW',  desc: '급속 Level 3 · 차데모/CCS · 일반 급속' },
+    dc100: { kind: 'dc', maxKW: 100,  v: 500,  i: 200,  eta: 0.95, label: 'DC 100 kW', desc: '급속 Level 3 · 고속도로 보급형' },
+    dc350: { kind: 'dc', maxKW: 350,  v: 800,  i: 500,  eta: 0.95, label: 'DC 350 kW', desc: '초급속 · 800V 시스템 · 5분 100km' }
+};
+
+let state = {
+    mode: 'ac7',
+    soc0: 20,            // 초기 SOC [%]
+    soc: 20,             // 현재 SOC [%]
+    cap: 77,             // 배터리 용량 [kWh]
+    speed: 120,          // 시뮬 가속 배수
+    running: false,
+    t: 0,                // 실측 시간 [s] (실시간)
+    simTimeS: 0,         // 시뮬 누적 시간 [s] (가속 적용)
+    flowPhase: 0,        // 전류 입자 위상
+    particles: [],
+    history: [],         // [{t, p, i, v, soc}]
+    cellTemp: 22         // 셀 온도 [°C]
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 620;
+    curveCv.width = curveCv.parentElement.clientWidth - 2;
+    curveCv.height = 260;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ===== 충전 모델 =====
+// CC: SOC < 80% → 모드 최대 전력 (P 일정, 전압 살짝 상승, 전류 거의 일정)
+// CV: SOC ≥ 80% → 전압 고정, 전류 지수 감소
+// 추가: SOC ↑ → 셀 전압 미세 상승 (3.3V → 4.2V 대략)
+function cellVoltagePU(soc) {
+    // 0~100% → 3.3 ~ 4.15 V/cell, 단순 선형 + 끝단 상승
+    const s = soc / 100;
+    return 3.3 + 0.85 * s + 0.05 * Math.pow(s, 5);
+}
+
+function computeChargeState() {
+    const m = MODES[state.mode];
+    const soc = state.soc;
+    // 팩 전압 (대략): 셀당 전압 × 직렬 셀 수 ≈ 모드 명목 전압에 비례
+    const cellV = cellVoltagePU(soc);
+    const cellVRef = cellVoltagePU(50);
+    const Vpack = m.v * (cellV / cellVRef); // SOC 따라 약간 변화
+
+    let Igrid, Pcharge, region;
+    const SOC_KNEE = 80;
+
+    if (soc < SOC_KNEE) {
+        // CC: 일정 전력 (실제는 일정 전류)
+        Pcharge = m.maxKW * m.eta;     // 배터리에 들어가는 실효 전력
+        Igrid = m.maxKW * 1000 / m.v;  // 표시는 grid 측 전류 (입력단)
+        region = 'CC';
+    } else {
+        // CV: SOC 80→100 → 전류 1.0 → 0.05 (지수 감소)
+        const x = (soc - SOC_KNEE) / (100 - SOC_KNEE); // 0~1
+        const factor = Math.max(0.05, Math.exp(-2.8 * x));
+        Pcharge = m.maxKW * m.eta * factor;
+        Igrid = (m.maxKW * factor) * 1000 / m.v;
+        region = 'CV';
+    }
+
+    // 초저 SOC (≤5%) 보호: 살짝 감속
+    if (soc < 5) {
+        const sf = 0.5 + soc / 10;  // 0.5 ~ 1.0
+        Pcharge *= sf;
+        Igrid *= sf;
+    }
+
+    return { Igrid, Pcharge, Vpack, region };
+}
+
+// 0→80% 도달까지 남은 시간 [s]
+function timeTo80() {
+    if (state.soc >= 80) return 0;
+    const m = MODES[state.mode];
+    const Peff = m.maxKW * m.eta;
+    const energyNeeded = state.cap * ((80 - state.soc) / 100); // kWh
+    return (energyNeeded / Peff) * 3600;
+}
+
+// ===== 메인 캔버스 =====
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경 그라데이션
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(20, 50, 35, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 헤더 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(187, 247, 208, 0.6)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ EV CHARGER · OBC / DC FAST · CC-CV PROTOCOL', 12, 10);
+    ctx.restore();
+
+    // ===== 레이아웃 =====
+    // 좌 30%: 충전기 (전원 + 변환기)
+    // 중 30%: 연결 케이블 (전류 흐름 입자) + 커넥터
+    // 우 40%: 전기차 + 배터리 시각화
+    const m = MODES[state.mode];
+    const isDC = m.kind === 'dc';
+
+    // 충전기 박스
+    const chX = 30, chY = 60, chW = W * 0.28, chH = H - 120;
+    drawCharger(chX, chY, chW, chH, m, isDC);
+
+    // 차량 영역
+    const carX = W * 0.55, carY = 90, carW = W * 0.42, carH = H * 0.55;
+    drawVehicle(carX, carY, carW, carH, m, isDC);
+
+    // 배터리 게이지 (차량 아래)
+    const battX = W * 0.55, battY = carY + carH + 12, battW = W * 0.42, battH = H - battY - 30;
+    drawBatteryPanel(battX, battY, battW, battH);
+
+    // 케이블 + 입자
+    const cabFromX = chX + chW;
+    const cabFromY = chY + chH * 0.5;
+    const cabToX = carX + 10;
+    const cabToY = carY + carH * 0.45;
+    drawCable(cabFromX, cabFromY, cabToX, cabToY, m, isDC);
+
+    // 상단 상태 표시
+    ctx.save();
+    const cs = computeChargeState();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, W - 232, 8, 222, 78, 8);
+    ctx.fill();
+    ctx.strokeStyle = isDC ? 'rgba(244,114,182,0.5)' : 'rgba(134,239,172,0.5)';
+    ctx.stroke();
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.fillText(`${m.label} · ${m.kind.toUpperCase()}`, W - 18, 16);
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(`영역: ${cs.region === 'CC' ? 'CC 정전류' : 'CV 정전압'}`, W - 18, 34);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillText(`팩 전압: ${cs.Vpack.toFixed(0)} V`, W - 18, 50);
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillText(`셀 온도: ${state.cellTemp.toFixed(1)} °C`, W - 18, 66);
+    ctx.restore();
+}
+
+// ===== 충전기 (왼쪽) =====
+function drawCharger(x, y, w, h, m, isDC) {
+    ctx.save();
+    ctx.strokeStyle = isDC ? 'rgba(244,114,182,0.4)' : 'rgba(134,239,172,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    roundRect(ctx, x, y, w, h, 14);
+    ctx.fill();
+    ctx.stroke();
+
+    // 타이틀
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(isDC ? 'DC FAST CHARGER' : 'AC CHARGER', x + w/2, y + 10);
+
+    // 디스플레이 패널
+    const dpX = x + 16, dpY = y + 36, dpW = w - 32, dpH = 90;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.85)';
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.35)';
+    roundRect(ctx, dpX, dpY, dpW, dpH, 6);
+    ctx.fill(); ctx.stroke();
+
+    const cs = computeChargeState();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('STATUS', dpX + 10, dpY + 8);
+    ctx.fillStyle = state.running ? '#34d399' : '#fbbf24';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillText(state.running ? '● CHARGING' : '○ STANDBY', dpX + 10, dpY + 22);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillText('POWER', dpX + 10, dpY + 42);
+    ctx.fillStyle = '#86efac';
+    ctx.font = 'bold 18px ui-monospace, monospace';
+    ctx.fillText(`${cs.Pcharge.toFixed(1)} kW`, dpX + 10, dpY + 54);
+
+    // 우측: 모드 명목
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('RATED', dpX + dpW - 10, dpY + 42);
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#bbf7d0';
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillText(`${m.maxKW} kW`, dpX + dpW - 10, dpY + 56);
+
+    // 변환기/내부 구성
+    const ctrX = x + 16, ctrY = dpY + dpH + 16, ctrW = w - 32, ctrH = 130;
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.4)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    roundRect(ctx, ctrX, ctrY, ctrW, ctrH, 8);
+    ctx.fill(); ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#a5b4fc';
+    ctx.fillText(isDC ? 'AC → DC CONVERTER (RECTIFIER + DC/DC)' : 'AC OUTPUT (PASS-THROUGH)', ctrX + ctrW/2, ctrY + 8);
+
+    // 다이오드/스위치 심볼들
+    const symY = ctrY + 30;
+    if (isDC) {
+        // 정류기 6 다이오드 + 출력 DC/DC 표현
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.85)';
+        ctx.strokeStyle = '#67e8f9';
+        for (let i = 0; i < 6; i++) {
+            const px = ctrX + 16 + (i % 3) * ((ctrW - 32) / 3) + 14;
+            const py = symY + Math.floor(i / 3) * 26;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - 6, py + 10);
+            ctx.lineTo(px + 6, py + 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(px - 6, py + 12); ctx.lineTo(px + 6, py + 12);
+            ctx.stroke();
+        }
+        // 콘덴서 (DC 링크)
+        const cx = ctrX + ctrW * 0.5, cy = symY + 78;
+        ctx.strokeStyle = '#fcd34d';
+        ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#fcd34d';
+        ctx.beginPath();
+        ctx.moveTo(cx - 14, cy - 5); ctx.lineTo(cx + 14, cy - 5);
+        ctx.moveTo(cx - 12, cy + 5); ctx.lineTo(cx + 12, cy + 5);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#fcd34d';
+        ctx.textAlign = 'center';
+        ctx.fillText('DC LINK', cx, cy + 14);
+    } else {
+        // AC: 단순 라인 + 콘택터 + 미터
+        ctx.strokeStyle = '#86efac';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = '#86efac';
+        ctx.beginPath();
+        ctx.moveTo(ctrX + 16, symY + 30);
+        ctx.lineTo(ctrX + ctrW - 16, symY + 30);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // 콘택터 표시
+        const kx = ctrX + ctrW * 0.5;
+        ctx.fillStyle = '#86efac';
+        ctx.beginPath(); ctx.arc(kx - 14, symY + 30, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(kx + 14, symY + 30, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(kx - 14, symY + 30);
+        ctx.lineTo(kx + 14, symY + 30 - 10);
+        ctx.stroke();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#fcd34d';
+        ctx.textAlign = 'center';
+        ctx.fillText('CONTACTOR', kx, symY + 50);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('OBC가 차량 내에서 AC→DC 변환', ctrX + ctrW/2, symY + 90);
+    }
+
+    // 입력 그리드 (하단)
+    const gY = y + h - 56;
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('GRID', x + 16, gY);
+    // 3상 라인
+    const gridY = gY + 14;
+    const phaseColors = ['#fca5a5', '#86efac', '#93c5fd'];
+    for (let i = 0; i < 3; i++) {
+        ctx.strokeStyle = phaseColors[i];
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = phaseColors[i];
+        ctx.beginPath();
+        ctx.moveTo(x + 16, gridY + i * 9);
+        ctx.lineTo(x + w - 16, gridY + i * 9);
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText(m.kind === 'ac' && m.maxKW <= 7.4 ? '단상 220V' : '3상 380V', x + w - 16, gY);
+    ctx.restore();
+}
+
+// ===== 차량 본체 =====
+function drawVehicle(x, y, w, h, m, isDC) {
+    ctx.save();
+    // 차체 (간략화된 측면 SUV)
+    const bodyX = x + 10, bodyY = y + h * 0.25, bodyW = w - 20, bodyH = h * 0.5;
+
+    // 차창 상부
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW * 0.18, bodyY);
+    ctx.quadraticCurveTo(bodyX + bodyW * 0.30, bodyY - h * 0.18, bodyX + bodyW * 0.55, bodyY - h * 0.18);
+    ctx.quadraticCurveTo(bodyX + bodyW * 0.78, bodyY - h * 0.18, bodyX + bodyW * 0.85, bodyY);
+    ctx.lineTo(bodyX + bodyW * 0.85, bodyY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 본체 직사각형 (라운드)
+    ctx.fillStyle = 'rgba(51, 65, 85, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, bodyX, bodyY, bodyW, bodyH, 14);
+    ctx.fill(); ctx.stroke();
+
+    // 차창 (앞/뒤)
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.strokeStyle = 'rgba(96, 165, 250, 0.35)';
+    ctx.lineWidth = 1;
+    // 앞 창
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW * 0.60, bodyY + 6);
+    ctx.lineTo(bodyX + bodyW * 0.78, bodyY + 6);
+    ctx.quadraticCurveTo(bodyX + bodyW * 0.76, bodyY - h * 0.14, bodyX + bodyW * 0.66, bodyY - h * 0.14);
+    ctx.lineTo(bodyX + bodyW * 0.60, bodyY + 6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // 뒷 창
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW * 0.22, bodyY + 6);
+    ctx.lineTo(bodyX + bodyW * 0.40, bodyY + 6);
+    ctx.lineTo(bodyX + bodyW * 0.42, bodyY - h * 0.14);
+    ctx.quadraticCurveTo(bodyX + bodyW * 0.32, bodyY - h * 0.14, bodyX + bodyW * 0.30, bodyY - h * 0.14);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // 바퀴
+    const wheelR = h * 0.10;
+    const wAxisY = bodyY + bodyH + 4;
+    [bodyX + bodyW * 0.20, bodyX + bodyW * 0.78].forEach(wx => {
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(wx, wAxisY, wheelR, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#334155';
+        ctx.beginPath(); ctx.arc(wx, wAxisY, wheelR * 0.5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // 충전 포트 (차량 왼쪽 - 충전기와 연결)
+    const portX = bodyX + 8;
+    const portY = bodyY + bodyH * 0.40;
+    const portW = 18, portH = 26;
+    ctx.fillStyle = isDC ? 'rgba(244, 114, 182, 0.25)' : 'rgba(34, 197, 94, 0.25)';
+    ctx.strokeStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.lineWidth = 2;
+    roundRect(ctx, portX - portW, portY - portH/2, portW, portH, 4);
+    ctx.fill(); ctx.stroke();
+    // 핀
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.beginPath(); ctx.arc(portX - portW/2 - 4, portY - 4, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(portX - portW/2 + 4, portY - 4, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(portX - portW/2, portY + 4, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (isDC) {
+        // DC는 큰 핀 추가
+        ctx.beginPath(); ctx.arc(portX - portW/2 - 5, portY + 8, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(portX - portW/2 + 5, portY + 8, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(isDC ? 'CCS' : 'TYPE-2', portX - portW - 2, portY - portH/2 - 2);
+
+    // OBC 표시 (AC 모드일 때 강조)
+    const obcX = bodyX + bodyW * 0.35;
+    const obcY = bodyY + bodyH * 0.35;
+    const obcW = bodyW * 0.18, obcH = bodyH * 0.30;
+    ctx.fillStyle = (!isDC) ? 'rgba(34, 197, 94, 0.22)' : 'rgba(30, 41, 59, 0.7)';
+    ctx.strokeStyle = (!isDC) ? '#86efac' : '#64748b';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, obcX, obcY, obcW, obcH, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = (!isDC) ? '#bbf7d0' : '#94a3b8';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('OBC', obcX + obcW/2, obcY + obcH/2 - 5);
+    ctx.font = '8px ui-monospace, monospace';
+    ctx.fillText(isDC ? '(bypass)' : 'AC→DC', obcX + obcW/2, obcY + obcH/2 + 7);
+
+    // BMS 표시
+    const bmsX = obcX + obcW + 10;
+    const bmsW = bodyW * 0.14, bmsH = bodyH * 0.22;
+    const bmsY = obcY + (obcH - bmsH) / 2;
+    ctx.fillStyle = 'rgba(34, 211, 238, 0.18)';
+    ctx.strokeStyle = '#67e8f9';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, bmsX, bmsY, bmsW, bmsH, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#a5f3fc';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('BMS', bmsX + bmsW/2, bmsY + bmsH/2);
+
+    // 내부 흐름 (OBC/BMS → 배터리)
+    const battIconX = bmsX + bmsW + 6;
+    const battIconY = bmsY + bmsH/2;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(bmsX + bmsW, battIconY);
+    ctx.lineTo(bodyX + bodyW - 12, battIconY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#fef3c7';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('→ HV BATTERY', bodyX + bodyW - 12, battIconY - 14);
+
+    ctx.restore();
+}
+
+// ===== 배터리 패널 (셀 그래픽 + SOC 게이지) =====
+function drawBatteryPanel(x, y, w, h) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    ctx.strokeStyle = 'rgba(134, 239, 172, 0.35)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, x, y, w, h, 12);
+    ctx.fill(); ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#86efac';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ HIGH VOLTAGE BATTERY PACK', x + 12, y + 10);
+
+    // 좌측 큰 SOC 게이지 (수평 막대)
+    const gaX = x + 14, gaY = y + 32, gaW = w * 0.50, gaH = h - 50;
+    ctx.fillStyle = 'rgba(5, 7, 20, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    roundRect(ctx, gaX, gaY, gaW, gaH, 6);
+    ctx.fill(); ctx.stroke();
+
+    // 배터리 외형 + 단자
+    const tx = gaX + gaW + 2, ty = gaY + gaH * 0.3, tw = 6, th = gaH * 0.4;
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    ctx.fillRect(tx, ty, tw, th);
+
+    // 게이지 채움 (SOC%에 비례)
+    const fillRatio = state.soc / 100;
+    const innerPad = 4;
+    const fillW = (gaW - innerPad * 2) * fillRatio;
+    // 색상: 0~20 빨강, 20~50 노랑, 50~ 초록
+    let gradStops;
+    if (state.soc < 20) {
+        gradStops = ['#dc2626', '#f87171'];
+    } else if (state.soc < 50) {
+        gradStops = ['#f59e0b', '#fcd34d'];
+    } else {
+        gradStops = ['#16a34a', '#86efac'];
+    }
+    const grad = ctx.createLinearGradient(gaX, 0, gaX + gaW, 0);
+    grad.addColorStop(0, gradStops[0]);
+    grad.addColorStop(1, gradStops[1]);
+    ctx.fillStyle = grad;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = gradStops[1];
+    roundRect(ctx, gaX + innerPad, gaY + innerPad, Math.max(0, fillW), gaH - innerPad * 2, 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // SOC 텍스트 (대형)
+    ctx.font = 'bold 32px ui-monospace, monospace';
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${state.soc.toFixed(1)}%`, gaX + gaW / 2, gaY + gaH / 2);
+
+    // 80% 마커
+    const markX = gaX + innerPad + (gaW - innerPad * 2) * 0.80;
+    ctx.strokeStyle = '#fcd34d';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(markX, gaY);
+    ctx.lineTo(markX, gaY + gaH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('80%', markX, gaY - 1);
+
+    // 우측: 셀 그래픽 (8x4 = 32셀 표현)
+    const cellAreaX = gaX + gaW + 22, cellAreaY = gaY;
+    const cellAreaW = w - (cellAreaX - x) - 14, cellAreaH = gaH;
+    const cols = 8, rows = 4;
+    const cellW = (cellAreaW - 6) / cols - 3;
+    const cellH = (cellAreaH - 6) / rows - 3;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const px = cellAreaX + 3 + c * (cellW + 3);
+            const py = cellAreaY + 3 + r * (cellH + 3);
+            // 각 셀의 SOC 표시 (조금 흔들림)
+            const idx = r * cols + c;
+            const noise = Math.sin(state.t * 0.4 + idx * 0.7) * 1.2;
+            const cellSoc = Math.max(0, Math.min(100, state.soc + noise));
+            // 배경
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+            ctx.strokeStyle = 'rgba(71, 85, 105, 0.6)';
+            ctx.lineWidth = 0.8;
+            roundRect(ctx, px, py, cellW, cellH, 2);
+            ctx.fill(); ctx.stroke();
+            // 셀 채움 (수직)
+            const ch = cellH * (cellSoc / 100);
+            let col;
+            if (cellSoc < 20) col = 'rgba(248, 113, 113, 0.85)';
+            else if (cellSoc < 50) col = 'rgba(252, 211, 77, 0.85)';
+            else col = 'rgba(134, 239, 172, 0.85)';
+            ctx.fillStyle = col;
+            ctx.fillRect(px + 1, py + cellH - ch + 1, cellW - 2, ch - 2);
+            // 충전 중일 때 깜빡임
+            if (state.running) {
+                const flash = (Math.sin(state.t * 6 + idx) + 1) * 0.5;
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.10 * flash})`;
+                ctx.fillRect(px + 1, py + 1, cellW - 2, cellH - 2);
+            }
+        }
+    }
+    // 라벨
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`CELLS · 32 × ${(state.cap / 32).toFixed(1)} kWh`, cellAreaX, cellAreaY - 12);
+
+    // 온도 표시 (우상단)
+    const tempX = cellAreaX + cellAreaW - 50;
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.cellTemp > 45 ? '#fb7185' : (state.cellTemp > 38 ? '#fcd34d' : '#86efac');
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText(`🌡 ${state.cellTemp.toFixed(1)}°C`, cellAreaX + cellAreaW, cellAreaY - 12);
+
+    ctx.restore();
+}
+
+// ===== 케이블 + 입자 =====
+function drawCable(x1, y1, x2, y2, m, isDC) {
+    ctx.save();
+    // 케이블 (베지어)
+    const cpX1 = (x1 + x2) / 2 + 30;
+    const cpY1 = y1 + 60;
+    const cpX2 = (x1 + x2) / 2 - 10;
+    const cpY2 = y2 + 30;
+
+    // 외피
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.95)';
+    ctx.lineWidth = 14;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, x2, y2);
+    ctx.stroke();
+
+    // 외피 그라데이션
+    const cabGrad = ctx.createLinearGradient(x1, y1, x2, y2);
+    cabGrad.addColorStop(0, isDC ? 'rgba(244, 114, 182, 0.5)' : 'rgba(134, 239, 172, 0.5)');
+    cabGrad.addColorStop(1, isDC ? 'rgba(168, 85, 247, 0.5)' : 'rgba(34, 211, 238, 0.5)');
+    ctx.strokeStyle = cabGrad;
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, x2, y2);
+    ctx.stroke();
+
+    // 내부 라이트닝 (충전 중일 때)
+    if (state.running) {
+        ctx.strokeStyle = isDC ? 'rgba(249, 168, 212, 0.85)' : 'rgba(187, 247, 208, 0.85)';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = isDC ? '#f9a8d4' : '#86efac';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.bezierCurveTo(cpX1, cpY1, cpX2, cpY2, x2, y2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+    }
+
+    // 입자 (전류 흐름)
+    const cs = computeChargeState();
+    const flowRate = state.running ? cs.Pcharge / m.maxKW : 0; // 0~1
+    const particleColor = isDC ? '#f9a8d4' : '#86efac';
+
+    for (const p of state.particles) {
+        const t = p.s;
+        // 베지어 위 위치
+        const px = bezier(t, x1, cpX1, cpX2, x2);
+        const py = bezier(t, y1, cpY1, cpY2, y2);
+        ctx.fillStyle = particleColor;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = particleColor;
+        ctx.beginPath();
+        ctx.arc(px, py, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    // 커넥터 (양 끝)
+    drawConnector(x1, y1, isDC, false);
+    drawConnector(x2, y2, isDC, true);
+
+    // 전류·전압 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#86efac';
+    const midX = bezier(0.5, x1, cpX1, cpX2, x2);
+    const midY = bezier(0.5, y1, cpY1, cpY2, y2);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, midX - 50, midY - 14, 100, 28, 6);
+    ctx.fill();
+    ctx.strokeStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.fillText(`${cs.Igrid.toFixed(1)} A`, midX, midY - 4);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillText(`${m.v} V`, midX, midY + 8);
+
+    ctx.restore();
+}
+
+function drawConnector(x, y, isDC, isCar) {
+    ctx.save();
+    ctx.fillStyle = isDC ? '#a855f7' : '#10b981';
+    ctx.strokeStyle = isDC ? '#f9a8d4' : '#86efac';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function bezier(t, p0, p1, p2, p3) {
+    const u = 1 - t;
+    return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+}
+
+// ===== 충전 곡선 (시간 vs I·V) =====
+function drawCurve() {
+    const W = curveCv.width, H = curveCv.height;
+    cctx.clearRect(0, 0, W, H);
+
+    // 배경
+    cctx.fillStyle = '#050714';
+    cctx.fillRect(0, 0, W, H);
+
+    const padL = 50, padR = 50, padT = 22, padB = 32;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    // 축
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    cctx.lineWidth = 1;
+    cctx.beginPath();
+    cctx.moveTo(padL, padT); cctx.lineTo(padL, padT + plotH); cctx.lineTo(padL + plotW, padT + plotH);
+    cctx.stroke();
+
+    // 격자
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    for (let i = 1; i <= 4; i++) {
+        const yy = padT + plotH * i / 4;
+        cctx.beginPath(); cctx.moveTo(padL, yy); cctx.lineTo(padL + plotW, yy); cctx.stroke();
+    }
+    for (let i = 1; i <= 5; i++) {
+        const xx = padL + plotW * i / 5;
+        cctx.beginPath(); cctx.moveTo(xx, padT); cctx.lineTo(xx, padT + plotH); cctx.stroke();
+    }
+
+    // 이론 곡선 (SOC 기준): X = SOC 0~100, Y = I 비율, V 비율
+    // 좌 Y축: 전류 비율 (0~1), 우 Y축: 전압 비율
+    const m = MODES[state.mode];
+    const N = 200;
+    // 전류 곡선 (CC: 1.0, CV: 지수 감소)
+    cctx.strokeStyle = '#86efac';
+    cctx.shadowBlur = 8;
+    cctx.shadowColor = '#86efac';
+    cctx.lineWidth = 2;
+    cctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const soc = (i / N) * 100;
+        let ratio;
+        if (soc < 80) ratio = soc < 5 ? 0.5 + soc / 10 : 1.0;
+        else {
+            const x = (soc - 80) / 20;
+            ratio = Math.max(0.05, Math.exp(-2.8 * x));
+        }
+        const px = padL + (soc / 100) * plotW;
+        const py = padT + plotH - ratio * plotH;
+        if (i === 0) cctx.moveTo(px, py);
+        else cctx.lineTo(px, py);
+    }
+    cctx.stroke();
+    cctx.shadowBlur = 0;
+
+    // 전압 곡선 (SOC에 따른 셀 전압 변화 → 정규화)
+    cctx.strokeStyle = '#67e8f9';
+    cctx.lineWidth = 1.5;
+    cctx.setLineDash([5, 4]);
+    cctx.beginPath();
+    const vMin = cellVoltagePU(0), vMax = cellVoltagePU(100);
+    for (let i = 0; i <= N; i++) {
+        const soc = (i / N) * 100;
+        const v = cellVoltagePU(soc);
+        const ratio = (v - vMin) / (vMax - vMin);
+        const px = padL + (soc / 100) * plotW;
+        const py = padT + plotH - ratio * plotH;
+        if (i === 0) cctx.moveTo(px, py);
+        else cctx.lineTo(px, py);
+    }
+    cctx.stroke();
+    cctx.setLineDash([]);
+
+    // 80% 라인 (CC→CV 분기)
+    const knee = padL + 0.80 * plotW;
+    cctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+    cctx.lineWidth = 1.5;
+    cctx.setLineDash([5, 4]);
+    cctx.beginPath();
+    cctx.moveTo(knee, padT); cctx.lineTo(knee, padT + plotH);
+    cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.fillStyle = '#fcd34d';
+    cctx.textAlign = 'center';
+    cctx.fillText('CC → CV 80%', knee, padT - 6);
+
+    // 현재 SOC 위치 마커
+    const curX = padL + (state.soc / 100) * plotW;
+    cctx.strokeStyle = state.running ? '#fda4af' : '#94a3b8';
+    cctx.lineWidth = 2;
+    cctx.shadowBlur = state.running ? 10 : 0;
+    cctx.shadowColor = '#fda4af';
+    cctx.beginPath();
+    cctx.moveTo(curX, padT); cctx.lineTo(curX, padT + plotH);
+    cctx.stroke();
+    cctx.shadowBlur = 0;
+    // 마커 원
+    cctx.fillStyle = state.running ? '#fb7185' : '#94a3b8';
+    cctx.beginPath(); cctx.arc(curX, padT + 8, 4, 0, Math.PI * 2); cctx.fill();
+
+    // 축 라벨
+    cctx.font = '10px ui-monospace, monospace';
+    cctx.fillStyle = '#94a3b8';
+    cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+    cctx.fillText('SOC [%]', padL + plotW / 2, padT + plotH + 14);
+
+    cctx.textAlign = 'right'; cctx.textBaseline = 'middle';
+    for (let i = 0; i <= 5; i++) {
+        const soc = i * 20;
+        const xx = padL + (soc / 100) * plotW;
+        cctx.fillText(`${soc}`, xx, padT + plotH + 14);
+    }
+
+    // 좌측 Y축 (전류)
+    cctx.save();
+    cctx.translate(padL - 36, padT + plotH / 2);
+    cctx.rotate(-Math.PI / 2);
+    cctx.fillStyle = '#86efac';
+    cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+    cctx.fillText('전류 I [pu]', 0, 0);
+    cctx.restore();
+    // 우측 Y축 (전압)
+    cctx.save();
+    cctx.translate(padL + plotW + 36, padT + plotH / 2);
+    cctx.rotate(Math.PI / 2);
+    cctx.fillStyle = '#67e8f9';
+    cctx.textAlign = 'center'; cctx.textBaseline = 'middle';
+    cctx.fillText('전압 V (셀)', 0, 0);
+    cctx.restore();
+
+    // 좌측 눈금
+    cctx.fillStyle = '#86efac';
+    cctx.textAlign = 'right'; cctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const yy = padT + plotH - (i / 4) * plotH;
+        cctx.fillText(`${(i/4).toFixed(1)}`, padL - 6, yy);
+    }
+
+    // 우측 눈금 (V)
+    cctx.fillStyle = '#67e8f9';
+    cctx.textAlign = 'left'; cctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const yy = padT + plotH - (i / 4) * plotH;
+        const v = vMin + (vMax - vMin) * (i / 4);
+        cctx.fillText(`${v.toFixed(2)}V`, padL + plotW + 6, yy);
+    }
+
+    // 범례
+    cctx.font = 'bold 10px ui-monospace, monospace';
+    cctx.textAlign = 'left'; cctx.textBaseline = 'top';
+    cctx.fillStyle = '#86efac';
+    cctx.fillText('━ 전류 (CC 일정 → CV 감소)', padL + 6, padT + 4);
+    cctx.fillStyle = '#67e8f9';
+    cctx.fillText('┄ 셀 전압 (3.3 → 4.15 V)', padL + 6, padT + 18);
+
+    cctx.restore();
+}
+
+// ===== 입자 업데이트 =====
+function updateParticles(dt) {
+    const m = MODES[state.mode];
+    const cs = computeChargeState();
+    const flowRatio = state.running ? Math.max(0.05, cs.Pcharge / m.maxKW) : 0;
+
+    // 새 입자 추가
+    if (state.running) {
+        const targetCount = Math.floor(8 + 16 * flowRatio);
+        const spawnRate = 4 + 12 * flowRatio; // 초당
+        if (state.particles.length < targetCount && Math.random() < spawnRate * dt) {
+            state.particles.push({ s: 0 });
+        }
+    }
+
+    // 이동
+    const speed = 0.55 * flowRatio;
+    for (const p of state.particles) {
+        p.s += speed * dt;
+    }
+    // 제거
+    state.particles = state.particles.filter(p => p.s < 1);
+}
+
+// ===== 시뮬레이션 스텝 =====
+function simulationStep(realDt) {
+    if (!state.running) return;
+    // 가속된 시뮬 시간
+    const simDt = realDt * state.speed;
+    state.simTimeS += simDt;
+
+    // 충전: dSOC = (Pcharge × dt[h]) / cap × 100
+    const cs = computeChargeState();
+    const dE = cs.Pcharge * (simDt / 3600); // kWh
+    const dSoc = (dE / state.cap) * 100;
+    state.soc = Math.min(100, state.soc + dSoc);
+
+    // 셀 온도 (간이 모델): 전력 비례 증가, 자연 냉각
+    const m = MODES[state.mode];
+    const heatGen = (cs.Pcharge / Math.max(m.maxKW, 1)) * 0.04 * simDt; // °C/s
+    const ambient = 22;
+    const cooling = (state.cellTemp - ambient) * 0.0015 * simDt;
+    state.cellTemp = Math.max(ambient, state.cellTemp + heatGen - cooling);
+
+    // 100% 도달 시 정지
+    if (state.soc >= 100) {
+        state.soc = 100;
+        state.running = false;
+        updateButtons();
+    }
+}
+
+// ===== UI 업데이트 =====
+function updateLiveChips() {
+    const m = MODES[state.mode];
+    const cs = computeChargeState();
+    $('pVal').textContent  = `${cs.Pcharge.toFixed(1)} kW`;
+    $('iVal').textContent  = `${cs.Igrid.toFixed(1)} A`;
+    $('socVal').textContent = `${state.soc.toFixed(1)} %`;
+
+    const t = timeTo80();
+    let tDisp;
+    if (state.soc >= 80) tDisp = '도달';
+    else if (t < 60) tDisp = `${t.toFixed(0)} s`;
+    else if (t < 3600) tDisp = `${Math.floor(t/60)} m ${Math.floor(t%60)} s`;
+    else tDisp = `${Math.floor(t/3600)} h ${Math.floor((t%3600)/60)} m`;
+    $('timeVal').textContent = tDisp;
+
+    // 플래시 효과
+    const pill = $('pill-p');
+    pill.classList.toggle('flash', state.running);
+    const pillTime = $('pill-time');
+    pillTime.classList.toggle('warn', state.soc < 80 && state.running);
+    pillTime.classList.toggle('flash', state.soc >= 80);
+    const pillSoc = $('pill-soc');
+    pillSoc.classList.toggle('flash', state.soc >= 80);
+    const pillI = $('pill-i');
+    pillI.classList.toggle('flash', state.running);
+    pillI.classList.toggle('danger', state.cellTemp > 48);
+}
+
+function updateButtons() {
+    $('btnRun').textContent = state.running ? '⏸ 충전 중...' : (state.soc >= 100 ? '✓ 완료' : '▶ 충전 시작');
+}
+
+// ===== 루프 =====
+let lastTime = 0;
+function loop(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = Math.min(0.1, (ts - lastTime) / 1000);
+    lastTime = ts;
+    state.t += dt;
+    state.flowPhase += dt;
+
+    simulationStep(dt);
+    updateParticles(dt);
+    drawMain();
+    drawCurve();
+    updateLiveChips();
+
+    requestAnimationFrame(loop);
+}
+
+// ===== 이벤트 =====
+document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(b => {
+            b.classList.remove('active', 'ac', 'dc');
+        });
+        const kind = btn.dataset.kind;
+        btn.classList.add('active', kind);
+        state.mode = btn.dataset.mode;
+        $('modeDesc').textContent = MODES[state.mode].desc;
+        // 모드 변경 시 입자 초기화
+        state.particles = [];
+    });
+});
+
+$('soc0').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.soc0 = v;
+    $('socDisp').textContent = v;
+    if (!state.running) state.soc = v;
+});
+
+$('cap').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.cap = v;
+    $('capDisp').textContent = v;
+});
+
+$('speed').addEventListener('input', e => {
+    const v = +e.target.value;
+    state.speed = v;
+    $('spdDisp').textContent = v;
+});
+
+$('btnRun').addEventListener('click', () => {
+    if (state.soc >= 100) {
+        state.soc = state.soc0;
+        state.cellTemp = 22;
+    }
+    state.running = !state.running;
+    updateButtons();
+});
+
+$('btnPause').addEventListener('click', () => {
+    state.running = false;
+    updateButtons();
+});
+
+$('btnReset').addEventListener('click', () => {
+    state.running = false;
+    state.soc = state.soc0;
+    state.cellTemp = 22;
+    state.simTimeS = 0;
+    state.particles = [];
+    updateButtons();
+});
+
+// 초기화
+resize();
+updateButtons();
+
+// 헤더 등장
+if (typeof gsap !== 'undefined') {
+    gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+    gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.5, stagger: 0.08, delay: 0.2, ease: 'power2.out' });
+    gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    gsap.from('#controlPanel', { x: 24, opacity: 0, duration: 0.7, delay: 0.4, ease: 'power3.out' });
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

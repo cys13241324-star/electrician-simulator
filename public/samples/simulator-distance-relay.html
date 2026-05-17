@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>거리 계전기(Distance Relay) 시뮬레이터 · R-X · Mho · Quad</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(168, 139, 250, 0.14), transparent),
+        radial-gradient(1100px 600px at 92% 110%, rgba(125, 211, 252, 0.12), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 16% 24%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 62% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 82% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 78%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 74% 44%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 44% 58%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 86%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 620px 620px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(168,139,250,0.50), rgba(125,211,252,0.40), rgba(244,114,182,0.40));
+    box-shadow: 0 30px 100px -20px rgba(168, 139, 250, 0.32), 0 0 40px rgba(125, 211, 252, 0.14);
+}
+canvas#mainCanvas {
+    display: block;
+    width: 100%;
+    height: 420px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#rxCanvas {
+    display: block;
+    width: 100%;
+    height: 440px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #a78bfa; box-shadow: 0 0 12px #a78bfa;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #a78bfa; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(168,139,250,0.4), rgba(125,211,252,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c4b5fd, #bae6fd, #f9a8d4);
+    box-shadow: 0 0 22px rgba(168, 139, 250, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-loc   { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-zl    { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.chip-zs    { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.55); color: #f9a8d4; }
+.chip-ang   { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.55); color: #fde68a; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(168, 139, 250, 0.7);
+    box-shadow: 0 0 24px rgba(168, 139, 250, 0.45);
+}
+.live-pill.zone1 {
+    border-color: rgba(244, 63, 94, 0.85);
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.45);
+    background: linear-gradient(135deg, rgba(244,63,94,0.16), rgba(15,23,42,0.85));
+}
+.live-pill.zone2 {
+    border-color: rgba(251, 191, 36, 0.85);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.45);
+    background: linear-gradient(135deg, rgba(251,191,36,0.16), rgba(15,23,42,0.85));
+}
+.live-pill.zone3 {
+    border-color: rgba(125, 211, 252, 0.85);
+    box-shadow: 0 0 22px rgba(125, 211, 252, 0.45);
+    background: linear-gradient(135deg, rgba(125,211,252,0.16), rgba(15,23,42,0.85));
+}
+.live-pill.trip {
+    border-color: rgba(244, 63, 94, 0.95);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #c4b5fd, #bae6fd, #f9a8d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(168,139,250,0.16), rgba(125,211,252,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #ede9fe; }
+.preset-btn {
+    background: linear-gradient(135deg, rgba(168,139,250,0.18), rgba(125,211,252,0.18));
+    border: 1px solid rgba(168,139,250,0.45);
+    color: #c4b5fd;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(125,211,252,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(168,139,250,0.45);
+}
+.char-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.3);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.char-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(139,92,246,0.25));
+    border-color: rgba(168, 139, 250, 0.85);
+    color: #ede9fe;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.zone-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.zone-card.z1 {
+    background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(15,23,42,0.75));
+    border-color: rgba(244, 63, 94, 0.75);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.4);
+    transform: translateY(-2px);
+}
+.zone-card.z2 {
+    background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(15,23,42,0.75));
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.32);
+    transform: translateY(-2px);
+}
+.zone-card.z3 {
+    background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(15,23,42,0.75));
+    border-color: rgba(125, 211, 252, 0.7);
+    box-shadow: 0 0 18px rgba(125, 211, 252, 0.32);
+    transform: translateY(-2px);
+}
+.legend-dot {
+    display: inline-block;
+    width: 8px; height: 8px; border-radius: 2px;
+    margin-right: 4px;
+    vertical-align: 1px;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-violet-300">
+            <span class="pulse-dot"></span>
+            DISTANCE RELAY (21) · MHO · QUAD · ZONE 1 / 2 / 3 · TRANSMISSION LINE PROTECTION
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-violet-200 via-sky-200 to-pink-200 bg-clip-text text-transparent">
+            거리 계전기(21) 시뮬레이터 — R-X 평면 동작 특성
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            계전기 설치점에서 측정한 <span class="text-violet-300 font-semibold">임피던스 Z = V / I</span> 가
+            <span class="text-rose-300 font-semibold">Zone 1 (즉시 트립, 라인 85%)</span>,
+            <span class="text-amber-300 font-semibold">Zone 2 (0.3s 지연, 라인 125%)</span>,
+            <span class="text-sky-300 font-semibold">Zone 3 (1.0s 백업)</span> 의 동작 영역에 들어오면 해당 시간 후 차단기를 동작시킵니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-z">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">측정 임피던스 |Z|</p>
+            <p class="mt-1 text-lg font-bold"><span id="zDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">Ω</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-zone">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">Zone 픽업</p>
+            <p class="mt-1 text-lg font-bold" id="zoneDisp"><span class="text-emerald-300">● 없음</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-t">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">동작 시간 t<sub>op</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="tDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-state">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">CB 상태</p>
+            <p class="mt-1 text-lg font-bold" id="stateDisp"><span class="text-emerald-300">● 정상</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚡ DISTANCE TRIP — 측정 임피던스가 동작 영역 진입 → CB OPEN
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+
+            <!-- 메인 캔버스: 송전선로 모식도 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="mainCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">SOURCE → BUS A · 21 RELAY · LINE Z<sub>L</sub> · BUS B → REMOTE · 사고 위치 ★</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#f43f5e"></span>Zone 1</span>
+                        <span class="text-amber-300"><span class="legend-dot" style="background:#fbbf24"></span>Zone 2</span>
+                        <span class="text-sky-300"><span class="legend-dot" style="background:#7dd3fc"></span>Zone 3</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="z1">Zone 1 사고 (50%)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="z2">Zone 2 사고 (100%)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="z3">Zone 3 사고 (140%)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="load">정상 부하</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                </div>
+            </div>
+
+            <!-- R-X 평면 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="rxCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">R-X PLANE · 측정 Z 의 궤적 + 동작 특성 (Mho 원 / Quad 사각)</span>
+                    <span id="charBadge" class="text-[11px] px-2 py-0.5 rounded-full border border-violet-400/50 text-violet-200 bg-violet-500/10">Mho</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="rxCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Zone 카드 -->
+            <div class="glass rounded-2xl p-5" id="zoneListCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">⏱</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-sky-200 bg-clip-text text-transparent">Zone 협조 (Stepped-Distance Scheme)</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3 text-[11px]" id="zoneList">
+                    <div class="zone-card rounded-lg p-3" data-zone="1">
+                        <p class="font-bold text-rose-300">Zone 1 · 즉시(0s)</p>
+                        <p class="text-slate-400 mt-0.5">정정: 라인의 <b>80~85%</b> (말단 오차 마진 확보)</p>
+                        <p class="text-slate-400 mt-1">언더리치(under-reach) · 보호 구간 100% 책임 안 짐</p>
+                    </div>
+                    <div class="zone-card rounded-lg p-3" data-zone="2">
+                        <p class="font-bold text-amber-300">Zone 2 · 0.3s 지연</p>
+                        <p class="text-slate-400 mt-0.5">정정: 라인의 <b>120~150%</b> (Z1 미보호 구간 + 다음 모선 일부)</p>
+                        <p class="text-slate-400 mt-1">시간 협조로 다음 라인 보호와 선택차단</p>
+                    </div>
+                    <div class="zone-card rounded-lg p-3" data-zone="3">
+                        <p class="font-bold text-sky-300">Zone 3 · 1.0s 백업</p>
+                        <p class="text-slate-400 mt-0.5">정정: 라인의 <b>200%+</b> (다음 라인 백업)</p>
+                        <p class="text-slate-400 mt-1">원거리 백업 · 부하 영역 침범 주의(Load encroachment)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-violet-200 to-sky-200 bg-clip-text text-transparent">측정 임피던스와 동작 특성</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-violet-200">측정 임피던스</p>
+                        <div class="math-container mt-2">$$Z_{\text{meas}} = \frac{V_{\text{relay}}}{I_{\text{relay}}} = m \cdot Z_L + Z_f$$</div>
+                        <p class="text-[10px] text-slate-500 mt-2">m: 사고점 거리(라인 % / 100), Z<sub>L</sub>: 라인 임피던스</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-rose-200">Mho 특성 (방향성 원)</p>
+                        <div class="math-container mt-2">$$|Z - Z_r/2| \le |Z_r|/2$$</div>
+                        <p class="text-[10px] text-slate-500 mt-2">원점을 지나고 정정 임피던스 Z<sub>r</sub> 을 지나는 원</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">Quad(사각) 특성</p>
+                        <div class="math-container mt-2">$$0 \le R_{\text{meas}} \le R_{\text{set}}, \quad 0 \le X_{\text{meas}} \le X_{\text{set}}$$</div>
+                        <p class="text-[10px] text-slate-500 mt-2">아크 저항 보상에 유리 · 부하 영역 회피 쉬움</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-sky-200">동작 시간(Zone 협조)</p>
+                        <div class="math-container mt-2">$$t_{op} = \begin{cases} 0 \,\text{s} & \text{Z1}\\ 0.3\,\text{s} & \text{Z2}\\ 1.0\,\text{s} & \text{Z3}\end{cases}$$</div>
+                        <p class="text-[10px] text-slate-500 mt-2">하위 보호 협조 · 가장 안쪽 Zone 우선</p>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <p class="text-[11px] text-slate-400">
+                    <strong>핵심:</strong> 거리 계전기는 전류 크기가 아니라
+                    <span class="text-violet-300 font-bold">V/I 가 그리는 R-X 평면 상의 점</span> 으로 사고 거리를 추정합니다.
+                    부하는 큰 |Z| (보통 라인 임피던스보다 훨씬 큼) 영역에 있고, 사고는 라인 임피던스 각도 ≈ 75~85° 부근의 작은 |Z| 영역에 위치합니다.
+                </p>
+            </div>
+
+            <!-- 특성 비교 카드 -->
+            <div class="glass rounded-2xl p-5" id="featureCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🛡</span>
+                    <span class="bg-gradient-to-r from-pink-200 to-violet-200 bg-clip-text text-transparent">실무 포인트</span>
+                </h3>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">Mho</span> · 방향성 내장 · 부하 영역에 덜 침범 (소규모 송전)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">Quad</span> · 아크 저항 보상 (R 방향으로 넓음) · 장거리 송전</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">Under-reach</span> · Z1 = 85% 로 정정해 말단 인접선 사고 시 오동작 방지</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">Z2 시간 협조</span> · 인접 보호 Z1 보다 항상 0.3~0.5s 느리게</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-sky-300">사용</span> · 154kV 이상 송전선 표준 보호 · 21번 ANSI</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">Power Swing Block</span> · 전력동요 시 오동작 방지 (별도 PSB 로직)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-violet-200">변수 조절</h2>
+
+            <div class="chip-loc chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>사고 위치 m</span><span id="locVal" class="font-mono text-base">50</span></label>
+                <input type="range" id="loc" min="0" max="150" step="1" value="50" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">% · 라인 길이 대비 (0=계전기측 · 100=라인 말단 · &gt;100=인접선)</p>
+            </div>
+
+            <div class="chip-zl chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>라인 임피던스 |Z<sub>L</sub>|</span><span id="zlVal" class="font-mono text-base">10.0</span></label>
+                <input type="range" id="zl" min="2" max="30" step="0.5" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 라인 전체 길이의 임피던스</p>
+            </div>
+
+            <div class="chip-ang chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>라인 각도 θ<sub>L</sub></span><span id="angVal" class="font-mono text-base">80</span></label>
+                <input type="range" id="ang" min="60" max="89" step="1" value="80" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">° · 보통 75~85 (X/R 비율)</p>
+            </div>
+
+            <div class="chip-zs chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>아크 저항 R<sub>f</sub></span><span id="rfVal" class="font-mono text-base">0.0</span></label>
+                <input type="range" id="rf" min="0" max="8" step="0.1" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · 사고 저항 (R 방향 옵셋)</p>
+            </div>
+
+            <div class="chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">동작 특성 종류</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="char-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-char="mho">Mho 원</button>
+                    <button class="char-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-char="quad">Quad 사각</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">Mho: 방향성 내장 / Quad: 아크 보상 우수</p>
+            </div>
+
+            <div class="chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">시뮬 모드</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="mode-btn char-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-mode="fault">사고</button>
+                    <button class="mode-btn char-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="load">정상 부하</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">부하: |Z| 크고 각도 작음 → 동작 영역 밖</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-violet-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-rose-300 font-bold">Z1 = 0.85 Z<sub>L</sub></span> · 즉시 트립</p>
+                <p class="feature-row rounded-md p-2"><span class="text-amber-300 font-bold">Z2 = 1.25 Z<sub>L</sub></span> · 0.3s 지연</p>
+                <p class="feature-row rounded-md p-2"><span class="text-sky-300 font-bold">Z3 = 2.50 Z<sub>L</sub></span> · 1.0s 백업</p>
+                <p class="feature-row rounded-md p-2">사고: <span class="text-pink-300 font-bold">|Z| 작고 θ 큼</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const mc = $('mainCanvas');
+const mctx = mc.getContext('2d');
+const rxc = $('rxCanvas');
+const rxctx = rxc.getContext('2d');
+
+// Zone 정정 비율 (라인 임피던스 대비)
+const ZONE_REACH = { z1: 0.85, z2: 1.25, z3: 2.50 };
+const ZONE_TIME  = { z1: 0.00, z2: 0.30, z3: 1.00 };
+
+const state = {
+    loc: 50,       // 사고 위치 (% of line)
+    Zl: 10.0,      // 라인 임피던스 |ZL|
+    angL: 80,      // 라인 각도 (deg)
+    Rf: 0.0,       // 아크 저항
+    char: 'mho',   // 'mho' | 'quad'
+    mode: 'fault', // 'fault' | 'load'
+    pickedZone: 0, // 0=none, 1/2/3
+    timer: 0,      // 픽업 후 흘러간 시간(s)
+    tripped: false,
+    tripZone: 0,
+    t: 0,          // frames
+    parts: []
+};
+
+// 측정 Z 트레일
+const trail = [];
+const TRAIL_MAX = 60;
+
+function resize() {
+    mc.width = mc.parentElement.clientWidth - 2;
+    mc.height = 420;
+    rxc.width = rxc.parentElement.clientWidth - 2;
+    rxc.height = 440;
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function seedParticles() {
+    state.parts = [];
+    for (let i = 0; i < 22; i++) {
+        state.parts.push({ p: Math.random(), size: 1.2 + Math.random() * 0.9 });
+    }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 계산 ============
+function computeZ() {
+    // 부하 모드: 큰 |Z|, 작은 각도(20~30°)
+    if (state.mode === 'load') {
+        const mag = state.Zl * 2.6;     // 라인보다 훨씬 큼
+        const ang = 22 * Math.PI / 180; // 작은 각도
+        return { mag, ang, R: mag * Math.cos(ang), X: mag * Math.sin(ang) };
+    }
+    // 사고 모드: Z_meas = m * ZL + Rf (Rf 는 순수 저항)
+    const m = state.loc / 100;
+    const angL = state.angL * Math.PI / 180;
+    const Rline = m * state.Zl * Math.cos(angL);
+    const Xline = m * state.Zl * Math.sin(angL);
+    const R = Rline + state.Rf;
+    const X = Xline;
+    const mag = Math.hypot(R, X);
+    const ang = Math.atan2(X, R);
+    return { mag, ang, R, X };
+}
+
+// Mho 원 안에 있는지: |Z - Zr/2| <= |Zr|/2  (Zr 은 라인 각도, reach = ZONE_REACH * ZL)
+function inMho(Zr_R, Zr_X, R, X) {
+    const cx = Zr_R / 2, cy = Zr_X / 2;
+    const r2 = (Zr_R * Zr_R + Zr_X * Zr_X) / 4;
+    const dx = R - cx, dy = X - cy;
+    return (dx * dx + dy * dy) <= r2;
+}
+// Quad 영역: 회전된 좌표계에서 0 <= u <= reachX (선 방향), |v| <= reachR (R 방향)
+// 간이 모델: 0 <= X <= reachX  AND  0 <= R <= reachR
+function inQuad(reachR, reachX, R, X) {
+    return R >= -0.3 && R <= reachR && X >= -0.3 && X <= reachX;
+}
+
+function zonePickup(R, X) {
+    const angL = state.angL * Math.PI / 180;
+    const Zl = state.Zl;
+    // 사고 모드/부하 모드 둘 다 검사. 부하는 일반적으로 영역 밖.
+    for (const key of ['z1','z2','z3']) {
+        const reach = ZONE_REACH[key] * Zl;
+        const Zr_R = reach * Math.cos(angL);
+        const Zr_X = reach * Math.sin(angL);
+        if (state.char === 'mho') {
+            if (inMho(Zr_R, Zr_X, R, X)) return { zone: parseInt(key[1]), reach, Zr_R, Zr_X };
+        } else {
+            const reachR = Math.max(2.0, state.Zl * 0.45) * (key==='z1'?0.85:key==='z2'?1.25:2.5);
+            // Quad: R 방향 폭은 라인의 ~45%, X 방향은 reach * sin(angL)
+            if (inQuad(reachR, Zr_X, R, X)) return { zone: parseInt(key[1]), reach, Zr_R, Zr_X };
+        }
+    }
+    return { zone: 0 };
+}
+
+function computeState() {
+    state.loc = +$('loc').value;
+    state.Zl  = +$('zl').value;
+    state.angL= +$('ang').value;
+    state.Rf  = +$('rf').value;
+
+    const z = computeZ();
+    const pick = zonePickup(z.R, z.X);
+
+    if (!state.tripped) {
+        if (pick.zone > 0) {
+            if (state.pickedZone !== pick.zone) {
+                // 새로운 Zone 진입: 타이머 리셋
+                state.pickedZone = pick.zone;
+                state.timer = 0;
+            } else {
+                state.timer += 1/60;
+            }
+            const requiredT = ZONE_TIME['z' + state.pickedZone];
+            if (state.timer >= requiredT) {
+                state.tripped = true;
+                state.tripZone = state.pickedZone;
+                triggerTripEffects();
+            }
+        } else {
+            state.pickedZone = 0;
+            state.timer = 0;
+        }
+    }
+
+    // 트레일 (사고 모드일 때만 트레일 기록 — 시간 흐름에 따라 점이 안정화)
+    trail.push({ R: z.R, X: z.X, age: 0 });
+    for (const t of trail) t.age++;
+    while (trail.length > TRAIL_MAX) trail.shift();
+
+    return z;
+}
+
+function updateDisplays(z) {
+    $('locVal').textContent = state.loc;
+    $('zlVal').textContent  = state.Zl.toFixed(1);
+    $('angVal').textContent = state.angL;
+    $('rfVal').textContent  = state.Rf.toFixed(1);
+
+    $('zDisp').textContent = z.mag.toFixed(2);
+
+    const pillZ = $('pill-z'), pillZone = $('pill-zone'), pillT = $('pill-t'), pillState = $('pill-state');
+    pillZ.classList.remove('zone1','zone2','zone3','trip');
+    pillZone.classList.remove('zone1','zone2','zone3','trip');
+    pillT.classList.remove('zone1','zone2','zone3','trip');
+    pillState.classList.remove('zone1','zone2','zone3','trip');
+
+    const zEl = $('zoneDisp'), tEl = $('tDisp'), sEl = $('stateDisp');
+    const reqT = state.pickedZone ? ZONE_TIME['z' + state.pickedZone] : null;
+
+    if (state.tripped) {
+        const cls = 'zone' + state.tripZone;
+        zEl.innerHTML = `<span class="text-rose-300">⚡ Zone ${state.tripZone} 트립</span>`;
+        tEl.textContent = ZONE_TIME['z' + state.tripZone].toFixed(2);
+        sEl.innerHTML = '<span class="text-rose-300">⚡ TRIP · OPEN</span>';
+        pillState.classList.add('trip');
+        pillT.classList.add('trip');
+        pillZone.classList.add('trip');
+        pillZ.classList.add('trip');
+    } else if (state.pickedZone > 0) {
+        const cls = 'zone' + state.pickedZone;
+        const name = state.pickedZone === 1 ? 'Zone 1' : state.pickedZone === 2 ? 'Zone 2' : 'Zone 3';
+        const colorTxt = state.pickedZone === 1 ? 'text-rose-300' : state.pickedZone === 2 ? 'text-amber-300' : 'text-sky-300';
+        zEl.innerHTML = `<span class="${colorTxt}">▲ ${name} 픽업</span>`;
+        // 남은 시간 표시
+        const remain = Math.max(0, reqT - state.timer);
+        tEl.textContent = reqT === 0 ? '0.00' : (reqT.toFixed(2) + ' (남:' + remain.toFixed(2) + ')');
+        sEl.innerHTML = `<span class="${colorTxt}">▲ ${name} 타이머 동작</span>`;
+        pillZ.classList.add(cls);
+        pillZone.classList.add(cls);
+        pillT.classList.add(cls);
+        pillState.classList.add(cls);
+    } else {
+        zEl.innerHTML = '<span class="text-emerald-300">● 없음</span>';
+        tEl.textContent = '—';
+        sEl.innerHTML = '<span class="text-emerald-300">● 정상</span>';
+    }
+
+    $('alarmBanner').classList.toggle('hidden', !state.tripped);
+
+    // Zone 카드 하이라이트
+    const zoneCards = document.querySelectorAll('#zoneList .zone-card');
+    zoneCards.forEach(el => el.classList.remove('z1','z2','z3'));
+    if (state.tripped) {
+        zoneCards[state.tripZone - 1].classList.add('z' + state.tripZone);
+    } else if (state.pickedZone > 0) {
+        zoneCards[state.pickedZone - 1].classList.add('z' + state.pickedZone);
+    }
+
+    // 특성 뱃지
+    $('charBadge').textContent = state.char === 'mho' ? 'Mho · 방향성 원' : 'Quad · 사각 특성';
+}
+
+// ============ 메인 캔버스: 송전선로 ============
+function drawMainBg() {
+    const W = mc.width, H = mc.height;
+    mctx.save();
+    const g = mctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0a0e1e');
+    g.addColorStop(1, '#070a18');
+    mctx.fillStyle = g;
+    mctx.fillRect(0, 0, W, H);
+
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke();
+    }
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(196, 181, 253, 0.55)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillText('▮ TRANSMISSION LINE · 21 RELAY @ BUS A · 사고점이 라인 위치(0~150%)에 표시', 12, 10);
+    mctx.restore();
+}
+
+function drawLineSchematic() {
+    const W = mc.width, H = mc.height;
+    const yLine = H * 0.50;          // 메인 라인
+    const x0 = 80;                   // SOURCE
+    const x1 = 180;                  // BUS A (relay 위치)
+    const x2 = W - 280;              // BUS B (라인 말단 = 100%)
+    const x3 = W - 100;              // REMOTE (인접선)
+    const z2RightX = x2 + (x3 - x2) * 0.5;  // Zone2 reach point in physical space
+
+    // SOURCE 박스
+    mctx.save();
+    mctx.shadowBlur = 12;
+    mctx.shadowColor = 'rgba(125, 211, 252, 0.5)';
+    const sg = mctx.createLinearGradient(x0 - 26, yLine - 26, x0 + 26, yLine + 26);
+    sg.addColorStop(0, '#0c4a6e'); sg.addColorStop(1, '#082f49');
+    mctx.fillStyle = sg;
+    roundRect(mctx, x0 - 26, yLine - 26, 52, 52, 10); mctx.fill();
+    mctx.strokeStyle = 'rgba(125, 211, 252, 0.7)'; mctx.lineWidth = 1.5; mctx.stroke();
+    mctx.restore();
+    mctx.save();
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = '#bae6fd'; mctx.textAlign = 'center';
+    mctx.fillText('G', x0, yLine + 4);
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillText('SOURCE', x0, yLine + 44);
+    mctx.fillText('154 kV', x0, yLine + 56);
+    mctx.restore();
+
+    // Zone 색띠 (라인 위에 배경 띠)
+    // Zone 3 (가장 옅음, 0~250%) -> Zone 2 (옅음, 0~125%) -> Zone 1 (진함, 0~85%)
+    const lineLen = x2 - x1;
+    const stripeY = yLine - 16, stripeH = 32;
+    function drawZoneStrip(reachPct, color, alpha) {
+        const xEnd = x1 + lineLen * (reachPct / 100);
+        mctx.save();
+        mctx.fillStyle = color;
+        mctx.globalAlpha = alpha;
+        mctx.fillRect(x1, stripeY, xEnd - x1, stripeH);
+        mctx.restore();
+    }
+    drawZoneStrip(250, '#7dd3fc', 0.10);  // Zone3
+    drawZoneStrip(125, '#fbbf24', 0.12);  // Zone2
+    drawZoneStrip(85,  '#f43f5e', 0.16);  // Zone1
+
+    // Zone 경계 표시(점선)
+    function drawZoneBound(pct, color, label) {
+        const xx = x1 + lineLen * (pct / 100);
+        if (xx > x3 + 12) return;
+        mctx.save();
+        mctx.strokeStyle = color; mctx.lineWidth = 1.2;
+        mctx.setLineDash([4,3]);
+        mctx.beginPath(); mctx.moveTo(xx, stripeY - 8); mctx.lineTo(xx, stripeY + stripeH + 8); mctx.stroke();
+        mctx.setLineDash([]);
+        mctx.font = 'bold 9px ui-monospace, monospace';
+        mctx.fillStyle = color; mctx.textAlign = 'center';
+        mctx.fillText(label, xx, stripeY + stripeH + 22);
+        mctx.restore();
+    }
+    drawZoneBound(85,  '#f43f5e', 'Z1 85%');
+    drawZoneBound(125, '#fbbf24', 'Z2 125%');
+    drawZoneBound(250, '#7dd3fc', 'Z3 250%');
+
+    // 메인 라인
+    const tripBeforeFault = state.tripped; // 트립되면 사고점 왼쪽은 차단
+    mctx.save();
+    mctx.lineCap = 'round'; mctx.lineWidth = 3;
+    mctx.shadowBlur = state.tripped ? 0 : 10;
+    mctx.shadowColor = 'rgba(196, 181, 253, 0.6)';
+    mctx.strokeStyle = state.tripped ? 'rgba(148, 163, 184, 0.35)' : 'rgba(196, 181, 253, 0.85)';
+    mctx.beginPath();
+    mctx.moveTo(x0 + 26, yLine); mctx.lineTo(x3, yLine);
+    mctx.stroke();
+    mctx.restore();
+
+    // 모선 A (Relay 설치 위치 — 굵은 수직 막대)
+    function drawBus(x, color, label) {
+        mctx.save();
+        mctx.shadowBlur = 10; mctx.shadowColor = color;
+        mctx.strokeStyle = color; mctx.lineWidth = 5;
+        mctx.beginPath(); mctx.moveTo(x, yLine - 36); mctx.lineTo(x, yLine + 36); mctx.stroke();
+        mctx.font = 'bold 10px ui-monospace, monospace';
+        mctx.fillStyle = color; mctx.textAlign = 'center';
+        mctx.fillText(label, x, yLine - 46);
+        mctx.restore();
+    }
+    drawBus(x1, '#c4b5fd', 'BUS A');
+    drawBus(x2, '#bae6fd', 'BUS B');
+    drawBus(x3, '#94a3b8', 'REMOTE');
+
+    // 21 relay 박스 (BUS A 아래)
+    const ry = yLine + 70;
+    mctx.save();
+    mctx.shadowBlur = 16;
+    const relayCol = state.tripped ? 'rgba(244, 63, 94, 0.7)' :
+                     (state.pickedZone === 1 ? 'rgba(244,63,94,0.65)' :
+                      state.pickedZone === 2 ? 'rgba(251,191,36,0.65)' :
+                      state.pickedZone === 3 ? 'rgba(125,211,252,0.65)' :
+                      'rgba(168,139,250,0.5)');
+    mctx.shadowColor = relayCol;
+    const rg = mctx.createLinearGradient(x1 - 50, ry - 22, x1 + 50, ry + 22);
+    rg.addColorStop(0, '#1f2937'); rg.addColorStop(1, '#0f172a');
+    mctx.fillStyle = rg;
+    roundRect(mctx, x1 - 50, ry - 22, 100, 44, 9); mctx.fill();
+    mctx.strokeStyle = relayCol; mctx.lineWidth = 1.8; mctx.stroke();
+    mctx.restore();
+
+    // 21 relay LED
+    const led = state.tripped ? '#f43f5e' :
+                state.pickedZone === 1 ? '#f43f5e' :
+                state.pickedZone === 2 ? '#fbbf24' :
+                state.pickedZone === 3 ? '#7dd3fc' : '#34d399';
+    mctx.save();
+    mctx.shadowBlur = 12; mctx.shadowColor = led;
+    mctx.fillStyle = led;
+    mctx.beginPath(); mctx.arc(x1 - 38, ry - 12, 3.6 + Math.sin(state.t * 0.18) * 0.6, 0, Math.PI * 2); mctx.fill();
+    mctx.restore();
+
+    mctx.save();
+    mctx.font = 'bold 13px ui-monospace, monospace';
+    mctx.fillStyle = state.tripped ? '#fda4af' :
+                     state.pickedZone ? (state.pickedZone === 1 ? '#fda4af' : state.pickedZone === 2 ? '#fde68a' : '#bae6fd') : '#c4b5fd';
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText('21 · DIST', x1, ry - 4);
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(229, 231, 235, 0.7)';
+    mctx.fillText(`${state.char.toUpperCase()} · Z1=${(ZONE_REACH.z1 * state.Zl).toFixed(1)}Ω`, x1, ry + 12);
+    mctx.restore();
+
+    // PT/CT 표시 (작은 원 두 개)
+    mctx.save();
+    mctx.strokeStyle = 'rgba(168, 139, 250, 0.7)'; mctx.lineWidth = 1.4;
+    mctx.beginPath(); mctx.arc(x1 - 22, yLine + 28, 7, 0, Math.PI * 2); mctx.stroke();
+    mctx.beginPath(); mctx.arc(x1 + 22, yLine + 28, 7, 0, Math.PI * 2); mctx.stroke();
+    mctx.font = 'bold 8px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(196, 181, 253, 0.8)';
+    mctx.textAlign = 'center';
+    mctx.fillText('PT', x1 - 22, yLine + 31);
+    mctx.fillText('CT', x1 + 22, yLine + 31);
+    // 신호선 from PT/CT to relay
+    mctx.strokeStyle = 'rgba(168, 139, 250, 0.5)'; mctx.lineWidth = 1.1;
+    mctx.setLineDash([3, 3]);
+    mctx.beginPath();
+    mctx.moveTo(x1 - 22, yLine + 35); mctx.lineTo(x1 - 22, ry - 22);
+    mctx.moveTo(x1 + 22, yLine + 35); mctx.lineTo(x1 + 22, ry - 22);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    mctx.restore();
+
+    // CB (BUS A 바로 우측)
+    const cbX = x1 + 36;
+    drawCB(cbX, yLine, state.tripped);
+
+    // 사고 위치 마커 ★
+    if (state.mode === 'fault') {
+        const fx = x1 + lineLen * (state.loc / 100);
+        const fy = yLine;
+        const visible = fx <= x3 + 8;
+        if (visible) {
+            mctx.save();
+            // 별 모양 사고 표시
+            const sz = 14 + Math.sin(state.t * 0.22) * 2;
+            mctx.fillStyle = state.tripped ? '#f43f5e' : '#fbbf24';
+            mctx.shadowBlur = 22;
+            mctx.shadowColor = state.tripped ? 'rgba(244,63,94,0.85)' : 'rgba(251,191,36,0.85)';
+            drawStar(mctx, fx, fy, 5, sz, sz * 0.45);
+            mctx.fill();
+            mctx.restore();
+
+            // 거리 라벨
+            mctx.save();
+            mctx.font = 'bold 10px ui-monospace, monospace';
+            mctx.fillStyle = '#fde68a';
+            mctx.textAlign = 'center';
+            const measZ = (state.loc / 100) * state.Zl;
+            mctx.fillText(`★ ${state.loc}% · m·Z_L = ${measZ.toFixed(1)}Ω`, fx, fy - 28);
+
+            // 아크 저항 표시
+            if (state.Rf > 0.05) {
+                mctx.fillStyle = '#fda4af';
+                mctx.fillText(`Rf = ${state.Rf.toFixed(1)}Ω`, fx, fy + 50);
+            }
+            mctx.restore();
+        }
+    } else {
+        // 정상 부하 라벨
+        mctx.save();
+        mctx.font = 'bold 11px ui-monospace, monospace';
+        mctx.fillStyle = '#86efac';
+        mctx.textAlign = 'center';
+        mctx.fillText('● 정상 부하 (사고 없음)', (x2 + x3) / 2, yLine - 28);
+        mctx.restore();
+    }
+
+    // 전류 흐름 입자 (트립 안 됐을 때)
+    if (!state.tripped) {
+        const M = state.mode === 'fault' ? 1.0 : 0.3;
+        const baseSpeed = state.mode === 'fault' ? 4.5 : 1.8;
+        const flowColor = state.mode === 'fault' ? 'rgba(253, 164, 175, 0.95)' : 'rgba(186, 230, 253, 0.85)';
+        mctx.save();
+        mctx.globalCompositeOperation = 'lighter';
+        for (const p of state.parts) {
+            p.p = (p.p + baseSpeed / 1000) % 1;
+            const px = (x0 + 26) + p.p * (x3 - (x0 + 26));
+            // 사고점 너머는 표시 X (사고로 전류 일부 흡수)
+            if (state.mode === 'fault') {
+                const fx = x1 + (x2 - x1) * (state.loc / 100);
+                if (px > fx + 8) continue;
+            }
+            mctx.fillStyle = flowColor;
+            mctx.shadowBlur = 10; mctx.shadowColor = flowColor;
+            mctx.beginPath(); mctx.arc(px, yLine, p.size, 0, Math.PI * 2); mctx.fill();
+        }
+        mctx.restore();
+    }
+
+    // 픽업 진행 게이지 (Relay 박스 안)
+    if (state.pickedZone > 0 && !state.tripped) {
+        const reqT = ZONE_TIME['z' + state.pickedZone];
+        const prog = reqT > 0 ? Math.min(1, state.timer / reqT) : 1;
+        const gx = x1 - 44, gy = ry + 16, gw = 88, gh = 5;
+        mctx.save();
+        mctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        roundRect(mctx, gx, gy, gw, gh, 2.5); mctx.fill();
+        const gc = state.pickedZone === 1 ? '#f43f5e' : state.pickedZone === 2 ? '#fbbf24' : '#7dd3fc';
+        mctx.fillStyle = gc;
+        mctx.shadowBlur = 8; mctx.shadowColor = gc;
+        roundRect(mctx, gx, gy, gw * prog, gh, 2.5); mctx.fill();
+        mctx.restore();
+    }
+}
+
+function drawCB(x, y, opened) {
+    mctx.save();
+    mctx.shadowBlur = opened ? 16 : 8;
+    mctx.shadowColor = opened ? 'rgba(244,63,94,0.7)' : 'rgba(110, 231, 183, 0.5)';
+    const g = mctx.createLinearGradient(x - 14, y - 14, x + 14, y + 14);
+    g.addColorStop(0, '#1e293b'); g.addColorStop(1, '#0f172a');
+    mctx.fillStyle = g;
+    roundRect(mctx, x - 14, y - 14, 28, 28, 5); mctx.fill();
+    mctx.strokeStyle = opened ? 'rgba(244,63,94,0.85)' : 'rgba(110, 231, 183, 0.7)';
+    mctx.lineWidth = 1.4; mctx.stroke();
+    mctx.restore();
+
+    mctx.save();
+    mctx.fillStyle = 'rgba(229, 231, 235, 0.9)';
+    mctx.beginPath(); mctx.arc(x - 8, y, 2, 0, Math.PI * 2); mctx.fill();
+    mctx.beginPath(); mctx.arc(x + 8, y, 2, 0, Math.PI * 2); mctx.fill();
+    mctx.strokeStyle = opened ? 'rgba(244,63,94,0.95)' : 'rgba(110, 231, 183, 0.95)';
+    mctx.lineWidth = 2; mctx.lineCap = 'round';
+    mctx.shadowBlur = opened ? 12 : 6;
+    mctx.shadowColor = opened ? 'rgba(244,63,94,0.8)' : 'rgba(110, 231, 183, 0.6)';
+    mctx.beginPath();
+    if (opened) { mctx.moveTo(x - 8, y); mctx.lineTo(x + 6, y - 9); }
+    else { mctx.moveTo(x - 8, y); mctx.lineTo(x + 8, y); }
+    mctx.stroke();
+    mctx.restore();
+
+    mctx.save();
+    mctx.font = 'bold 8px ui-monospace, monospace';
+    mctx.fillStyle = opened ? '#fda4af' : '#6ee7b7';
+    mctx.textAlign = 'center';
+    mctx.fillText('52', x, y - 22);
+    mctx.fillText(opened ? 'OPEN' : 'CLOSED', x, y + 28);
+    mctx.restore();
+}
+
+function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+    let rot = -Math.PI / 2;
+    const step = Math.PI / spikes;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerR);
+    for (let i = 0; i < spikes; i++) {
+        let x = cx + Math.cos(rot) * outerR;
+        let y = cy + Math.sin(rot) * outerR;
+        ctx.lineTo(x, y);
+        rot += step;
+        x = cx + Math.cos(rot) * innerR;
+        y = cy + Math.sin(rot) * innerR;
+        ctx.lineTo(x, y);
+        rot += step;
+    }
+    ctx.closePath();
+}
+
+// ============ R-X 평면 캔버스 ============
+function drawRXPlane(z) {
+    const W = rxc.width, H = rxc.height;
+
+    rxctx.save();
+    const g = rxctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#070a18'); g.addColorStop(1, '#0a0e1e');
+    rxctx.fillStyle = g; rxctx.fillRect(0, 0, W, H);
+
+    rxctx.font = 'bold 10px ui-monospace, monospace';
+    rxctx.fillStyle = 'rgba(168, 139, 250, 0.85)';
+    rxctx.textAlign = 'left'; rxctx.textBaseline = 'top';
+    rxctx.fillText('◯ R-X PLANE · 가로 R(Ω) · 세로 X(Ω) · 동작 특성 + 측정 Z 점', 12, 10);
+    rxctx.restore();
+
+    // 플롯 영역
+    const padL = 60, padR = 30, padT = 36, padB = 40;
+    const x0 = padL, y0 = padT;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    // 스케일: Z3 가 보이도록 (라인 임피던스의 2.7배까지)
+    const span = state.Zl * 3.0;
+    const Rmax = span, Rmin = -span * 0.25;
+    const Xmax = span * 1.05, Xmin = -span * 0.25;
+    const xOf = R => x0 + ((R - Rmin) / (Rmax - Rmin)) * plotW;
+    const yOf = X => y0 + plotH - ((X - Xmin) / (Xmax - Xmin)) * plotH;
+
+    // 그리드
+    rxctx.save();
+    rxctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    rxctx.lineWidth = 1;
+    const tickStep = state.Zl <= 8 ? 2 : (state.Zl <= 16 ? 5 : 10);
+    for (let r = Math.ceil(Rmin / tickStep) * tickStep; r <= Rmax; r += tickStep) {
+        rxctx.beginPath(); rxctx.moveTo(xOf(r), y0); rxctx.lineTo(xOf(r), y0 + plotH); rxctx.stroke();
+    }
+    for (let x = Math.ceil(Xmin / tickStep) * tickStep; x <= Xmax; x += tickStep) {
+        rxctx.beginPath(); rxctx.moveTo(x0, yOf(x)); rxctx.lineTo(x0 + plotW, yOf(x)); rxctx.stroke();
+    }
+    rxctx.restore();
+
+    // 축 (R=0, X=0)
+    rxctx.save();
+    rxctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+    rxctx.lineWidth = 1.2;
+    rxctx.beginPath();
+    rxctx.moveTo(x0, yOf(0)); rxctx.lineTo(x0 + plotW, yOf(0));
+    rxctx.moveTo(xOf(0), y0); rxctx.lineTo(xOf(0), y0 + plotH);
+    rxctx.stroke();
+
+    // 눈금 라벨
+    rxctx.font = '9px ui-monospace, monospace';
+    rxctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    rxctx.textAlign = 'center'; rxctx.textBaseline = 'top';
+    for (let r = Math.ceil(Rmin / tickStep) * tickStep; r <= Rmax; r += tickStep) {
+        if (Math.abs(r) < 0.001) continue;
+        rxctx.fillText(r.toFixed(0), xOf(r), yOf(0) + 4);
+    }
+    rxctx.textAlign = 'right'; rxctx.textBaseline = 'middle';
+    for (let x = Math.ceil(Xmin / tickStep) * tickStep; x <= Xmax; x += tickStep) {
+        if (Math.abs(x) < 0.001) continue;
+        rxctx.fillText(x.toFixed(0), xOf(0) - 4, yOf(x));
+    }
+    rxctx.fillStyle = 'rgba(196, 181, 253, 0.85)';
+    rxctx.textAlign = 'left'; rxctx.textBaseline = 'bottom';
+    rxctx.font = 'bold 10px ui-monospace, monospace';
+    rxctx.fillText('R (Ω)', x0 + plotW - 28, yOf(0) - 4);
+    rxctx.save();
+    rxctx.translate(xOf(0) + 6, y0 + 8);
+    rxctx.fillText('X (Ω)', 0, 0);
+    rxctx.restore();
+    rxctx.restore();
+
+    // 라인 임피던스 벡터 ZL (라인 각도 방향)
+    const angL = state.angL * Math.PI / 180;
+    const ZL_R = state.Zl * Math.cos(angL);
+    const ZL_X = state.Zl * Math.sin(angL);
+    rxctx.save();
+    rxctx.strokeStyle = 'rgba(196, 181, 253, 0.55)';
+    rxctx.lineWidth = 1.5;
+    rxctx.setLineDash([6, 4]);
+    rxctx.beginPath();
+    rxctx.moveTo(xOf(0), yOf(0));
+    rxctx.lineTo(xOf(state.Zl * 2.5 * Math.cos(angL)), yOf(state.Zl * 2.5 * Math.sin(angL)));
+    rxctx.stroke();
+    rxctx.setLineDash([]);
+    rxctx.font = 'bold 10px ui-monospace, monospace';
+    rxctx.fillStyle = '#c4b5fd';
+    rxctx.textAlign = 'left';
+    rxctx.fillText('Line angle θ_L', xOf(ZL_R * 0.8) + 4, yOf(ZL_X * 0.8) - 6);
+    rxctx.restore();
+
+    // 동작 특성 (Mho 원 OR Quad 사각) — Zone 3 → 2 → 1 (큰 것부터)
+    const zones = [
+        { key: 'z3', reach: ZONE_REACH.z3 * state.Zl, color: '#7dd3fc', fill: 'rgba(125, 211, 252, 0.08)' },
+        { key: 'z2', reach: ZONE_REACH.z2 * state.Zl, color: '#fbbf24', fill: 'rgba(251, 191, 36, 0.10)' },
+        { key: 'z1', reach: ZONE_REACH.z1 * state.Zl, color: '#f43f5e', fill: 'rgba(244, 63, 94, 0.14)' },
+    ];
+
+    if (state.char === 'mho') {
+        // Mho: 원점과 reach 끝점을 지나는 원 (지름 = reach)
+        for (const zn of zones) {
+            const cR = (zn.reach * Math.cos(angL)) / 2;
+            const cX = (zn.reach * Math.sin(angL)) / 2;
+            const rad = zn.reach / 2;
+            // 픽셀 거리 변환 (R/X 축 스케일이 다를 수 있어 평균 사용)
+            const scaleR = plotW / (Rmax - Rmin);
+            const scaleX = plotH / (Xmax - Xmin);
+            rxctx.save();
+            rxctx.translate(xOf(cR), yOf(cX));
+            // 비등방 스케일 보정을 위해 직접 곡선 그리기
+            rxctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const ang = (i / 100) * Math.PI * 2;
+                const pR = cR + rad * Math.cos(ang);
+                const pX = cX + rad * Math.sin(ang);
+                const px = xOf(pR) - xOf(cR);
+                const py = yOf(pX) - yOf(cX);
+                if (i === 0) rxctx.moveTo(px, py); else rxctx.lineTo(px, py);
+            }
+            rxctx.closePath();
+            rxctx.fillStyle = zn.fill;
+            rxctx.fill();
+            const isActive = (state.pickedZone === parseInt(zn.key[1]));
+            rxctx.strokeStyle = zn.color;
+            rxctx.lineWidth = isActive ? 2.4 : 1.4;
+            rxctx.shadowBlur = isActive ? 14 : 6;
+            rxctx.shadowColor = zn.color;
+            rxctx.stroke();
+            rxctx.restore();
+
+            // 라벨
+            rxctx.save();
+            rxctx.font = 'bold 10px ui-monospace, monospace';
+            rxctx.fillStyle = zn.color;
+            rxctx.textAlign = 'center';
+            const labelR = (zn.reach * 0.92) * Math.cos(angL);
+            const labelX = (zn.reach * 0.92) * Math.sin(angL);
+            rxctx.fillText(zn.key.toUpperCase(), xOf(labelR), yOf(labelX) - 4);
+            rxctx.restore();
+        }
+    } else {
+        // Quad: 회전된 사각 (R 방향 폭 ± reachR, X 방향 0~reachX in line direction)
+        // 간소 모델: 직립 사각 (0 <= R <= reachR_quad, 0 <= X <= reach * sin(angL))
+        for (const zn of zones) {
+            const reachR = Math.max(2.0, state.Zl * 0.45) * (zn.key==='z1'?0.85:zn.key==='z2'?1.25:2.5);
+            const reachX = zn.reach * Math.sin(angL);
+            const isActive = (state.pickedZone === parseInt(zn.key[1]));
+            rxctx.save();
+            rxctx.fillStyle = zn.fill;
+            rxctx.strokeStyle = zn.color;
+            rxctx.lineWidth = isActive ? 2.4 : 1.4;
+            rxctx.shadowBlur = isActive ? 14 : 6;
+            rxctx.shadowColor = zn.color;
+            rxctx.beginPath();
+            rxctx.moveTo(xOf(-0.3), yOf(-0.3));
+            rxctx.lineTo(xOf(reachR), yOf(-0.3));
+            rxctx.lineTo(xOf(reachR), yOf(reachX));
+            rxctx.lineTo(xOf(-0.3), yOf(reachX));
+            rxctx.closePath();
+            rxctx.fill();
+            rxctx.stroke();
+            rxctx.restore();
+
+            // 라벨
+            rxctx.save();
+            rxctx.font = 'bold 10px ui-monospace, monospace';
+            rxctx.fillStyle = zn.color;
+            rxctx.textAlign = 'right';
+            rxctx.fillText(zn.key.toUpperCase(), xOf(reachR) - 6, yOf(reachX) - 4);
+            rxctx.restore();
+        }
+    }
+
+    // 측정 Z 트레일
+    rxctx.save();
+    for (const t of trail) {
+        const alpha = Math.max(0, 1 - t.age / 30) * 0.5;
+        if (alpha <= 0.02) continue;
+        rxctx.fillStyle = `rgba(252, 211, 77, ${alpha})`;
+        rxctx.beginPath(); rxctx.arc(xOf(t.R), yOf(t.X), 2.4, 0, Math.PI * 2); rxctx.fill();
+    }
+    rxctx.restore();
+
+    // 측정 Z 점 (현재)
+    rxctx.save();
+    const pulse = 1 + Math.sin(state.t * 0.2) * 0.18;
+    const dotCol = state.tripped ? '#f43f5e' :
+                   state.pickedZone === 1 ? '#f43f5e' :
+                   state.pickedZone === 2 ? '#fbbf24' :
+                   state.pickedZone === 3 ? '#7dd3fc' : '#fde68a';
+    rxctx.fillStyle = dotCol;
+    rxctx.shadowBlur = 22; rxctx.shadowColor = dotCol;
+    rxctx.beginPath(); rxctx.arc(xOf(z.R), yOf(z.X), 7 * pulse, 0, Math.PI * 2); rxctx.fill();
+    // 원점 → 점 벡터
+    rxctx.strokeStyle = `rgba(253, 230, 138, 0.8)`;
+    rxctx.lineWidth = 1.4;
+    rxctx.beginPath();
+    rxctx.moveTo(xOf(0), yOf(0)); rxctx.lineTo(xOf(z.R), yOf(z.X));
+    rxctx.stroke();
+    // 라벨
+    rxctx.font = 'bold 10px ui-monospace, monospace';
+    rxctx.fillStyle = '#fde68a';
+    rxctx.textAlign = 'left';
+    const labelText = `Z=(${z.R.toFixed(1)}, ${z.X.toFixed(1)}) |Z|=${z.mag.toFixed(2)}Ω`;
+    const labelX = Math.min(xOf(z.R) + 12, x0 + plotW - 170);
+    rxctx.fillText(labelText, labelX, yOf(z.X) - 6);
+    rxctx.restore();
+
+    // 정정 임피던스 Z_r1 끝점 표시 (라인 각도 방향, reach = 0.85 * ZL)
+    const zr1R = ZONE_REACH.z1 * state.Zl * Math.cos(angL);
+    const zr1X = ZONE_REACH.z1 * state.Zl * Math.sin(angL);
+    rxctx.save();
+    rxctx.fillStyle = '#fda4af';
+    rxctx.shadowBlur = 10; rxctx.shadowColor = '#f43f5e';
+    rxctx.beginPath(); rxctx.arc(xOf(zr1R), yOf(zr1X), 4, 0, Math.PI * 2); rxctx.fill();
+    rxctx.restore();
+
+    // 범례
+    rxctx.save();
+    rxctx.font = 'bold 10px ui-monospace, monospace';
+    rxctx.textAlign = 'left';
+    const lx = x0 + 10, ly = y0 + 14;
+    const legend = [
+        { c: '#f43f5e', t: `Z1 (${ZONE_REACH.z1 * state.Zl}Ω · 즉시)` },
+        { c: '#fbbf24', t: `Z2 (${ZONE_REACH.z2 * state.Zl}Ω · 0.3s)` },
+        { c: '#7dd3fc', t: `Z3 (${(ZONE_REACH.z3 * state.Zl).toFixed(1)}Ω · 1.0s)` }
+    ];
+    legend.forEach((l, i) => {
+        const yy = ly + i * 14;
+        rxctx.fillStyle = l.c;
+        rxctx.fillRect(lx, yy, 12, 3);
+        rxctx.fillStyle = 'rgba(203, 213, 225, 0.85)';
+        rxctx.fillText(l.t, lx + 18, yy + 3);
+    });
+    rxctx.restore();
+}
+
+// ============ 효과 ============
+function triggerTripEffects() {
+    if (!window.gsap) return;
+    gsap.fromTo('#mainCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+        { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+    gsap.fromTo('#rxCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+        { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+    gsap.fromTo('#pill-state', { scale: 1.12 }, { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+    gsap.fromTo('#pill-zone',  { scale: 1.10 }, { scale: 1, duration: 0.45, ease: 'back.out(1.7)' });
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    const z = computeState();
+    updateDisplays(z);
+    drawMainBg();
+    drawLineSchematic();
+    drawRXPlane(z);
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+['loc','zl','ang','rf'].forEach(id => {
+    const map = { loc: 'pill-z', zl: 'pill-zone', ang: 'pill-z', rf: 'pill-z' };
+    $(id).addEventListener('input', () => {
+        // 사고 위치/임피던스 바꾸면 트립 리셋
+        if (state.tripped) resetTrip();
+        flashPanel(map[id]);
+    });
+});
+
+function resetTrip() {
+    state.tripped = false;
+    state.tripZone = 0;
+    state.pickedZone = 0;
+    state.timer = 0;
+    $('alarmBanner').classList.add('hidden');
+}
+
+document.querySelectorAll('.char-btn[data-char]').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.char-btn[data-char]').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.char = b.dataset.char;
+        resetTrip();
+        flashPanel('pill-zone');
+    });
+});
+
+document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.mode = b.dataset.mode;
+        resetTrip();
+        flashPanel('pill-z');
+    });
+});
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        resetTrip();
+        if (mode === 'z1') {
+            $('loc').value = 50; $('rf').value = 0;
+            state.mode = 'fault';
+            document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+            document.querySelector('.mode-btn[data-mode="fault"]').classList.add('active');
+            flashPanel('pill-z');
+        }
+        if (mode === 'z2') {
+            $('loc').value = 100; $('rf').value = 0;
+            state.mode = 'fault';
+            document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+            document.querySelector('.mode-btn[data-mode="fault"]').classList.add('active');
+            flashPanel('pill-zone');
+        }
+        if (mode === 'z3') {
+            $('loc').value = 140; $('rf').value = 1.0;
+            state.mode = 'fault';
+            document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+            document.querySelector('.mode-btn[data-mode="fault"]').classList.add('active');
+            flashPanel('pill-t');
+        }
+        if (mode === 'load') {
+            state.mode = 'load';
+            document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+            document.querySelector('.mode-btn[data-mode="load"]').classList.add('active');
+            flashPanel('pill-state');
+        }
+        if (mode === 'reset') {
+            $('loc').value = 50; $('zl').value = 10; $('ang').value = 80; $('rf').value = 0;
+            state.mode = 'fault';
+            document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+            document.querySelector('.mode-btn[data-mode="fault"]').classList.add('active');
+            trail.length = 0;
+            flashPanel('pill-state');
+        }
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#mainCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#rxCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#zoneListCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.50, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.60, ease: 'power3.out' });
+        gsap.from('#featureCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.70, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

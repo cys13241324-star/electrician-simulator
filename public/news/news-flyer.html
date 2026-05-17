@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스파크 마트 주간 특가 전단지 — 전기기능사 학습 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Do+Hyeon&family=Gugi&family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --mart-red:#e60023;
+    --mart-red-deep:#a8001a;
+    --mart-yellow:#ffd700;
+    --mart-yellow-deep:#ffb800;
+    --mart-blue:#1a3aa8;
+    --mart-green:#0a8a3a;
+    --mart-orange:#ff6a00;
+    --mart-pink:#ff2d7e;
+    --mart-cream:#fff6dc;
+    --paper:#fdf6e3;
+    --paper-dark:#f3e8c8;
+    --ink:#181612;
+    --ink-mute:#4a443c;
+  }
+  html,body{background:#e8e2cf;}
+  body{
+    font-family:'Noto Sans KR','Jua',sans-serif;
+    color:var(--ink);
+    margin:0;
+  }
+  .font-han{font-family:'Black Han Sans','Jua',sans-serif; letter-spacing:-.01em;}
+  .font-jua{font-family:'Jua',sans-serif;}
+  .font-do{font-family:'Do Hyeon',sans-serif;}
+  .font-gugi{font-family:'Gugi','Jua',serif;}
+  .font-bebas{font-family:'Bebas Neue',sans-serif; letter-spacing:.02em;}
+  .font-hand{font-family:'Gaegu',cursive;}
+
+  /* ===== 신문지/전단지 종이 텍스처 ===== */
+  .paper{
+    background:
+      radial-gradient(circle at 12% 18%, rgba(160,130,60,.10) 0 1.5px, transparent 2px),
+      radial-gradient(circle at 78% 62%, rgba(160,130,60,.08) 0 1.5px, transparent 2px),
+      radial-gradient(circle at 42% 88%, rgba(160,130,60,.07) 0 1.5px, transparent 2px),
+      radial-gradient(circle at 88% 12%, rgba(160,130,60,.08) 0 1px, transparent 2px),
+      linear-gradient(180deg, var(--paper) 0%, var(--paper-dark) 100%);
+    background-size: 220px 220px, 260px 260px, 300px 300px, 180px 180px, 100% 100%;
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,.35),
+      0 10px 20px -10px rgba(0,0,0,.25),
+      inset 0 0 0 2px rgba(0,0,0,.04);
+  }
+  .paper::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.012) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.012) 0 1px, transparent 1px 4px);
+    mix-blend-mode:multiply;
+  }
+  .paper-edge{
+    -webkit-mask: radial-gradient(8px 8px at 50% 0, transparent 98%, #000 100%) top/16px 16px repeat-x,
+                   linear-gradient(#000,#000);
+    -webkit-mask-composite: source-over;
+    mask: radial-gradient(8px 8px at 50% 0, transparent 98%, #000 100%) top/16px 16px repeat-x,
+          linear-gradient(#000,#000);
+  }
+  /* 상단 톱니 가장자리 */
+  .deckle-top{
+    background:
+      radial-gradient(circle 8px at 8px 0, transparent 7px, var(--paper) 7.5px) 0 0/16px 16px repeat-x,
+      var(--paper);
+    height:16px;
+  }
+  .deckle-bot{
+    background:
+      radial-gradient(circle 8px at 8px 16px, transparent 7px, var(--paper-dark) 7.5px) 0 0/16px 16px repeat-x,
+      var(--paper-dark);
+    height:16px;
+  }
+
+  /* ===== 헤더 메가 배너 ===== */
+  .mega-banner{
+    background:
+      repeating-linear-gradient(135deg, var(--mart-red) 0 22px, var(--mart-red-deep) 22px 44px);
+    color:#fff;
+    border:6px solid #111;
+    box-shadow: 8px 8px 0 #111;
+    position:relative;
+  }
+  .mega-banner::after{
+    content:""; position:absolute; inset:6px; pointer-events:none;
+    border:2px dashed rgba(255,255,255,.55);
+  }
+  .price-bubble{
+    background:var(--mart-yellow);
+    border:4px solid #111;
+    box-shadow: 4px 4px 0 #111;
+    transform: rotate(-4deg);
+  }
+
+  /* ===== 가격표 (제품 카드) ===== */
+  .product-card{
+    background:#fffdf3;
+    border:3px solid #111;
+    box-shadow: 5px 5px 0 #111;
+    transition: transform .15s ease, box-shadow .15s ease;
+    cursor:pointer;
+    position:relative;
+  }
+  .product-card:hover{
+    transform: translate(-2px,-2px);
+    box-shadow: 7px 7px 0 #111;
+  }
+  .product-card.in-cart{
+    background:#fff7d6;
+    border-color: var(--mart-red);
+    box-shadow: 5px 5px 0 var(--mart-red);
+  }
+  .product-card.in-cart::after{
+    content:"담김";
+    position:absolute; top:-12px; right:-10px;
+    background:var(--mart-red); color:#fff;
+    font-family:'Black Han Sans',sans-serif; font-size:14px;
+    padding:4px 10px; border:2px solid #111;
+    box-shadow:2px 2px 0 #111;
+    transform: rotate(8deg);
+  }
+  .price-tag{
+    background:var(--mart-yellow);
+    border:3px solid #111;
+    box-shadow:3px 3px 0 #111;
+    font-family:'Black Han Sans',sans-serif;
+    transform: rotate(-2deg);
+  }
+  .discount-stamp{
+    background:var(--mart-red);
+    color:#fff;
+    border:3px solid #111;
+    border-radius:50%;
+    font-family:'Black Han Sans',sans-serif;
+    transform: rotate(-10deg);
+    box-shadow: 2px 2px 0 #111;
+  }
+  .strike{
+    text-decoration: line-through;
+    text-decoration-color: var(--mart-red);
+    text-decoration-thickness: 3px;
+  }
+
+  /* ===== 도장 / 손가락 ===== */
+  .stamp{
+    border:3px double var(--mart-red);
+    color:var(--mart-red);
+    font-family:'Black Han Sans',sans-serif;
+    padding:6px 14px;
+    transform: rotate(-6deg);
+    background: rgba(255,255,255,.5);
+    letter-spacing:.05em;
+  }
+  .stamp-blue{
+    border-color:var(--mart-blue);
+    color:var(--mart-blue);
+  }
+  .finger{
+    display:inline-block;
+    animation: point 1.4s ease-in-out infinite;
+  }
+  @keyframes point{
+    0%,100%{ transform: translateX(0) rotate(-8deg); }
+    50%{ transform: translateX(6px) rotate(-2deg); }
+  }
+
+  /* ===== 도트 패턴 헤더 ===== */
+  .dot-bg{
+    background-image: radial-gradient(#111 1.2px, transparent 1.5px);
+    background-size: 10px 10px;
+  }
+
+  /* ===== 쿠폰 ===== */
+  .coupon{
+    background:#fffceb;
+    border:3px dashed #111;
+    position:relative;
+    transition: transform .6s ease, opacity .6s ease;
+  }
+  .coupon::before, .coupon::after{
+    content:"";
+    position:absolute;
+    width:24px; height:24px;
+    background:#e8e2cf;
+    border:3px solid #111;
+    border-radius:50%;
+    top:50%; transform: translateY(-50%);
+  }
+  .coupon::before{ left:-15px; }
+  .coupon::after{ right:-15px; }
+  .coupon.cut{
+    transform: translateY(60px) rotate(-8deg);
+    opacity:0;
+  }
+  .scissors-line{
+    border-top: 2px dashed #555;
+    position:relative;
+  }
+  .scissors-line::before{
+    content:"✂";
+    position:absolute; left:8px; top:-14px;
+    background: var(--paper);
+    padding:0 6px;
+    font-size:18px;
+  }
+
+  /* ===== 카테고리 필터 ===== */
+  .cat-chip{
+    background:#fff;
+    border:3px solid #111;
+    box-shadow:3px 3px 0 #111;
+    font-family:'Black Han Sans',sans-serif;
+    cursor:pointer;
+    transition: all .15s;
+  }
+  .cat-chip:hover{ transform: translate(-1px,-1px); box-shadow:4px 4px 0 #111;}
+  .cat-chip.active{ background: var(--mart-red); color:#fff; }
+
+  /* ===== 장바구니 토스트 ===== */
+  .cart-toast{
+    position:fixed; bottom:24px; left:50%;
+    transform: translateX(-50%) translateY(120%);
+    background:#111; color:#fff;
+    padding:14px 22px; border:3px solid var(--mart-yellow);
+    box-shadow: 5px 5px 0 var(--mart-yellow);
+    font-family:'Jua',sans-serif;
+    transition: transform .35s ease;
+    z-index:50;
+    border-radius:6px;
+  }
+  .cart-toast.show{ transform: translateX(-50%) translateY(0); }
+
+  /* ===== 인쇄 ===== */
+  @media print {
+    body{ background:#fff; }
+    .no-print{ display:none !important; }
+    .paper{ box-shadow:none !important; }
+    .product-card{ break-inside: avoid; }
+  }
+
+  /* 작은 깃발 */
+  .flag{
+    background: var(--mart-yellow);
+    border:2px solid #111;
+    box-shadow:2px 2px 0 #111;
+    font-family:'Black Han Sans',sans-serif;
+  }
+  .ribbon{
+    background: var(--mart-red); color:#fff;
+    clip-path: polygon(0 0, 100% 0, 92% 50%, 100% 100%, 0 100%);
+    padding:4px 18px 4px 10px;
+    font-family:'Black Han Sans',sans-serif;
+  }
+
+  /* 별점 */
+  .star{ color: var(--mart-orange); }
+
+  /* 가격 헤드라인 */
+  .price-now{ color: var(--mart-red); font-family:'Black Han Sans',sans-serif; }
+
+  /* 컷 마크 (인쇄용 4코너) */
+  .cut-mark{ position:absolute; width:18px; height:18px; border:1.5px solid #111; }
+  .cut-mark.tl{ top:6px; left:6px; border-right:0; border-bottom:0; }
+  .cut-mark.tr{ top:6px; right:6px; border-left:0; border-bottom:0; }
+  .cut-mark.bl{ bottom:6px; left:6px; border-right:0; border-top:0; }
+  .cut-mark.br{ bottom:6px; right:6px; border-left:0; border-top:0; }
+
+  .marquee{
+    overflow:hidden; white-space:nowrap;
+  }
+  .marquee-inner{
+    display:inline-block; padding-left:100%;
+    animation: scroll 28s linear infinite;
+  }
+  @keyframes scroll{ to { transform: translateX(-100%);} }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ====== 인쇄/공유 바 ====== -->
+<div class="no-print sticky top-0 z-40 bg-[#181612] text-[#fff6dc] border-b-4 border-[var(--mart-yellow)]">
+  <div class="max-w-[1200px] mx-auto px-4 py-2 flex items-center gap-3 flex-wrap text-sm">
+    <span class="font-han text-[var(--mart-yellow)] text-lg">스파크 마트</span>
+    <span class="opacity-70">|</span>
+    <span class="font-jua">전기기능사 학습 소식지 · 주간 전단지</span>
+    <span class="ml-auto flex items-center gap-2">
+      <button id="btn-print" class="bg-[var(--mart-yellow)] text-[#111] font-han px-3 py-1 rounded border-2 border-[#fff6dc] hover:bg-white">인쇄</button>
+      <button id="btn-cart" class="bg-[var(--mart-red)] text-white font-han px-3 py-1 rounded border-2 border-[#fff6dc] hover:bg-[var(--mart-red-deep)]">
+        장바구니 <span id="cart-count" class="bg-white text-[var(--mart-red)] px-1.5 rounded ml-1">0</span>
+      </button>
+    </span>
+  </div>
+</div>
+
+<!-- ====== 전단지 본체 ====== -->
+<main class="max-w-[1200px] mx-auto my-6 px-2">
+  <article class="paper relative px-5 sm:px-8 pb-12 pt-1 overflow-hidden">
+    <span class="cut-mark tl"></span>
+    <span class="cut-mark tr"></span>
+    <span class="cut-mark bl"></span>
+    <span class="cut-mark br"></span>
+
+    <!-- 톱니 위 -->
+    <div class="deckle-top -mx-5 sm:-mx-8 -mt-1 mb-3"></div>
+
+    <!-- ===== HERO ===== -->
+    <header class="mega-banner rounded-md p-5 sm:p-7 relative">
+      <div class="flex flex-col md:flex-row gap-5 items-start md:items-center">
+        <!-- 마트 로고 -->
+        <div class="flex items-center gap-3 shrink-0">
+          <svg width="78" height="78" viewBox="0 0 78 78" class="drop-shadow-[3px_3px_0_#111]">
+            <circle cx="39" cy="39" r="34" fill="#ffd700" stroke="#111" stroke-width="4"/>
+            <path d="M39 12 L44 30 L62 30 L48 41 L54 60 L39 49 L24 60 L30 41 L16 30 L34 30 Z"
+                  fill="#e60023" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="39" cy="39" r="5" fill="#fff" stroke="#111" stroke-width="2"/>
+          </svg>
+          <div>
+            <div class="font-han text-3xl sm:text-5xl text-[var(--mart-yellow)] leading-none drop-shadow-[3px_3px_0_#111]">스파크 마트</div>
+            <div class="font-jua text-sm sm:text-base mt-1 opacity-95">SPARK MART · 가상 학습 식료품점</div>
+          </div>
+        </div>
+
+        <div class="md:ml-auto text-center md:text-right">
+          <div class="font-han text-[var(--mart-yellow)] text-2xl sm:text-3xl leading-tight drop-shadow-[2px_2px_0_#111]">
+            이번 주 특가!
+          </div>
+          <div class="font-do text-lg sm:text-xl mt-1">5월 셋째 주 · 5/15(목) ~ 5/21(수)</div>
+        </div>
+      </div>
+
+      <!-- 가격 풍선 -->
+      <div class="absolute -bottom-7 left-6 price-bubble px-4 py-2 text-[#111]">
+        <div class="font-han text-base sm:text-lg leading-none">최대</div>
+        <div class="font-han text-3xl sm:text-4xl leading-none">70% OFF</div>
+      </div>
+      <div class="absolute -top-4 right-6 stamp text-sm sm:text-base bg-white">합격 보장!</div>
+    </header>
+
+    <!-- 마퀴 띠 -->
+    <div class="mt-9 mb-5 bg-[var(--mart-yellow)] border-y-4 border-[#111] py-2 marquee">
+      <div class="marquee-inner font-han text-xl text-[#111]">
+        ★ 옴의 법칙 1L 반값! &nbsp;&nbsp;★ 키르히호프 라면 1+1 &nbsp;&nbsp;★ 회원 5% 추가할인 &nbsp;&nbsp;★ 7만원 이상 무료 배송 &nbsp;&nbsp;★ 시뮬레이터 코너 신상 입고 &nbsp;&nbsp;★ 합격 쿠키 박스 한정수량 &nbsp;&nbsp;★ 패러데이 김치 익은 맛 &nbsp;&nbsp;★ 변압기 햄 신선특가
+      </div>
+    </div>
+
+    <!-- ===== 카테고리 필터 ===== -->
+    <nav class="no-print flex flex-wrap gap-2 mb-6" id="cat-filter">
+      <button class="cat-chip active px-4 py-2 text-sm" data-cat="all">전체 16</button>
+      <button class="cat-chip px-4 py-2 text-sm" data-cat="음료">음료 3</button>
+      <button class="cat-chip px-4 py-2 text-sm" data-cat="라면">라면·즉석 2</button>
+      <button class="cat-chip px-4 py-2 text-sm" data-cat="육가공">육가공 2</button>
+      <button class="cat-chip px-4 py-2 text-sm" data-cat="신선">신선식품 3</button>
+      <button class="cat-chip px-4 py-2 text-sm" data-cat="과자">과자·간식 3</button>
+      <button class="cat-chip px-4 py-2 text-sm" data-cat="기획전">기획전 3</button>
+    </nav>
+
+    <!-- ===== TOP 빅 슬롯 (대표 특가 2개) ===== -->
+    <section class="grid md:grid-cols-2 gap-5 mb-6">
+      <!-- BIG 1: 옴의 법칙 1L -->
+      <article class="product-card p-5 relative" data-cat="음료" data-id="ohm" data-name="옴의 법칙 1L" data-price="4900">
+        <div class="absolute -top-3 -left-3 ribbon text-sm">대표 특가</div>
+        <div class="flex gap-4">
+          <!-- SVG: 음료 팩 -->
+          <svg viewBox="0 0 140 180" width="130" height="160" class="shrink-0">
+            <rect x="20" y="20" width="100" height="150" rx="6" fill="#1a3aa8" stroke="#111" stroke-width="4"/>
+            <rect x="20" y="20" width="100" height="36" fill="#ffd700" stroke="#111" stroke-width="4"/>
+            <text x="70" y="46" text-anchor="middle" font-family="Black Han Sans" font-size="20" fill="#111">OHM</text>
+            <text x="70" y="100" text-anchor="middle" font-family="Black Han Sans" font-size="28" fill="#fff">옴의</text>
+            <text x="70" y="128" text-anchor="middle" font-family="Black Han Sans" font-size="28" fill="#fff">법칙</text>
+            <text x="70" y="158" text-anchor="middle" font-family="Jua" font-size="14" fill="#ffd700">V=IR · 1L</text>
+            <rect x="56" y="6" width="28" height="18" rx="3" fill="#888" stroke="#111" stroke-width="3"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="font-han text-2xl leading-tight">옴의 법칙 1L</div>
+            <div class="font-do text-sm text-[var(--ink-mute)] mt-1">전압·전류·저항 균형 충전음료</div>
+            <div class="flex items-center gap-2 mt-3">
+              <span class="discount-stamp w-14 h-14 flex items-center justify-center text-base">50%<br>OFF</span>
+              <div>
+                <div class="strike text-sm text-[var(--ink-mute)]">정가 ₩9,800</div>
+                <div class="price-now text-4xl leading-none">₩4,900</div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-2 flex-wrap">
+              <span class="flag px-2 py-0.5 text-xs">한정 200개</span>
+              <span class="flag px-2 py-0.5 text-xs" style="background:#bff0c4;">★★★★★ 4.9</span>
+              <span class="font-hand text-[var(--mart-red)]"><span class="finger">👉</span> 강추!</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- BIG 2: 합격 쿠키 박스 -->
+      <article class="product-card p-5 relative" data-cat="과자" data-id="cookie" data-name="합격 쿠키 박스" data-price="12900">
+        <div class="absolute -top-3 -left-3 ribbon text-sm" style="background:var(--mart-blue);">사장님 추천</div>
+        <div class="flex gap-4">
+          <svg viewBox="0 0 140 180" width="130" height="160" class="shrink-0">
+            <rect x="14" y="40" width="112" height="120" rx="8" fill="#ff6a00" stroke="#111" stroke-width="4"/>
+            <rect x="14" y="40" width="112" height="20" fill="#e60023" stroke="#111" stroke-width="4"/>
+            <text x="70" y="56" text-anchor="middle" font-family="Black Han Sans" font-size="14" fill="#fff">합격 쿠키</text>
+            <circle cx="42" cy="92" r="14" fill="#f4d29a" stroke="#111" stroke-width="2.5"/>
+            <circle cx="70" cy="92" r="14" fill="#f4d29a" stroke="#111" stroke-width="2.5"/>
+            <circle cx="98" cy="92" r="14" fill="#f4d29a" stroke="#111" stroke-width="2.5"/>
+            <circle cx="42" cy="124" r="14" fill="#f4d29a" stroke="#111" stroke-width="2.5"/>
+            <circle cx="70" cy="124" r="14" fill="#f4d29a" stroke="#111" stroke-width="2.5"/>
+            <circle cx="98" cy="124" r="14" fill="#f4d29a" stroke="#111" stroke-width="2.5"/>
+            <circle cx="38" cy="88" r="2" fill="#5b3a16"/><circle cx="46" cy="96" r="2" fill="#5b3a16"/>
+            <circle cx="66" cy="88" r="2" fill="#5b3a16"/><circle cx="74" cy="96" r="2" fill="#5b3a16"/>
+            <circle cx="94" cy="88" r="2" fill="#5b3a16"/><circle cx="102" cy="96" r="2" fill="#5b3a16"/>
+            <path d="M70 26 L74 14 L80 22 L72 30 Z" fill="#ffd700" stroke="#111" stroke-width="2"/>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="font-han text-2xl leading-tight">합격 쿠키 박스 (12입)</div>
+            <div class="font-do text-sm text-[var(--ink-mute)] mt-1">한 입에 공식 한 개씩 · 시험 직전 응급 당충전</div>
+            <div class="flex items-center gap-2 mt-3">
+              <span class="discount-stamp w-14 h-14 flex items-center justify-center text-base">35%<br>OFF</span>
+              <div>
+                <div class="strike text-sm text-[var(--ink-mute)]">정가 ₩19,800</div>
+                <div class="price-now text-4xl leading-none">₩12,900</div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-2 flex-wrap">
+              <span class="flag px-2 py-0.5 text-xs">선물용 인기</span>
+              <span class="flag px-2 py-0.5 text-xs" style="background:#fde0e0;">★★★★☆ 4.7</span>
+              <span class="font-hand text-[var(--mart-blue)]">합격 기원</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ===== 일반 그리드 (14개) ===== -->
+    <section id="grid" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+      <!-- 1. 키르히호프 라면 5입 -->
+      <article class="product-card p-3" data-cat="라면" data-id="kirch-ramen" data-name="키르히호프 라면 5입" data-price="2250">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="10" y="20" width="100" height="90" rx="4" fill="#e60023" stroke="#111" stroke-width="3"/>
+            <rect x="10" y="20" width="100" height="22" fill="#ffd700" stroke="#111" stroke-width="3"/>
+            <text x="60" y="36" text-anchor="middle" font-family="Black Han Sans" font-size="13" fill="#111">KIRCHHOFF</text>
+            <text x="60" y="68" text-anchor="middle" font-family="Black Han Sans" font-size="20" fill="#fff">키르히호프</text>
+            <text x="60" y="92" text-anchor="middle" font-family="Jua" font-size="14" fill="#ffd700">전류·전압 법칙</text>
+            <text x="60" y="106" text-anchor="middle" font-family="Jua" font-size="10" fill="#fff">5개 묶음 · 매운맛</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">키르히호프 라면 5입</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩4,500</div>
+            <div class="price-now text-2xl leading-none">₩2,250</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">50%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 320</span><span class="font-hand text-[var(--mart-red)]">1+1!</span>
+        </div>
+      </article>
+
+      <!-- 2. 변압기 햄 -->
+      <article class="product-card p-3" data-cat="육가공" data-id="trans-ham" data-name="변압기 햄 200g" data-price="3490">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="14" y="34" width="92" height="60" rx="6" fill="#ffb8a8" stroke="#111" stroke-width="3"/>
+            <rect x="14" y="34" width="92" height="18" fill="#ffd700" stroke="#111" stroke-width="3"/>
+            <text x="60" y="48" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">변압기 햄</text>
+            <circle cx="34" cy="72" r="4" fill="#c9594a"/><circle cx="50" cy="78" r="4" fill="#c9594a"/>
+            <circle cx="70" cy="70" r="4" fill="#c9594a"/><circle cx="86" cy="78" r="4" fill="#c9594a"/>
+            <circle cx="58" cy="88" r="4" fill="#c9594a"/>
+            <path d="M40 20 Q 60 4 80 20" stroke="#111" stroke-width="3" fill="none"/>
+            <circle cx="40" cy="20" r="3" fill="#111"/><circle cx="80" cy="20" r="3" fill="#111"/>
+            <text x="60" y="108" text-anchor="middle" font-family="Jua" font-size="10" fill="#111">220V → 110V · 200g</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">변압기 햄 200g</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩5,800</div>
+            <div class="price-now text-2xl leading-none">₩3,490</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">40%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 80</span><span class="font-hand text-[var(--mart-blue)]">신선 1+0</span>
+        </div>
+      </article>
+
+      <!-- 3. RLC 도시락 -->
+      <article class="product-card p-3" data-cat="신선" data-id="rlc-meal" data-name="RLC 도시락" data-price="5900">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="12" y="32" width="96" height="64" rx="4" fill="#fff6dc" stroke="#111" stroke-width="3"/>
+            <line x1="60" y1="32" x2="60" y2="96" stroke="#111" stroke-width="2"/>
+            <line x1="12" y1="64" x2="108" y2="64" stroke="#111" stroke-width="2"/>
+            <circle cx="36" cy="48" r="8" fill="#e60023" stroke="#111" stroke-width="2"/>
+            <text x="36" y="52" text-anchor="middle" font-family="Black Han Sans" font-size="10" fill="#fff">R</text>
+            <rect x="76" y="40" width="20" height="16" fill="#1a3aa8" stroke="#111" stroke-width="2"/>
+            <text x="86" y="52" text-anchor="middle" font-family="Black Han Sans" font-size="10" fill="#fff">L</text>
+            <path d="M28 80 L44 80 L36 92 Z" fill="#ffd700" stroke="#111" stroke-width="2"/>
+            <text x="36" y="88" text-anchor="middle" font-family="Black Han Sans" font-size="9" fill="#111">C</text>
+            <rect x="74" y="74" width="22" height="14" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+            <rect x="14" y="18" width="92" height="16" fill="#e60023" stroke="#111" stroke-width="3"/>
+            <text x="60" y="30" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#fff">RLC 도시락</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">RLC 도시락</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩8,900</div>
+            <div class="price-now text-2xl leading-none">₩5,900</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">33%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 45</span><span class="font-hand text-[var(--mart-orange)]">3종 균형</span>
+        </div>
+      </article>
+
+      <!-- 4. 공식 시리얼 -->
+      <article class="product-card p-3" data-cat="과자" data-id="formula-cereal" data-name="공식 시리얼" data-price="5460">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="22" y="14" width="76" height="94" rx="4" fill="#ffd700" stroke="#111" stroke-width="3"/>
+            <rect x="22" y="14" width="76" height="22" fill="#e60023" stroke="#111" stroke-width="3"/>
+            <text x="60" y="30" text-anchor="middle" font-family="Black Han Sans" font-size="13" fill="#fff">공식 시리얼</text>
+            <text x="60" y="56" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">P=VI</text>
+            <text x="60" y="74" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">Q=CV</text>
+            <text x="60" y="92" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">W=Pt</text>
+            <text x="60" y="105" text-anchor="middle" font-family="Jua" font-size="9" fill="#111">아침 한 그릇 공식 3개</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">공식 시리얼</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩7,800</div>
+            <div class="price-now text-2xl leading-none">₩5,460</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">30%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 150</span><span class="font-hand text-[var(--mart-blue)]">아침대용</span>
+        </div>
+      </article>
+
+      <!-- 5. 안전 두유 6팩 -->
+      <article class="product-card p-3" data-cat="음료" data-id="safety-soy" data-name="안전 두유 6팩" data-price="5980">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <g>
+              <rect x="14" y="34" width="20" height="60" rx="2" fill="#fff8e7" stroke="#111" stroke-width="2.5"/>
+              <rect x="36" y="34" width="20" height="60" rx="2" fill="#fff8e7" stroke="#111" stroke-width="2.5"/>
+              <rect x="58" y="34" width="20" height="60" rx="2" fill="#fff8e7" stroke="#111" stroke-width="2.5"/>
+              <rect x="80" y="34" width="20" height="60" rx="2" fill="#fff8e7" stroke="#111" stroke-width="2.5"/>
+              <rect x="22" y="50" width="60" height="14" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+              <text x="52" y="60" text-anchor="middle" font-family="Black Han Sans" font-size="9" fill="#fff">안전 두유</text>
+              <path d="M20 38 L22 30 L26 30 L28 38" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+              <path d="M42 38 L44 30 L48 30 L50 38" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+              <path d="M64 38 L66 30 L70 30 L72 38" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+              <path d="M86 38 L88 30 L92 30 L94 38" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+              <text x="60" y="108" text-anchor="middle" font-family="Jua" font-size="10" fill="#111">감전예방 · 6팩</text>
+            </g>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">안전 두유 6팩</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩7,800</div>
+            <div class="price-now text-2xl leading-none">₩5,980</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">23%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 220</span><span class="font-hand text-[var(--mart-green)]">절연 함유</span>
+        </div>
+      </article>
+
+      <!-- 6. 패러데이 김치 -->
+      <article class="product-card p-3" data-cat="신선" data-id="faraday-kimchi" data-name="패러데이 김치 500g" data-price="6900">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <ellipse cx="60" cy="92" rx="46" ry="10" fill="#111" opacity=".15"/>
+            <path d="M14 50 Q60 30 106 50 L100 92 Q60 102 20 92 Z" fill="#e60023" stroke="#111" stroke-width="3"/>
+            <path d="M20 92 Q60 102 100 92" stroke="#a8001a" stroke-width="2" fill="none"/>
+            <path d="M22 60 Q60 44 98 60" stroke="#a8001a" stroke-width="2" fill="none"/>
+            <path d="M60 38 Q56 22 64 14 Q70 22 64 38" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+            <rect x="34" y="64" width="52" height="20" fill="#ffd700" stroke="#111" stroke-width="2"/>
+            <text x="60" y="78" text-anchor="middle" font-family="Black Han Sans" font-size="11" fill="#111">패러데이 김치</text>
+            <text x="60" y="110" text-anchor="middle" font-family="Jua" font-size="9" fill="#111">전자기 유도 발효</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">패러데이 김치 500g</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩9,800</div>
+            <div class="price-now text-2xl leading-none">₩6,900</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">30%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 60</span><span class="font-hand text-[var(--mart-red)]">국산</span>
+        </div>
+      </article>
+
+      <!-- 7. 테슬라 만두 1kg -->
+      <article class="product-card p-3" data-cat="신선" data-id="tesla-mandu" data-name="테슬라 만두 1kg" data-price="7990">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="10" y="36" width="100" height="64" rx="6" fill="#1a3aa8" stroke="#111" stroke-width="3"/>
+            <rect x="10" y="36" width="100" height="18" fill="#ffd700" stroke="#111" stroke-width="3"/>
+            <text x="60" y="50" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">테슬라 만두</text>
+            <ellipse cx="32" cy="74" rx="11" ry="7" fill="#f4d29a" stroke="#111" stroke-width="2"/>
+            <ellipse cx="60" cy="74" rx="11" ry="7" fill="#f4d29a" stroke="#111" stroke-width="2"/>
+            <ellipse cx="88" cy="74" rx="11" ry="7" fill="#f4d29a" stroke="#111" stroke-width="2"/>
+            <ellipse cx="46" cy="90" rx="11" ry="7" fill="#f4d29a" stroke="#111" stroke-width="2"/>
+            <ellipse cx="74" cy="90" rx="11" ry="7" fill="#f4d29a" stroke="#111" stroke-width="2"/>
+            <path d="M28 72 L32 68 L36 72" stroke="#111" stroke-width="1.5" fill="none"/>
+            <path d="M56 72 L60 68 L64 72" stroke="#111" stroke-width="1.5" fill="none"/>
+            <text x="100" y="32" text-anchor="middle" font-family="Black Han Sans" font-size="22" fill="#ffd700" stroke="#111" stroke-width="1.5">T</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">테슬라 만두 1kg</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩12,800</div>
+            <div class="price-now text-2xl leading-none">₩7,990</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">38%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 110</span><span class="font-hand text-[var(--mart-blue)]">고전압 풍미</span>
+        </div>
+      </article>
+
+      <!-- 8. 3상 결선 김 -->
+      <article class="product-card p-3" data-cat="신선" data-id="3phase-gim" data-name="3상 결선 김 20봉" data-price="3990">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="12" y="22" width="96" height="80" rx="4" fill="#0a8a3a" stroke="#111" stroke-width="3"/>
+            <rect x="12" y="22" width="96" height="22" fill="#ffd700" stroke="#111" stroke-width="3"/>
+            <text x="60" y="38" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">3상 결선 김</text>
+            <!-- 3상 Y결선 도형 -->
+            <circle cx="60" cy="72" r="3" fill="#fff"/>
+            <line x1="60" y1="72" x2="60" y2="54" stroke="#fff" stroke-width="3"/>
+            <line x1="60" y1="72" x2="44" y2="84" stroke="#fff" stroke-width="3"/>
+            <line x1="60" y1="72" x2="76" y2="84" stroke="#fff" stroke-width="3"/>
+            <circle cx="60" cy="54" r="4" fill="#e60023" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="44" cy="84" r="4" fill="#1a3aa8" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="76" cy="84" r="4" fill="#ffd700" stroke="#fff" stroke-width="1.5"/>
+            <text x="60" y="100" text-anchor="middle" font-family="Jua" font-size="9" fill="#fff">R-S-T · 20봉지</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">3상 결선 김 20봉</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩6,500</div>
+            <div class="price-now text-2xl leading-none">₩3,990</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">38%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 180</span><span class="font-hand text-[var(--mart-orange)]">Y결선</span>
+        </div>
+      </article>
+
+      <!-- 9. 공명 사탕 -->
+      <article class="product-card p-3" data-cat="과자" data-id="resonance-candy" data-name="공명 사탕 100알" data-price="2900">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <ellipse cx="60" cy="60" rx="48" ry="40" fill="#ff2d7e" stroke="#111" stroke-width="3"/>
+            <ellipse cx="60" cy="60" rx="40" ry="32" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="4 3"/>
+            <circle cx="60" cy="60" r="6" fill="#fff"/>
+            <text x="60" y="36" text-anchor="middle" font-family="Black Han Sans" font-size="14" fill="#fff">공명</text>
+            <text x="60" y="88" text-anchor="middle" font-family="Black Han Sans" font-size="14" fill="#fff">사탕</text>
+            <path d="M10 60 Q30 40 50 60 Q70 80 90 60 Q100 50 110 60" stroke="#ffd700" stroke-width="2" fill="none"/>
+            <text x="60" y="112" text-anchor="middle" font-family="Jua" font-size="9" fill="#111">f₀ = 1/(2π√LC) · 100알</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">공명 사탕 100알</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩4,200</div>
+            <div class="price-now text-2xl leading-none">₩2,900</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">31%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 500</span><span class="font-hand text-[var(--mart-pink)]">달콤한 LC</span>
+        </div>
+      </article>
+
+      <!-- 10. 줄의 법칙 우유 -->
+      <article class="product-card p-3" data-cat="음료" data-id="joule-milk" data-name="줄의 법칙 우유 1L" data-price="2780">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <path d="M30 30 L30 22 L90 22 L90 30 L96 38 L96 102 L24 102 L24 38 Z"
+                  fill="#fff" stroke="#111" stroke-width="3"/>
+            <rect x="24" y="38" width="72" height="22" fill="#e60023" stroke="#111" stroke-width="3"/>
+            <text x="60" y="54" text-anchor="middle" font-family="Black Han Sans" font-size="13" fill="#fff">줄의 법칙</text>
+            <text x="60" y="78" text-anchor="middle" font-family="Black Han Sans" font-size="14" fill="#111">우유</text>
+            <text x="60" y="94" text-anchor="middle" font-family="Jua" font-size="10" fill="#111">Q = I²Rt · 1L</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">줄의 법칙 우유 1L</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩3,900</div>
+            <div class="price-now text-2xl leading-none">₩2,780</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">29%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 240</span><span class="font-hand text-[var(--mart-blue)]">매일 신선</span>
+        </div>
+      </article>
+
+      <!-- 11. 회로 즉석밥 -->
+      <article class="product-card p-3" data-cat="라면" data-id="circuit-rice" data-name="회로 즉석밥 6입" data-price="6480">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <ellipse cx="60" cy="74" rx="44" ry="14" fill="#fff" stroke="#111" stroke-width="3"/>
+            <path d="M16 74 Q60 100 104 74 L100 86 Q60 108 20 86 Z" fill="#cfa97a" stroke="#111" stroke-width="3"/>
+            <rect x="22" y="30" width="76" height="36" rx="4" fill="#ffd700" stroke="#111" stroke-width="3"/>
+            <text x="60" y="46" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#111">회로 즉석밥</text>
+            <text x="60" y="60" text-anchor="middle" font-family="Jua" font-size="10" fill="#111">6입 · 직병렬</text>
+            <line x1="22" y1="22" x2="98" y2="22" stroke="#111" stroke-width="2"/>
+            <circle cx="22" cy="22" r="3" fill="#e60023"/><circle cx="98" cy="22" r="3" fill="#e60023"/>
+            <rect x="42" y="14" width="14" height="16" fill="#1a3aa8" stroke="#111" stroke-width="2"/>
+            <rect x="66" y="14" width="14" height="16" fill="#1a3aa8" stroke="#111" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">회로 즉석밥 6입</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩9,000</div>
+            <div class="price-now text-2xl leading-none">₩6,480</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">28%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 95</span><span class="font-hand text-[var(--mart-green)]">2분 가열</span>
+        </div>
+      </article>
+
+      <!-- 12. 절연 장갑 초콜릿 -->
+      <article class="product-card p-3" data-cat="과자" data-id="insul-choco" data-name="절연 장갑 초콜릿" data-price="3500">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <path d="M30 100 L30 60 Q30 50 40 50 L40 30 Q40 22 48 22 Q56 22 56 30 L56 48
+                     L60 48 L60 26 Q60 18 68 18 Q76 18 76 26 L76 50
+                     L80 50 L80 30 Q80 22 88 22 Q96 22 96 30 L96 60
+                     L96 100 Z"
+                  fill="#ff6a00" stroke="#111" stroke-width="3"/>
+            <rect x="36" y="64" width="56" height="22" fill="#5b3a16" stroke="#111" stroke-width="2"/>
+            <text x="64" y="80" text-anchor="middle" font-family="Black Han Sans" font-size="11" fill="#ffd700">절연 초콜릿</text>
+            <text x="60" y="112" text-anchor="middle" font-family="Jua" font-size="9" fill="#111">고무 함유 NO · 카카오 70%</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">절연 장갑 초콜릿</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩4,800</div>
+            <div class="price-now text-2xl leading-none">₩3,500</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">27%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 75</span><span class="font-hand text-[var(--mart-orange)]">시험 직전</span>
+        </div>
+      </article>
+
+      <!-- 13. 시뮬레이터 코너 (기획전) -->
+      <article class="product-card p-3" data-cat="기획전" data-id="sim-corner" data-name="시뮬레이터 코너 입장권" data-price="0">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <rect x="10" y="20" width="100" height="80" rx="4" fill="#1a3aa8" stroke="#111" stroke-width="3"/>
+            <rect x="14" y="24" width="92" height="58" fill="#0a8a3a" stroke="#111" stroke-width="2"/>
+            <!-- 회로 -->
+            <line x1="22" y1="40" x2="98" y2="40" stroke="#ffd700" stroke-width="2"/>
+            <line x1="22" y1="64" x2="98" y2="64" stroke="#ffd700" stroke-width="2"/>
+            <rect x="40" y="32" width="14" height="16" fill="#e60023" stroke="#fff" stroke-width="1.5"/>
+            <rect x="66" y="32" width="14" height="16" fill="#fff" stroke="#fff" stroke-width="1.5"/>
+            <circle cx="60" cy="64" r="6" fill="#ffd700" stroke="#fff" stroke-width="1.5"/>
+            <text x="60" y="96" text-anchor="middle" font-family="Black Han Sans" font-size="12" fill="#ffd700">SIM 코너</text>
+            <rect x="14" y="104" width="92" height="0" stroke="#111"/>
+            <circle cx="20" cy="108" r="2" fill="#ffd700"/>
+            <circle cx="100" cy="108" r="2" fill="#ffd700"/>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">시뮬레이터 코너</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="text-xs text-[var(--ink-mute)]">매장 체험</div>
+            <div class="price-now text-2xl leading-none">무료</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">신규<br>오픈</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>일 200명 한정</span><span class="font-hand text-[var(--mart-blue)]">체험 OK</span>
+        </div>
+      </article>
+
+      <!-- 14. 합격 김밥 -->
+      <article class="product-card p-3" data-cat="육가공" data-id="pass-gimbap" data-name="합격 김밥 2줄" data-price="3900">
+        <div class="bg-[#fff] border-2 border-[#111] rounded mb-2 p-1 flex items-center justify-center h-32">
+          <svg viewBox="0 0 120 120" width="110" height="110">
+            <g transform="translate(0,8)">
+              <ellipse cx="36" cy="60" rx="22" ry="22" fill="#0a3a1a" stroke="#111" stroke-width="3"/>
+              <circle cx="36" cy="60" r="14" fill="#fff8e7" stroke="#111" stroke-width="2"/>
+              <circle cx="32" cy="58" r="3" fill="#e60023"/>
+              <circle cx="40" cy="60" r="3" fill="#ffd700"/>
+              <rect x="32" y="62" width="8" height="4" fill="#0a8a3a"/>
+              <ellipse cx="84" cy="60" rx="22" ry="22" fill="#0a3a1a" stroke="#111" stroke-width="3"/>
+              <circle cx="84" cy="60" r="14" fill="#fff8e7" stroke="#111" stroke-width="2"/>
+              <circle cx="80" cy="58" r="3" fill="#e60023"/>
+              <circle cx="88" cy="60" r="3" fill="#ffd700"/>
+              <rect x="80" y="62" width="8" height="4" fill="#0a8a3a"/>
+            </g>
+            <rect x="20" y="92" width="80" height="18" fill="#ffd700" stroke="#111" stroke-width="2"/>
+            <text x="60" y="106" text-anchor="middle" font-family="Black Han Sans" font-size="11" fill="#111">합격 김밥 2줄</text>
+          </svg>
+        </div>
+        <div class="font-han text-base leading-tight">합격 김밥 2줄</div>
+        <div class="flex items-end justify-between mt-2">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩5,200</div>
+            <div class="price-now text-2xl leading-none">₩3,900</div>
+          </div>
+          <span class="discount-stamp w-11 h-11 flex items-center justify-center text-xs">25%<br>OFF</span>
+        </div>
+        <div class="text-[11px] mt-1 text-[var(--ink-mute)] flex justify-between">
+          <span>재고 60</span><span class="font-hand text-[var(--mart-red)]">든든</span>
+        </div>
+      </article>
+    </section>
+
+    <!-- ===== 1+1 / 기획 박스 ===== -->
+    <section class="grid md:grid-cols-3 gap-4 mt-8" data-cat="기획전">
+      <article class="product-card p-4" data-cat="기획전" data-id="onepluone" data-name="옴두유 1+1 기획팩" data-price="4980">
+        <div class="flex items-center gap-1 mb-1">
+          <span class="bg-[var(--mart-red)] text-white font-han px-2 py-0.5 text-sm">1+1</span>
+          <span class="bg-[var(--mart-yellow)] text-[#111] font-han px-2 py-0.5 text-sm">한정</span>
+        </div>
+        <div class="font-han text-lg leading-tight">옴두유 1+1 기획팩</div>
+        <div class="font-do text-xs text-[var(--ink-mute)] mt-1">옴의 법칙 1L × 1 + 안전 두유 작은팩 × 1</div>
+        <div class="flex items-end justify-between mt-3">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩11,000</div>
+            <div class="price-now text-3xl leading-none">₩4,980</div>
+          </div>
+          <span class="discount-stamp w-12 h-12 flex items-center justify-center text-xs">55%<br>OFF</span>
+        </div>
+      </article>
+
+      <article class="product-card p-4" data-cat="기획전" data-id="examkit" data-name="시험 1주 전 키트" data-price="14900">
+        <div class="flex items-center gap-1 mb-1">
+          <span class="bg-[var(--mart-blue)] text-white font-han px-2 py-0.5 text-sm">기획전</span>
+          <span class="bg-[var(--mart-yellow)] text-[#111] font-han px-2 py-0.5 text-sm">D-7</span>
+        </div>
+        <div class="font-han text-lg leading-tight">시험 1주 전 키트</div>
+        <div class="font-do text-xs text-[var(--ink-mute)] mt-1">합격 쿠키 + 공식 시리얼 + 줄의법칙 우유 + 절연 초콜릿</div>
+        <div class="flex items-end justify-between mt-3">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩24,800</div>
+            <div class="price-now text-3xl leading-none">₩14,900</div>
+          </div>
+          <span class="discount-stamp w-12 h-12 flex items-center justify-center text-xs">40%<br>OFF</span>
+        </div>
+      </article>
+
+      <article class="product-card p-4" data-cat="기획전" data-id="newcomer" data-name="첫구매 환영 박스" data-price="9900">
+        <div class="flex items-center gap-1 mb-1">
+          <span class="bg-[var(--mart-orange)] text-white font-han px-2 py-0.5 text-sm">신규회원</span>
+          <span class="bg-[var(--mart-yellow)] text-[#111] font-han px-2 py-0.5 text-sm">단 1회</span>
+        </div>
+        <div class="font-han text-lg leading-tight">첫구매 환영 박스</div>
+        <div class="font-do text-xs text-[var(--ink-mute)] mt-1">신규 가입 시 9,900원 · 5만원 상당 학습 식품 7종</div>
+        <div class="flex items-end justify-between mt-3">
+          <div>
+            <div class="strike text-xs text-[var(--ink-mute)]">₩49,800</div>
+            <div class="price-now text-3xl leading-none">₩9,900</div>
+          </div>
+          <span class="discount-stamp w-12 h-12 flex items-center justify-center text-xs">80%<br>OFF</span>
+        </div>
+      </article>
+    </section>
+
+    <!-- ===== 쿠폰 컷오프 ===== -->
+    <section class="mt-10">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="font-han text-2xl">잘라쓰는 쿠폰</span>
+        <span class="font-hand text-[var(--mart-red)]">✂ 점선 따라 자르세요</span>
+      </div>
+      <div class="grid md:grid-cols-3 gap-5">
+        <div class="coupon p-4 relative" data-coupon="c1">
+          <div class="text-xs font-do text-[var(--ink-mute)]">SPARK MART COUPON · No.001</div>
+          <div class="font-han text-3xl text-[var(--mart-red)] mt-1">3,000원 할인</div>
+          <div class="font-do text-sm mt-1">3만원 이상 구매 시</div>
+          <div class="scissors-line mt-3 pt-2 flex items-center justify-between">
+            <span class="font-hand text-xs">유효 5/15 ~ 5/21</span>
+            <button class="cut-btn font-han text-xs bg-[var(--mart-yellow)] border-2 border-[#111] px-2 py-1 no-print">쿠폰 자르기</button>
+          </div>
+        </div>
+        <div class="coupon p-4 relative" data-coupon="c2">
+          <div class="text-xs font-do text-[var(--ink-mute)]">SPARK MART COUPON · No.002</div>
+          <div class="font-han text-3xl text-[var(--mart-blue)] mt-1">10% 추가할인</div>
+          <div class="font-do text-sm mt-1">전기학습 코너 전 상품</div>
+          <div class="scissors-line mt-3 pt-2 flex items-center justify-between">
+            <span class="font-hand text-xs">1인 1매 한정</span>
+            <button class="cut-btn font-han text-xs bg-[var(--mart-yellow)] border-2 border-[#111] px-2 py-1 no-print">쿠폰 자르기</button>
+          </div>
+        </div>
+        <div class="coupon p-4 relative" data-coupon="c3">
+          <div class="text-xs font-do text-[var(--ink-mute)]">SPARK MART COUPON · No.003</div>
+          <div class="font-han text-3xl text-[var(--mart-orange)] mt-1">합격 김밥 무료</div>
+          <div class="font-do text-sm mt-1">2만원 이상 구매 시 (선착순 100명)</div>
+          <div class="scissors-line mt-3 pt-2 flex items-center justify-between">
+            <span class="font-hand text-xs">매장 수령 한정</span>
+            <button class="cut-btn font-han text-xs bg-[var(--mart-yellow)] border-2 border-[#111] px-2 py-1 no-print">쿠폰 자르기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 적립 카드 + 매장 ===== -->
+    <section class="grid md:grid-cols-2 gap-6 mt-10">
+      <!-- 적립 카드 -->
+      <div class="border-4 border-[#111] bg-[#fffceb] p-5 relative" style="box-shadow:6px 6px 0 #111;">
+        <div class="absolute -top-3 -right-3 stamp stamp-blue text-sm bg-white">VIP</div>
+        <div class="font-han text-2xl text-[var(--mart-red)]">스파크 포인트 카드</div>
+        <div class="font-do text-sm text-[var(--ink-mute)] mt-1">결제 1,000원당 10P 적립 · 매주 화요일 2배 적립</div>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <div class="bg-white border-2 border-[#111] p-3 text-center">
+            <div class="font-bebas text-3xl text-[var(--mart-red)]">5%</div>
+            <div class="font-do text-xs">생일 달 추가할인</div>
+          </div>
+          <div class="bg-white border-2 border-[#111] p-3 text-center">
+            <div class="font-bebas text-3xl text-[var(--mart-blue)]">2x</div>
+            <div class="font-do text-xs">화요일 적립 2배</div>
+          </div>
+          <div class="bg-white border-2 border-[#111] p-3 text-center">
+            <div class="font-bebas text-3xl text-[var(--mart-orange)]">무료</div>
+            <div class="font-do text-xs">7만원 이상 배송</div>
+          </div>
+          <div class="bg-white border-2 border-[#111] p-3 text-center">
+            <div class="font-bebas text-3xl text-[var(--mart-green)]">3종</div>
+            <div class="font-do text-xs">매월 사은품</div>
+          </div>
+        </div>
+        <div class="font-hand text-[var(--mart-red)] mt-3"><span class="finger">👉</span> 가입은 매장 또는 앱에서!</div>
+      </div>
+
+      <!-- 매장 위치 -->
+      <div class="border-4 border-[#111] bg-white p-5 relative" style="box-shadow:6px 6px 0 #111;">
+        <div class="font-han text-2xl text-[var(--mart-blue)]">전국 5개 매장 (가상)</div>
+        <div class="font-do text-sm text-[var(--ink-mute)] mt-1">학습자 동선에 맞춰 오픈한 모의 매장입니다.</div>
+        <ul class="mt-3 space-y-2 text-sm font-do">
+          <li class="flex items-start gap-2">
+            <span class="bg-[var(--mart-red)] text-white font-han px-2 rounded-sm">1</span>
+            <span><b>본점 · 회로동</b> · 직류로 12 · 09~22시 · 시뮬레이터 코너 운영</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="bg-[var(--mart-blue)] text-white font-han px-2 rounded-sm">2</span>
+            <span><b>패러데이점</b> · 자속로 88 · 10~21시 · 김치 직판</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="bg-[var(--mart-orange)] text-white font-han px-2 rounded-sm">3</span>
+            <span><b>키르히호프점</b> · 분기로 5 · 09~22시 · 라면 코너 특화</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="bg-[var(--mart-green)] text-white font-han px-2 rounded-sm">4</span>
+            <span><b>테슬라점</b> · 고전압대로 220 · 11~23시 · 만두 즉석 조리</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="bg-[var(--mart-pink)] text-white font-han px-2 rounded-sm">5</span>
+            <span><b>줄점</b> · 발열로 4Ω · 09~21시 · 우유 신선특가</span>
+          </li>
+        </ul>
+        <div class="font-hand text-[var(--mart-blue)] mt-3 text-sm">* 모든 주소는 학습 컨셉 가상 주소입니다</div>
+      </div>
+    </section>
+
+    <!-- ===== 푸터 ===== -->
+    <footer class="mt-10 border-t-4 border-dashed border-[#111] pt-5">
+      <div class="grid md:grid-cols-3 gap-4 text-sm font-do">
+        <div>
+          <div class="font-han text-base">고객센터 (가상)</div>
+          <div class="text-[var(--ink-mute)]">평일 09~18시 · 학습 상담만 운영</div>
+        </div>
+        <div>
+          <div class="font-han text-base">발행</div>
+          <div class="text-[var(--ink-mute)]">스파크 마트 학습기획팀 · 통권 제3호</div>
+        </div>
+        <div>
+          <div class="font-han text-base">유효기간</div>
+          <div class="text-[var(--ink-mute)]">2026.05.15 ~ 2026.05.21 (재고 소진 시 조기 마감)</div>
+        </div>
+      </div>
+      <div class="mt-5 text-center text-xs font-do text-[var(--ink-mute)] border-t border-[#bba] pt-4 leading-relaxed">
+        본 전단지는 <b>전기기능사 학습용 가상 시뮬레이션</b>입니다. 표기된 마트명·상품명·가격·주소·매장은 모두 가공이며,
+        <b>실재하는 마트·식품 브랜드와 무관</b>합니다. 학습 콘텐츠의 흥미 유발을 위한 패러디 표현이며,
+        실제 식품 광고가 아닙니다. © 2026 전기기능사 학습 소식지.
+      </div>
+    </footer>
+
+    <!-- 톱니 아래 -->
+    <div class="deckle-bot -mx-5 sm:-mx-8 mt-3 -mb-12"></div>
+  </article>
+</main>
+
+<!-- 토스트 -->
+<div id="toast" class="cart-toast no-print"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ===== 안전한 텍스트 escape =====
+  function escapeHTML(s){
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  // ===== 장바구니 =====
+  const cart = new Map();
+  const cartCountEl = document.getElementById('cart-count');
+
+  function updateCartCount(){
+    let n = 0;
+    cart.forEach(v => n += v.qty);
+    cartCountEl.textContent = String(n);
+  }
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.innerHTML = escapeHTML(msg);
+    t.classList.add('show');
+    clearTimeout(showToast._tid);
+    showToast._tid = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  document.querySelectorAll('.product-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      const name = card.dataset.name || '상품';
+      const price = parseInt(card.dataset.price || '0', 10);
+      if(!id) return;
+
+      if(cart.has(id)){
+        const item = cart.get(id);
+        item.qty += 1;
+        showToast(name + ' 추가됨 (총 ' + item.qty + '개)');
+      } else {
+        cart.set(id, { name, price, qty: 1 });
+        card.classList.add('in-cart');
+        showToast(name + ' 장바구니에 담음 · ₩' + price.toLocaleString());
+      }
+      updateCartCount();
+    });
+  });
+
+  // ===== 카테고리 필터 =====
+  const chips = document.querySelectorAll('#cat-filter .cat-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const cat = chip.dataset.cat;
+      document.querySelectorAll('.product-card').forEach(card => {
+        const cardCat = card.dataset.cat;
+        if(cat === 'all' || cardCat === cat){
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // ===== 쿠폰 자르기 =====
+  document.querySelectorAll('.cut-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const coupon = btn.closest('.coupon');
+      if(!coupon || coupon.classList.contains('cut')) return;
+      coupon.classList.add('cut');
+      showToast('쿠폰을 잘랐어요 · 매장 또는 결제 시 사용');
+      setTimeout(() => {
+        coupon.style.visibility = 'hidden';
+      }, 700);
+    });
+  });
+
+  // ===== 인쇄 =====
+  document.getElementById('btn-print').addEventListener('click', () => {
+    window.print();
+  });
+
+  // ===== 장바구니 보기 =====
+  document.getElementById('btn-cart').addEventListener('click', () => {
+    if(cart.size === 0){
+      showToast('장바구니가 비어 있어요. 상품을 눌러 담아보세요.');
+      return;
+    }
+    let total = 0, lines = [];
+    cart.forEach(v => {
+      const sub = v.price * v.qty;
+      total += sub;
+      lines.push(v.name + ' × ' + v.qty + ' = ₩' + sub.toLocaleString());
+    });
+    showToast('총 ' + cart.size + '종 · ₩' + total.toLocaleString());
+    // 콘솔에도 상세 출력 (개발 확인용)
+    try { console.log('[Spark Mart Cart]\n' + lines.join('\n')); } catch(_){}
+  });
+
+  updateCartCount();
+})();
+</script>
+</body>
+</html>

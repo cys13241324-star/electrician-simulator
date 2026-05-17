@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>역률 개선 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(168,139,250,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(99, 102, 241, 0.45),
+        0 0 40px rgba(244, 114, 182, 0.12);
+}
+canvas#phasorCanvas {
+    display: block;
+    width: 100%;
+    height: 440px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#triangleCanvas {
+    display: block;
+    width: 100%;
+    height: 320px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-p { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-cos { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-qc { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-v { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-pill.warn {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.4);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.live-num-pair {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.92rem;
+}
+.live-before { color: #fca5a5; }
+.live-after { color: #6ee7b7; }
+.arrow-sep { color: #94a3b8; padding: 0 4px; }
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.preset-btn {
+    background: rgba(34, 211, 238, 0.18);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(34, 211, 238, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.4);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · POWER FACTOR CORRECTION · DUAL VIEW
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            ⚡ 역률 개선 (PFC) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">위 — 페이저 다이어그램 (V·I 벡터와 위상각 φ) · 아래 — 전력 삼각형 (P·Q·S). 콘덴서로 무효 전력을 보상해 cos φ를 1에 가깝게.</p>
+    </header>
+
+    <!-- 라이브 4칩 (전후 비교) -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-cos">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">역률 cos φ (전 → 후)</p>
+            <p class="mt-1 live-num-pair font-bold">
+                <span id="cosBefore" class="live-before">—</span><span class="arrow-sep">→</span><span id="cosAfter" class="live-after">—</span>
+            </p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-q">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">무효 전력 Q (전 → 후)</p>
+            <p class="mt-1 live-num-pair font-bold">
+                <span id="qBefore" class="live-before">—</span><span class="arrow-sep">→</span><span id="qAfter" class="live-after">—</span>
+            </p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-s">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">피상 전력 S (전 → 후)</p>
+            <p class="mt-1 live-num-pair font-bold">
+                <span id="sBefore" class="live-before">—</span><span class="arrow-sep">→</span><span id="sAfter" class="live-after">—</span>
+            </p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-i">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">선전류 I (전 → 후)</p>
+            <p class="mt-1 live-num-pair font-bold">
+                <span id="iBefore" class="live-before">—</span><span class="arrow-sep">→</span><span id="iAfter" class="live-after">—</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 페이저 다이어그램 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="phasorCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">페이저 다이어그램 — V · I (전/후) · I_C (콘덴서 전류)</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-pink-300"><span class="legend-dot" style="background:#f472b6;color:#f472b6"></span>V</span>
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#fca5a5;color:#fca5a5"></span>I (전)</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#6ee7b7;color:#6ee7b7"></span>I (후)</span>
+                        <span class="text-cyan-300"><span class="legend-dot" style="background:#67e8f9;color:#67e8f9"></span>I_C</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="phasorCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 전력 삼각형 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="triangleCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">전력 삼각형 — P (유효) · Q (무효) · S (피상)</span>
+                    <div class="flex items-center gap-2">
+                        <button id="presetOptimal" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">cos φ=1로 맞추기</button>
+                        <button id="resetBtn" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">↺ 초기화</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="triangleCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">역률 개선 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">개선 전</p>
+                        <div class="math-container mt-2">\(Q_L = P\, \tan\varphi\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">개선 후 cos φ'</p>
+                        <div class="math-container mt-2">\(\cos\varphi' = \dfrac{P}{\sqrt{P^2 + (Q_L - Q_C)^2}}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">콘덴서 용량</p>
+                        <div class="math-container mt-2">\(Q_C = V^2 \omega C\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">유효 전력 P</span> · 실제로 일하는 전력 [kW] <span class="text-slate-500">— 콘덴서로 변하지 않음</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">무효 전력 Q</span> · 자기장/전기장 저장 [kVar] <span class="text-slate-500">— Q_L − Q_C로 줄임</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">피상 전력 S</span> · S = √(P² + Q²) [kVA] <span class="text-slate-500">— 작아질수록 전류 ↓</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">목표</span> · Q_C = Q_L 이면 cos φ' = 1 <span class="text-slate-500">— 완전 보상</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip-p chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>유효 전력 P</span><span id="pDisp" class="font-mono text-base">100</span></label>
+                <input type="range" id="p" min="10" max="500" step="5" value="100" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kW (유도성 부하)</p>
+            </div>
+
+            <div class="chip-cos chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>개선 전 cos φ</span><span id="cosDisp" class="font-mono text-base">0.70</span></label>
+                <input type="range" id="cos" min="0.30" max="0.99" step="0.01" value="0.70" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">(지상 부하)</p>
+            </div>
+
+            <div class="chip-qc chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>추가 콘덴서 Q_C</span><span id="qcDisp" class="font-mono text-base">50</span></label>
+                <input type="range" id="qc" min="0" max="300" step="1" value="50" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kVar</p>
+            </div>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>선간 전압 V</span><span id="vDisp" class="font-mono text-base">380</span></label>
+                <input type="range" id="v" min="100" max="600" step="10" value="380" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V (단상 가정)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-indigo-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">유도성 부하는 전류가 전압보다 <span class="text-rose-300 font-bold">φ만큼 뒤짐</span> → Q_L 발생</p>
+                <p class="feature-row rounded-md p-2">병렬 콘덴서가 <span class="text-cyan-300 font-bold">앞선 무효 전류</span> 공급 → Q_L 상쇄</p>
+                <p class="feature-row rounded-md p-2">P는 그대로, S와 I만 <span class="text-emerald-300 font-bold">감소</span> → 송전 손실 ↓</p>
+                <p class="feature-row rounded-md p-2">Q_C가 너무 크면 <span class="text-orange-300 font-bold">진상 역률</span>(과보상) → 위험</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const phCv = $('phasorCanvas');
+const pctx = phCv.getContext('2d');
+const triCv = $('triangleCanvas');
+const tctx = triCv.getContext('2d');
+
+let state = {
+    P: 100,        // kW (유효 전력)
+    cosBefore: 0.70,
+    Qc: 50,        // kVar (추가 콘덴서 무효 전력)
+    V: 380,        // V (선간)
+    t: 0,
+    // 계산값
+    phiBefore: 0, phiAfter: 0,
+    cosAfter: 1,
+    QL: 0, Qnet: 0,
+    Sbefore: 0, Safter: 0,
+    Ibefore: 0, Iafter: 0,
+    Ic: 0,
+    overComp: false  // 과보상 여부 (진상)
+};
+
+function resize() {
+    phCv.width = phCv.parentElement.clientWidth - 2;
+    phCv.height = 440;
+    triCv.width = triCv.parentElement.clientWidth - 2;
+    triCv.height = 320;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function drawArrow(ctx, x0, y0, x1, y1, color, light, width, dashed, headSize) {
+    const ang = Math.atan2(y1 - y0, x1 - x0);
+    headSize = headSize || 11;
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = light;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    if (dashed) ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 화살촉
+    ctx.translate(x1, y1);
+    ctx.rotate(ang);
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(-headSize, -headSize*0.55); ctx.lineTo(-headSize, headSize*0.55); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawLabel(ctx, text, x, y, color, font) {
+    ctx.save();
+    ctx.font = font || 'bold 11px ui-monospace, monospace';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+    ctx.restore();
+}
+
+// ====================================================
+// 페이저 다이어그램
+// ====================================================
+function drawPhasor() {
+    const W = phCv.width, H = phCv.height;
+    pctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = pctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.65);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.32)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.18)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    pctx.fillStyle = bg;
+    pctx.fillRect(0, 0, W, H);
+
+    // 격자
+    pctx.save();
+    pctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    pctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        pctx.beginPath(); pctx.moveTo(i, 0); pctx.lineTo(i, H); pctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        pctx.beginPath(); pctx.moveTo(0, i); pctx.lineTo(W, i); pctx.stroke();
+    }
+    pctx.restore();
+
+    // 좌상 라벨
+    pctx.save();
+    pctx.font = 'bold 10px ui-monospace, monospace';
+    pctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    pctx.textAlign = 'left'; pctx.textBaseline = 'top';
+    pctx.fillText('◯ PHASOR DIAGRAM · V 기준 · I 전후 비교 · I_C 진상', 12, 10);
+    pctx.restore();
+
+    // 중심 (좌측에 살짝 치우치게 - 우측 박스 공간 확보)
+    const cx = W * 0.42;
+    const cy = H * 0.55;
+    const Rmax = Math.min(W * 0.32, H * 0.4);
+
+    // 원형 격자
+    pctx.save();
+    pctx.strokeStyle = 'rgba(148, 163, 184, 0.13)';
+    pctx.lineWidth = 1;
+    for (let k = 1; k <= 3; k++) {
+        pctx.beginPath();
+        pctx.arc(cx, cy, (Rmax * k) / 3, 0, Math.PI * 2);
+        pctx.stroke();
+    }
+    // 십자 축
+    pctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+    pctx.beginPath();
+    pctx.moveTo(cx - Rmax - 16, cy); pctx.lineTo(cx + Rmax + 16, cy);
+    pctx.moveTo(cx, cy - Rmax - 16); pctx.lineTo(cx, cy + Rmax + 16);
+    pctx.stroke();
+    // 실수축 / 허수축 라벨
+    pctx.font = '10px ui-monospace, monospace';
+    pctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
+    pctx.fillText('Re', cx + Rmax + 8, cy - 10);
+    pctx.fillText('Im', cx + 12, cy - Rmax - 8);
+    pctx.restore();
+
+    // V 벡터 (기준: 양의 실수축)
+    const Vlen = Rmax * 0.85;
+    const Vx = cx + Vlen, Vy = cy;
+    drawArrow(pctx, cx, cy, Vx, Vy, '#ec4899', '#f9a8d4', 3.5, false, 12);
+    drawLabel(pctx, 'V (기준)', Vx + 6, Vy - 14, '#f9a8d4');
+
+    // 전류 스케일: Ibefore가 기준 (페이저 길이 = Rmax * 0.75)
+    const Imax = state.Ibefore;
+    const Iscale = (Rmax * 0.75) / Math.max(Imax, 1e-3);
+
+    // I_before (V보다 φ만큼 뒤짐 → 화면 좌표 아래쪽 = 지상)
+    // 페이저 도식 관습: 지상(뒤짐)을 시계방향(화면 아래)으로 그림
+    const phiB = state.phiBefore;
+    const IbLen = state.Ibefore * Iscale;
+    const IbxS = cx + Math.cos(phiB) * IbLen;
+    const IbyS = cy + Math.sin(phiB) * IbLen;  // y는 화면 좌표 아래방향이 +
+    drawArrow(pctx, cx, cy, IbxS, IbyS, '#ef4444', '#fca5a5', 3, false, 11);
+
+    // I_after
+    const phiA = state.phiAfter;  // sign: + = 지상(뒤짐, 아래), - = 진상(앞섬, 위)
+    const IaLen = state.Iafter * Iscale;
+    const IaxS = cx + Math.cos(phiA) * IaLen;
+    const IayS = cy + Math.sin(phiA) * IaLen;
+    drawArrow(pctx, cx, cy, IaxS, IayS, '#10b981', '#6ee7b7', 3, false, 11);
+
+    // I_C (진상 = 위쪽)
+    // I_C 크기: Qc/V
+    if (state.Qc > 0.5 && state.V > 0) {
+        const IcLen = (state.Ic) * Iscale;
+        // I_C는 V보다 90도 앞 → 위쪽 (-y)
+        const IcxS = cx;
+        const IcyS = cy - IcLen;
+        drawArrow(pctx, cx, cy, IcxS, IcyS, '#06b6d4', '#67e8f9', 2.4, true, 10);
+        drawLabel(pctx, `I_C=${state.Ic.toFixed(1)}A`, IcxS + 50, IcyS + 6, '#67e8f9', 'bold 10px ui-monospace, monospace');
+    }
+
+    // I_before 라벨 (벡터 끝쪽 바깥)
+    {
+        const lx = cx + Math.cos(phiB) * (IbLen + 24);
+        const ly = cy + Math.sin(phiB) * (IbLen + 24);
+        drawLabel(pctx, `I=${state.Ibefore.toFixed(1)}A`, lx, ly, '#fca5a5', 'bold 10px ui-monospace, monospace');
+    }
+    // I_after 라벨
+    {
+        const lx = cx + Math.cos(phiA) * (IaLen + 24);
+        const ly = cy + Math.sin(phiA) * (IaLen + 24);
+        drawLabel(pctx, `I'=${state.Iafter.toFixed(1)}A`, lx, ly, '#6ee7b7', 'bold 10px ui-monospace, monospace');
+    }
+
+    // φ 각도 호 (V축에서 I_before까지)
+    if (Math.abs(phiB) > 0.02) {
+        pctx.save();
+        pctx.strokeStyle = 'rgba(248, 113, 113, 0.7)';
+        pctx.lineWidth = 2;
+        pctx.beginPath();
+        pctx.arc(cx, cy, Rmax * 0.18, 0, phiB, false);
+        pctx.stroke();
+        const midA = phiB / 2;
+        const flx = cx + Math.cos(midA) * (Rmax * 0.27);
+        const fly = cy + Math.sin(midA) * (Rmax * 0.27);
+        pctx.font = 'bold 10px ui-monospace, monospace';
+        pctx.fillStyle = '#fca5a5';
+        pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
+        pctx.fillText(`φ=${(phiB * 180 / Math.PI).toFixed(1)}°`, flx, fly);
+        pctx.restore();
+    }
+    // φ' 각도 호
+    if (Math.abs(phiA) > 0.02) {
+        pctx.save();
+        pctx.strokeStyle = 'rgba(110, 231, 183, 0.8)';
+        pctx.lineWidth = 2;
+        const start = 0;
+        const end = phiA;
+        pctx.beginPath();
+        if (end > start) {
+            pctx.arc(cx, cy, Rmax * 0.12, start, end, false);
+        } else {
+            pctx.arc(cx, cy, Rmax * 0.12, end, start, false);
+        }
+        pctx.stroke();
+        const midA2 = phiA / 2;
+        const fx2 = cx + Math.cos(midA2) * (Rmax * 0.21);
+        const fy2 = cy + Math.sin(midA2) * (Rmax * 0.21);
+        pctx.font = 'bold 9px ui-monospace, monospace';
+        pctx.fillStyle = '#6ee7b7';
+        pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
+        pctx.fillText(`φ'=${(phiA * 180 / Math.PI).toFixed(1)}°`, fx2, fy2);
+        pctx.restore();
+    }
+
+    // 중앙 점
+    pctx.save();
+    pctx.fillStyle = '#fff';
+    pctx.shadowBlur = 10;
+    pctx.shadowColor = '#fff';
+    pctx.beginPath();
+    pctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+    pctx.fill();
+    pctx.restore();
+
+    // 우측: 결과 박스
+    const bx = W - 230, by = 50, bw = 215, bh = 240;
+    pctx.save();
+    pctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(pctx, bx, by, bw, bh, 12);
+    pctx.fill();
+    pctx.strokeStyle = 'rgba(168, 139, 250, 0.4)';
+    pctx.lineWidth = 1;
+    pctx.stroke();
+
+    pctx.font = 'bold 11px ui-monospace, monospace';
+    pctx.textAlign = 'left'; pctx.textBaseline = 'top';
+    pctx.fillStyle = '#c4b5fd';
+    pctx.fillText('[ 페이저 요약 ]', bx + 14, by + 12);
+
+    pctx.font = '10px ui-monospace, monospace';
+    let yy = by + 38;
+    const line = (label, val, color) => {
+        pctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
+        pctx.fillText(label, bx + 14, yy);
+        pctx.fillStyle = color;
+        pctx.textAlign = 'right';
+        pctx.fillText(val, bx + bw - 14, yy);
+        pctx.textAlign = 'left';
+        yy += 19;
+    };
+    line('V (기준)', `${state.V.toFixed(0)} V`, '#f9a8d4');
+    line('φ (전)', `${(state.phiBefore * 180 / Math.PI).toFixed(2)}°`, '#fca5a5');
+    line("φ' (후)", `${(state.phiAfter * 180 / Math.PI).toFixed(2)}°`, '#6ee7b7');
+    line('I (전)', `${state.Ibefore.toFixed(2)} A`, '#fca5a5');
+    line("I' (후)", `${state.Iafter.toFixed(2)} A`, '#6ee7b7');
+    line('I_C', `${state.Ic.toFixed(2)} A`, '#67e8f9');
+    line('ΔI 감소', `${(state.Ibefore - state.Iafter).toFixed(2)} A`, '#a5b4fc');
+
+    if (state.overComp) {
+        pctx.fillStyle = 'rgba(251, 146, 60, 0.85)';
+        pctx.font = 'bold 10px ui-monospace, monospace';
+        pctx.fillText('⚠ 과보상 (진상)', bx + 14, yy + 2);
+    }
+    pctx.restore();
+}
+
+// ====================================================
+// 전력 삼각형
+// ====================================================
+function drawTriangle() {
+    const W = triCv.width, H = triCv.height;
+    tctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = tctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    tctx.fillStyle = bg;
+    tctx.fillRect(0, 0, W, H);
+
+    // 격자
+    tctx.save();
+    tctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    tctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        tctx.beginPath(); tctx.moveTo(i, 0); tctx.lineTo(i, H); tctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        tctx.beginPath(); tctx.moveTo(0, i); tctx.lineTo(W, i); tctx.stroke();
+    }
+    tctx.restore();
+
+    // 좌상 라벨
+    tctx.save();
+    tctx.font = 'bold 10px ui-monospace, monospace';
+    tctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    tctx.textAlign = 'left'; tctx.textBaseline = 'top';
+    tctx.fillText('▮ POWER TRIANGLE · P (수평) · Q (수직) · S (빗변)', 12, 10);
+    tctx.restore();
+
+    // 원점: 왼쪽 아래
+    const ox = W * 0.12;
+    const oy = H * 0.85;
+
+    // 스케일: Sbefore가 가장 큰 페이지 기준
+    const maxDim = Math.max(state.Sbefore, state.QL, state.P) * 1.05;
+    const scaleX = (W * 0.7) / maxDim;
+    const scaleY = (H * 0.7) / maxDim;
+    const sc = Math.min(scaleX, scaleY);
+
+    // P (공통)
+    const Px = ox + state.P * sc;
+    const Py = oy;
+
+    // Q_L (개선 전)
+    const QLy = oy - state.QL * sc;
+    // Q_net (개선 후) = QL - Qc (양수면 지상, 음수면 진상)
+    const QnetY = oy - state.Qnet * sc;
+
+    // === 1) 개선 전 삼각형 (희미한 빨강) ===
+    if (state.QL > 0.5) {
+        tctx.save();
+        // 채움
+        tctx.fillStyle = 'rgba(248, 113, 113, 0.10)';
+        tctx.beginPath();
+        tctx.moveTo(ox, oy);
+        tctx.lineTo(Px, oy);
+        tctx.lineTo(Px, QLy);
+        tctx.closePath();
+        tctx.fill();
+
+        // 외곽선 (점선)
+        tctx.strokeStyle = 'rgba(248, 113, 113, 0.55)';
+        tctx.lineWidth = 1.5;
+        tctx.setLineDash([4, 3]);
+        tctx.beginPath();
+        tctx.moveTo(ox, oy);
+        tctx.lineTo(Px, oy);
+        tctx.lineTo(Px, QLy);
+        tctx.lineTo(ox, oy);
+        tctx.stroke();
+        tctx.setLineDash([]);
+
+        // S_before 라벨 (빗변 중간)
+        const midSx = (ox + Px) / 2;
+        const midSy = (oy + QLy) / 2;
+        drawLabel(tctx, `S=${state.Sbefore.toFixed(1)} kVA (전)`,
+            midSx - 30, midSy - 14, '#fca5a5', 'bold 9px ui-monospace, monospace');
+
+        // Q_L 라벨 (오른쪽 세로변 옆)
+        drawLabel(tctx, `Q_L=${state.QL.toFixed(1)} kVar`,
+            Px + 60, (oy + QLy) / 2, '#fca5a5', 'bold 9px ui-monospace, monospace');
+        tctx.restore();
+    }
+
+    // === 2) 개선 후 삼각형 (선명한 초록 / 과보상시 주황) ===
+    const afterColor = state.overComp ? '#fb923c' : '#10b981';
+    const afterLight = state.overComp ? '#fed7aa' : '#6ee7b7';
+
+    tctx.save();
+    // 채움
+    const grad = tctx.createLinearGradient(ox, oy, Px, QnetY);
+    if (state.overComp) {
+        grad.addColorStop(0, 'rgba(251, 146, 60, 0.35)');
+        grad.addColorStop(1, 'rgba(251, 146, 60, 0.08)');
+    } else {
+        grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+        grad.addColorStop(1, 'rgba(16, 185, 129, 0.08)');
+    }
+    tctx.fillStyle = grad;
+    tctx.beginPath();
+    tctx.moveTo(ox, oy);
+    tctx.lineTo(Px, oy);
+    tctx.lineTo(Px, QnetY);
+    tctx.closePath();
+    tctx.fill();
+
+    // 외곽선
+    tctx.shadowBlur = 14;
+    tctx.shadowColor = afterColor;
+    tctx.strokeStyle = afterLight;
+    tctx.lineWidth = 2.4;
+    tctx.beginPath();
+    tctx.moveTo(ox, oy);
+    tctx.lineTo(Px, oy);
+    tctx.lineTo(Px, QnetY);
+    tctx.lineTo(ox, oy);
+    tctx.stroke();
+    tctx.restore();
+
+    // P 라벨 (아래)
+    drawLabel(tctx, `P=${state.P.toFixed(0)} kW`, (ox + Px) / 2, oy + 22, '#fcd34d');
+
+    // Q_net 라벨 (오른쪽)
+    const qLabel = state.overComp
+        ? `Q'=${state.Qnet.toFixed(1)} kVar (진상)`
+        : `Q'=${state.Qnet.toFixed(1)} kVar`;
+    drawLabel(tctx, qLabel, Px + 70, (oy + QnetY) / 2, afterLight, 'bold 9px ui-monospace, monospace');
+
+    // S_after 라벨 (빗변)
+    const midSx2 = (ox + Px) / 2;
+    const midSy2 = (oy + QnetY) / 2;
+    drawLabel(tctx, `S'=${state.Safter.toFixed(1)} kVA (후)`, midSx2 + 30, midSy2 + 16, afterLight, 'bold 9px ui-monospace, monospace');
+
+    // Q_C 화살표 (Q_L 끝에서 Q_net 끝까지 — 콘덴서가 빼주는 양)
+    if (state.Qc > 0.5 && state.QL > 0.5) {
+        const qcStartY = QLy;
+        const qcEndY = QnetY;
+        drawArrow(tctx, Px + 24, qcStartY, Px + 24, qcEndY, '#06b6d4', '#67e8f9', 2.2, true, 9);
+        drawLabel(tctx, `Q_C=${state.Qc.toFixed(0)}`,
+            Px + 24, (qcStartY + qcEndY) / 2, '#67e8f9', 'bold 9px ui-monospace, monospace');
+    }
+
+    // φ' 각 (원점에서)
+    if (Math.abs(state.phiAfter) > 0.02) {
+        tctx.save();
+        tctx.strokeStyle = afterLight;
+        tctx.lineWidth = 1.5;
+        const ang0 = 0;
+        const ang1 = -state.phiAfter; // 화면 좌표: 위가 -
+        tctx.beginPath();
+        if (ang1 < ang0) tctx.arc(ox, oy, 30, ang1, ang0, false);
+        else tctx.arc(ox, oy, 30, ang0, ang1, false);
+        tctx.stroke();
+        tctx.restore();
+    }
+    // φ (전, 점선)
+    if (state.phiBefore > 0.02) {
+        tctx.save();
+        tctx.strokeStyle = 'rgba(248, 113, 113, 0.5)';
+        tctx.lineWidth = 1.2;
+        tctx.setLineDash([3, 3]);
+        tctx.beginPath();
+        tctx.arc(ox, oy, 48, -state.phiBefore, 0, false);
+        tctx.stroke();
+        tctx.setLineDash([]);
+        tctx.restore();
+    }
+
+    // 우측 비교 박스
+    const bx = W - 200, by = 18, bw = 188, bh = 100;
+    tctx.save();
+    tctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(tctx, bx, by, bw, bh, 10);
+    tctx.fill();
+    tctx.strokeStyle = 'rgba(168, 139, 250, 0.35)';
+    tctx.lineWidth = 1;
+    tctx.stroke();
+
+    tctx.font = 'bold 10px ui-monospace, monospace';
+    tctx.textAlign = 'left'; tctx.textBaseline = 'top';
+    tctx.fillStyle = '#c4b5fd';
+    tctx.fillText('[ 비교 ]', bx + 12, by + 10);
+    tctx.font = '10px ui-monospace, monospace';
+    tctx.fillStyle = '#fca5a5';
+    tctx.fillText(`cos φ = ${state.cosBefore.toFixed(3)}`, bx + 12, by + 30);
+    tctx.fillStyle = afterLight;
+    tctx.fillText(`cos φ' = ${state.cosAfter.toFixed(3)}`, bx + 12, by + 48);
+    tctx.fillStyle = '#a5b4fc';
+    const reductionS = state.Sbefore > 0 ? (1 - state.Safter / state.Sbefore) * 100 : 0;
+    tctx.fillText(`ΔS = ${reductionS.toFixed(1)} % ↓`, bx + 12, by + 66);
+    tctx.fillStyle = '#fde68a';
+    tctx.fillText(`효율 ↑ · 손실 ↓`, bx + 12, by + 82);
+    tctx.restore();
+}
+
+// ====================================================
+// 계산
+// ====================================================
+function compute() {
+    state.P = +$('p').value;
+    state.cosBefore = +$('cos').value;
+    state.Qc = +$('qc').value;
+    state.V = +$('v').value;
+
+    // 개선 전
+    state.phiBefore = Math.acos(state.cosBefore);     // rad (지상 → +)
+    const tanPhi = Math.tan(state.phiBefore);
+    state.QL = state.P * tanPhi;                       // kVar
+    state.Sbefore = state.P / state.cosBefore;         // kVA
+    state.Ibefore = (state.Sbefore * 1000) / state.V;  // A
+
+    // 개선 후
+    state.Qnet = state.QL - state.Qc;                  // kVar (음수 = 진상)
+    state.Safter = Math.sqrt(state.P * state.P + state.Qnet * state.Qnet); // kVA
+    state.cosAfter = state.P / state.Safter;
+    // 부호: Qnet > 0 → 지상 → φ' > 0 (아래쪽), Qnet < 0 → 진상 → φ' < 0 (위쪽)
+    state.phiAfter = Math.atan2(state.Qnet, state.P);  // sign 유지
+    state.Iafter = (state.Safter * 1000) / state.V;
+    state.Ic = (state.Qc * 1000) / state.V;
+    state.overComp = state.Qnet < -0.5;
+
+    // UI 갱신
+    $('pDisp').textContent = state.P.toFixed(0);
+    $('cosDisp').textContent = state.cosBefore.toFixed(2);
+    $('qcDisp').textContent = state.Qc.toFixed(0);
+    $('vDisp').textContent = state.V.toFixed(0);
+
+    $('cosBefore').textContent = state.cosBefore.toFixed(3);
+    $('cosAfter').textContent = state.cosAfter.toFixed(3);
+    $('qBefore').textContent = `${state.QL.toFixed(1)} kVar`;
+    $('qAfter').textContent = `${state.Qnet.toFixed(1)} kVar`;
+    $('sBefore').textContent = `${state.Sbefore.toFixed(1)} kVA`;
+    $('sAfter').textContent = `${state.Safter.toFixed(1)} kVA`;
+    $('iBefore').textContent = `${state.Ibefore.toFixed(1)} A`;
+    $('iAfter').textContent = `${state.Iafter.toFixed(1)} A`;
+
+    // 플래시: cos φ' >= 0.95 좋음, 과보상 경고
+    const cosPill = $('pill-cos');
+    cosPill.classList.toggle('flash', state.cosAfter >= 0.95 && !state.overComp);
+    cosPill.classList.toggle('warn', state.overComp);
+
+    drawPhasor();
+    drawTriangle();
+}
+
+function flashCard(id) {
+    if (window.gsap) gsap.fromTo(`#${id}`,
+        { boxShadow: '0 0 0 0 rgba(110,231,183,0.5)' },
+        { boxShadow: '0 0 60px 4px rgba(110,231,183,0)', duration: 0.6 });
+}
+
+['p', 'cos', 'qc', 'v'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); });
+});
+
+$('presetOptimal').addEventListener('click', () => {
+    // Q_C = Q_L 로 맞춰 cos φ' = 1
+    const targetQc = Math.round(state.QL);
+    const clamped = Math.max(0, Math.min(300, targetQc));
+    if (window.gsap) {
+        gsap.to($('qc'), { value: clamped, duration: 0.9, ease: 'power3.out',
+            onUpdate: () => { compute(); },
+            onComplete: () => { flashCard('triangleCard'); flashCard('phasorCard'); }
+        });
+    } else {
+        $('qc').value = clamped;
+        compute();
+    }
+});
+
+$('resetBtn').addEventListener('click', () => {
+    $('p').value = 100;
+    $('cos').value = 0.70;
+    $('qc').value = 50;
+    $('v').value = 380;
+    compute();
+    flashCard('triangleCard');
+});
+
+// ====================================================
+// 메인 루프 (애니메이션 — 미세한 회전 효과는 없지만 펄스용)
+// ====================================================
+function animate() {
+    state.t++;
+    // 60프레임마다 다시 그릴 필요는 없으므로, 상태 변경 시에만 그림.
+    // 단, 페이저 펄스 같은 작은 애니메이션은 여기서.
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#phasorCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#triangleCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.32, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

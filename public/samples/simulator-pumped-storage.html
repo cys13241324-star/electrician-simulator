@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>양수발전 (Pumped Storage Hydro) 시뮬레이터 · 양수 / 발전 · 낙차 · 효율 · 저수지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 211, 238, 0.10), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(56, 189, 248, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(15, 30, 60, 0.6), transparent),
+        #050a18;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.45), rgba(56,189,248,0.45), rgba(99,102,241,0.45));
+    box-shadow: 0 30px 100px -20px rgba(56, 189, 248, 0.35);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 600px;
+    border-radius: 17px;
+    background: #04081a;
+}
+canvas#dayCanvas {
+    display: block;
+    width: 100%;
+    height: 300px;
+    border-radius: 17px;
+    background: #04081a;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #67e8f9; box-shadow: 0 0 12px #67e8f9;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #67e8f9; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,211,238,0.4), rgba(56,189,248,0.4), rgba(99,102,241,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a5f3fc, #93c5fd, #c4b5fd);
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-q   { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-h   { background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(56,189,248,0.06)); border-color: rgba(56,189,248,0.5); color: #7dd3fc; }
+.chip-eta { background: linear-gradient(135deg, rgba(110,231,183,0.22),rgba(110,231,183,0.06));border-color: rgba(110,231,183,0.5);color: #6ee7b7; }
+.chip-mode{ background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.chip-t   { background: linear-gradient(135deg, rgba(192,132,252,0.22),rgba(192,132,252,0.06));border-color: rgba(192,132,252,0.5);color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.pump   { border-color: rgba(56, 189, 248, 0.7); box-shadow: 0 0 24px rgba(56, 189, 248, 0.45); }
+.live-pill.gen    { border-color: rgba(110, 231, 183, 0.7); box-shadow: 0 0 24px rgba(110, 231, 183, 0.45); }
+.live-pill.warn   { border-color: rgba(245, 158, 11, 0.7); box-shadow: 0 0 22px rgba(245, 158, 11, 0.45); }
+.live-pill.danger { border-color: rgba(244, 63, 94, 0.7);  box-shadow: 0 0 22px rgba(244, 63, 94, 0.45); }
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #a5f3fc, #93c5fd, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(56,189,248,0.16), rgba(34,211,238,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(125,211,252,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(125, 211, 252, 0.4);
+}
+.preset-btn {
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #bae6fd;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(56, 189, 248, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    font-size: 11px;
+}
+.mode-btn:hover {
+    border-color: rgba(125, 211, 252, 0.5);
+    color: #fff;
+}
+.mode-btn.active.pump {
+    background: linear-gradient(135deg, rgba(56,189,248,0.4), rgba(99,102,241,0.4));
+    border-color: rgba(125, 211, 252, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.5);
+}
+.mode-btn.active.gen {
+    background: linear-gradient(135deg, rgba(110,231,183,0.4), rgba(20,184,166,0.4));
+    border-color: rgba(110, 231, 183, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(110, 231, 183, 0.5);
+}
+.mode-btn.active.auto {
+    background: linear-gradient(135deg, rgba(192,132,252,0.4), rgba(244,114,182,0.4));
+    border-color: rgba(216, 180, 254, 0.9);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(192, 132, 252, 0.5);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.5), transparent);
+}
+.region-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.region-pump { background: rgba(56,189,248,0.18);   color: #7dd3fc; border: 1px solid rgba(56,189,248,0.45); }
+.region-gen  { background: rgba(110,231,183,0.18);  color: #6ee7b7; border: 1px solid rgba(110,231,183,0.45); }
+.region-idle { background: rgba(148,163,184,0.18);  color: #cbd5e1; border: 1px solid rgba(148,163,184,0.45); }
+.tag {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+}
+.tag-h   { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.5); }
+.tag-q   { background: rgba(34, 211, 238, 0.22); color: #67e8f9; border: 1px solid rgba(34, 211, 238, 0.5); }
+.tag-eta { background: rgba(110, 231, 183, 0.22);color: #6ee7b7; border: 1px solid rgba(110, 231, 183, 0.5); }
+.tag-rho { background: rgba(192, 132, 252, 0.22);color: #c4b5fd; border: 1px solid rgba(192, 132, 252, 0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · PUMPED STORAGE HYDRO · 양수 / 발전 · H · Q · η
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-sky-200 to-indigo-200 bg-clip-text text-transparent">
+            💧 양수발전 (Pumped Storage) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">잉여 전력으로 물을 <span class="text-sky-300 font-semibold">상부 저수지로 양수</span> · 피크 시 낙차로 <span class="text-emerald-300 font-semibold">터빈 발전</span>. 낙차 H · 유량 Q · 효율 η의 곱이 곧 출력입니다. 왕복 효율은 <span class="text-cyan-300 font-semibold">75~80 %</span>.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">운영 모드</p>
+            <p class="mt-1 text-lg font-bold"><span id="modeVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-p">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">입출력 전력 P</p>
+            <p class="mt-1 text-lg font-bold"><span id="pVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-soc">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">상부 저수지 수위</p>
+            <p class="mt-1 text-lg font-bold"><span id="socVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-e">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">누적 에너지</p>
+            <p class="mt-1 text-lg font-bold"><span id="eVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">상부 저수지 · 도수터널 · 펌프-터빈 · 하부 저수지 · 송전탑</span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnRun"   class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">▶ 운영 시작</button>
+                        <button id="btnPause" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⏸ 일시 정지</button>
+                        <button id="btnReset" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⟲ 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 24시간 일일 운영 그래프 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">24시간 일일 운영 — 시간 vs 상부 수위 · 양수/발전 전력 · 부하</span>
+                    <div class="flex items-center gap-2">
+                        <span class="region-badge region-pump">양수</span>
+                        <span class="region-badge region-gen">발전</span>
+                        <span class="region-badge region-idle">대기</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(56,189,248,0.4), rgba(99,102,241,0.4), rgba(110,231,183,0.4));">
+                    <canvas id="dayCanvas"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">야간(저단가·잉여 전력) 양수 → 주간 피크 시 발전. 왕복 효율 약 75~80%, 손실은 마찰·난류·전기변환에서 발생합니다.</p>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-cyan-300 to-sky-200 bg-clip-text text-transparent">양수발전 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-sky-200">발전 출력 P_gen</p>
+                        <div class="math-container mt-2">\(P_{\text{gen}} = \rho\,g\,H\,Q\,\eta\) <span class="text-[10px] text-slate-400">[W]</span></div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-sky-200">양수 동력 P_pump</p>
+                        <div class="math-container mt-2">\(P_{\text{pump}} = \dfrac{\rho\,g\,H\,Q}{\eta}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-sky-200">왕복 효율 η_rt</p>
+                        <div class="math-container mt-2">\(\eta_{rt} = \eta_{p}\cdot\eta_{g} \approx 0.75\sim 0.80\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-rho mr-1">ρ</span> 물 밀도 <span class="font-bold text-purple-300">1000 kg/m³</span> · <span class="tag tag-h mr-1 ml-1">g</span>중력가속도 <span class="font-bold text-sky-300">9.81 m/s²</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-h mr-1">H</span> 유효 낙차 [m] · 손실수두 차감 후 실효 낙차 (총낙차 − 마찰·국부 손실)</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-q mr-1">Q</span> 유량 [m³/s] · 터빈/펌프 단면적·도수터널 통과 유량</li>
+                    <li class="feature-row rounded-lg p-3"><span class="tag tag-eta mr-1">η</span> 효율 · 펌프 ≈ 88%, 발전기 ≈ 88% → 왕복 ≈ 77%</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">야간 양수</span> · 저단가/잉여(원전·신재생) 전력 흡수 → 위치에너지로 저장</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">피크 발전</span> · 단 시간 내 대용량 출력 가능 → <span class="text-amber-300">계통 첨두부하</span> 흡수</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-cyan-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">운영 모드</label>
+                <div class="grid grid-cols-1 gap-1.5">
+                    <button data-mode="auto" data-kind="auto" class="mode-btn rounded-md py-1.5 font-bold active auto">🌗 자동 (시간대별)</button>
+                    <button data-mode="pump" data-kind="pump" class="mode-btn rounded-md py-1.5 font-bold">⇧ 양수 (Pump)</button>
+                    <button data-mode="gen"  data-kind="gen"  class="mode-btn rounded-md py-1.5 font-bold">⇩ 발전 (Generate)</button>
+                </div>
+                <p id="modeDesc" class="text-[10px] text-slate-400 mt-2">야간(0~7시) 양수 + 피크(13~21시) 발전, 그 외 대기 — 시간대별 자동 제어</p>
+            </div>
+
+            <div class="chip-h chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>유효 낙차 H</span><span id="headDisp" class="font-mono text-base">300</span></label>
+                <input type="range" id="head" min="50" max="700" step="10" value="300" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">m (상하부 저수지 수두차)</p>
+            </div>
+
+            <div class="chip-q chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>유량 Q</span><span id="flowDisp" class="font-mono text-base">120</span></label>
+                <input type="range" id="flow" min="10" max="400" step="5" value="120" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">m³/s · 펌프/터빈 통과 유량</p>
+            </div>
+
+            <div class="chip-eta chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>단방향 효율 η</span><span id="etaDisp" class="font-mono text-base">0.88</span></label>
+                <input type="range" id="eta" min="0.70" max="0.95" step="0.01" value="0.88" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">펌프=발전기 효율 · 왕복 = η²</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시뮬 속도</span><span id="spdDisp" class="font-mono text-base">600</span></label>
+                <input type="range" id="speed" min="60" max="3600" step="60" value="600" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">× (실시간 대비)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-cyan-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-sky-300 font-bold">양수</span>: 야간(00~07시) 저단가 전력 소비 → 위치에너지로 저장</p>
+                <p class="feature-row rounded-md p-2"><span class="text-emerald-300 font-bold">발전</span>: 피크 시간(13~21시) → 단시간 대용량 출력</p>
+                <p class="feature-row rounded-md p-2">출력은 <span class="text-amber-300 font-bold">H × Q × η</span>에 비례 — 셋 다 중요</p>
+                <p class="feature-row rounded-md p-2">왕복 효율 <span class="text-cyan-300 font-bold">η_rt = η_p × η_g</span> · 0.88×0.88 ≈ 0.77</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const dayCv = $('dayCanvas');
+const dctx = dayCv.getContext('2d');
+
+// ===== 운영 모드 사양 =====
+const MODES = {
+    auto: { label: '자동 (시간대)', desc: '야간(0~7시) 양수 + 피크(13~21시) 발전, 그 외 대기 — 시간대별 자동 제어' },
+    pump: { label: '양수 (Pump)',   desc: '강제 양수 모드 — 잉여 전력으로 하부→상부 저수지로 물을 끌어올림' },
+    gen:  { label: '발전 (Gen)',    desc: '강제 발전 모드 — 상부→하부 낙차를 이용해 터빈으로 발전' }
+};
+
+// ===== 물리 상수 =====
+const RHO = 1000;       // 물 밀도 kg/m³
+const G   = 9.81;       // 중력가속도 m/s²
+
+let state = {
+    mode: 'auto',
+    head: 300,          // 유효 낙차 [m]
+    flow: 120,          // 유량 [m³/s]
+    eta:  0.88,         // 단방향 효율
+    speed: 600,
+    running: false,
+    t: 0,               // 실측 누적 [s]
+    simSeconds: 0,
+    hour: 0,
+    soc: 50,            // 상부 저수지 수위 [%]
+    power: 0,           // 입출력 [MW] (양수 +, 발전 -)
+    operation: 'idle',  // 'pump' | 'gen' | 'idle'
+    turbineAngle: 0,    // 회전 각도 (rad)
+    totalEnergy: 0,     // 누적 출력 (MWh) (발전 +, 양수 −)
+    history: [],        // 24h 데이터
+};
+
+// 저수지 총 용량 (MWh 단위 환산)
+// E = ρ g H V_eff ≈ V_eff [m³] × H × 9.81 × 1000 / 3.6e9 [MWh]
+// 가용 용수량을 H의 함수로 잡지 않고, 단순화하여 capacityMWh 함수로
+function capacityMWh() {
+    // 가정: 상부저수지 가용 용량 V_eff = 200만 m³ (2e6 m³)
+    const V = 2.0e6;
+    return RHO * G * state.head * V * state.eta / 3.6e9;
+}
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 600;
+    dayCv.width  = dayCv.parentElement.clientWidth - 2;
+    dayCv.height = 300;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ===== 일일 부하 프로파일 =====
+function loadProfile(h) {
+    const base = 0.40;
+    const day  = 0.45 * Math.max(0, Math.sin(((h - 6) / 12) * Math.PI));
+    const eve  = 0.25 * Math.exp(-Math.pow((h - 19) / 2.0, 2));
+    const night= 0.10 * Math.exp(-Math.pow((h - 2) / 3.0, 2));
+    return Math.max(0.20, Math.min(1.0, base + day + eve + night - 0.15));
+}
+// 잉여 전력 (야간 강함)
+function surplusProfile(h) {
+    return Math.max(0, 1 - loadProfile(h)) * 0.9;
+}
+
+// ===== 운영 정책 =====
+// + = 양수(전력 흡수), − = 발전(전력 출력)
+function controlPolicy() {
+    const h = state.hour;
+    const pNom = idealPower();          // MW (양수일 때 입력, 발전일 때 출력)
+
+    const canPump = state.soc < 98;     // 양수 가능 (상부 거의 가득 차지 않았을 때)
+    const canGen  = state.soc > 5;      // 발전 가능 (상부에 물이 있을 때)
+
+    if (state.mode === 'pump') {
+        if (!canPump) return 0;
+        return +pumpPower();
+    }
+    if (state.mode === 'gen') {
+        if (!canGen) return 0;
+        return -genPower();
+    }
+    // auto
+    if (h >= 0 && h < 7 && canPump)         return +pumpPower();   // 야간 양수
+    if (h >= 13 && h < 21 && canGen)        return -genPower();    // 피크 발전
+    if (h >= 22 && h < 24 && canPump)       return +pumpPower() * 0.6; // 후야간 양수
+    return 0;
+}
+
+// 발전 출력 [MW]
+function genPower() {
+    // P = ρ g H Q η  [W]
+    const Pw = RHO * G * state.head * state.flow * state.eta;
+    return Pw / 1e6; // MW
+}
+// 양수 입력 [MW]
+function pumpPower() {
+    // P_pump = ρ g H Q / η
+    const Pw = RHO * G * state.head * state.flow / Math.max(0.5, state.eta);
+    return Pw / 1e6;
+}
+// 이상적(손실 없는) 수력 출력 [MW] - 단순 표시용
+function idealPower() {
+    return RHO * G * state.head * state.flow / 1e6;
+}
+
+// ===== 시간 포맷 =====
+function fmtHour(h) {
+    const hh = Math.floor(h) % 24;
+    const mm = Math.floor((h - Math.floor(h)) * 60);
+    return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+// ===== 색상 =====
+function opColor() {
+    if (state.operation === 'pump') return ['#7dd3fc', '#38bdf8'];
+    if (state.operation === 'gen')  return ['#6ee7b7', '#10b981'];
+    return ['#cbd5e1', '#94a3b8'];
+}
+
+// ===== 메인 캔버스 =====
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, 'rgba(15, 30, 60, 0.85)');
+    bg.addColorStop(0.5, 'rgba(8, 18, 40, 0.7)');
+    bg.addColorStop(1, 'rgba(5, 10, 24, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 헤더 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ PUMPED STORAGE · UPPER ↔ LOWER · H · Q · η', 12, 10);
+    ctx.restore();
+
+    // 시간 패널
+    drawTopPanel(W, H);
+
+    // ===== 산악 실루엣 =====
+    drawMountains(W, H);
+
+    // ===== 좌표 정의 =====
+    // 상부 저수지: 좌상
+    const upper = { x: W * 0.06, y: H * 0.16, w: W * 0.32, h: 70 };
+    // 하부 저수지: 우하
+    const lower = { x: W * 0.40, y: H * 0.75, w: W * 0.50, h: 80 };
+    // 펌프-터빈 발전소: 하부 저수지 좌측
+    const powerHouse = { x: W * 0.36, y: H * 0.72, w: 110, h: 110 };
+    // 송전탑: 우상
+    const tower = { x: W * 0.84, y: H * 0.30 };
+
+    // ===== 도수터널 (penstock) =====
+    drawPenstock(upper, powerHouse, W, H);
+
+    // ===== 저수지 =====
+    drawReservoir(upper, state.soc, '상부 저수지', 'UPPER RESERVOIR', true);
+    // 하부 저수지: 상부의 반전 (양수가 많으면 하부는 줄어듦)
+    drawReservoir(lower, 100 - state.soc, '하부 저수지', 'LOWER RESERVOIR', false);
+
+    // ===== 발전소 (펌프-터빈) =====
+    drawPowerHouse(powerHouse);
+
+    // ===== 송전선 (발전소 → 송전탑) =====
+    drawTransmission(powerHouse, tower);
+
+    // ===== 송전탑 =====
+    drawTower(tower);
+
+    // ===== 낙차 표시 (양쪽) =====
+    drawHeadLabel(upper, lower, W, H);
+
+    // ===== 입자 흐름: 도수터널 안 =====
+    drawWaterFlow(upper, powerHouse, lower);
+}
+
+function drawTopPanel(W, H) {
+    ctx.save();
+    const pw = 260, ph = 78;
+    const px = W - pw - 10, py = 8;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, px, py, pw, ph, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.5)';
+    ctx.stroke();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#7dd3fc';
+    ctx.fillText(`TIME ${fmtHour(state.hour)}`, px + 10, py + 8);
+    ctx.fillStyle = '#a5b4fc';
+    ctx.fillText(`MODE · ${MODES[state.mode].label}`, px + 10, py + 26);
+
+    let stateText, stateColor;
+    if (state.operation === 'pump')      { stateText = '⇧ PUMPING (양수)';   stateColor = '#7dd3fc'; }
+    else if (state.operation === 'gen')  { stateText = '⇩ GENERATING (발전)';stateColor = '#6ee7b7'; }
+    else                                 { stateText = '○ IDLE (대기)';      stateColor = '#cbd5e1'; }
+    ctx.fillStyle = stateColor;
+    ctx.fillText(stateText, px + 10, py + 44);
+
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillText(`H=${state.head}m · Q=${state.flow}m³/s · η=${state.eta.toFixed(2)}`, px + 10, py + 62);
+    ctx.restore();
+}
+
+function drawMountains(W, H) {
+    ctx.save();
+    // 뒤쪽 산
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.85);
+    ctx.lineTo(W * 0.10, H * 0.55);
+    ctx.lineTo(W * 0.22, H * 0.30);
+    ctx.lineTo(W * 0.34, H * 0.20);
+    ctx.lineTo(W * 0.46, H * 0.34);
+    ctx.lineTo(W * 0.62, H * 0.42);
+    ctx.lineTo(W * 0.78, H * 0.50);
+    ctx.lineTo(W * 0.92, H * 0.60);
+    ctx.lineTo(W, H * 0.66);
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // 앞쪽 산 (어두움)
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.92);
+    ctx.lineTo(W * 0.06, H * 0.78);
+    ctx.lineTo(W * 0.16, H * 0.58);
+    ctx.lineTo(W * 0.28, H * 0.42);
+    ctx.lineTo(W * 0.40, H * 0.66);
+    ctx.lineTo(W * 0.52, H * 0.74);
+    ctx.lineTo(W * 0.66, H * 0.78);
+    ctx.lineTo(W * 0.82, H * 0.74);
+    ctx.lineTo(W, H * 0.78);
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    // 눈 덮인 꼭대기
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(W * 0.24, H * 0.32);
+    ctx.lineTo(W * 0.28, H * 0.42);
+    ctx.lineTo(W * 0.32, H * 0.34);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawReservoir(r, fillPercent, label, sub, isUpper) {
+    ctx.save();
+    // 저수지 그릇 (제방)
+    const ridgeH = 14;
+    ctx.fillStyle = 'rgba(55, 65, 81, 0.85)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1.5;
+    // 제방 (테두리)
+    ctx.beginPath();
+    ctx.moveTo(r.x - 4, r.y + r.h + ridgeH);
+    ctx.lineTo(r.x - 4, r.y);
+    ctx.lineTo(r.x + r.w + 4, r.y);
+    ctx.lineTo(r.x + r.w + 4, r.y + r.h + ridgeH);
+    ctx.stroke();
+
+    // 물 채움 (수위)
+    const fillH = r.h * (fillPercent / 100);
+    const waterY = r.y + r.h - fillH;
+
+    // 물 표면 (반사 효과)
+    const waterGrad = ctx.createLinearGradient(r.x, waterY, r.x, r.y + r.h);
+    waterGrad.addColorStop(0, 'rgba(125, 211, 252, 0.85)');
+    waterGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.7)');
+    waterGrad.addColorStop(1, 'rgba(30, 64, 175, 0.85)');
+    ctx.fillStyle = waterGrad;
+    ctx.fillRect(r.x, waterY, r.w, fillH);
+
+    // 물결 표면
+    if (fillH > 4) {
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = r.x; x <= r.x + r.w; x += 4) {
+            const wave = Math.sin(state.t * 2 + x * 0.05) * 1.2;
+            if (x === r.x) ctx.moveTo(x, waterY + wave);
+            else ctx.lineTo(x, waterY + wave);
+        }
+        ctx.stroke();
+    }
+
+    // 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#bae6fd';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    if (isUpper) {
+        ctx.fillText(label, r.x, r.y - 4);
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(sub, r.x, r.y - 18);
+    } else {
+        ctx.textBaseline = 'top';
+        ctx.fillText(label, r.x, r.y + r.h + ridgeH + 4);
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(sub, r.x, r.y + r.h + ridgeH + 18);
+    }
+
+    // 수위 텍스트
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.fillText(`${fillPercent.toFixed(1)}%`, r.x + r.w - 6, r.y + r.h / 2);
+    ctx.shadowBlur = 0;
+
+    // 수위 눈금 (우측)
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.3)';
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i <= 4; i++) {
+        const yy = r.y + (i / 4) * r.h;
+        ctx.beginPath();
+        ctx.moveTo(r.x + r.w + 4, yy);
+        ctx.lineTo(r.x + r.w + 10, yy);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawPenstock(upper, ph, W, H) {
+    ctx.save();
+    // 도수터널/펌프관 (사선)
+    const x1 = upper.x + upper.w * 0.75;
+    const y1 = upper.y + upper.h;
+    const x2 = ph.x + 25;
+    const y2 = ph.y + 20;
+    // 외관 (두꺼운 회색)
+    ctx.strokeStyle = 'rgba(71, 85, 105, 0.9)';
+    ctx.lineWidth = 22;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    // 내관 라이닝
+    ctx.strokeStyle = 'rgba(30, 41, 59, 0.95)';
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // 표면 하이라이트
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x1 - 8, y1 - 4);
+    ctx.lineTo(x2 - 8, y2 - 4);
+    ctx.stroke();
+    ctx.restore();
+
+    // 좌표 저장 (입자용)
+    state._penstock = { x1, y1, x2, y2 };
+}
+
+function drawPowerHouse(ph) {
+    ctx.save();
+    // 건물
+    const [c1, c2] = opColor();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = c2;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = c2;
+    roundRect(ctx, ph.x, ph.y, ph.w, ph.h, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 지붕
+    ctx.fillStyle = 'rgba(51, 65, 85, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(ph.x - 4, ph.y);
+    ctx.lineTo(ph.x + ph.w / 2, ph.y - 14);
+    ctx.lineTo(ph.x + ph.w + 4, ph.y);
+    ctx.closePath();
+    ctx.fill();
+
+    // 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = c1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('PUMP / TURBINE', ph.x + ph.w / 2, ph.y + 6);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('발전소', ph.x + ph.w / 2, ph.y + 20);
+
+    // 펌프-터빈 (회전)
+    const cx = ph.x + ph.w / 2, cy = ph.y + ph.h * 0.6;
+    const R = 26;
+    // 케이싱 (와류실)
+    ctx.beginPath();
+    ctx.arc(cx, cy, R + 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.95)';
+    ctx.strokeStyle = c2;
+    ctx.lineWidth = 1.5;
+    ctx.fill(); ctx.stroke();
+
+    // 러너 (회전)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(state.turbineAngle);
+    ctx.strokeStyle = c1;
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = state.operation !== 'idle' ? 10 : 0;
+    ctx.shadowColor = c2;
+    // 블레이드 6개 (Francis turbine 곡선)
+    for (let i = 0; i < 6; i++) {
+        ctx.rotate(Math.PI * 2 / 6);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(R * 0.4, R * 0.3, R, 0);
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    // 허브
+    ctx.fillStyle = c1;
+    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 모드 라벨 (펌프 / 터빈)
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = c2;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    let modeLabel = '○ STAND-BY';
+    if (state.operation === 'pump') modeLabel = '⇧ PUMP';
+    else if (state.operation === 'gen') modeLabel = '⇩ TURBINE';
+    ctx.fillText(modeLabel, cx, cy + R + 12);
+
+    // 발전기/모터 표시 (옆)
+    const gx = ph.x + 8, gy = cy - 12;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.strokeStyle = '#a5b4fc';
+    ctx.lineWidth = 1;
+    roundRect(ctx, gx, gy, 22, 24, 3);
+    ctx.fill(); ctx.stroke();
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(state.operation === 'pump' ? 'M' : 'G', gx + 11, gy + 12);
+
+    // 전력 표시
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = state.operation === 'gen' ? '#6ee7b7' : (state.operation === 'pump' ? '#7dd3fc' : '#cbd5e1');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    const sign = state.operation === 'pump' ? '+' : (state.operation === 'gen' ? '−' : '·');
+    ctx.fillText(`${sign} ${Math.abs(state.power).toFixed(1)} MW`, cx, ph.y + ph.h - 4);
+
+    ctx.restore();
+}
+
+function drawTransmission(ph, tw) {
+    ctx.save();
+    // 와이어 (휨)
+    const x1 = ph.x + ph.w, y1 = ph.y + 30;
+    const x2 = tw.x, y2 = tw.y + 20;
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+        const off = i * 6;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1 + off);
+        const midX = (x1 + x2) / 2;
+        const sag = 20;
+        ctx.quadraticCurveTo(midX, ((y1 + y2) / 2) + off + sag, x2, y2 + off);
+        ctx.stroke();
+    }
+
+    // 출력 시 흐르는 광점
+    if (state.operation === 'gen' && state.running) {
+        for (let line = 0; line < 3; line++) {
+            const off = line * 6;
+            const nDots = 6;
+            for (let i = 0; i < nDots; i++) {
+                const phase = (state.t * 0.6 + i / nDots) % 1;
+                const t = phase;
+                const midX = (x1 + x2) / 2;
+                const sag = 20;
+                const px = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * midX + t * t * x2;
+                const py = (1 - t) * (1 - t) * (y1 + off) + 2 * (1 - t) * t * ((y1 + y2) / 2 + off + sag) + t * t * (y2 + off);
+                ctx.fillStyle = '#fcd34d';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#fcd34d';
+                ctx.beginPath();
+                ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    } else if (state.operation === 'pump' && state.running) {
+        // 양수: 송전탑→발전소 방향으로 전력 유입
+        for (let line = 0; line < 3; line++) {
+            const off = line * 6;
+            const nDots = 6;
+            for (let i = 0; i < nDots; i++) {
+                const phase = (1 - ((state.t * 0.6 + i / nDots) % 1));
+                const t = phase;
+                const midX = (x1 + x2) / 2;
+                const sag = 20;
+                const px = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * midX + t * t * x2;
+                const py = (1 - t) * (1 - t) * (y1 + off) + 2 * (1 - t) * t * ((y1 + y2) / 2 + off + sag) + t * t * (y2 + off);
+                ctx.fillStyle = '#7dd3fc';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#7dd3fc';
+                ctx.beginPath();
+                ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+function drawTower(t) {
+    ctx.save();
+    const x = t.x, y = t.y;
+    // 본체 (사다리꼴)
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 18, y + 130);
+    ctx.lineTo(x - 4, y);
+    ctx.lineTo(x + 28, y);
+    ctx.lineTo(x + 42, y + 130);
+    ctx.closePath();
+    ctx.stroke();
+    // X 격자
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+        const yy = y + i * 32;
+        const yyN = y + (i + 1) * 32;
+        const xl  = x - 4  + (i / 4) * 14;
+        const xr  = x + 28 - (i / 4) * 14;
+        const xlN = x - 4  + ((i + 1) / 4) * 14;
+        const xrN = x + 28 - ((i + 1) / 4) * 14;
+        // X
+        ctx.beginPath();
+        ctx.moveTo(xl, yy); ctx.lineTo(xrN, yyN);
+        ctx.moveTo(xr, yy); ctx.lineTo(xlN, yyN);
+        ctx.stroke();
+        // 가로
+        ctx.beginPath();
+        ctx.moveTo(xl, yy); ctx.lineTo(xr, yy);
+        ctx.stroke();
+    }
+    // 상단 가로대 (3단)
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+        const yy = y + i * 14 + 2;
+        const ext = 22 - i * 4;
+        ctx.beginPath();
+        ctx.moveTo(x - ext, yy); ctx.lineTo(x + 28 + ext, yy);
+        ctx.stroke();
+        // 애자
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.arc(x - ext + 2, yy + 3, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + 28 + ext - 2, yy + 3, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    // 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#a5b4fc';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('⚡ GRID', x + 12, y + 134);
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('TRANSMISSION', x + 12, y + 148);
+    ctx.restore();
+}
+
+function drawHeadLabel(upper, lower, W, H) {
+    ctx.save();
+    // 우측에 수직 화살표로 H 표시
+    const xx = W * 0.92;
+    const y1 = upper.y + upper.h * 0.3;
+    const y2 = lower.y + lower.h * 0.5;
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xx, y1); ctx.lineTo(xx, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 화살표 머리
+    [y1, y2].forEach((yy, idx) => {
+        const dir = idx === 0 ? -1 : 1;
+        ctx.beginPath();
+        ctx.moveTo(xx, yy);
+        ctx.lineTo(xx - 4, yy + dir * 6);
+        ctx.lineTo(xx + 4, yy + dir * 6);
+        ctx.closePath();
+        ctx.fillStyle = '#fcd34d';
+        ctx.fill();
+    });
+    // 라벨
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save();
+    ctx.translate(xx + 14, (y1 + y2) / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillText(`H = ${state.head} m`, 0, 0);
+    ctx.restore();
+    ctx.restore();
+}
+
+function drawWaterFlow(upper, ph, lower) {
+    if (!state._penstock || state.operation === 'idle' || !state.running) return;
+    const { x1, y1, x2, y2 } = state._penstock;
+    ctx.save();
+    const nDots = 14;
+    // 양수: x2→x1 방향 (위로), 발전: x1→x2 (아래로)
+    const goingUp = state.operation === 'pump';
+    for (let i = 0; i < nDots; i++) {
+        let phase = (state.t * 0.7 + i / nDots) % 1;
+        if (goingUp) phase = 1 - phase;
+        const px = x1 + (x2 - x1) * phase;
+        const py = y1 + (y2 - y1) * phase;
+        // 약간의 흔들림
+        const wobble = Math.sin(state.t * 6 + i * 0.7) * 2;
+        // 도수터널 법선 방향
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy);
+        const nx = -dy / len, ny = dx / len;
+        const wpx = px + nx * wobble * 0.6;
+        const wpy = py + ny * wobble * 0.6;
+
+        const color = goingUp ? '#7dd3fc' : '#67e8f9';
+        ctx.fillStyle = color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.arc(wpx, wpy, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // 발전 시 터빈→하부로 토수
+    if (state.operation === 'gen') {
+        // 발전소 우하단에서 하부 저수지로 떨어지는 물줄기
+        const sx = ph.x + ph.w - 10, sy = ph.y + ph.h;
+        const ex = lower.x + 10, ey = lower.y + 4;
+        for (let i = 0; i < 8; i++) {
+            const t = ((state.t * 1.4 + i / 8) % 1);
+            const px = sx + (ex - sx) * t;
+            const py = sy + (ey - sy) * t + Math.sin(t * Math.PI) * 6;
+            ctx.fillStyle = 'rgba(186, 230, 253, 0.9)';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = '#bae6fd';
+            ctx.beginPath();
+            ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
+// ===== 24시간 일일 운영 그래프 =====
+function drawDayChart() {
+    const W = dayCv.width, H = dayCv.height;
+    dctx.clearRect(0, 0, W, H);
+    dctx.fillStyle = '#04081a';
+    dctx.fillRect(0, 0, W, H);
+
+    const padL = 50, padR = 50, padT = 24, padB = 32;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    // 축
+    dctx.save();
+    dctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    dctx.lineWidth = 1;
+    dctx.beginPath();
+    dctx.moveTo(padL, padT); dctx.lineTo(padL, padT + plotH); dctx.lineTo(padL + plotW, padT + plotH);
+    dctx.stroke();
+
+    // 격자
+    dctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    for (let i = 1; i <= 4; i++) {
+        const yy = padT + plotH * i / 4;
+        dctx.beginPath(); dctx.moveTo(padL, yy); dctx.lineTo(padL + plotW, yy); dctx.stroke();
+    }
+    for (let i = 1; i <= 8; i++) {
+        const xx = padL + plotW * i / 8;
+        dctx.beginPath(); dctx.moveTo(xx, padT); dctx.lineTo(xx, padT + plotH); dctx.stroke();
+    }
+
+    // 야간 양수 구간 (00~07)
+    const x0 = padL, x7 = padL + plotW * 7 / 24;
+    dctx.fillStyle = 'rgba(56, 189, 248, 0.10)';
+    dctx.fillRect(x0, padT, x7 - x0, plotH);
+    dctx.font = 'bold 9px ui-monospace, monospace';
+    dctx.fillStyle = '#7dd3fc';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'top';
+    dctx.fillText('야간 양수', padL + plotW * 3.5 / 24, padT + 2);
+    // 피크 발전 구간 (13~21)
+    const x13 = padL + plotW * 13 / 24, x21 = padL + plotW * 21 / 24;
+    dctx.fillStyle = 'rgba(110, 231, 183, 0.10)';
+    dctx.fillRect(x13, padT, x21 - x13, plotH);
+    dctx.fillStyle = '#6ee7b7';
+    dctx.fillText('피크 발전', (x13 + x21) / 2, padT + 2);
+
+    // 부하 곡선
+    const N = 200;
+    dctx.strokeStyle = '#a5b4fc';
+    dctx.lineWidth = 2;
+    dctx.shadowBlur = 8;
+    dctx.shadowColor = '#a5b4fc';
+    dctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const h = i / N * 24;
+        const v = loadProfile(h);
+        const px = padL + (h / 24) * plotW;
+        const py = padT + plotH - v * plotH * 0.85;
+        if (i === 0) dctx.moveTo(px, py);
+        else dctx.lineTo(px, py);
+    }
+    dctx.stroke();
+    dctx.shadowBlur = 0;
+
+    // 잉여 (점선)
+    dctx.strokeStyle = '#fcd34d';
+    dctx.lineWidth = 1.5;
+    dctx.setLineDash([4, 3]);
+    dctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+        const h = i / N * 24;
+        const v = surplusProfile(h);
+        const px = padL + (h / 24) * plotW;
+        const py = padT + plotH - v * plotH * 0.85;
+        if (i === 0) dctx.moveTo(px, py);
+        else dctx.lineTo(px, py);
+    }
+    dctx.stroke();
+    dctx.setLineDash([]);
+
+    // 상부 저수지 수위 히스토리
+    if (state.history.length > 1) {
+        dctx.strokeStyle = '#bae6fd';
+        dctx.lineWidth = 2.5;
+        dctx.shadowBlur = 12;
+        dctx.shadowColor = '#bae6fd';
+        dctx.beginPath();
+        for (let i = 0; i < state.history.length; i++) {
+            const p = state.history[i];
+            const px = padL + (p.h / 24) * plotW;
+            const py = padT + plotH - (p.soc / 100) * plotH;
+            if (i === 0) dctx.moveTo(px, py);
+            else dctx.lineTo(px, py);
+        }
+        dctx.stroke();
+        dctx.shadowBlur = 0;
+
+        // 전력 (영역, 중앙선 기준)
+        const midY = padT + plotH * 0.5;
+        const maxP = idealPower() * 1.1;
+        for (let i = 1; i < state.history.length; i++) {
+            const p0 = state.history[i - 1];
+            const p1 = state.history[i];
+            const px0 = padL + (p0.h / 24) * plotW;
+            const px1 = padL + (p1.h / 24) * plotW;
+            const pAvg = (p0.p + p1.p) / 2;
+            // p > 0 = 양수(입력, 위로), p < 0 = 발전(출력, 아래로)
+            const draw = (val) => midY - (val / Math.max(maxP, 1e-3)) * (plotH * 0.38);
+            dctx.fillStyle = pAvg > 0 ? 'rgba(56, 189, 248, 0.35)' : 'rgba(110, 231, 183, 0.35)';
+            dctx.beginPath();
+            dctx.moveTo(px0, midY);
+            dctx.lineTo(px0, draw(p0.p));
+            dctx.lineTo(px1, draw(p1.p));
+            dctx.lineTo(px1, midY);
+            dctx.closePath();
+            dctx.fill();
+        }
+    }
+
+    // 현재 시각 마커
+    const curX = padL + (state.hour / 24) * plotW;
+    dctx.strokeStyle = '#fff';
+    dctx.lineWidth = 1.5;
+    dctx.shadowBlur = 10;
+    dctx.shadowColor = '#fff';
+    dctx.beginPath();
+    dctx.moveTo(curX, padT); dctx.lineTo(curX, padT + plotH);
+    dctx.stroke();
+    dctx.shadowBlur = 0;
+    dctx.fillStyle = '#fff';
+    dctx.beginPath(); dctx.arc(curX, padT + 8, 4, 0, Math.PI * 2); dctx.fill();
+
+    // 축 라벨
+    dctx.font = '10px ui-monospace, monospace';
+    dctx.fillStyle = '#94a3b8';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'top';
+    dctx.fillText('시간 [h]', padL + plotW / 2, padT + plotH + 16);
+    for (let i = 0; i <= 8; i++) {
+        const h = i * 3;
+        const xx = padL + (h / 24) * plotW;
+        dctx.fillText(`${h}`, xx, padT + plotH + 16);
+    }
+
+    // 좌측 Y축
+    dctx.save();
+    dctx.translate(padL - 36, padT + plotH / 2);
+    dctx.rotate(-Math.PI / 2);
+    dctx.fillStyle = '#bae6fd';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText('상부 수위 [%] · 부하 [pu]', 0, 0);
+    dctx.restore();
+    // 우측 Y축
+    dctx.save();
+    dctx.translate(padL + plotW + 36, padT + plotH / 2);
+    dctx.rotate(Math.PI / 2);
+    dctx.fillStyle = '#6ee7b7';
+    dctx.textAlign = 'center'; dctx.textBaseline = 'middle';
+    dctx.fillText('전력 [MW]', 0, 0);
+    dctx.restore();
+
+    // 좌측 눈금
+    dctx.fillStyle = '#bae6fd';
+    dctx.textAlign = 'right'; dctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const yy = padT + plotH - (i / 4) * plotH;
+        dctx.fillText(`${i * 25}`, padL - 6, yy);
+    }
+
+    // 우측 눈금
+    const maxP = idealPower();
+    dctx.fillStyle = '#6ee7b7';
+    dctx.textAlign = 'left'; dctx.textBaseline = 'middle';
+    for (let i = -2; i <= 2; i++) {
+        const yy = padT + plotH * 0.5 - (i / 2) * (plotH * 0.38);
+        const val = (i / 2) * maxP;
+        dctx.fillText(`${val >= 0 ? '+' : ''}${val.toFixed(0)}`, padL + plotW + 6, yy);
+    }
+
+    // 범례
+    dctx.font = 'bold 10px ui-monospace, monospace';
+    dctx.textAlign = 'left'; dctx.textBaseline = 'top';
+    let lx = padL + 6, ly = padT + plotH - 60;
+    dctx.fillStyle = '#bae6fd'; dctx.fillText('━ 수위', lx, ly);
+    dctx.fillStyle = '#a5b4fc'; dctx.fillText('━ 부하', lx, ly + 12);
+    dctx.fillStyle = '#fcd34d'; dctx.fillText('┄ 잉여', lx + 60, ly);
+    dctx.fillStyle = '#7dd3fc'; dctx.fillText('▰ 양수', lx + 110, ly);
+    dctx.fillStyle = '#6ee7b7'; dctx.fillText('▰ 발전', lx + 110, ly + 12);
+
+    dctx.restore();
+}
+
+// ===== 시뮬레이션 스텝 =====
+function simulationStep(realDt) {
+    if (!state.running) {
+        state.operation = 'idle';
+        state.power = 0;
+        return;
+    }
+    const simDt = realDt * state.speed;
+    state.simSeconds += simDt;
+    state.hour = (state.simSeconds / 3600) % 24;
+
+    // 명령값
+    let pCmd = controlPolicy(); // MW (양수 +, 발전 −)
+
+    // 한계 근처 감속
+    if (pCmd > 0 && state.soc > 95) pCmd *= Math.max(0, (98 - state.soc) / 3);
+    if (pCmd < 0 && state.soc < 8)  pCmd *= Math.max(0, (state.soc - 5) / 3);
+
+    state.power = pCmd;
+    state.operation = Math.abs(pCmd) < 0.01 ? 'idle' : (pCmd > 0 ? 'pump' : 'gen');
+
+    // 에너지 갱신: 상부 수위 변화
+    // 양수: 입력 P_pump를 들여서 위로 ρgHQ만큼의 위치에너지 저장 (η_p 손실)
+    // 발전: 상부에서 ρgHQ가 빠지며 P_gen = ρgHQ×η_g 출력
+    // 저수지 용량 cap[MWh]을 기준으로 SOC 비율 계산
+    const cap = capacityMWh();              // 가용 위치에너지 [MWh]
+    const dt_h = simDt / 3600;              // h
+    let dEnetMWh;
+    if (pCmd > 0) {
+        // 양수: 입력 pCmd · η_p = 저장된 위치에너지
+        dEnetMWh = +pCmd * state.eta * dt_h;
+    } else if (pCmd < 0) {
+        // 발전: 출력 |pCmd| = 위치에너지 × η_g  →  소비 위치에너지 = |pCmd| / η_g
+        dEnetMWh = -(Math.abs(pCmd) / Math.max(0.5, state.eta)) * dt_h;
+    } else {
+        dEnetMWh = 0;
+    }
+    const dSoc = (dEnetMWh / Math.max(cap, 1e-3)) * 100;
+    state.soc = Math.max(0, Math.min(100, state.soc + dSoc));
+
+    // 누적 에너지 (발전 누적 + / 양수 누적 −)
+    if (pCmd < 0) state.totalEnergy += Math.abs(pCmd) * dt_h;
+    else if (pCmd > 0) state.totalEnergy -= pCmd * dt_h;
+
+    // 터빈 회전
+    const spin = (state.operation === 'gen' ? 1 : -1) * (Math.abs(pCmd) / Math.max(idealPower(), 1));
+    state.turbineAngle += spin * realDt * 4;
+
+    // 24h 히스토리
+    const lastH = state.history.length ? state.history[state.history.length - 1].h : -1;
+    if (state.hour - lastH > (1/60) || state.hour < lastH) {
+        if (state.hour < lastH) state.history = [];
+        state.history.push({
+            h: state.hour,
+            soc: state.soc,
+            load: loadProfile(state.hour),
+            surplus: surplusProfile(state.hour),
+            p: state.power
+        });
+        if (state.history.length > 1500) state.history.shift();
+    }
+}
+
+// ===== UI 업데이트 =====
+function updateLiveChips() {
+    $('modeVal').textContent = MODES[state.mode].label;
+    const sign = state.operation === 'pump' ? '+' : (state.operation === 'gen' ? '−' : '');
+    $('pVal').textContent  = `${sign}${Math.abs(state.power).toFixed(1)} MW`;
+    $('socVal').textContent  = `${state.soc.toFixed(1)} %`;
+    $('eVal').textContent  = `${state.totalEnergy >= 0 ? '+' : ''}${state.totalEnergy.toFixed(2)} MWh`;
+
+    // 칩 플래시
+    const pm = $('pill-mode');
+    pm.classList.toggle('pump',  state.operation === 'pump');
+    pm.classList.toggle('gen',   state.operation === 'gen');
+
+    const pp = $('pill-p');
+    pp.classList.toggle('pump', state.operation === 'pump');
+    pp.classList.toggle('gen',  state.operation === 'gen');
+
+    const ps = $('pill-soc');
+    ps.classList.toggle('warn',   state.soc < 15 || state.soc > 90);
+    ps.classList.toggle('danger', state.soc < 5 || state.soc > 98);
+
+    const pe = $('pill-e');
+    pe.classList.toggle('gen',  state.totalEnergy > 0.05);
+    pe.classList.toggle('pump', state.totalEnergy < -0.05);
+}
+
+function updateButtons() {
+    $('btnRun').textContent = state.running ? '⏸ 운영 중...' : '▶ 운영 시작';
+}
+
+// ===== 루프 =====
+let lastTime = 0;
+function loop(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = Math.min(0.1, (ts - lastTime) / 1000);
+    lastTime = ts;
+    state.t += dt;
+
+    simulationStep(dt);
+    drawMain();
+    drawDayChart();
+    updateLiveChips();
+
+    requestAnimationFrame(loop);
+}
+
+// ===== 이벤트 =====
+document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-mode]').forEach(b => {
+            b.classList.remove('active', 'pump', 'gen', 'auto');
+        });
+        const kind = btn.dataset.kind;
+        btn.classList.add('active', kind);
+        state.mode = btn.dataset.mode;
+        $('modeDesc').textContent = MODES[state.mode].desc;
+    });
+});
+
+$('head').addEventListener('input', e => {
+    state.head = +e.target.value;
+    $('headDisp').textContent = state.head;
+});
+$('flow').addEventListener('input', e => {
+    state.flow = +e.target.value;
+    $('flowDisp').textContent = state.flow;
+});
+$('eta').addEventListener('input', e => {
+    state.eta = +e.target.value;
+    $('etaDisp').textContent = state.eta.toFixed(2);
+});
+$('speed').addEventListener('input', e => {
+    state.speed = +e.target.value;
+    $('spdDisp').textContent = state.speed;
+});
+
+$('btnRun').addEventListener('click', () => {
+    state.running = !state.running;
+    updateButtons();
+});
+$('btnPause').addEventListener('click', () => {
+    state.running = false;
+    updateButtons();
+});
+$('btnReset').addEventListener('click', () => {
+    state.running = false;
+    state.soc = 50;
+    state.simSeconds = 0;
+    state.hour = 0;
+    state.power = 0;
+    state.operation = 'idle';
+    state.totalEnergy = 0;
+    state.turbineAngle = 0;
+    state.history = [];
+    updateButtons();
+});
+
+// 초기화
+resize();
+updateButtons();
+
+// 헤더 등장
+if (typeof gsap !== 'undefined') {
+    gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+    gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.5, stagger: 0.08, delay: 0.2, ease: 'power2.out' });
+    gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    gsap.from('#controlPanel', { x: 24, opacity: 0, duration: 0.7, delay: 0.4, ease: 'power3.out' });
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

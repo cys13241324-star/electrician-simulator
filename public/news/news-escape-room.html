@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>스파크 이스케이프 · 전기 학습 방탈출 — 예약</title>
+<meta name="description" content="가상 방탈출 시뮬레이션 — 전기기능사 학습 콘셉트의 방탈출 6개 룸 예약 페이지. 옴의 실험실부터 최종 합격 방까지.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Special+Elite&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a0303;
+    --bg-1:#1a0a0a;
+    --bg-2:#250e0e;
+    --bg-3:#321414;
+    --blood:#a01010;
+    --blood-2:#7a0808;
+    --blood-3:#5a0404;
+    --gold:#d4a04a;
+    --gold-2:#b07a26;
+    --gold-3:#8a5a18;
+    --ink:#e8d8b8;
+    --ink-2:#b8a888;
+    --ink-3:#8a7a5a;
+    --shadow:#000;
+  }
+  html,body{background:var(--bg-0);}
+  body{
+    font-family:'Noto Sans KR','Special Elite',system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(160,16,16,.18), transparent 55%),
+      radial-gradient(ellipse at 20% 80%, rgba(212,160,74,.06), transparent 50%),
+      radial-gradient(ellipse at 85% 30%, rgba(160,16,16,.08), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg,#1a0a0a 0%, #120606 50%, #0a0303 100%);
+    background-attachment:fixed;
+    min-height:100vh;
+  }
+  .font-title{font-family:'Cinzel',serif;letter-spacing:.06em;}
+  .font-elite{font-family:'Special Elite','Cinzel',monospace;}
+
+  /* 핏빛 광택 텍스트 */
+  .text-blood{color:var(--blood);}
+  .text-gold{color:var(--gold);}
+  .text-ink{color:var(--ink);}
+  .text-ink-2{color:var(--ink-2);}
+  .text-ink-3{color:var(--ink-3);}
+
+  /* 카드 배경 — 어두운 방 */
+  .room-card{
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(212,160,74,.08), transparent 50%),
+      linear-gradient(160deg,#1f0c0c 0%,#160808 60%,#0e0404 100%);
+    border:1px solid #3a1a1a;
+    box-shadow:
+      inset 0 1px 0 rgba(212,160,74,.08),
+      inset 0 -40px 60px rgba(0,0,0,.5),
+      0 20px 40px rgba(0,0,0,.6),
+      0 0 0 1px rgba(0,0,0,.4);
+    position:relative;
+    overflow:hidden;
+    transition:transform .3s ease, box-shadow .3s ease;
+  }
+  .room-card:hover{
+    transform:translateY(-4px);
+    box-shadow:
+      inset 0 1px 0 rgba(212,160,74,.15),
+      inset 0 -40px 60px rgba(0,0,0,.5),
+      0 30px 60px rgba(160,16,16,.25),
+      0 0 0 1px rgba(212,160,74,.25);
+  }
+  .room-card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 100%, rgba(160,16,16,.12), transparent 60%);
+  }
+  .room-card::after{
+    content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity:.4;
+  }
+
+  /* 자물쇠/열쇠 라인 */
+  .lock-line{
+    background:linear-gradient(90deg, transparent 0%, var(--blood) 15%, var(--gold) 50%, var(--blood) 85%, transparent 100%);
+    height:1px;
+  }
+
+  /* 골드 보더 */
+  .gold-border{
+    border:1px solid var(--gold-3);
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,.4),
+      inset 0 0 20px rgba(212,160,74,.08),
+      0 0 30px rgba(0,0,0,.6);
+  }
+  .blood-border{
+    border:1px solid var(--blood-2);
+    box-shadow:
+      inset 0 0 0 1px rgba(0,0,0,.4),
+      inset 0 0 20px rgba(160,16,16,.12),
+      0 0 30px rgba(0,0,0,.6);
+  }
+
+  /* 버튼 */
+  .btn-blood{
+    background:linear-gradient(180deg,#b81818 0%,#8a0c0c 100%);
+    border:1px solid #d4242a;
+    color:#fff;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.2),
+      inset 0 -2px 0 rgba(0,0,0,.3),
+      0 4px 12px rgba(160,16,16,.5),
+      0 0 20px rgba(160,16,16,.3);
+    text-shadow:0 1px 2px rgba(0,0,0,.6);
+    transition:all .2s ease;
+  }
+  .btn-blood:hover{
+    background:linear-gradient(180deg,#d42020 0%,#a01010 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.25),
+      inset 0 -2px 0 rgba(0,0,0,.3),
+      0 6px 18px rgba(160,16,16,.6),
+      0 0 30px rgba(160,16,16,.5);
+    transform:translateY(-1px);
+  }
+  .btn-gold{
+    background:linear-gradient(180deg,#d4a04a 0%,#a07820 100%);
+    border:1px solid #e8b860;
+    color:#1a0a0a;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.3),
+      inset 0 -2px 0 rgba(0,0,0,.2),
+      0 4px 12px rgba(212,160,74,.4);
+    font-weight:700;
+    transition:all .2s ease;
+  }
+  .btn-gold:hover{
+    background:linear-gradient(180deg,#e8b860 0%,#b88830 100%);
+    transform:translateY(-1px);
+  }
+  .btn-ghost{
+    background:rgba(50,20,20,.5);
+    border:1px solid #5a2a2a;
+    color:var(--ink);
+    transition:all .2s ease;
+  }
+  .btn-ghost:hover{
+    background:rgba(80,30,30,.6);
+    border-color:var(--gold-3);
+    color:var(--gold);
+  }
+  .btn-ghost.active{
+    background:linear-gradient(180deg,#7a0808 0%,#5a0404 100%);
+    border-color:var(--blood);
+    color:#fff;
+    box-shadow:inset 0 0 12px rgba(0,0,0,.4),0 0 16px rgba(160,16,16,.35);
+  }
+
+  /* 난이도 별 */
+  .star-on{color:var(--gold);text-shadow:0 0 8px rgba(212,160,74,.6);}
+  .star-off{color:#3a1a1a;}
+
+  /* 게이지 */
+  .gauge-bg{background:linear-gradient(90deg,#1a0808 0%,#2a1010 100%);border:1px solid #3a1a1a;}
+  .gauge-fill{
+    background:linear-gradient(90deg,#a01010 0%,#d4a04a 100%);
+    box-shadow:0 0 12px rgba(212,160,74,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    height:100%;
+    width:0;
+    transition:width 1.4s cubic-bezier(.4,.0,.2,1);
+    border-radius:inherit;
+  }
+
+  /* 매진 배지 */
+  .badge-sold{
+    background:linear-gradient(180deg,#5a0404 0%,#3a0202 100%);
+    color:#ffb8b8;
+    border:1px solid #7a0808;
+  }
+  .badge-few{
+    background:linear-gradient(180deg,#7a4a08 0%,#5a3204 100%);
+    color:#ffd888;
+    border:1px solid #a07020;
+  }
+  .badge-open{
+    background:linear-gradient(180deg,#1a4a1a 0%,#0a2a0a 100%);
+    color:#b8ffb8;
+    border:1px solid #2a6a2a;
+  }
+
+  /* 슬롯 */
+  .slot{
+    background:linear-gradient(180deg,#1a0808 0%,#0e0404 100%);
+    border:1px solid #3a1a1a;
+    color:var(--ink-2);
+    cursor:pointer;
+    transition:all .15s ease;
+    user-select:none;
+  }
+  .slot:hover:not(.slot-sold){
+    border-color:var(--gold);
+    color:var(--gold);
+    background:linear-gradient(180deg,#2a1010 0%,#1a0808 100%);
+  }
+  .slot.slot-active{
+    background:linear-gradient(180deg,#8a0808 0%,#5a0404 100%);
+    border-color:var(--blood);
+    color:#fff;
+    box-shadow:inset 0 0 12px rgba(0,0,0,.4),0 0 16px rgba(160,16,16,.5);
+  }
+  .slot.slot-sold{
+    background:#0a0303;
+    border-color:#1a0808;
+    color:#4a2a2a;
+    cursor:not-allowed;
+    text-decoration:line-through;
+  }
+
+  /* 캘린더 셀 */
+  .cal-cell{
+    aspect-ratio:1;
+    display:flex;align-items:center;justify-content:center;
+    border:1px solid transparent;
+    color:var(--ink-2);
+    cursor:pointer;
+    border-radius:4px;
+    transition:all .15s ease;
+    font-variant-numeric:tabular-nums;
+  }
+  .cal-cell:hover:not(.cal-disabled){
+    background:rgba(212,160,74,.08);
+    border-color:var(--gold-3);
+    color:var(--gold);
+  }
+  .cal-cell.cal-active{
+    background:linear-gradient(180deg,#a01010 0%,#7a0808 100%);
+    color:#fff;
+    border-color:var(--blood);
+    box-shadow:0 0 14px rgba(160,16,16,.5);
+  }
+  .cal-cell.cal-today{
+    border-color:var(--gold);color:var(--gold);
+  }
+  .cal-cell.cal-disabled{color:#3a1a1a;cursor:not-allowed;}
+
+  /* 깜빡이는 비상등 */
+  @keyframes flicker{
+    0%,100%{opacity:1;}
+    45%{opacity:.95;}
+    50%{opacity:.4;}
+    55%{opacity:.95;}
+    80%{opacity:.85;}
+  }
+  .flicker{animation:flicker 5s infinite;}
+
+  @keyframes spin-slow{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .spin-slow{animation:spin-slow 30s linear infinite;}
+
+  @keyframes pulse-blood{
+    0%,100%{box-shadow:0 0 0 0 rgba(160,16,16,.5);}
+    50%{box-shadow:0 0 20px 6px rgba(160,16,16,0);}
+  }
+  .pulse-blood{animation:pulse-blood 2.4s ease-in-out infinite;}
+
+  /* 모달 */
+  .modal-backdrop{
+    background:rgba(0,0,0,.85);
+    backdrop-filter:blur(6px);
+  }
+  .modal-panel{
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(212,160,74,.1), transparent 50%),
+      linear-gradient(160deg,#1f0c0c 0%,#140606 100%);
+    border:1px solid var(--gold-3);
+    box-shadow:
+      inset 0 1px 0 rgba(212,160,74,.15),
+      0 40px 100px rgba(0,0,0,.8),
+      0 0 60px rgba(160,16,16,.2);
+  }
+
+  /* 안개 */
+  .fog::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse at 20% 40%, rgba(212,160,74,.04), transparent 50%),
+      radial-gradient(ellipse at 80% 60%, rgba(160,16,16,.06), transparent 50%);
+  }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:#0a0303;}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#5a0404,#3a0202);border-radius:6px;border:2px solid #0a0303;}
+  ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#7a0808,#5a0404);}
+
+  /* SVG 룸 미니어처 호버 */
+  .room-card:hover .room-svg{filter:drop-shadow(0 0 20px rgba(212,160,74,.3));}
+  .room-svg{transition:filter .3s ease;}
+
+  /* 명예의 전당 행 */
+  .hof-row{
+    background:linear-gradient(90deg, rgba(50,20,20,.4) 0%, rgba(30,10,10,.6) 100%);
+    border:1px solid #2a1010;
+    transition:all .2s ease;
+  }
+  .hof-row:hover{
+    border-color:var(--gold-3);
+    background:linear-gradient(90deg, rgba(80,40,20,.5) 0%, rgba(50,20,20,.7) 100%);
+  }
+
+  /* 디바이더 */
+  .divider-fancy{
+    display:flex;align-items:center;gap:1rem;color:var(--gold);
+  }
+  .divider-fancy::before,.divider-fancy::after{
+    content:"";flex:1;height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold-3),transparent);
+  }
+
+  /* 입체 자물쇠 SVG 부분 — keylock */
+  .keyhole{filter:drop-shadow(0 0 6px rgba(212,160,74,.4));}
+
+  /* 진열 라벨 */
+  .label-chip{
+    display:inline-flex;align-items:center;gap:.35rem;
+    padding:.15rem .55rem;border-radius:999px;
+    font-size:.7rem;letter-spacing:.04em;
+    background:rgba(212,160,74,.08);
+    border:1px solid rgba(212,160,74,.3);
+    color:var(--gold);
+  }
+  .label-chip.blood{
+    background:rgba(160,16,16,.1);
+    border-color:rgba(160,16,16,.4);
+    color:#ff8a8a;
+  }
+</style>
+</head>
+<body>
+
+<!-- ───────── Top Bar ───────── -->
+<header class="sticky top-0 z-30 backdrop-blur-md" style="background:rgba(10,3,3,.85);border-bottom:1px solid #2a0a0a;">
+  <div class="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <!-- 자물쇠 로고 -->
+      <svg width="36" height="36" viewBox="0 0 36 36" class="keyhole" aria-hidden="true">
+        <defs>
+          <linearGradient id="lockGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e8b860"/>
+            <stop offset="1" stop-color="#8a5a18"/>
+          </linearGradient>
+        </defs>
+        <path d="M11 16v-3a7 7 0 0 1 14 0v3" fill="none" stroke="url(#lockGrad)" stroke-width="2.4" stroke-linecap="round"/>
+        <rect x="8" y="16" width="20" height="14" rx="2.5" fill="url(#lockGrad)" stroke="#5a3a08" stroke-width="1"/>
+        <circle cx="18" cy="22" r="2.2" fill="#1a0a0a"/>
+        <rect x="17.2" y="22.6" width="1.6" height="4.4" fill="#1a0a0a"/>
+      </svg>
+      <div>
+        <div class="font-title text-gold text-base sm:text-lg font-bold leading-none">SPARK ESCAPE</div>
+        <div class="text-[10px] sm:text-[11px] text-ink-3 font-elite mt-1 tracking-widest">전기 학습 방탈출 · ROOM RESERVATION</div>
+      </div>
+    </div>
+    <nav class="hidden md:flex items-center gap-5 text-sm text-ink-2">
+      <a href="#rooms" class="hover:text-gold transition">ROOMS</a>
+      <a href="#booking" class="hover:text-gold transition">예약</a>
+      <a href="#hof" class="hover:text-gold transition">명예의 전당</a>
+      <a href="#guide" class="hover:text-gold transition">이용 안내</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <button id="bgmBtn" class="btn-ghost rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5" aria-pressed="false" title="배경음 (UI만)">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M2 5h2.5L8 2v10L4.5 9H2z" fill="currentColor"/>
+          <path id="bgmWave" d="M10 4.5a3.5 3.5 0 0 1 0 5M11.5 3a5.5 5.5 0 0 1 0 8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <span id="bgmLabel">BGM</span>
+      </button>
+    </div>
+  </div>
+  <div class="lock-line"></div>
+</header>
+
+<!-- ───────── Hero ───────── -->
+<section class="relative overflow-hidden" style="min-height:62vh;">
+  <!-- 어두운 방 SVG 배경 -->
+  <svg class="absolute inset-0 w-full h-full" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <radialGradient id="roomLight" cx="50%" cy="35%" r="55%">
+        <stop offset="0" stop-color="#d4a04a" stop-opacity=".22"/>
+        <stop offset=".4" stop-color="#a01010" stop-opacity=".1"/>
+        <stop offset="1" stop-color="#0a0303" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2a0e0e"/>
+        <stop offset="1" stop-color="#0e0404"/>
+      </linearGradient>
+      <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1a0808"/>
+        <stop offset="1" stop-color="#050202"/>
+      </linearGradient>
+      <pattern id="brick" width="60" height="24" patternUnits="userSpaceOnUse">
+        <rect width="60" height="24" fill="#1a0808"/>
+        <path d="M0 0H60M0 24H60M30 0V24" stroke="#0a0303" stroke-width="1"/>
+        <path d="M0 12H60" stroke="#0a0303" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="1200" height="600" fill="url(#wallGrad)"/>
+    <rect width="1200" height="420" fill="url(#brick)" opacity=".55"/>
+    <rect y="420" width="1200" height="180" fill="url(#floorGrad)"/>
+    <!-- 바닥 원근선 -->
+    <g stroke="#3a1010" stroke-width="1" opacity=".6">
+      <line x1="0" y1="420" x2="1200" y2="420"/>
+      <line x1="0" y1="600" x2="200" y2="420"/>
+      <line x1="1200" y1="600" x2="1000" y2="420"/>
+      <line x1="300" y1="600" x2="450" y2="420"/>
+      <line x1="900" y1="600" x2="750" y2="420"/>
+    </g>
+    <!-- 문 -->
+    <g transform="translate(540 180)">
+      <rect width="120" height="240" rx="4" fill="#0a0303" stroke="#5a2010" stroke-width="3"/>
+      <rect x="10" y="14" width="100" height="100" rx="2" fill="none" stroke="#3a1010" stroke-width="1.5"/>
+      <rect x="10" y="124" width="100" height="100" rx="2" fill="none" stroke="#3a1010" stroke-width="1.5"/>
+      <circle cx="98" cy="120" r="3.5" fill="#d4a04a"/>
+      <!-- 자물쇠 -->
+      <g transform="translate(48 100)">
+        <path d="M6 12V8a6 6 0 0 1 12 0v4" fill="none" stroke="#d4a04a" stroke-width="2.2"/>
+        <rect y="12" width="24" height="18" rx="2" fill="#d4a04a" stroke="#8a5a18" stroke-width="1"/>
+        <circle cx="12" cy="20" r="2.4" fill="#1a0a0a"/>
+      </g>
+    </g>
+    <!-- 천장 등 -->
+    <g transform="translate(600 0)">
+      <line x1="0" y1="0" x2="0" y2="60" stroke="#3a1010" stroke-width="2"/>
+      <ellipse cx="0" cy="64" rx="22" ry="10" fill="#1a0808" stroke="#5a2010" stroke-width="1.5"/>
+      <ellipse cx="0" cy="62" rx="14" ry="6" fill="#d4a04a" opacity=".5" class="flicker"/>
+    </g>
+    <rect width="1200" height="600" fill="url(#roomLight)"/>
+    <!-- 떠다니는 열쇠 -->
+    <g transform="translate(220 280) rotate(-20)" opacity=".85">
+      <circle cx="0" cy="0" r="14" fill="none" stroke="#d4a04a" stroke-width="3"/>
+      <rect x="14" y="-2" width="30" height="4" fill="#d4a04a"/>
+      <rect x="38" y="2" width="4" height="6" fill="#d4a04a"/>
+      <rect x="32" y="2" width="4" height="8" fill="#d4a04a"/>
+    </g>
+    <g transform="translate(960 360) rotate(25)" opacity=".7">
+      <circle cx="0" cy="0" r="12" fill="none" stroke="#a01010" stroke-width="3"/>
+      <rect x="12" y="-2" width="26" height="4" fill="#a01010"/>
+      <rect x="32" y="2" width="4" height="5" fill="#a01010"/>
+    </g>
+    <!-- 전구 줄 -->
+    <g transform="translate(0 50)" opacity=".4">
+      <path d="M0 0 Q300 80 600 30 T1200 20" fill="none" stroke="#5a2010" stroke-width="1"/>
+      <g transform="translate(150 38)"><circle r="3.5" fill="#d4a04a"/></g>
+      <g transform="translate(300 56)"><circle r="3.5" fill="#a01010"/></g>
+      <g transform="translate(450 50)"><circle r="3.5" fill="#d4a04a"/></g>
+      <g transform="translate(600 32)"><circle r="3.5" fill="#a01010"/></g>
+      <g transform="translate(750 38)"><circle r="3.5" fill="#d4a04a"/></g>
+      <g transform="translate(900 32)"><circle r="3.5" fill="#a01010"/></g>
+      <g transform="translate(1050 26)"><circle r="3.5" fill="#d4a04a"/></g>
+    </g>
+  </svg>
+
+  <div class="relative max-w-7xl mx-auto px-5 py-16 sm:py-24 text-center">
+    <div class="inline-flex items-center gap-2 label-chip blood mb-5 mx-auto">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 pulse-blood"></span>
+      LIVE · 가상 방탈출 시뮬레이션
+    </div>
+    <h1 class="font-title text-3xl sm:text-5xl md:text-6xl font-black tracking-wider" style="color:#f4e0b0;text-shadow:0 0 20px rgba(160,16,16,.5),0 2px 4px rgba(0,0,0,.8);">
+      합 격 의 방 을 <span class="text-blood">열 어 라</span>
+    </h1>
+    <p class="font-elite text-gold mt-3 text-sm sm:text-base tracking-[.3em]">SPARK · ESCAPE · ROOM</p>
+    <div class="divider-fancy max-w-md mx-auto mt-6 mb-6 text-xs font-title">
+      <span>EST · 2026</span>
+    </div>
+    <p class="text-ink-2 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+      여섯 개의 방, 여섯 개의 자물쇠.<br class="hidden sm:block">
+      전기기능사 합격을 향한 미스터리한 여정 — 한 문제씩 풀어내며 다음 방의 열쇠를 손에 쥐세요.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
+      <a href="#rooms" class="btn-blood rounded-md px-6 py-3 text-sm font-bold tracking-wider">룸 둘러보기</a>
+      <a href="#booking" class="btn-gold rounded-md px-6 py-3 text-sm font-bold tracking-wider">예약하기</a>
+    </div>
+    <!-- 통계 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 max-w-3xl mx-auto mt-12">
+      <div class="text-center">
+        <div class="font-title text-2xl sm:text-3xl text-gold font-bold">6</div>
+        <div class="text-[11px] sm:text-xs text-ink-3 font-elite tracking-widest mt-1">ROOMS</div>
+      </div>
+      <div class="text-center">
+        <div class="font-title text-2xl sm:text-3xl text-gold font-bold">12,480</div>
+        <div class="text-[11px] sm:text-xs text-ink-3 font-elite tracking-widest mt-1">CLEARED</div>
+      </div>
+      <div class="text-center">
+        <div class="font-title text-2xl sm:text-3xl text-gold font-bold">68<span class="text-base">%</span></div>
+        <div class="text-[11px] sm:text-xs text-ink-3 font-elite tracking-widest mt-1">SUCCESS</div>
+      </div>
+      <div class="text-center">
+        <div class="font-title text-2xl sm:text-3xl text-gold font-bold">4.8<span class="text-base">★</span></div>
+        <div class="text-[11px] sm:text-xs text-ink-3 font-elite tracking-widest mt-1">RATING</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="lock-line"></div>
+
+<!-- ───────── Rooms Grid ───────── -->
+<section id="rooms" class="max-w-7xl mx-auto px-5 py-16">
+  <div class="text-center mb-12">
+    <div class="font-elite text-gold text-xs tracking-[.4em] mb-2">CHAPTER · I</div>
+    <h2 class="font-title text-3xl sm:text-4xl font-bold text-ink">여 섯 개 의 방</h2>
+    <p class="text-ink-3 text-sm mt-2">각 방은 전기기능사 핵심 단원으로 설계되었습니다 — 카드를 눌러 상세 보기</p>
+  </div>
+
+  <div id="roomGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+</section>
+
+<div class="lock-line"></div>
+
+<!-- ───────── Booking ───────── -->
+<section id="booking" class="max-w-7xl mx-auto px-5 py-16">
+  <div class="text-center mb-10">
+    <div class="font-elite text-gold text-xs tracking-[.4em] mb-2">CHAPTER · II</div>
+    <h2 class="font-title text-3xl sm:text-4xl font-bold text-ink">예 약 시 스 템</h2>
+    <p class="text-ink-3 text-sm mt-2">날짜와 시간을 선택하고 인원을 정해주세요</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <!-- 룸 선택 -->
+    <div class="room-card rounded-lg p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-title text-gold text-sm">STEP · 1</span>
+        <span class="text-ink-3 text-xs">룸 선택</span>
+      </div>
+      <select id="bookRoom" class="w-full rounded-md px-3 py-2.5 text-sm bg-black/40 border border-red-900/50 text-ink focus:outline-none focus:border-yellow-700">
+        <option value="">— 룸을 선택하세요 —</option>
+      </select>
+      <div id="bookRoomInfo" class="mt-4 text-xs text-ink-3 leading-relaxed min-h-[80px]"></div>
+    </div>
+
+    <!-- 캘린더 -->
+    <div class="room-card rounded-lg p-5">
+      <div class="flex items-center justify-between gap-2 mb-4">
+        <div class="flex items-center gap-2">
+          <span class="font-title text-gold text-sm">STEP · 2</span>
+          <span class="text-ink-3 text-xs">날짜</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="calPrev" class="btn-ghost rounded w-7 h-7 text-xs">‹</button>
+          <span id="calLabel" class="text-ink-2 text-sm font-elite px-2 min-w-[110px] text-center"></span>
+          <button id="calNext" class="btn-ghost rounded w-7 h-7 text-xs">›</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-ink-3 font-elite mb-1">
+        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-blood">토</div>
+      </div>
+      <div id="calGrid" class="grid grid-cols-7 gap-1 text-sm"></div>
+    </div>
+
+    <!-- 시간 슬롯 + 인원 -->
+    <div class="room-card rounded-lg p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-title text-gold text-sm">STEP · 3</span>
+        <span class="text-ink-3 text-xs">시간 / 인원</span>
+      </div>
+      <div class="text-[11px] text-ink-3 font-elite tracking-widest mb-2">TIME SLOTS</div>
+      <div id="slotGrid" class="grid grid-cols-3 gap-1.5 text-xs mb-4"></div>
+
+      <div class="text-[11px] text-ink-3 font-elite tracking-widest mb-2 mt-4">PARTY SIZE</div>
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <button class="btn-ghost rounded px-3 py-1.5 text-xs party-btn" data-n="2">2인</button>
+        <button class="btn-ghost rounded px-3 py-1.5 text-xs party-btn active" data-n="3">3인</button>
+        <button class="btn-ghost rounded px-3 py-1.5 text-xs party-btn" data-n="4">4인</button>
+        <button class="btn-ghost rounded px-3 py-1.5 text-xs party-btn" data-n="5">5인</button>
+        <button class="btn-ghost rounded px-3 py-1.5 text-xs party-btn" data-n="6">6인</button>
+      </div>
+
+      <div class="mt-5 pt-4 border-t border-red-900/30 text-xs text-ink-3 flex justify-between">
+        <span>선택 요약</span>
+        <span id="bookSummary" class="text-ink">—</span>
+      </div>
+      <button id="confirmBtn" class="btn-blood rounded-md w-full mt-3 py-3 text-sm font-bold tracking-wider">예약하기</button>
+      <p class="text-[10px] text-ink-3 text-center mt-2">* 가상 시뮬레이션 · 실제 예약되지 않습니다</p>
+    </div>
+  </div>
+</section>
+
+<div class="lock-line"></div>
+
+<!-- ───────── Hall of Fame ───────── -->
+<section id="hof" class="max-w-7xl mx-auto px-5 py-16">
+  <div class="text-center mb-10">
+    <div class="font-elite text-gold text-xs tracking-[.4em] mb-2">CHAPTER · III</div>
+    <h2 class="font-title text-3xl sm:text-4xl font-bold text-ink">명 예 의 전 당</h2>
+    <p class="text-ink-3 text-sm mt-2">최단 시간으로 모든 방을 탈출한 전설의 팀들</p>
+  </div>
+
+  <div class="room-card rounded-lg p-5 sm:p-6">
+    <div class="grid grid-cols-12 gap-2 text-[11px] text-ink-3 font-elite tracking-widest pb-3 border-b border-red-900/30 mb-3">
+      <div class="col-span-1 text-center">#</div>
+      <div class="col-span-4 sm:col-span-3">TEAM</div>
+      <div class="col-span-3 sm:col-span-3 hidden sm:block">ROOM</div>
+      <div class="col-span-3 sm:col-span-2 text-right">TIME</div>
+      <div class="col-span-2 text-center hidden sm:block">PARTY</div>
+      <div class="col-span-4 sm:col-span-1 text-right">★</div>
+    </div>
+    <div id="hofList" class="space-y-2"></div>
+  </div>
+</section>
+
+<div class="lock-line"></div>
+
+<!-- ───────── Guide ───────── -->
+<section id="guide" class="max-w-7xl mx-auto px-5 py-16">
+  <div class="text-center mb-10">
+    <div class="font-elite text-gold text-xs tracking-[.4em] mb-2">CHAPTER · IV</div>
+    <h2 class="font-title text-3xl sm:text-4xl font-bold text-ink">이 용 안 내</h2>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+    <div class="room-card rounded-lg p-6">
+      <div class="text-gold font-title text-3xl mb-3">01</div>
+      <div class="font-title text-ink text-lg mb-2">난이도</div>
+      <p class="text-ink-3 text-sm leading-relaxed">★1~5 단계. 입문자는 ★1~2부터 시작, 합격 직전 모의는 ★5 최종 합격 방을 추천합니다.</p>
+    </div>
+    <div class="room-card rounded-lg p-6">
+      <div class="text-gold font-title text-3xl mb-3">02</div>
+      <div class="font-title text-ink text-lg mb-2">힌트</div>
+      <p class="text-ink-3 text-sm leading-relaxed">방마다 3회까지 힌트가 제공됩니다. 회로도/공식 카드는 무제한 열람 가능 — 단, 사용 시 클리어 등급이 한 단계 낮아집니다.</p>
+    </div>
+    <div class="room-card rounded-lg p-6">
+      <div class="text-gold font-title text-3xl mb-3">03</div>
+      <div class="font-title text-ink text-lg mb-2">팀 구성</div>
+      <p class="text-ink-3 text-sm leading-relaxed">2~6인 그룹 구성. 솔로 도전도 가능하지만 시간 패널티가 적용됩니다. 팀명은 예약 시 자동 생성됩니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── Footer ───────── -->
+<footer class="mt-12 border-t" style="border-color:#2a0a0a;background:linear-gradient(180deg, #0a0303 0%, #050202 100%);">
+  <div class="max-w-7xl mx-auto px-5 py-10">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="font-title text-gold text-lg font-bold">SPARK ESCAPE</div>
+        <div class="text-ink-3 text-xs font-elite tracking-widest mt-1">전기 학습 방탈출 · 가상 시뮬레이션</div>
+      </div>
+      <div class="text-ink-3 text-xs text-right leading-relaxed">
+        본 페이지는 학습 콘텐츠 데모입니다.<br>
+        실제 매장·예약·결제 시스템이 아니며, 모든 후기·통계·팀명은 가상입니다.<br>
+        © 2026 Spark Escape · For Educational Purposes Only.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ───────── Modal ───────── -->
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop">
+  <div class="modal-panel rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div id="modalBody" class="p-6 sm:p-8"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ───────── ESCAPE HTML ─────────
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+// ───────── DATA ─────────
+const ROOMS = [
+  {
+    id:'ohm', no:'01', title:'옴의 실험실',
+    subtitle:'OHM\'S LABORATORY',
+    diff:2, dur:60, party:'4~6인', tag:'입문', success:78, rating:4.6, plays:3120,
+    story:'19세기 게오르크 옴의 낡은 실험실. 책상 위에 V=IR이 새겨진 황동판이 놓여 있고, 자물쇠가 잠긴 서랍 안에 다음 방의 열쇠가 들어 있습니다. 전압계·전류계·저항 다이얼을 맞춰 비밀번호를 풀어내세요.',
+    puzzles:['전압·전류 다이얼 매칭','색띠 저항 해독','직·병렬 회로 합성저항'],
+    reviews:[
+      {n:'직류파괴자',s:5,t:'옴의 법칙이 이렇게 짜릿할 줄이야. 입문용이라기엔 마지막 다이얼이 꽤 까다로움.'},
+      {n:'저항러버',s:4,t:'색띠 외워둔 보람 있었음. 4인 추천.'}
+    ]
+  },
+  {
+    id:'kirchhoff', no:'02', title:'키르히호프의 노드',
+    subtitle:'KIRCHHOFF\'S NODE',
+    diff:3, dur:75, party:'3~5인', tag:'회로 분석', success:62, rating:4.8, plays:2480,
+    story:'벽 가득한 회로도. 노드마다 들어오고 나가는 전류의 합이 맞아야 다음 문이 열립니다. 전류법칙(KCL)과 전압법칙(KVL)을 동시에 만족시키는 한 조의 숫자를 찾으세요 — 단, 그림자가 움직이기 시작하면 시간은 멈추지 않습니다.',
+    puzzles:['KCL 노드 균형','KVL 폐회로 합산','미지수 3개 연립'],
+    reviews:[
+      {n:'노드사냥꾼',s:5,t:'KVL 한 번 틀려서 처음부터 다시. 그래도 풀고 나니 짜릿함.'},
+      {n:'전류의왕',s:5,t:'팀원과 분담 잘 하면 60분 컷도 가능.'}
+    ]
+  },
+  {
+    id:'transformer', no:'03', title:'변압기 비밀의 방',
+    subtitle:'TRANSFORMER CHAMBER',
+    diff:3, dur:80, party:'3~5인', tag:'권수비', success:58, rating:4.7, plays:2010,
+    story:'커다란 변압기 한 대와 1차·2차 단자판. 권수비 a = N1/N2 = V1/V2 = I2/I1 의 관계를 이용해 입출력 값을 맞추면, 변압기 코어 안쪽에 숨겨진 자물쇠가 열립니다. 잘못 연결하면 단락 — 그리고 룸 전체가 어두워집니다.',
+    puzzles:['권수비 계산','입출력 전압/전류 매칭','단상·3상 변환'],
+    reviews:[
+      {n:'변압기마스터',s:5,t:'권수비 외워둔 게 도움 됨. 3상 마지막 단계가 백미.'},
+      {n:'코일왕자',s:4,t:'팀원 한 명이 계산 빠르면 훨씬 수월.'}
+    ]
+  },
+  {
+    id:'shock', no:'04', title:'감전 위기',
+    subtitle:'SHOCK HAZARD',
+    diff:4, dur:90, party:'4~6인', tag:'안전 수칙', success:45, rating:4.9, plays:1640,
+    story:'점검 중 누전이 발생한 작업 현장 — 비상등이 깜빡이고 활선 표시등이 켜져 있습니다. 정해진 순서대로 검전·접지·차단을 수행하지 않으면 가상 감전 페널티. 3분마다 안전 점검을 통과해야 다음 단계로 진입할 수 있습니다.',
+    puzzles:['검전·접지·차단 순서','보호구 선택','누전차단기 동작 원리'],
+    reviews:[
+      {n:'안전제일',s:5,t:'순서 한 번 헷갈리면 처음부터. 긴장감 최고.'},
+      {n:'활선조심',s:5,t:'안전 수칙이 몸에 박힘. 실무에도 도움.'}
+    ]
+  },
+  {
+    id:'faraday', no:'05', title:'패러데이의 코일',
+    subtitle:'FARADAY\'S COIL',
+    diff:4, dur:80, party:'3~5인', tag:'자속 미스터리', success:48, rating:4.7, plays:1320,
+    story:'천장에서 거대한 코일이 회전하고, 자속이 변할 때마다 벽의 LED 패턴이 바뀝니다. ε = -N dΦ/dt — 유도기전력의 부호와 크기를 추적해 코일 회전 방향을 거꾸로 돌려야 패러데이의 일기장이 열립니다.',
+    puzzles:['렌츠의 법칙 방향 결정','자속 변화율 추정','상호유도 회로 매칭'],
+    reviews:[
+      {n:'자속탐험가',s:5,t:'렌츠의 법칙 부호가 핵심. 풀고 나면 머리에 박힘.'},
+      {n:'코일러브',s:4,t:'시각 효과가 정말 좋음.'}
+    ]
+  },
+  {
+    id:'final', no:'06', title:'최종 합격 방',
+    subtitle:'THE FINAL CHAMBER',
+    diff:5, dur:100, party:'4~6인', tag:'종합', success:32, rating:5.0, plays:840,
+    story:'다섯 개의 방에서 모은 열쇠 다섯 개. 마지막 방의 거대한 자물쇠에는 다섯 개의 키홀이 있고, 시험관 모습의 그림자가 합격 증서를 들고 기다립니다. 시간 안에 종합 회로를 완성하고 합격 인증을 손에 넣으세요 — 모든 단원이 종합된 최후의 시험.',
+    puzzles:['종합 회로 완성','오실로스코프 파형 해독','3상 결선 + 변압기 + 안전'],
+    reviews:[
+      {n:'합격의화신',s:5,t:'전기기능사 시험 직전에 풀면 진짜 합격할 것 같음.'},
+      {n:'최종보스',s:5,t:'1시간 40분이 5분 같음. 다시 도전 예약함.'}
+    ]
+  }
+];
+
+// 시간 슬롯 템플릿 (요일별 다름)
+function genSlots(seed){
+  const times = ['10:00','11:30','13:00','14:30','16:00','17:30','19:00','20:30','22:00'];
+  // 의사난수: 좌석 상태 (open / few / sold)
+  const states = [];
+  let s = seed;
+  for(let i=0;i<times.length;i++){
+    s = (s * 9301 + 49297) % 233280;
+    const r = s / 233280;
+    let st = 'open';
+    if(r < .22) st = 'sold';
+    else if(r < .48) st = 'few';
+    states.push({time:times[i], state:st});
+  }
+  return states;
+}
+
+// 명예의 전당 (가상)
+const HOF = [
+  {rank:1, team:'전류의 후예',     room:'최종 합격 방',     time:'01:12:34', party:5, rate:5.0},
+  {rank:2, team:'옴브라더스',      room:'최종 합격 방',     time:'01:18:42', party:4, rate:5.0},
+  {rank:3, team:'키르히호프의 자녀들',room:'최종 합격 방',     time:'01:24:08', party:6, rate:4.9},
+  {rank:4, team:'권수비 마스터',    room:'변압기 비밀의 방', time:'00:48:21', party:3, rate:4.9},
+  {rank:5, team:'노드 워커즈',     room:'키르히호프의 노드',time:'00:42:55', party:5, rate:5.0},
+  {rank:6, team:'렌츠의 손길',     room:'패러데이의 코일', time:'00:51:17', party:4, rate:4.9},
+  {rank:7, team:'직류 다이얼',     room:'옴의 실험실',     time:'00:31:09', party:4, rate:5.0},
+  {rank:8, team:'활선 회피팀',     room:'감전 위기',       time:'00:58:33', party:6, rate:4.8},
+  {rank:9, team:'자속 추적자',     room:'패러데이의 코일', time:'00:53:48', party:3, rate:4.8},
+  {rank:10,team:'최후의 감전사',   room:'최종 합격 방',     time:'01:32:11', party:5, rate:4.7}
+];
+
+// ───────── SVG ROOM PREVIEWS ─────────
+function roomSVG(id){
+  const svgs = {
+    ohm: `
+      <svg class="room-svg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="ohmBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2a0e0e"/><stop offset="1" stop-color="#0a0303"/>
+          </linearGradient>
+        </defs>
+        <rect width="320" height="160" fill="url(#ohmBg)"/>
+        <!-- 책상 -->
+        <rect x="40" y="110" width="240" height="10" fill="#3a1a08"/>
+        <rect x="60" y="120" width="6" height="30" fill="#2a1208"/>
+        <rect x="254" y="120" width="6" height="30" fill="#2a1208"/>
+        <!-- 황동판 V=IR -->
+        <rect x="120" y="80" width="80" height="32" rx="2" fill="#8a5a18" stroke="#d4a04a" stroke-width="1.5"/>
+        <text x="160" y="102" text-anchor="middle" font-family="Cinzel" font-size="18" font-weight="700" fill="#1a0a0a">V=IR</text>
+        <!-- 전압계 -->
+        <circle cx="70" cy="80" r="22" fill="#1a0808" stroke="#d4a04a" stroke-width="1.5"/>
+        <text x="70" y="76" text-anchor="middle" font-family="monospace" font-size="9" fill="#d4a04a">V</text>
+        <line x1="70" y1="80" x2="82" y2="68" stroke="#d4a04a" stroke-width="1.5"/>
+        <!-- 저항 -->
+        <g transform="translate(230 60)">
+          <rect width="60" height="14" rx="2" fill="#5a3a08"/>
+          <rect x="6" width="4" height="14" fill="#a01010"/>
+          <rect x="14" width="4" height="14" fill="#d4a04a"/>
+          <rect x="22" width="4" height="14" fill="#a01010"/>
+          <rect x="46" width="4" height="14" fill="#5a5a5a"/>
+        </g>
+        <!-- 천장 등 -->
+        <line x1="160" y1="0" x2="160" y2="20" stroke="#3a1010" stroke-width="1"/>
+        <ellipse cx="160" cy="22" rx="10" ry="4" fill="#d4a04a" opacity=".5" class="flicker"/>
+      </svg>`,
+    kirchhoff: `
+      <svg class="room-svg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="kBg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2a0e0e"/><stop offset="1" stop-color="#0a0303"/>
+          </linearGradient>
+        </defs>
+        <rect width="320" height="160" fill="url(#kBg)"/>
+        <!-- 회로도 -->
+        <g stroke="#d4a04a" stroke-width="2" fill="none">
+          <path d="M40 80 L80 80"/>
+          <path d="M80 80 L80 40 L160 40 L160 80"/>
+          <path d="M160 80 L160 120 L80 120 L80 80"/>
+          <path d="M160 80 L200 80"/>
+          <path d="M200 80 L200 40 L280 40 L280 80 L200 80"/>
+          <path d="M200 80 L200 120 L280 120 L280 80"/>
+        </g>
+        <!-- 노드 -->
+        <circle cx="80" cy="80" r="5" fill="#a01010" stroke="#fff" stroke-width="1"/>
+        <circle cx="160" cy="80" r="5" fill="#a01010" stroke="#fff" stroke-width="1"/>
+        <circle cx="200" cy="80" r="5" fill="#d4a04a" stroke="#fff" stroke-width="1"/>
+        <circle cx="280" cy="80" r="5" fill="#a01010" stroke="#fff" stroke-width="1"/>
+        <!-- 화살표 -->
+        <g fill="#d4a04a">
+          <path d="M50 75 L60 80 L50 85 Z"/>
+          <path d="M150 35 L160 30 L150 25 Z" opacity=".6"/>
+          <path d="M250 75 L260 80 L250 85 Z"/>
+        </g>
+        <text x="55" y="68" font-family="monospace" font-size="9" fill="#d4a04a">I₁</text>
+        <text x="245" y="68" font-family="monospace" font-size="9" fill="#d4a04a">I₃</text>
+        <text x="165" y="32" font-family="monospace" font-size="9" fill="#d4a04a">I₂</text>
+      </svg>`,
+    transformer: `
+      <svg class="room-svg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="160" fill="#150707"/>
+        <!-- 변압기 코어 -->
+        <g transform="translate(110 30)">
+          <rect width="100" height="100" rx="3" fill="none" stroke="#d4a04a" stroke-width="3"/>
+          <rect x="10" y="10" width="80" height="80" fill="none" stroke="#d4a04a" stroke-width="1.5"/>
+          <!-- 1차 코일 -->
+          <g stroke="#a01010" stroke-width="2" fill="none">
+            <path d="M30 14 Q24 22 30 30 Q24 38 30 46 Q24 54 30 62 Q24 70 30 78 Q24 86 30 88"/>
+          </g>
+          <!-- 2차 코일 -->
+          <g stroke="#d4a04a" stroke-width="2" fill="none">
+            <path d="M70 14 Q76 22 70 30 Q76 38 70 46 Q76 54 70 62 Q76 70 70 78 Q76 86 70 88"/>
+          </g>
+          <text x="22" y="55" text-anchor="middle" font-family="Cinzel" font-size="10" font-weight="700" fill="#a01010">N₁</text>
+          <text x="78" y="55" text-anchor="middle" font-family="Cinzel" font-size="10" font-weight="700" fill="#d4a04a">N₂</text>
+        </g>
+        <!-- 단자 -->
+        <line x1="100" y1="50" x2="80" y2="50" stroke="#a01010" stroke-width="2"/>
+        <line x1="100" y1="110" x2="80" y2="110" stroke="#a01010" stroke-width="2"/>
+        <line x1="220" y1="50" x2="240" y2="50" stroke="#d4a04a" stroke-width="2"/>
+        <line x1="220" y1="110" x2="240" y2="110" stroke="#d4a04a" stroke-width="2"/>
+        <text x="65" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#a01010">V₁</text>
+        <text x="255" y="82" text-anchor="middle" font-family="monospace" font-size="9" fill="#d4a04a">V₂</text>
+      </svg>`,
+    shock: `
+      <svg class="room-svg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="160" fill="#1a0606"/>
+        <!-- 작업자 -->
+        <g transform="translate(120 50)">
+          <circle cx="40" cy="12" r="10" fill="#d4a04a"/>
+          <rect x="32" y="22" width="16" height="36" fill="#7a0808"/>
+          <rect x="28" y="58" width="8" height="30" fill="#3a1208"/>
+          <rect x="44" y="58" width="8" height="30" fill="#3a1208"/>
+          <rect x="20" y="26" width="12" height="6" fill="#7a0808"/>
+          <rect x="48" y="26" width="12" height="6" fill="#7a0808"/>
+        </g>
+        <!-- 번개 -->
+        <g fill="none" stroke="#d4a04a" stroke-width="2.5" stroke-linejoin="bevel">
+          <path d="M70 30 L60 60 L80 60 L65 100 L90 70 L75 70 L90 40 Z" fill="#d4a04a" class="flicker"/>
+          <path d="M240 40 L230 70 L250 70 L240 110 L260 80 L250 80 L260 50 Z" fill="#a01010" class="flicker" style="animation-delay:.3s"/>
+        </g>
+        <!-- 활선 표시 -->
+        <g transform="translate(20 120)">
+          <rect width="60" height="20" rx="2" fill="#a01010" class="flicker"/>
+          <text x="30" y="14" text-anchor="middle" font-family="Cinzel" font-size="10" font-weight="700" fill="#fff">활 선</text>
+        </g>
+        <!-- 비상등 -->
+        <circle cx="280" cy="30" r="8" fill="#a01010" class="flicker"/>
+      </svg>`,
+    faraday: `
+      <svg class="room-svg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <rect width="320" height="160" fill="#0e0606"/>
+        <!-- 회전 코일 -->
+        <g transform="translate(160 80)">
+          <g class="spin-slow" style="transform-origin:center">
+            <ellipse rx="60" ry="20" fill="none" stroke="#d4a04a" stroke-width="2"/>
+            <ellipse rx="60" ry="14" fill="none" stroke="#d4a04a" stroke-width="1.5" opacity=".7" transform="rotate(60)"/>
+            <ellipse rx="60" ry="14" fill="none" stroke="#d4a04a" stroke-width="1.5" opacity=".7" transform="rotate(120)"/>
+          </g>
+          <circle r="6" fill="#a01010"/>
+        </g>
+        <!-- 자속선 -->
+        <g stroke="#a01010" stroke-width="1.5" fill="none" opacity=".6">
+          <path d="M40 80 Q160 30 280 80"/>
+          <path d="M40 80 Q160 130 280 80"/>
+        </g>
+        <!-- LED 패턴 -->
+        <g>
+          <circle cx="30" cy="30" r="3" fill="#d4a04a" class="flicker"/>
+          <circle cx="50" cy="30" r="3" fill="#a01010"/>
+          <circle cx="70" cy="30" r="3" fill="#d4a04a" class="flicker" style="animation-delay:.3s"/>
+          <circle cx="290" cy="30" r="3" fill="#a01010" class="flicker" style="animation-delay:.6s"/>
+          <circle cx="270" cy="30" r="3" fill="#d4a04a"/>
+          <circle cx="250" cy="30" r="3" fill="#a01010" class="flicker"/>
+        </g>
+        <text x="160" y="146" text-anchor="middle" font-family="Cinzel" font-size="10" font-weight="700" fill="#d4a04a">ε = − N · dΦ/dt</text>
+      </svg>`,
+    final: `
+      <svg class="room-svg" width="100%" height="160" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <radialGradient id="finalLight" cx="50%" cy="50%" r="55%">
+            <stop offset="0" stop-color="#d4a04a" stop-opacity=".35"/>
+            <stop offset="1" stop-color="#0a0303" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="320" height="160" fill="#0a0303"/>
+        <rect width="320" height="160" fill="url(#finalLight)"/>
+        <!-- 거대 자물쇠 -->
+        <g transform="translate(110 30)">
+          <path d="M20 30V20a30 30 0 0 1 60 0v10" fill="none" stroke="#d4a04a" stroke-width="4"/>
+          <rect y="30" width="100" height="80" rx="6" fill="#8a5a18" stroke="#d4a04a" stroke-width="2"/>
+          <!-- 5개 키홀 -->
+          <g fill="#1a0a0a">
+            <circle cx="20" cy="55" r="4"/>
+            <rect x="18.5" y="55" width="3" height="8"/>
+            <circle cx="40" cy="55" r="4"/>
+            <rect x="38.5" y="55" width="3" height="8"/>
+            <circle cx="60" cy="55" r="4"/>
+            <rect x="58.5" y="55" width="3" height="8"/>
+            <circle cx="80" cy="55" r="4"/>
+            <rect x="78.5" y="55" width="3" height="8"/>
+            <circle cx="50" cy="85" r="6"/>
+            <rect x="47.5" y="85" width="5" height="14"/>
+          </g>
+          <!-- 합격 글자 -->
+          <text x="50" y="125" text-anchor="middle" font-family="Cinzel" font-size="10" font-weight="700" fill="#1a0a0a">合 格</text>
+        </g>
+      </svg>`
+  };
+  return svgs[id] || '';
+}
+
+// 별점 표시
+function stars(n, max){
+  max = max || 5;
+  let html = '';
+  for(let i=1;i<=max;i++){
+    html += '<span class="'+(i<=n?'star-on':'star-off')+'">★</span>';
+  }
+  return html;
+}
+
+// ───────── 카드 렌더링 ─────────
+function renderRooms(){
+  const grid = document.getElementById('roomGrid');
+  let html = '';
+  ROOMS.forEach(function(r){
+    html += `
+    <article class="room-card rounded-lg cursor-pointer" data-room="${esc(r.id)}" role="button" tabindex="0" aria-label="${esc(r.title)} 상세보기">
+      <div class="relative">
+        ${roomSVG(r.id)}
+        <div class="absolute top-3 left-3">
+          <span class="label-chip">ROOM · ${esc(r.no)}</span>
+        </div>
+        <div class="absolute top-3 right-3">
+          <span class="label-chip blood">${esc(r.tag)}</span>
+        </div>
+      </div>
+      <div class="relative p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="font-elite text-ink-3 text-[10px] tracking-[.25em] mb-1">${esc(r.subtitle)}</div>
+            <h3 class="font-title text-ink text-xl font-bold leading-tight">${esc(r.title)}</h3>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-xs">${stars(r.diff)}</div>
+            <div class="text-[10px] text-ink-3 font-elite mt-0.5">난이도</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-ink-2">
+          <span class="flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.5V6L7.5 7.2"/></svg>
+            ${r.dur}분
+          </span>
+          <span class="flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="4" r="2"/><path d="M2 10c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg>
+            ${esc(r.party)}
+          </span>
+          <span class="flex items-center gap-1 text-gold">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.6 4.2H12L8.4 6.8l1.4 4.2L6 8.4 2.2 11l1.4-4.2L0 4.2h4.4z"/></svg>
+            ${r.rating}
+          </span>
+        </div>
+
+        <div class="mt-4">
+          <div class="flex justify-between text-[10px] text-ink-3 font-elite tracking-widest mb-1">
+            <span>SUCCESS RATE</span>
+            <span class="text-gold">${r.success}%</span>
+          </div>
+          <div class="gauge-bg rounded-full h-2 overflow-hidden">
+            <div class="gauge-fill" data-fill="${r.success}"></div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-red-900/30 flex items-center justify-between text-xs">
+          <span class="text-ink-3">${r.plays.toLocaleString()}팀 클리어</span>
+          <span class="text-gold font-elite tracking-widest">VIEW · DETAILS →</span>
+        </div>
+      </div>
+    </article>`;
+  });
+  grid.innerHTML = html;
+
+  // 게이지 애니메이션 (IntersectionObserver)
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          const fills = e.target.querySelectorAll('.gauge-fill');
+          fills.forEach(function(el){
+            const v = el.getAttribute('data-fill');
+            requestAnimationFrame(function(){ el.style.width = v + '%'; });
+          });
+          io.unobserve(e.target);
+        }
+      });
+    }, {threshold:.2});
+    grid.querySelectorAll('.room-card').forEach(function(c){ io.observe(c); });
+  } else {
+    grid.querySelectorAll('.gauge-fill').forEach(function(el){
+      el.style.width = el.getAttribute('data-fill') + '%';
+    });
+  }
+
+  // 카드 클릭/키보드 이벤트
+  grid.querySelectorAll('[data-room]').forEach(function(card){
+    const id = card.getAttribute('data-room');
+    card.addEventListener('click', function(){ openModal(id); });
+    card.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal(id); }
+    });
+  });
+}
+
+// ───────── 모달 ─────────
+function openModal(id){
+  const r = ROOMS.find(function(x){ return x.id === id; });
+  if(!r) return;
+  const modal = document.getElementById('modal');
+  const body = document.getElementById('modalBody');
+
+  let revHtml = '';
+  r.reviews.forEach(function(v){
+    revHtml += `
+    <div class="border-l-2 border-yellow-700/40 pl-3 py-1 mb-2">
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="text-gold font-elite tracking-widest">${esc(v.n)}</span>
+        <span class="text-xs">${stars(v.s)}</span>
+      </div>
+      <p class="text-ink-2 text-sm leading-relaxed">${esc(v.t)}</p>
+    </div>`;
+  });
+
+  let puzHtml = '';
+  r.puzzles.forEach(function(p){
+    puzHtml += `<li class="flex items-start gap-2"><span class="text-blood mt-1">◆</span><span class="text-ink-2">${esc(p)}</span></li>`;
+  });
+
+  // 미니 캘린더
+  const today = new Date();
+  let calHtml = '<div class="grid grid-cols-7 gap-1 text-[11px] text-center">';
+  for(let i=0;i<7;i++){
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const day = d.getDate();
+    const dow = ['일','월','화','수','목','금','토'][d.getDay()];
+    calHtml += `<div class="rounded p-2 ${i===0?'bg-red-900/30 border border-red-700':'border border-red-900/30'}">
+      <div class="text-ink-3 text-[10px]">${dow}</div>
+      <div class="text-ink font-elite mt-1">${day}</div>
+    </div>`;
+  }
+  calHtml += '</div>';
+
+  body.innerHTML = `
+    <div class="flex items-start justify-between gap-3 mb-4">
+      <div>
+        <div class="font-elite text-gold text-[11px] tracking-[.3em]">ROOM · ${esc(r.no)} — ${esc(r.subtitle)}</div>
+        <h2 class="font-title text-2xl sm:text-3xl font-bold text-ink mt-1">${esc(r.title)}</h2>
+      </div>
+      <button id="modalClose" class="btn-ghost rounded w-8 h-8 text-lg leading-none" aria-label="닫기">×</button>
+    </div>
+
+    <div class="rounded-md overflow-hidden mb-4 gold-border">
+      ${roomSVG(r.id)}
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 text-center">
+      <div class="rounded-md p-3" style="background:rgba(50,20,20,.4);border:1px solid #3a1a1a;">
+        <div class="text-[10px] text-ink-3 font-elite tracking-widest">난이도</div>
+        <div class="text-base mt-1">${stars(r.diff)}</div>
+      </div>
+      <div class="rounded-md p-3" style="background:rgba(50,20,20,.4);border:1px solid #3a1a1a;">
+        <div class="text-[10px] text-ink-3 font-elite tracking-widest">시간</div>
+        <div class="text-gold font-title text-lg mt-1">${r.dur}분</div>
+      </div>
+      <div class="rounded-md p-3" style="background:rgba(50,20,20,.4);border:1px solid #3a1a1a;">
+        <div class="text-[10px] text-ink-3 font-elite tracking-widest">인원</div>
+        <div class="text-gold font-title text-lg mt-1">${esc(r.party)}</div>
+      </div>
+      <div class="rounded-md p-3" style="background:rgba(50,20,20,.4);border:1px solid #3a1a1a;">
+        <div class="text-[10px] text-ink-3 font-elite tracking-widest">성공률</div>
+        <div class="text-gold font-title text-lg mt-1">${r.success}%</div>
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <div class="font-title text-gold text-sm tracking-wider mb-2">STORY</div>
+      <p class="text-ink-2 text-sm leading-relaxed">${esc(r.story)}</p>
+    </div>
+
+    <div class="mb-5">
+      <div class="font-title text-gold text-sm tracking-wider mb-2">PUZZLES</div>
+      <ul class="space-y-1.5 text-sm">${puzHtml}</ul>
+    </div>
+
+    <div class="mb-5">
+      <div class="font-title text-gold text-sm tracking-wider mb-2">UPCOMING · DATES</div>
+      ${calHtml}
+    </div>
+
+    <div class="mb-5">
+      <div class="font-title text-gold text-sm tracking-wider mb-2">REVIEWS</div>
+      ${revHtml}
+    </div>
+
+    <div class="flex gap-2 pt-2 border-t border-red-900/30">
+      <button id="modalBookBtn" class="btn-blood rounded-md px-5 py-2.5 text-sm font-bold tracking-wider flex-1" data-room="${esc(r.id)}">이 방 예약하기</button>
+      <button id="modalCloseBtn" class="btn-ghost rounded-md px-5 py-2.5 text-sm">닫기</button>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+  document.getElementById('modalBookBtn').addEventListener('click', function(){
+    closeModal();
+    const sel = document.getElementById('bookRoom');
+    sel.value = id;
+    onBookRoomChange();
+    document.getElementById('booking').scrollIntoView({behavior:'smooth'});
+  });
+}
+
+function closeModal(){
+  const modal = document.getElementById('modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.body.style.overflow = '';
+}
+
+// ESC 키
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    if(!document.getElementById('modal').classList.contains('hidden')) closeModal();
+  }
+});
+document.getElementById('modal').addEventListener('click', function(e){
+  if(e.target === this) closeModal();
+});
+
+// ───────── 명예의 전당 ─────────
+function renderHOF(){
+  const list = document.getElementById('hofList');
+  let html = '';
+  HOF.forEach(function(h){
+    const rankColor = h.rank===1 ? 'text-gold' : h.rank===2 ? 'text-ink' : h.rank===3 ? 'text-blood' : 'text-ink-3';
+    const rankBadge = h.rank<=3
+      ? `<span class="font-title text-base font-bold ${rankColor}">${h.rank}</span>`
+      : `<span class="font-elite text-ink-3 text-sm">${h.rank}</span>`;
+    html += `
+    <div class="hof-row rounded-md p-3 grid grid-cols-12 gap-2 items-center text-sm">
+      <div class="col-span-1 text-center">${rankBadge}</div>
+      <div class="col-span-4 sm:col-span-3">
+        <div class="text-ink font-elite tracking-wider">${esc(h.team)}</div>
+        <div class="text-ink-3 text-[10px] sm:hidden">${esc(h.room)}</div>
+      </div>
+      <div class="col-span-3 hidden sm:block text-ink-2 text-xs">${esc(h.room)}</div>
+      <div class="col-span-3 sm:col-span-2 text-right text-gold font-elite tabular-nums">${esc(h.time)}</div>
+      <div class="col-span-2 text-center hidden sm:block text-ink-3 text-xs">${h.party}인</div>
+      <div class="col-span-4 sm:col-span-1 text-right text-xs text-gold tabular-nums">${h.rate.toFixed(1)}★</div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+// ───────── 예약 시스템 ─────────
+const booking = {
+  roomId:'',
+  dateKey:'',
+  time:'',
+  party:3,
+  calYear:0,
+  calMonth:0
+};
+
+function fillRoomSelect(){
+  const sel = document.getElementById('bookRoom');
+  ROOMS.forEach(function(r){
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.no + ' · ' + r.title + ' (' + r.dur + '분)';
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', onBookRoomChange);
+}
+
+function onBookRoomChange(){
+  booking.roomId = document.getElementById('bookRoom').value;
+  const info = document.getElementById('bookRoomInfo');
+  if(!booking.roomId){ info.innerHTML = '<span class="text-ink-3">룸을 선택하면 상세 정보가 표시됩니다.</span>'; updateSummary(); return; }
+  const r = ROOMS.find(function(x){ return x.id === booking.roomId; });
+  info.innerHTML = `
+    <div class="text-gold font-title text-base mb-1">${esc(r.title)}</div>
+    <div class="text-ink-2 mb-2 flex items-center gap-2">${stars(r.diff)} <span class="text-ink-3">·</span> ${r.dur}분 · ${esc(r.party)}</div>
+    <p class="text-ink-3 leading-relaxed">${esc(r.story.slice(0,80))}…</p>
+  `;
+  updateSummary();
+}
+
+function renderCalendar(){
+  const now = new Date();
+  if(!booking.calYear){
+    booking.calYear = now.getFullYear();
+    booking.calMonth = now.getMonth();
+  }
+  const y = booking.calYear, m = booking.calMonth;
+  const monthNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('calLabel').textContent = monthNames[m] + ' · ' + y;
+
+  const first = new Date(y, m, 1);
+  const last = new Date(y, m+1, 0);
+  const firstDow = first.getDay();
+  const daysInMonth = last.getDate();
+  const todayKey = now.getFullYear()+'-'+now.getMonth()+'-'+now.getDate();
+
+  const grid = document.getElementById('calGrid');
+  let html = '';
+  for(let i=0;i<firstDow;i++) html += '<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dt = new Date(y, m, d);
+    const key = y+'-'+m+'-'+d;
+    const past = dt < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const isToday = key === todayKey;
+    let cls = 'cal-cell';
+    if(past) cls += ' cal-disabled';
+    if(isToday) cls += ' cal-today';
+    if(booking.dateKey === key) cls += ' cal-active';
+    html += `<div class="${cls}" ${past?'':'data-date="'+key+'"'}>${d}</div>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('[data-date]').forEach(function(cell){
+    cell.addEventListener('click', function(){
+      booking.dateKey = cell.getAttribute('data-date');
+      renderCalendar();
+      renderSlots();
+      updateSummary();
+    });
+  });
+}
+
+function renderSlots(){
+  const sg = document.getElementById('slotGrid');
+  if(!booking.dateKey){
+    sg.innerHTML = '<div class="col-span-3 text-center text-ink-3 text-xs py-6">날짜를 먼저 선택하세요</div>';
+    return;
+  }
+  // seed from dateKey
+  let seed = 0;
+  for(let i=0;i<booking.dateKey.length;i++) seed = (seed*31 + booking.dateKey.charCodeAt(i)) % 999999;
+  const slots = genSlots(seed + 1);
+  let html = '';
+  slots.forEach(function(s){
+    const sold = s.state === 'sold';
+    const isActive = booking.time === s.time;
+    const cls = 'slot rounded px-2 py-2 text-center ' + (sold ? 'slot-sold' : '') + (isActive ? ' slot-active' : '');
+    const badge = sold ? '<span class="badge-sold text-[9px] px-1.5 py-0.5 rounded font-elite tracking-widest mt-1 inline-block">매진</span>'
+                : s.state==='few' ? '<span class="badge-few text-[9px] px-1.5 py-0.5 rounded font-elite tracking-widest mt-1 inline-block">잔여</span>'
+                : '<span class="badge-open text-[9px] px-1.5 py-0.5 rounded font-elite tracking-widest mt-1 inline-block">여유</span>';
+    html += `
+    <div class="${cls}" ${sold?'':'data-time="'+esc(s.time)+'"'}>
+      <div class="font-elite">${esc(s.time)}</div>
+      ${badge}
+    </div>`;
+  });
+  sg.innerHTML = html;
+  sg.querySelectorAll('[data-time]').forEach(function(el){
+    el.addEventListener('click', function(){
+      booking.time = el.getAttribute('data-time');
+      renderSlots();
+      updateSummary();
+    });
+  });
+}
+
+function updateSummary(){
+  const sum = document.getElementById('bookSummary');
+  const parts = [];
+  if(booking.roomId){
+    const r = ROOMS.find(function(x){ return x.id === booking.roomId; });
+    parts.push(r.no);
+  }
+  if(booking.dateKey){
+    const p = booking.dateKey.split('-');
+    parts.push((parseInt(p[1])+1)+'/'+p[2]);
+  }
+  if(booking.time) parts.push(booking.time);
+  parts.push(booking.party + '인');
+  sum.textContent = parts.length > 1 ? parts.join(' · ') : '—';
+}
+
+document.querySelectorAll('.party-btn').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.party-btn').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    booking.party = parseInt(b.getAttribute('data-n'));
+    updateSummary();
+  });
+});
+
+document.getElementById('calPrev').addEventListener('click', function(){
+  booking.calMonth--;
+  if(booking.calMonth < 0){ booking.calMonth = 11; booking.calYear--; }
+  renderCalendar();
+});
+document.getElementById('calNext').addEventListener('click', function(){
+  booking.calMonth++;
+  if(booking.calMonth > 11){ booking.calMonth = 0; booking.calYear++; }
+  renderCalendar();
+});
+
+document.getElementById('confirmBtn').addEventListener('click', function(){
+  if(!booking.roomId){ flashMsg('룸을 먼저 선택하세요'); return; }
+  if(!booking.dateKey){ flashMsg('날짜를 선택하세요'); return; }
+  if(!booking.time){ flashMsg('시간을 선택하세요'); return; }
+  const r = ROOMS.find(function(x){ return x.id === booking.roomId; });
+  const p = booking.dateKey.split('-');
+  const dateStr = p[0]+'년 '+(parseInt(p[1])+1)+'월 '+p[2]+'일';
+  const code = 'SP-'+Math.floor(Math.random()*900000+100000);
+  // 모달로 영수증 표시
+  const modal = document.getElementById('modal');
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div class="text-center">
+      <div class="font-elite text-gold text-[11px] tracking-[.3em] mb-2">RESERVATION · CONFIRMED</div>
+      <h2 class="font-title text-2xl font-bold text-ink mb-1">예약이 접수되었습니다</h2>
+      <p class="text-ink-3 text-xs">가상 시뮬레이션 · 실제 예약되지 않습니다</p>
+    </div>
+    <div class="my-6 lock-line"></div>
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between"><span class="text-ink-3">예약번호</span><span class="text-gold font-elite tracking-wider">${esc(code)}</span></div>
+      <div class="flex justify-between"><span class="text-ink-3">룸</span><span class="text-ink">${esc(r.no)} · ${esc(r.title)}</span></div>
+      <div class="flex justify-between"><span class="text-ink-3">날짜</span><span class="text-ink">${esc(dateStr)}</span></div>
+      <div class="flex justify-between"><span class="text-ink-3">시간</span><span class="text-ink">${esc(booking.time)} (${r.dur}분)</span></div>
+      <div class="flex justify-between"><span class="text-ink-3">인원</span><span class="text-ink">${booking.party}인</span></div>
+      <div class="flex justify-between"><span class="text-ink-3">난이도</span><span>${stars(r.diff)}</span></div>
+    </div>
+    <div class="my-6 lock-line"></div>
+    <div class="text-center text-ink-3 text-xs mb-4">합격의 방에서 만나뵙겠습니다 — 행운을 빕니다.</div>
+    <button id="modalCloseBtn" class="btn-gold rounded-md w-full py-2.5 text-sm">확인</button>
+  `;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+});
+
+let flashTimer;
+function flashMsg(msg){
+  const btn = document.getElementById('confirmBtn');
+  const original = btn.textContent;
+  btn.textContent = msg;
+  btn.style.background = 'linear-gradient(180deg,#7a4a08 0%,#5a3204 100%)';
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(function(){
+    btn.textContent = original;
+    btn.style.background = '';
+  }, 1600);
+}
+
+// ───────── BGM 토글 (UI만) ─────────
+const bgmBtn = document.getElementById('bgmBtn');
+let bgmOn = false;
+bgmBtn.addEventListener('click', function(){
+  bgmOn = !bgmOn;
+  bgmBtn.classList.toggle('active', bgmOn);
+  bgmBtn.setAttribute('aria-pressed', String(bgmOn));
+  document.getElementById('bgmLabel').textContent = bgmOn ? 'BGM · ON' : 'BGM';
+  document.getElementById('bgmWave').style.opacity = bgmOn ? '1' : '.4';
+});
+
+// ───────── INIT ─────────
+renderRooms();
+renderHOF();
+fillRoomSelect();
+renderCalendar();
+renderSlots();
+updateSummary();
+</script>
+</body>
+</html>

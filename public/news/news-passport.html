@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STUDY PASSPORT — 전기기능사 학습 여권</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Playfair+Display:wght@400;600;700;900&family=Courier+Prime:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 가상 공화국 — 진한 남색 + 골드 + 베이지 */
+    --navy-950:#0a1228;
+    --navy-900:#0e1a3a;
+    --navy-800:#13234d;
+    --navy-700:#1a2d63;
+    --navy-600:#243a78;
+    --gold-400:#e6c068;
+    --gold-500:#d4a84a;
+    --gold-600:#b88a2f;
+    --gold-700:#8b6420;
+    --beige-50:#fbf5e6;
+    --beige-100:#f6ecd2;
+    --beige-200:#ecdcb0;
+    --beige-300:#dcc485;
+    --paper:#f4e9cf;
+    --paper-warm:#f0e3c4;
+    --paper-shade:#e6d3a8;
+    --ink:#1a1208;
+    --ink-mute:#5a4b2e;
+    --stamp-red:#a02020;
+    --stamp-blue:#1f3b8a;
+    --stamp-green:#1f6b4a;
+    --stamp-purple:#5a2d7a;
+    --stamp-gold:#8b6420;
+  }
+  html,body{
+    background:
+      radial-gradient(ellipse at top, #1a2d63 0%, #0a1228 60%, #050817 100%);
+    min-height:100vh;
+  }
+  body{
+    font-family:'Noto Sans KR','Playfair Display',serif;
+    color:var(--ink);
+    margin:0;
+  }
+  .serif{font-family:'Playfair Display','Noto Sans KR',serif;}
+  .mono{font-family:'Courier Prime',ui-monospace,monospace;}
+  .stamp-font{font-family:'Special Elite','Courier Prime',monospace;}
+
+  /* 별 배경 */
+  .stars{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, rgba(230,192,104,.7), transparent),
+      radial-gradient(1px 1px at 27% 42%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1.5px 1.5px at 45% 12%, rgba(230,192,104,.6), transparent),
+      radial-gradient(1px 1px at 68% 25%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 82% 55%, rgba(230,192,104,.5), transparent),
+      radial-gradient(1.5px 1.5px at 90% 18%, rgba(255,255,255,.6), transparent),
+      radial-gradient(1px 1px at 15% 78%, rgba(230,192,104,.4), transparent),
+      radial-gradient(1px 1px at 55% 88%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 35% 65%, rgba(230,192,104,.5), transparent);
+  }
+
+  /* 여권 책 (펼침면) */
+  .passport-book{
+    perspective: 2400px;
+    position:relative;
+    width: min(96vw, 880px);
+    margin: 0 auto;
+  }
+  .passport-spread{
+    position:relative;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    width:100%;
+    aspect-ratio: 1.42 / 1;
+    background:
+      linear-gradient(90deg, transparent 49%, rgba(0,0,0,.25) 49.5%, rgba(0,0,0,.45) 50%, rgba(0,0,0,.25) 50.5%, transparent 51%),
+      linear-gradient(180deg, var(--paper-warm), var(--paper) 50%, var(--paper-warm));
+    border-radius: 6px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,.55),
+      0 12px 24px rgba(0,0,0,.4),
+      inset 0 0 60px rgba(139,100,32,.18);
+    overflow:hidden;
+  }
+  .page{
+    position:relative;
+    padding: 28px 32px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 28px, rgba(139,100,32,.04) 28px 29px),
+      radial-gradient(ellipse at center, var(--paper) 0%, var(--paper-warm) 60%, var(--paper-shade) 100%);
+    min-height:100%;
+    overflow:hidden;
+  }
+  .page::before{
+    content:"";
+    position:absolute; inset:8px;
+    border: 1.5px double rgba(139,100,32,.35);
+    border-radius: 3px;
+    pointer-events:none;
+  }
+  .page-left::after{
+    content:"";
+    position:absolute; top:0; right:0; bottom:0; width:24px;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,.18) 70%, rgba(0,0,0,.32));
+    pointer-events:none;
+  }
+  .page-right::after{
+    content:"";
+    position:absolute; top:0; left:0; bottom:0; width:24px;
+    background: linear-gradient(270deg, transparent, rgba(0,0,0,.18) 70%, rgba(0,0,0,.32));
+    pointer-events:none;
+  }
+
+  /* 여권 표지 */
+  .cover{
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(230,192,104,.08), transparent 60%),
+      linear-gradient(135deg, #0a1228 0%, #13234d 50%, #0a1228 100%);
+    color: var(--gold-400);
+    position:relative;
+    overflow:hidden;
+  }
+  .cover::before{
+    content:"";
+    position:absolute; inset:16px;
+    border: 2px solid rgba(230,192,104,.4);
+    border-radius:4px;
+  }
+  .cover::after{
+    content:"";
+    position:absolute; inset:22px;
+    border: 1px solid rgba(230,192,104,.25);
+    border-radius:3px;
+  }
+  .gold-text{
+    color: var(--gold-400);
+    text-shadow: 0 0 1px rgba(230,192,104,.6), 0 1px 0 rgba(0,0,0,.4);
+  }
+
+  /* 여권 페이지 워터마크 */
+  .watermark{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    opacity:.07;
+    pointer-events:none;
+    z-index:0;
+  }
+  .watermark svg{ width:60%; height:60%; }
+
+  /* 스탬프 */
+  .stamp{
+    position:relative;
+    display:inline-flex;
+    align-items:center; justify-content:center;
+    transform: rotate(var(--rot, -8deg));
+    cursor:pointer;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), filter .2s;
+    z-index:2;
+  }
+  .stamp:hover{
+    transform: rotate(var(--rot, -8deg)) scale(1.08);
+    filter: brightness(1.1);
+  }
+  .stamp-circle, .stamp-square, .stamp-diamond, .stamp-hex, .stamp-star{
+    width:108px; height:108px;
+    border: 3px solid currentColor;
+    color: var(--stamp-red);
+    background: rgba(255,255,255,.05);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    padding:8px;
+    box-shadow: inset 0 0 0 1px currentColor;
+    position:relative;
+  }
+  .stamp-circle{ border-radius:50%; }
+  .stamp-square{ border-radius:4px; }
+  .stamp-diamond{ transform: rotate(45deg); border-radius:4px; }
+  .stamp-diamond .stamp-inner{ transform: rotate(-45deg); }
+  .stamp-hex{
+    clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%);
+    border:none;
+    background: currentColor;
+    color: var(--stamp-purple);
+  }
+  .stamp-hex .stamp-inner{ color: #fff; }
+  .stamp-star{
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    border:none;
+    background: currentColor;
+    color: var(--stamp-gold);
+  }
+  .stamp-star .stamp-inner{ color:#fff; font-size:9px; }
+  .stamp-inner{
+    font-family:'Special Elite','Courier Prime',monospace;
+    line-height:1.1;
+  }
+  .stamp .label{ font-size:11px; font-weight:700; letter-spacing:.04em; }
+  .stamp .sub{ font-size:8px; opacity:.85; margin-top:2px; }
+  .stamp .date{ font-size:8px; margin-top:3px; border-top:1px solid currentColor; padding-top:2px; }
+
+  /* 색 변형 */
+  .ink-red{ color: var(--stamp-red) !important; }
+  .ink-blue{ color: var(--stamp-blue) !important; }
+  .ink-green{ color: var(--stamp-green) !important; }
+  .ink-purple{ color: var(--stamp-purple) !important; }
+  .ink-gold{ color: var(--stamp-gold) !important; }
+  .bg-red{ background: var(--stamp-red) !important; }
+  .bg-blue{ background: var(--stamp-blue) !important; }
+  .bg-green{ background: var(--stamp-green) !important; }
+  .bg-purple{ background: var(--stamp-purple) !important; }
+  .bg-gold{ background: var(--stamp-gold) !important; }
+
+  /* 잉크 번짐 효과 */
+  .ink-smudge{
+    filter:
+      drop-shadow(0 0 0.4px currentColor)
+      drop-shadow(0.3px 0.2px 0 currentColor);
+    opacity:.88;
+  }
+
+  /* 페이지 전환 */
+  .spread-stage{
+    position:relative;
+    min-height: 620px;
+  }
+  .spread-frame{
+    position:absolute; inset:0;
+    opacity:0; pointer-events:none;
+    transition: opacity .45s ease, transform .45s ease;
+    transform: translateY(8px);
+  }
+  .spread-frame.active{
+    opacity:1; pointer-events:auto; transform: translateY(0);
+  }
+
+  /* 표지 펼치기 애니메이션 */
+  .cover-flip{
+    transform-origin: right center;
+    transition: transform 1s cubic-bezier(.65,.05,.36,1), opacity .6s;
+  }
+  .cover-flip.opened{
+    transform: rotateY(-170deg);
+    opacity:0;
+  }
+
+  /* 페이지 호버 들림 */
+  .page:hover{
+    transform: translateY(-2px);
+    transition: transform .25s ease;
+  }
+
+  /* 모달 */
+  .modal-bg{
+    background: rgba(5,8,23,.85);
+    backdrop-filter: blur(6px);
+  }
+
+  /* 비자 페이지 */
+  .visa-card{
+    background:
+      repeating-linear-gradient(45deg, transparent 0 6px, rgba(139,100,32,.06) 6px 7px),
+      linear-gradient(180deg, var(--beige-50), var(--beige-100));
+    border: 2px solid var(--gold-600);
+    border-radius:4px;
+    position:relative;
+  }
+  .visa-card::before{
+    content:"";
+    position:absolute; inset:4px;
+    border: 1px dashed var(--gold-700);
+    border-radius:2px;
+    pointer-events:none;
+  }
+
+  /* 표 */
+  .ledger{
+    border-collapse:collapse;
+    width:100%;
+    font-family:'Courier Prime',monospace;
+    font-size:11px;
+  }
+  .ledger th, .ledger td{
+    border: 1px solid rgba(139,100,32,.4);
+    padding: 6px 8px;
+    text-align:left;
+  }
+  .ledger th{
+    background: rgba(139,100,32,.12);
+    color: var(--ink);
+    font-weight:700;
+  }
+
+  /* 새 스탬프 받기 애니메이션 */
+  @keyframes stampDrop{
+    0%   { transform: rotate(var(--rot,-8deg)) scale(3) translateY(-200px); opacity:0; }
+    50%  { transform: rotate(var(--rot,-8deg)) scale(1.6); opacity:.5; }
+    70%  { transform: rotate(var(--rot,-8deg)) scale(.92); opacity:1; }
+    85%  { transform: rotate(var(--rot,-8deg)) scale(1.05); }
+    100% { transform: rotate(var(--rot,-8deg)) scale(1); }
+  }
+  .stamp-drop{ animation: stampDrop .8s cubic-bezier(.34,1.56,.64,1) both; }
+
+  /* MRZ */
+  .mrz{
+    font-family:'Courier Prime',monospace;
+    background: var(--beige-50);
+    border-top: 1.5px dashed var(--ink-mute);
+    border-bottom: 1.5px dashed var(--ink-mute);
+    letter-spacing: .15em;
+    font-weight:700;
+    font-size:13px;
+    padding: 8px 10px;
+    word-break: break-all;
+  }
+
+  /* 네비 버튼 */
+  .nav-btn{
+    background: linear-gradient(180deg, #1a2d63, #0e1a3a);
+    color: var(--gold-400);
+    border: 1px solid var(--gold-600);
+    font-family:'Playfair Display',serif;
+    transition: all .2s;
+  }
+  .nav-btn:hover{
+    background: linear-gradient(180deg, #243a78, #13234d);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  .nav-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+  /* 페이지 그림자 */
+  .book-shadow{
+    position:absolute; left:50%; bottom:-30px; transform:translateX(-50%);
+    width:90%; height:30px;
+    background: radial-gradient(ellipse, rgba(0,0,0,.5), transparent 70%);
+    filter: blur(6px);
+    z-index:-1;
+  }
+
+  /* 셀로판 광택 */
+  .gloss{
+    position:absolute; inset:0;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.05) 45%, transparent 55%);
+    pointer-events:none;
+  }
+</style>
+</head>
+<body class="text-slate-100">
+<div class="stars"></div>
+
+<!-- 헤더 -->
+<header class="relative z-10 max-w-5xl mx-auto px-4 pt-6 pb-2 text-center">
+  <div class="inline-flex items-center gap-3 px-4 py-1.5 rounded-full border border-yellow-700/60 bg-slate-950/60 text-yellow-300/90 text-xs serif tracking-[.3em]">
+    REPUBLIC OF VOLTANIA · 학습 여권 발급청
+  </div>
+  <h1 class="serif text-3xl md:text-4xl font-bold mt-3 text-yellow-200/95 tracking-wide">전기기능사 학습 여권 소식</h1>
+  <p class="mono text-xs text-yellow-100/60 mt-1">ISSUE №. 2026-05 · STAMP COLLECTION EDITION</p>
+</header>
+
+<!-- 여권 책 -->
+<main class="relative z-10 py-8">
+  <div class="passport-book">
+    <div class="book-shadow"></div>
+
+    <!-- 표지 (클릭 시 펼쳐짐) -->
+    <div id="coverFlip" class="cover-flip" style="position:relative;">
+      <div class="passport-spread">
+        <!-- 표지 좌면 (뒷면 비워둠) -->
+        <div class="page cover page-left">
+          <div class="absolute inset-0 flex items-center justify-center opacity-25">
+            <svg viewBox="0 0 200 200" class="w-3/4 h-3/4" fill="none" stroke="#e6c068" stroke-width="1.2">
+              <circle cx="100" cy="100" r="80"/>
+              <circle cx="100" cy="100" r="60"/>
+              <circle cx="100" cy="100" r="40"/>
+              <path d="M100 30 L100 170 M30 100 L170 100" stroke-dasharray="3 5"/>
+            </svg>
+          </div>
+        </div>
+        <!-- 표지 우면 (앞면) -->
+        <div class="page cover page-right flex flex-col items-center justify-between text-center py-10">
+          <div class="relative z-10 mt-6">
+            <p class="serif gold-text text-[10px] tracking-[.5em]">REPUBLIC OF</p>
+            <p class="serif gold-text text-xl tracking-[.4em] mt-1">VOLTANIA</p>
+          </div>
+
+          <!-- 가상 국가 엠블럼 (전기 모티프) -->
+          <div class="relative z-10 my-4">
+            <svg viewBox="0 0 160 160" class="w-32 h-32" fill="none" stroke="#e6c068" stroke-width="1.5">
+              <!-- 외곽 화환 -->
+              <circle cx="80" cy="80" r="74" stroke-dasharray="2 3"/>
+              <circle cx="80" cy="80" r="68"/>
+              <!-- 월계수 -->
+              <path d="M30 80 Q 20 60 28 40 Q 40 50 38 65" stroke-linecap="round"/>
+              <path d="M30 80 Q 20 100 28 120 Q 40 110 38 95" stroke-linecap="round"/>
+              <path d="M130 80 Q 140 60 132 40 Q 120 50 122 65" stroke-linecap="round"/>
+              <path d="M130 80 Q 140 100 132 120 Q 120 110 122 95" stroke-linecap="round"/>
+              <!-- 방패 -->
+              <path d="M55 50 L 55 90 Q 80 115 80 115 Q 80 115 105 90 L 105 50 Z" fill="rgba(230,192,104,.08)"/>
+              <!-- 번개 (전기 모티프) -->
+              <path d="M78 58 L 70 80 L 80 80 L 72 102 L 88 78 L 78 78 Z" fill="#e6c068" stroke="#e6c068"/>
+              <!-- 별 -->
+              <circle cx="80" cy="32" r="3" fill="#e6c068"/>
+              <!-- 리본 -->
+              <path d="M40 130 Q 80 145 120 130" stroke-width="2"/>
+              <text x="80" y="136" text-anchor="middle" fill="#e6c068" stroke="none" font-family="Playfair Display" font-size="7" letter-spacing="2">LUX · LABOR</text>
+            </svg>
+          </div>
+
+          <div class="relative z-10">
+            <p class="serif gold-text text-2xl tracking-[.35em] font-bold">PASSPORT</p>
+            <p class="serif gold-text text-[10px] tracking-[.4em] mt-1">여 · 권</p>
+            <p class="serif gold-text text-[10px] tracking-[.3em] mt-3 opacity-80">STUDY PASSPORT · 학습 여권</p>
+          </div>
+
+          <div class="relative z-10 mb-4">
+            <p class="mono text-[9px] text-yellow-200/70 tracking-widest">CLICK TO OPEN · 표지를 누르세요</p>
+          </div>
+        </div>
+      </div>
+      <div class="gloss"></div>
+      <button id="openCoverBtn" class="absolute inset-0 w-full h-full" aria-label="여권 펼치기"></button>
+    </div>
+
+    <!-- 펼침면 영역 -->
+    <div class="spread-stage" id="spreadStage" style="display:none;">
+
+      <!-- SPREAD 1: 개인정보 + 도장 페이지 1 -->
+      <div class="spread-frame active" data-spread="1">
+        <div class="passport-spread">
+          <!-- 좌면: 개인정보 -->
+          <div class="page page-left">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="2">
+                <path d="M62 20 L 45 60 L 60 60 L 50 100 L 75 55 L 60 55 Z" fill="#8b6420"/>
+                <circle cx="60" cy="60" r="48" stroke-dasharray="2 4"/>
+              </svg>
+            </div>
+            <div class="relative z-10">
+              <div class="flex items-baseline justify-between mb-3 border-b-2 border-yellow-800/40 pb-2">
+                <p class="serif text-yellow-900 font-bold tracking-widest">TYPE / 종류</p>
+                <p class="mono text-yellow-900 font-bold">PS · 학습</p>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 text-yellow-900">
+                <!-- 사진 -->
+                <div class="col-span-1">
+                  <div class="aspect-[3/4] border-2 border-yellow-900/50 bg-yellow-50/40 flex items-center justify-center relative overflow-hidden">
+                    <svg viewBox="0 0 80 100" class="w-full h-full">
+                      <rect width="80" height="100" fill="#f0e3c4"/>
+                      <!-- 인물 실루엣 -->
+                      <circle cx="40" cy="38" r="14" fill="#3a3020" opacity=".8"/>
+                      <path d="M16 100 Q 16 70 40 68 Q 64 70 64 100 Z" fill="#3a3020" opacity=".8"/>
+                      <!-- 안경 -->
+                      <circle cx="34" cy="38" r="4" fill="none" stroke="#1a1208" stroke-width="1"/>
+                      <circle cx="46" cy="38" r="4" fill="none" stroke="#1a1208" stroke-width="1"/>
+                      <line x1="38" y1="38" x2="42" y2="38" stroke="#1a1208" stroke-width="1"/>
+                    </svg>
+                    <!-- 홀로그램 라인 -->
+                    <div class="absolute inset-0 pointer-events-none" style="background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(230,192,104,.15) 6px 7px);"></div>
+                  </div>
+                  <p class="mono text-[9px] mt-1 text-center">HOLOGRAM · 홀로그램</p>
+                </div>
+
+                <!-- 정보 -->
+                <div class="col-span-2 text-[11px] mono leading-relaxed">
+                  <div class="grid grid-cols-[80px_1fr] gap-y-1.5">
+                    <span class="text-yellow-700 text-[9px] uppercase">Surname / 성</span>
+                    <span class="font-bold tracking-wider">YEOK</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Given Names / 이름</span>
+                    <span class="font-bold tracking-wider">JEONGI-GINEUNGSA</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Nationality / 국적</span>
+                    <span class="font-bold">VOLTANIA · 볼타니아</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Date of Birth</span>
+                    <span class="font-bold">15 MAR 2003</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Sex / 성별</span>
+                    <span class="font-bold">F · 학습자</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Place of Birth</span>
+                    <span class="font-bold">CIRCUIT CITY</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Date of Issue</span>
+                    <span class="font-bold">01 JAN 2026</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Date of Expiry</span>
+                    <span class="font-bold">31 DEC 2026</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Passport No.</span>
+                    <span class="font-bold text-red-800">EL-2026-0515</span>
+                    <span class="text-yellow-700 text-[9px] uppercase">Authority</span>
+                    <span class="font-bold">MOSE · 학습부</span>
+                  </div>
+
+                  <!-- 서명 -->
+                  <div class="mt-3 border-t border-yellow-900/40 pt-1.5">
+                    <p class="text-yellow-700 text-[9px] uppercase">Signature / 서명</p>
+                    <svg viewBox="0 0 160 28" class="w-32 h-6 mt-0.5">
+                      <path d="M5 20 Q 18 4, 30 18 T 55 16 Q 75 22, 95 10 T 130 18 L 150 14"
+                            fill="none" stroke="#1a1208" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MRZ -->
+              <div class="mrz mt-4 text-yellow-900">
+                P&lt;VLTYEOK&lt;&lt;JEONGI&lt;GINEUNGSA&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br>
+                EL20260515&lt;9VLT0303155F2612310&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;06
+              </div>
+            </div>
+          </div>
+
+          <!-- 우면: 환영 + 첫 스탬프 -->
+          <div class="page page-right">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1">
+                <circle cx="60" cy="60" r="50" stroke-dasharray="3 4"/>
+                <path d="M62 30 L 45 60 L 60 60 L 50 90 L 75 55 L 60 55 Z" fill="#8b6420" opacity=".4"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <div class="text-center mb-3">
+                <p class="serif text-xs tracking-[.4em] text-yellow-800">— WELCOME —</p>
+                <p class="serif text-xl font-bold mt-1">학습의 세계로</p>
+                <p class="mono text-[10px] text-yellow-700 mt-1">Voltania Ministry of Study · 볼타니아 학습부</p>
+              </div>
+
+              <p class="text-[12px] leading-relaxed mb-4 px-2 text-yellow-900">
+                본 여권의 소지자가 전기기능사 학습의 모든 관(館)을 자유로이 통행하며,
+                각 단원을 통과할 때마다 스탬프를 받을 권리가 있음을 증명합니다.
+                모든 합격국 정부 및 시험관에게 본 소지자에게 필요한 도움을 제공할 것을 요청합니다.
+              </p>
+
+              <div class="flex items-center justify-center gap-4 mt-4">
+                <!-- 첫 입국 스탬프 -->
+                <div class="stamp" style="--rot:-12deg;" data-title="입국 · 학습 시작" data-color="blue"
+                     data-detail="2026년 1월 1일, 학습자가 볼타니아 학습 영토에 첫 발을 디뎠습니다. 입국심사관: 카테고리 인덱스 페이지">
+                  <div class="stamp-circle ink-blue ink-smudge">
+                    <div class="stamp-inner">
+                      <div class="label">ARRIVAL</div>
+                      <div class="sub">입국 · 학습 시작</div>
+                      <div class="date">01 · 01 · 2026</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 신분증 도장 -->
+                <div class="stamp" style="--rot:9deg;" data-title="신분 등록" data-color="red"
+                     data-detail="학습자 신분이 정식 등록되었습니다. 등록 번호 EL-2026-0515.">
+                  <div class="stamp-square ink-red ink-smudge">
+                    <div class="stamp-inner">
+                      <div class="label">REGISTERED</div>
+                      <div class="sub">신분 등록 완료</div>
+                      <div class="date">01 · 01 · 2026</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-6 text-center mono text-[10px] text-yellow-700/80">
+                ▸ 스탬프를 누르면 자세한 학습 내용을 볼 수 있습니다
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPREAD 2: 전기이론관 + 전기기기관 -->
+      <div class="spread-frame" data-spread="2">
+        <div class="passport-spread">
+          <div class="page page-left">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <text x="60" y="68" text-anchor="middle" font-size="40" font-family="Playfair Display" fill="#8b6420">Ω</text>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">전기이론관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF ELECTRIC THEORY</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 02</span>
+              </header>
+
+              <!-- 스탬프 그리드 -->
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="theory">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-7deg;" data-title="옴의 법칙 통과" data-color="red"
+                       data-detail="V = IR. 저항·전압·전류 관계를 확인했습니다. 직렬·병렬 회로 30문항 통과.">
+                    <div class="stamp-circle ink-red ink-smudge">
+                      <div class="stamp-inner">
+                        <div class="label">OHM&#39;S LAW</div>
+                        <div class="sub">옴의 법칙</div>
+                        <div class="date">05 · 01 · 26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:6deg;" data-title="키르히호프 통과" data-color="blue"
+                       data-detail="키르히호프 전류·전압 법칙. 노드 분석과 망 해석을 익혔습니다.">
+                    <div class="stamp-square ink-blue ink-smudge">
+                      <div class="stamp-inner">
+                        <div class="label">KIRCHHOFF</div>
+                        <div class="sub">키르히호프</div>
+                        <div class="date">07 · 01 · 26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-10deg;" data-title="교류회로 통과" data-color="green"
+                       data-detail="RLC 직렬·병렬 교류회로. 임피던스·역률·공진주파수를 계산했습니다.">
+                    <div class="stamp-hex ink-green">
+                      <div class="stamp-inner">
+                        <div class="label">AC CIRCUIT</div>
+                        <div class="sub">교류회로</div>
+                        <div class="date">11·01·26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:8deg;" data-title="자기회로 통과" data-color="purple"
+                       data-detail="자기력선·자속·자속밀도. 자기회로의 옴의 법칙을 적용해 봤습니다.">
+                    <div class="stamp-diamond ink-purple ink-smudge">
+                      <div class="stamp-inner">
+                        <div class="label">MAGNETIC</div>
+                        <div class="sub">자기회로</div>
+                        <div class="date">14·01·26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-5deg;" data-title="3상교류 통과" data-color="gold"
+                       data-detail="Y결선·Δ결선. 선전류·상전류, 선전압·상전압 관계를 익혔습니다.">
+                    <div class="stamp-star ink-gold">
+                      <div class="stamp-inner">
+                        <div class="label">3-PHASE</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3 opacity-30">
+                  <div class="text-center mono text-[9px] text-yellow-700">
+                    <div class="w-20 h-20 mx-auto border-2 border-dashed border-yellow-700 rounded-full flex items-center justify-center">미수령</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page page-right">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <rect x="35" y="45" width="50" height="30" fill="none"/>
+                <circle cx="50" cy="60" r="6" fill="#8b6420" opacity=".4"/>
+                <circle cx="70" cy="60" r="6" fill="#8b6420" opacity=".4"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">전기기기관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF MACHINES</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 03</span>
+              </header>
+
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="machines">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:7deg;" data-title="직류기 통과" data-color="red"
+                       data-detail="직류 발전기·전동기. 전기자 권선과 정류자, 토크 방정식.">
+                    <div class="stamp-circle ink-red ink-smudge">
+                      <div class="stamp-inner">
+                        <div class="label">DC MACHINE</div>
+                        <div class="sub">직류기</div>
+                        <div class="date">19·01·26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-9deg;" data-title="유도전동기 통과" data-color="blue"
+                       data-detail="농형·권선형 유도전동기. 슬립·동기속도·기동법.">
+                    <div class="stamp-square ink-blue ink-smudge">
+                      <div class="stamp-inner">
+                        <div class="label">INDUCTION</div>
+                        <div class="sub">유도전동기</div>
+                        <div class="date">22·01·26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:11deg;" data-title="동기기 통과" data-color="green"
+                       data-detail="동기 발전기·전동기. 동기리액턴스·V곡선·여자전류.">
+                    <div class="stamp-diamond ink-green ink-smudge">
+                      <div class="stamp-inner">
+                        <div class="label">SYNC</div>
+                        <div class="sub">동기기</div>
+                        <div class="date">25·01·26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-6deg;" data-title="변압기 통과" data-color="purple"
+                       data-detail="변압기 권수비·결선법(Y-Δ-V). 무부하·단락 시험 해석.">
+                    <div class="stamp-hex ink-purple">
+                      <div class="stamp-inner">
+                        <div class="label">TRAFO</div>
+                        <div class="sub">변압기</div>
+                        <div class="date">28·01·26</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:4deg;" data-title="정류회로 통과" data-color="gold"
+                       data-detail="단상·3상 정류회로. 평균값·맥동률·다이오드/사이리스터.">
+                    <div class="stamp-star ink-gold">
+                      <div class="stamp-inner">
+                        <div class="label">RECTIFY</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3 opacity-30">
+                  <div class="text-center mono text-[9px] text-yellow-700">
+                    <div class="w-20 h-20 mx-auto border-2 border-dashed border-yellow-700 rounded-full flex items-center justify-center">미수령</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPREAD 3: 전기설비관 + 실기관 -->
+      <div class="spread-frame" data-spread="3">
+        <div class="passport-spread">
+          <div class="page page-left">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <path d="M30 30 L 60 30 L 60 50 L 90 50 L 90 90 L 30 90 Z" fill="none"/>
+                <circle cx="75" cy="70" r="5" fill="#8b6420" opacity=".5"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">전기설비관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF INSTALLATIONS</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 04</span>
+              </header>
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="install">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-8deg;" data-title="배선공사 통과" data-color="red"
+                       data-detail="옥내 배선·전선관 공사·케이블 공사. KS C IEC 표준 적용.">
+                    <div class="stamp-circle ink-red ink-smudge"><div class="stamp-inner">
+                      <div class="label">WIRING</div><div class="sub">배선공사</div><div class="date">02·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:10deg;" data-title="접지공사 통과" data-color="green"
+                       data-detail="제1종·제2종·특별 제3종 접지. 접지저항 측정과 등전위 본딩.">
+                    <div class="stamp-hex ink-green"><div class="stamp-inner">
+                      <div class="label">GROUND</div><div class="sub">접지</div><div class="date">06·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-5deg;" data-title="간선 설계 통과" data-color="blue"
+                       data-detail="간선 굵기 선정·허용전류·전압강하 계산.">
+                    <div class="stamp-square ink-blue ink-smudge"><div class="stamp-inner">
+                      <div class="label">MAIN</div><div class="sub">간선설계</div><div class="date">09·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:7deg;" data-title="조명설비 통과" data-color="gold"
+                       data-detail="광속·조도·휘도. LED·형광등 조명 설계.">
+                    <div class="stamp-star ink-gold"><div class="stamp-inner">
+                      <div class="label">LIGHT</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-11deg;" data-title="피뢰설비 통과" data-color="purple"
+                       data-detail="수뢰부·인하도선·접지극. 보호각·회전구체법 검토.">
+                    <div class="stamp-diamond ink-purple ink-smudge"><div class="stamp-inner">
+                      <div class="label">SURGE</div><div class="sub">피뢰</div><div class="date">15·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3 opacity-30">
+                  <div class="text-center mono text-[9px] text-yellow-700">
+                    <div class="w-20 h-20 mx-auto border-2 border-dashed border-yellow-700 rounded-full flex items-center justify-center">미수령</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page page-right">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <path d="M40 80 L 40 50 L 80 50 L 80 80" fill="none"/>
+                <circle cx="60" cy="40" r="5" fill="none"/>
+                <path d="M55 30 L 65 30" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">실기관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF PRACTICAL</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 05</span>
+              </header>
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="practical">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:9deg;" data-title="단자대 결선" data-color="blue"
+                       data-detail="단자대 전선 압착·결선 시연. 슬리브·링 단자.">
+                    <div class="stamp-circle ink-blue ink-smudge"><div class="stamp-inner">
+                      <div class="label">TERMINAL</div><div class="sub">단자결선</div><div class="date">19·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-7deg;" data-title="시퀀스 회로" data-color="red"
+                       data-detail="자기유지·인터록·타이머. PB-MC-PL 시퀀스 도면 해독.">
+                    <div class="stamp-square ink-red ink-smudge"><div class="stamp-inner">
+                      <div class="label">SEQUENCE</div><div class="sub">시퀀스</div><div class="date">23·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:5deg;" data-title="전동기 제어" data-color="green"
+                       data-detail="정역운전·Y-Δ 기동. MC와 보호계전기 구성.">
+                    <div class="stamp-diamond ink-green ink-smudge"><div class="stamp-inner">
+                      <div class="label">MOTOR</div><div class="sub">전동기제어</div><div class="date">27·02·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-10deg;" data-title="배관 작업" data-color="purple"
+                       data-detail="금속관·합성수지관 가공·고정. 풀박스 위치 선정.">
+                    <div class="stamp-hex ink-purple"><div class="stamp-inner">
+                      <div class="label">CONDUIT</div><div class="sub">배관</div><div class="date">02·03·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:8deg;" data-title="작품 시간 측정" data-color="gold"
+                       data-detail="3시간 30분 작품 완성. 미완성 감점 없음.">
+                    <div class="stamp-star ink-gold"><div class="stamp-inner">
+                      <div class="label">3H 30M</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3 opacity-30">
+                  <div class="text-center mono text-[9px] text-yellow-700">
+                    <div class="w-20 h-20 mx-auto border-2 border-dashed border-yellow-700 rounded-full flex items-center justify-center">미수령</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPREAD 4: CBT관 + 시뮬관 -->
+      <div class="spread-frame" data-spread="4">
+        <div class="passport-spread">
+          <div class="page page-left">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <rect x="30" y="30" width="60" height="45" rx="4" fill="none"/>
+                <line x1="35" y1="80" x2="85" y2="80"/>
+                <line x1="50" y1="80" x2="50" y2="90"/>
+                <line x1="70" y1="80" x2="70" y2="90"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">CBT관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF MOCK EXAM</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 06</span>
+              </header>
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="cbt">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-6deg;" data-title="모의시험 1회 통과" data-color="green"
+                       data-detail="60문항 75점. 합격선 60점을 안정적으로 넘었습니다.">
+                    <div class="stamp-circle ink-green ink-smudge"><div class="stamp-inner">
+                      <div class="label">MOCK #1</div><div class="sub">75 / 100</div><div class="date">10·03·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:11deg;" data-title="모의시험 2회 통과" data-color="green"
+                       data-detail="60문항 82점. 오답 노트 22문항 작성.">
+                    <div class="stamp-circle ink-green ink-smudge"><div class="stamp-inner">
+                      <div class="label">MOCK #2</div><div class="sub">82 / 100</div><div class="date">17·03·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-8deg;" data-title="모의시험 3회" data-color="green"
+                       data-detail="60문항 88점. 시간 28분 단축.">
+                    <div class="stamp-circle ink-green ink-smudge"><div class="stamp-inner">
+                      <div class="label">MOCK #3</div><div class="sub">88 / 100</div><div class="date">24·03·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:7deg;" data-title="오답노트 100" data-color="purple"
+                       data-detail="오답 100문항 정복. 약점 단원 분석 완료.">
+                    <div class="stamp-hex ink-purple"><div class="stamp-inner">
+                      <div class="label">100 WRONG</div><div class="sub">오답정복</div><div class="date">28·03·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-12deg;" data-title="시간 단축" data-color="red"
+                       data-detail="60문항 평균 풀이시간 38분. 25분 단축.">
+                    <div class="stamp-diamond ink-red ink-smudge"><div class="stamp-inner">
+                      <div class="label">SPEED</div><div class="sub">38분</div><div class="date">02·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:4deg;" data-title="만점 도전" data-color="gold"
+                       data-detail="6과목 중 5과목 만점. 평균 95점 달성.">
+                    <div class="stamp-star ink-gold"><div class="stamp-inner">
+                      <div class="label">95+</div>
+                    </div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page page-right">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <circle cx="60" cy="60" r="30" fill="none"/>
+                <path d="M40 60 Q 60 30 80 60 Q 60 90 40 60" fill="none"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">시뮬관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF SIMULATORS</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 07</span>
+              </header>
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="sim">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:9deg;" data-title="전압분배기" data-color="blue"
+                       data-detail="저항 직렬 회로 전압분배 시뮬레이터를 모두 풀었습니다.">
+                    <div class="stamp-square ink-blue ink-smudge"><div class="stamp-inner">
+                      <div class="label">V-DIVIDE</div><div class="sub">전압분배</div><div class="date">05·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-7deg;" data-title="전류분배기" data-color="red"
+                       data-detail="저항 병렬 회로 전류분배 시뮬레이터 통과.">
+                    <div class="stamp-circle ink-red ink-smudge"><div class="stamp-inner">
+                      <div class="label">I-DIVIDE</div><div class="sub">전류분배</div><div class="date">07·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:6deg;" data-title="휘트스톤 브리지" data-color="green"
+                       data-detail="평형 조건과 미지 저항 측정 시뮬레이션.">
+                    <div class="stamp-diamond ink-green ink-smudge"><div class="stamp-inner">
+                      <div class="label">BRIDGE</div><div class="sub">브리지</div><div class="date">09·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-10deg;" data-title="RLC 공진" data-color="purple"
+                       data-detail="공진주파수에서의 임피던스 변화 관찰.">
+                    <div class="stamp-hex ink-purple"><div class="stamp-inner">
+                      <div class="label">RESONANCE</div><div class="sub">공진</div><div class="date">12·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:8deg;" data-title="3상 전력" data-color="gold"
+                       data-detail="3상 회로 유효·무효·피상전력 계산 시뮬.">
+                    <div class="stamp-star ink-gold"><div class="stamp-inner">
+                      <div class="label">3φ POWER</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3 opacity-30">
+                  <div class="text-center mono text-[9px] text-yellow-700">
+                    <div class="w-20 h-20 mx-auto border-2 border-dashed border-yellow-700 rounded-full flex items-center justify-center">미수령</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPREAD 5: 플립카드관 + 합격관 -->
+      <div class="spread-frame" data-spread="5">
+        <div class="passport-spread">
+          <div class="page page-left">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <rect x="35" y="35" width="40" height="55" rx="3"/>
+                <rect x="45" y="45" width="40" height="55" rx="3"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">플립카드관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF FLASHCARDS</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 08</span>
+              </header>
+              <div class="grid grid-cols-3 gap-3 mt-4 stamp-grid" data-grid="flip">
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-9deg;" data-title="카드 50장" data-color="red"
+                       data-detail="기초 용어 카드 50장 암기 완료.">
+                    <div class="stamp-circle ink-red ink-smudge"><div class="stamp-inner">
+                      <div class="label">CARDS · 50</div><div class="sub">기초</div><div class="date">15·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:7deg;" data-title="카드 200장" data-color="blue"
+                       data-detail="이론 핵심 카드 200장 마스터.">
+                    <div class="stamp-square ink-blue ink-smudge"><div class="stamp-inner">
+                      <div class="label">CARDS · 200</div><div class="sub">이론</div><div class="date">19·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-5deg;" data-title="카드 500장" data-color="green"
+                       data-detail="전 단원 카드 500장 완주.">
+                    <div class="stamp-hex ink-green"><div class="stamp-inner">
+                      <div class="label">500 · DECK</div><div class="sub">완주</div><div class="date">22·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:10deg;" data-title="공식 카드" data-color="purple"
+                       data-detail="중요 공식 카드 80장 암기.">
+                    <div class="stamp-diamond ink-purple ink-smudge"><div class="stamp-inner">
+                      <div class="label">FORMULA</div><div class="sub">공식</div><div class="date">25·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3">
+                  <div class="stamp" style="--rot:-7deg;" data-title="복습 마라톤" data-color="gold"
+                       data-detail="30일 연속 복습 출석.">
+                    <div class="stamp-star ink-gold"><div class="stamp-inner">
+                      <div class="label">30 DAYS</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-3 opacity-30">
+                  <div class="text-center mono text-[9px] text-yellow-700">
+                    <div class="w-20 h-20 mx-auto border-2 border-dashed border-yellow-700 rounded-full flex items-center justify-center">미수령</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page page-right">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <path d="M40 50 L 55 70 L 80 40" stroke-width="3" fill="none"/>
+                <circle cx="60" cy="60" r="40"/>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">합격관</p>
+                  <p class="mono text-[10px] text-yellow-700">HALL OF PASS</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 09</span>
+              </header>
+
+              <div class="grid grid-cols-2 gap-3 mt-4 stamp-grid" data-grid="pass">
+                <div class="flex items-center justify-center py-4">
+                  <div class="stamp" style="--rot:-6deg;" data-title="필기 합격" data-color="green"
+                       data-detail="필기 종합 80점 합격. 정답률 80%.">
+                    <div class="stamp-circle ink-green ink-smudge" style="width:128px;height:128px;"><div class="stamp-inner">
+                      <div class="label" style="font-size:13px;">WRITTEN PASS</div>
+                      <div class="sub" style="font-size:9px;">필기 합격</div>
+                      <div class="date" style="font-size:9px;">28·04·26</div>
+                    </div></div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-center py-4">
+                  <div class="stamp" style="--rot:9deg;" data-title="실기 합격" data-color="red"
+                       data-detail="실기 시험 75점 합격. 작품 완성도 우수.">
+                    <div class="stamp-square ink-red ink-smudge" style="width:128px;height:128px;"><div class="stamp-inner">
+                      <div class="label" style="font-size:13px;">PRACTICAL</div>
+                      <div class="sub" style="font-size:9px;">실기 합격</div>
+                      <div class="date" style="font-size:9px;">10·05·26</div>
+                    </div></div>
+                  </div>
+                </div>
+
+                <!-- 출국 도장 -->
+                <div class="col-span-2 flex items-center justify-center pt-2">
+                  <div class="stamp" style="--rot:-3deg;" data-title="출국 · 자격 취득" data-color="gold"
+                       data-detail="학습 영토 출국. 전기기능사 자격 정식 취득. 다음 여정을 위한 가산금 +1.">
+                    <div class="stamp-star ink-gold" style="width:140px;height:140px;"><div class="stamp-inner" style="font-size:11px;">
+                      <div class="label" style="font-size:11px;">DEPARTURE</div>
+                    </div></div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="text-center serif text-sm mt-2 text-yellow-900 italic">"Congratulations, certified Voltanian."</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPREAD 6: VISA 페이지 + 출입국 기록표 -->
+      <div class="spread-frame" data-spread="6">
+        <div class="passport-spread">
+          <div class="page page-left">
+            <div class="watermark">
+              <svg viewBox="0 0 120 120" fill="none" stroke="#8b6420" stroke-width="1.5">
+                <text x="60" y="68" text-anchor="middle" font-size="32" font-family="Playfair Display" fill="#8b6420">VISA</text>
+              </svg>
+            </div>
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">VISA · 비자</p>
+                  <p class="mono text-[10px] text-yellow-700">FUTURE EXAM ENTRIES</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 10</span>
+              </header>
+
+              <div class="space-y-2.5 mt-3">
+                <!-- 비자 카드 1 -->
+                <div class="visa-card p-2.5">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <p class="mono text-[9px] text-yellow-700 tracking-widest">VISA TYPE / 비자 종류</p>
+                      <p class="serif font-bold tracking-wide">REPUBLIC OF SUSANEUNGSA</p>
+                      <p class="mono text-[10px] text-yellow-800">전기산업기사 응시 비자</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="mono text-[9px] text-yellow-700">CATEGORY</p>
+                      <p class="mono font-bold text-sm">E-2</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2 mt-2 text-[10px] mono">
+                    <div><span class="text-yellow-700">VALID FROM:</span> 01·06·26</div>
+                    <div><span class="text-yellow-700">UNTIL:</span> 31·12·26</div>
+                    <div><span class="text-yellow-700">ENTRIES:</span> MULTIPLE</div>
+                  </div>
+                </div>
+
+                <!-- 비자 카드 2 -->
+                <div class="visa-card p-2.5">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <p class="mono text-[9px] text-yellow-700 tracking-widest">VISA TYPE / 비자 종류</p>
+                      <p class="serif font-bold tracking-wide">REPUBLIC OF JEONGI-GISA</p>
+                      <p class="mono text-[10px] text-yellow-800">전기기사 응시 비자</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="mono text-[9px] text-yellow-700">CATEGORY</p>
+                      <p class="mono font-bold text-sm">E-3</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2 mt-2 text-[10px] mono">
+                    <div><span class="text-yellow-700">VALID FROM:</span> 01·07·27</div>
+                    <div><span class="text-yellow-700">UNTIL:</span> 31·12·28</div>
+                    <div><span class="text-yellow-700">ENTRIES:</span> MULTIPLE</div>
+                  </div>
+                </div>
+
+                <!-- 비자 카드 3 -->
+                <div class="visa-card p-2.5">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <p class="mono text-[9px] text-yellow-700 tracking-widest">VISA TYPE / 비자 종류</p>
+                      <p class="serif font-bold tracking-wide">REPUBLIC OF ELECTRIC-ENGINEER</p>
+                      <p class="mono text-[10px] text-yellow-800">전기기술사 응시 비자 (장기)</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="mono text-[9px] text-yellow-700">CATEGORY</p>
+                      <p class="mono font-bold text-sm">E-5</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-3 gap-2 mt-2 text-[10px] mono">
+                    <div><span class="text-yellow-700">VALID FROM:</span> 01·01·30</div>
+                    <div><span class="text-yellow-700">UNTIL:</span> 31·12·35</div>
+                    <div><span class="text-yellow-700">ENTRIES:</span> SINGLE</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page page-right">
+            <div class="relative z-10 text-yellow-900">
+              <header class="flex items-center justify-between mb-3 border-b border-yellow-800/40 pb-2">
+                <div>
+                  <p class="serif font-bold tracking-widest">출입국 기록</p>
+                  <p class="mono text-[10px] text-yellow-700">IMMIGRATION LEDGER</p>
+                </div>
+                <span class="mono text-[10px] bg-yellow-900/10 px-2 py-0.5 rounded">PAGE · 11</span>
+              </header>
+
+              <table class="ledger mt-2">
+                <thead>
+                  <tr>
+                    <th>날짜 DATE</th>
+                    <th>관 HALL</th>
+                    <th>구분</th>
+                    <th>점수</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>01·01·26</td><td>입국심사</td><td>ARRIVAL</td><td>—</td></tr>
+                  <tr><td>14·01·26</td><td>전기이론관</td><td>EXIT</td><td>85</td></tr>
+                  <tr><td>28·01·26</td><td>전기기기관</td><td>EXIT</td><td>78</td></tr>
+                  <tr><td>15·02·26</td><td>전기설비관</td><td>EXIT</td><td>82</td></tr>
+                  <tr><td>02·03·26</td><td>실기관</td><td>EXIT</td><td>76</td></tr>
+                  <tr><td>02·04·26</td><td>CBT관</td><td>EXIT</td><td>88</td></tr>
+                  <tr><td>12·04·26</td><td>시뮬관</td><td>EXIT</td><td>90</td></tr>
+                  <tr><td>25·04·26</td><td>플립카드관</td><td>EXIT</td><td>94</td></tr>
+                  <tr><td>10·05·26</td><td>합격관</td><td>EXIT</td><td>합격</td></tr>
+                  <tr class="bg-yellow-100/40"><td class="font-bold">15·05·26</td><td class="font-bold">출국심사대</td><td class="font-bold">DEPARTURE</td><td class="font-bold text-green-800">취득</td></tr>
+                </tbody>
+              </table>
+
+              <div class="mt-4 p-2 border border-dashed border-yellow-800/50 bg-yellow-50/40">
+                <p class="mono text-[10px] text-yellow-900 leading-relaxed">
+                  <span class="font-bold">총 체류 일수 / TOTAL DAYS:</span> 134일<br>
+                  <span class="font-bold">획득 스탬프 / STAMPS:</span> 33개 (가산 +1)<br>
+                  <span class="font-bold">방문 관 / HALLS VISITED:</span> 9개<br>
+                  <span class="font-bold">평균 점수 / AVG SCORE:</span> 84.2점
+                </p>
+              </div>
+
+              <p class="mono text-center text-[9px] text-yellow-700 mt-4 italic">
+                — END OF PASSPORT · 본 여권은 모든 기능사 학습 영토에서 유효합니다 —
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- spread-stage -->
+  </div>
+
+  <!-- 네비게이션 -->
+  <div id="navBar" class="max-w-3xl mx-auto mt-8 px-4 flex items-center justify-between" style="display:none;">
+    <button id="prevBtn" class="nav-btn px-5 py-2 rounded text-sm tracking-wide">← 이전 페이지</button>
+    <div class="flex items-center gap-2">
+      <span id="pageIndicator" class="mono text-yellow-300/80 text-sm">1 / 6</span>
+      <span class="mono text-yellow-300/40 text-xs">SPREAD</span>
+    </div>
+    <button id="nextBtn" class="nav-btn px-5 py-2 rounded text-sm tracking-wide">다음 페이지 →</button>
+  </div>
+
+  <!-- 액션 버튼 -->
+  <div id="actionBar" class="max-w-3xl mx-auto mt-4 px-4 text-center" style="display:none;">
+    <button id="newStampBtn" class="nav-btn px-6 py-2.5 rounded text-sm tracking-wide inline-flex items-center gap-2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="8"/>
+        <path d="M12 8v8M8 12h8"/>
+      </svg>
+      새 스탬프 받기
+    </button>
+    <p class="mono text-[10px] text-yellow-200/50 mt-2">키보드 ← / → 로 페이지 이동</p>
+  </div>
+</main>
+
+<!-- 푸터 -->
+<footer class="relative z-10 max-w-3xl mx-auto px-4 py-10 mt-6 text-center">
+  <div class="border-t border-yellow-800/40 pt-6">
+    <p class="serif text-yellow-200/90 text-sm tracking-wide">REPUBLIC OF VOLTANIA · 학습부 발급</p>
+    <p class="mono text-[10px] text-yellow-100/40 mt-2 leading-relaxed">
+      가상 학습 여권 시뮬레이션 · 실제 여행 문서가 아닙니다<br>
+      THIS IS A FICTIONAL STUDY PASSPORT SIMULATION · NOT A REAL TRAVEL DOCUMENT
+    </p>
+    <p class="mono text-[9px] text-yellow-100/30 mt-3">© 2026 전기기능사 학습 소식지 · ISSUE 2026-05</p>
+  </div>
+</footer>
+
+<!-- 스탬프 모달 -->
+<div id="stampModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-bg p-4">
+  <div class="relative max-w-md w-full bg-gradient-to-b from-amber-50 to-amber-100 border-2 border-yellow-800 rounded shadow-2xl">
+    <div class="absolute inset-1.5 border border-dashed border-yellow-800/60 rounded pointer-events-none"></div>
+    <button id="modalClose" class="absolute top-2 right-3 text-yellow-900 hover:text-yellow-700 text-2xl leading-none font-bold">×</button>
+    <div class="p-6 text-yellow-900">
+      <div class="flex items-center justify-center mb-3">
+        <div id="modalStampHolder"></div>
+      </div>
+      <p class="mono text-[10px] text-yellow-700 text-center tracking-widest">— STAMP DETAIL · 스탬프 상세 —</p>
+      <h3 id="modalTitle" class="serif text-2xl font-bold text-center mt-2"></h3>
+      <p id="modalDetail" class="text-sm mt-4 leading-relaxed text-center px-3"></p>
+      <div class="mt-5 mono text-[10px] text-yellow-700 text-center border-t border-yellow-800/40 pt-3">
+        REPUBLIC OF VOLTANIA · CERTIFIED
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ============ ESCAPE 함수 ============
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c];
+    });
+  }
+
+  // ============ 표지 펼치기 ============
+  var coverFlip = document.getElementById('coverFlip');
+  var openBtn   = document.getElementById('openCoverBtn');
+  var stage     = document.getElementById('spreadStage');
+  var navBar    = document.getElementById('navBar');
+  var actionBar = document.getElementById('actionBar');
+
+  function openCover(){
+    coverFlip.classList.add('opened');
+    setTimeout(function(){
+      coverFlip.style.display = 'none';
+      stage.style.display = 'block';
+      navBar.style.display = 'flex';
+      actionBar.style.display = 'block';
+    }, 800);
+  }
+  openBtn.addEventListener('click', openCover);
+
+  // ============ 페이지 네비게이션 ============
+  var spreads = document.querySelectorAll('.spread-frame');
+  var total = spreads.length;
+  var current = 0;
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var indicator = document.getElementById('pageIndicator');
+
+  function show(i){
+    if (i < 0) i = 0;
+    if (i >= total) i = total - 1;
+    current = i;
+    spreads.forEach(function(s, idx){
+      s.classList.toggle('active', idx === i);
+    });
+    indicator.textContent = (i+1) + ' / ' + total;
+    prevBtn.disabled = (i === 0);
+    nextBtn.disabled = (i === total - 1);
+  }
+
+  prevBtn.addEventListener('click', function(){ show(current - 1); });
+  nextBtn.addEventListener('click', function(){ show(current + 1); });
+
+  document.addEventListener('keydown', function(e){
+    if (stage.style.display === 'none') return;
+    if (e.key === 'ArrowLeft')  show(current - 1);
+    if (e.key === 'ArrowRight') show(current + 1);
+    if (e.key === 'Escape')     closeModal();
+  });
+
+  show(0);
+
+  // ============ 스탬프 클릭 → 모달 ============
+  var modal = document.getElementById('stampModal');
+  var modalTitle = document.getElementById('modalTitle');
+  var modalDetail = document.getElementById('modalDetail');
+  var modalStampHolder = document.getElementById('modalStampHolder');
+  var modalClose = document.getElementById('modalClose');
+
+  function openModal(stampEl){
+    var title = stampEl.getAttribute('data-title') || '';
+    var detail = stampEl.getAttribute('data-detail') || '';
+    modalTitle.textContent = title;
+    modalDetail.textContent = detail;
+    // 스탬프 복제해서 모달에 표시
+    modalStampHolder.innerHTML = '';
+    var clone = stampEl.cloneNode(true);
+    clone.style.transform = 'rotate(-6deg) scale(1.2)';
+    clone.style.cursor = 'default';
+    modalStampHolder.appendChild(clone);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+  function closeModal(){
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+  modalClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('click', function(e){
+    var s = e.target.closest('.stamp');
+    if (s && s.hasAttribute('data-title')) {
+      openModal(s);
+    }
+  });
+
+  // ============ 새 스탬프 받기 ============
+  var newStampBtn = document.getElementById('newStampBtn');
+  var bonusStamps = [
+    { label:'BONUS', sub:'보너스 학습일', color:'gold', shape:'star', title:'보너스 스탬프', detail:'예정에 없던 학습일을 채웠습니다. 가산금 +1.' },
+    { label:'STREAK', sub:'연속 학습', color:'red', shape:'square', title:'연속 학습 스탬프', detail:'7일 연속 학습 출석을 달성했습니다.' },
+    { label:'NIGHT', sub:'야간 학습', color:'purple', shape:'hex', title:'야간 학습 스탬프', detail:'자정 이후까지 학습을 이어갔습니다. 무리하지 마세요.' },
+    { label:'PERFECT', sub:'단원 만점', color:'green', shape:'circle', title:'단원 만점 스탬프', detail:'한 단원을 만점으로 통과했습니다.' },
+    { label:'SUPPORT', sub:'동료 응원', color:'blue', shape:'diamond', title:'동료 응원 스탬프', detail:'다른 학습자에게 풀이 댓글을 달았습니다.' }
+  ];
+  var bonusIdx = 0;
+
+  function buildStamp(spec){
+    var shapeClass = 'stamp-' + spec.shape;
+    var rot = (Math.random() * 24 - 12).toFixed(1);
+    var html = ''
+      + '<div class="stamp stamp-drop" style="--rot:' + rot + 'deg;" '
+      +   'data-title="' + esc(spec.title) + '" '
+      +   'data-detail="' + esc(spec.detail) + '" '
+      +   'data-color="' + esc(spec.color) + '">'
+      +   '<div class="' + shapeClass + ' ink-' + esc(spec.color) + ' ink-smudge">'
+      +     '<div class="stamp-inner">'
+      +       '<div class="label">' + esc(spec.label) + '</div>'
+      +       (spec.sub ? '<div class="sub">' + esc(spec.sub) + '</div>' : '')
+      +     '</div>'
+      +   '</div>'
+      + '</div>';
+    var wrap = document.createElement('div');
+    wrap.className = 'flex items-center justify-center py-3';
+    wrap.innerHTML = html;
+    return wrap;
+  }
+
+  newStampBtn.addEventListener('click', function(){
+    var activeSpread = document.querySelector('.spread-frame.active');
+    if (!activeSpread) return;
+    // 현재 페이지에서 빈자리(opacity-30) 찾기
+    var slot = activeSpread.querySelector('.opacity-30');
+    var spec = bonusStamps[bonusIdx % bonusStamps.length];
+    bonusIdx++;
+    var newSlot = buildStamp(spec);
+    if (slot) {
+      slot.parentNode.replaceChild(newSlot, slot);
+    } else {
+      // 빈자리 없으면 첫 grid에 추가
+      var grid = activeSpread.querySelector('.stamp-grid');
+      if (grid) grid.appendChild(newSlot);
+    }
+    // 살짝 진동 효과
+    newStampBtn.style.transform = 'translateY(2px)';
+    setTimeout(function(){ newStampBtn.style.transform = ''; }, 150);
+  });
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK DEBATE — 스파크 토론 광장 · 전기기능사 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root {
+    --bg:         #07090f;
+    --bg-2:       #0d1118;
+    --bg-3:       #141a25;
+    --bg-4:       #1c2332;
+    --line:       #232b3b;
+    --line-2:     #2f394d;
+    --text:       #eef1f7;
+    --text-2:     #a8b0c2;
+    --text-3:     #6c7588;
+    --pro:        #ff3b4a;     /* 옹호 (왼쪽) */
+    --pro-2:      #ff7081;
+    --pro-glow:   rgba(255,59,74,0.35);
+    --con:        #3b82ff;     /* 반박 (오른쪽) */
+    --con-2:      #74a4ff;
+    --con-glow:   rgba(59,130,255,0.35);
+    --mod:        #ffc23b;     /* 사회자 */
+    --mod-2:      #ffd97a;
+    --live:       #ff2a3a;
+    --green:      #16d986;
+  }
+  * {
+    font-family: 'Pretendard', 'Noto Sans KR', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  html, body {
+    background:
+      radial-gradient(1200px 600px at 50% -200px, rgba(255,59,74,0.08), transparent 60%),
+      radial-gradient(1000px 500px at 90% 80%, rgba(59,130,255,0.06), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    margin: 0;
+    min-height: 100%;
+  }
+  .mono { font-family: 'JetBrains Mono', 'Roboto Mono', 'Inter', monospace; }
+  .num  { font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; }
+
+  /* 채널 바 */
+  .channel-bar {
+    background: linear-gradient(180deg, #0c1019 0%, #07090f 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--live);
+    box-shadow: 0 0 12px var(--live);
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink {
+    50% { opacity: 0.25; }
+  }
+
+  /* 메인 스튜디오 */
+  .studio-shell {
+    background: #000;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow:
+      0 30px 80px -30px rgba(0,0,0,0.9),
+      0 0 100px -30px rgba(255,59,74,0.18),
+      0 0 100px -30px rgba(59,130,255,0.18);
+    overflow: hidden;
+    position: relative;
+  }
+  .studio-shell::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.018) 0 1px,
+      transparent 1px 3px
+    );
+    pointer-events: none;
+    z-index: 60;
+    mix-blend-mode: overlay;
+  }
+  .studio-shell::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%);
+    pointer-events: none;
+    z-index: 61;
+  }
+
+  /* 패널 카드 */
+  .panel-card {
+    background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    cursor: pointer;
+  }
+  .panel-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--line-2);
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+  .panel-card.pro:hover  { box-shadow: 0 10px 30px -10px var(--pro-glow); }
+  .panel-card.con:hover  { box-shadow: 0 10px 30px -10px var(--con-glow); }
+  .panel-card.mod:hover  { box-shadow: 0 10px 30px -10px rgba(255,194,59,0.35); }
+
+  .panel-card.active {
+    border-color: rgba(255,255,255,0.5);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.08), 0 10px 30px -10px rgba(0,0,0,0.6);
+  }
+  .panel-card.pro.active  { border-color: var(--pro); box-shadow: 0 0 0 2px var(--pro-glow), 0 10px 30px -10px var(--pro-glow); }
+  .panel-card.con.active  { border-color: var(--con); box-shadow: 0 0 0 2px var(--con-glow), 0 10px 30px -10px var(--con-glow); }
+  .panel-card.mod.active  { border-color: var(--mod); box-shadow: 0 0 0 2px rgba(255,194,59,0.35), 0 10px 30px -10px rgba(255,194,59,0.35); }
+
+  /* 라이브 채팅 */
+  .chat-line {
+    font-size: 12.5px;
+    line-height: 1.55;
+    padding: 4px 8px;
+    border-radius: 6px;
+    animation: chatIn .35s ease-out both;
+  }
+  @keyframes chatIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 발언 자막 */
+  .caption-box {
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.85) 100%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* 투표 바 */
+  .vote-bar {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--line);
+  }
+  .vote-fill {
+    height: 100%;
+    transition: width .8s cubic-bezier(.2,.7,.2,1);
+  }
+
+  /* 박수 게이지 */
+  .applause-bar {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .applause-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), #6cf2b4);
+    transition: width .3s ease;
+  }
+
+  /* 토픽 칩 */
+  .topic-chip {
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    color: var(--text-2);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .topic-chip:hover { border-color: var(--line-2); color: var(--text); }
+  .topic-chip.active {
+    background: linear-gradient(135deg, var(--pro) 0%, var(--con) 100%);
+    border-color: transparent;
+    color: white;
+  }
+
+  /* 모달 */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    border-radius: 16px;
+    width: min(520px, 92vw);
+    overflow: hidden;
+    animation: modalIn .25s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* 스튜디오 SVG 발언자 펄스 */
+  @keyframes mic-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%      { opacity: 1; transform: scale(1.15); }
+  }
+
+  /* 스크롤바 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a3243; border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4458; }
+
+  /* 라이브 깜빡임 */
+  @keyframes liveGlow {
+    0%, 100% { box-shadow: 0 0 16px rgba(255,42,58,0.7); }
+    50%      { box-shadow: 0 0 4px rgba(255,42,58,0.3); }
+  }
+  .live-badge {
+    animation: liveGlow 1.4s ease-in-out infinite;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+  <!-- 채널 바 -->
+  <header class="channel-bar sticky top-0 z-50">
+    <div class="max-w-[1320px] mx-auto px-5 h-[54px] flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center font-black text-white"
+               style="background: linear-gradient(135deg, var(--pro) 0%, var(--con) 100%);">
+            S
+          </div>
+          <div class="leading-tight">
+            <div class="text-[13.5px] font-extrabold tracking-tight">SPARK DEBATE</div>
+            <div class="text-[10px] mono uppercase" style="color: var(--text-3); letter-spacing: 0.15em;">스파크 토론 광장</div>
+          </div>
+        </div>
+        <div class="hidden md:flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-md live-badge"
+             style="background: rgba(255,42,58,0.12); border: 1px solid rgba(255,42,58,0.4);">
+          <span class="live-dot"></span>
+          <span class="text-[11px] font-bold tracking-widest" style="color: var(--live);">ON AIR</span>
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-4 text-[12px]" style="color: var(--text-2);">
+        <span class="num">시청 <span id="viewer-count" class="text-white font-semibold">12,847</span></span>
+        <span class="mono" id="clock">--:--:--</span>
+        <span class="px-2 py-1 rounded-md" style="background: var(--bg-3); border: 1px solid var(--line);">EP. 027</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1320px] mx-auto px-5 py-6">
+
+    <!-- 프로그램 타이틀 -->
+    <section class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div>
+        <div class="text-[12px] mono uppercase mb-1.5" style="color: var(--text-3); letter-spacing: 0.25em;">
+          SPECIAL DEBATE · 가상 토론 시뮬레이션
+        </div>
+        <h1 class="text-3xl md:text-[40px] font-black tracking-tight leading-[1.05]">
+          오늘의 쟁점 <span style="color: var(--pro);">옹호</span> <span style="color: var(--text-3); font-weight: 600;">vs</span> <span style="color: var(--con);">반박</span>
+        </h1>
+        <p class="mt-2 text-[14px]" style="color: var(--text-2);">전기 이론의 거장들이 격돌하는 가상 토론 — 시청자가 정합니다.</p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button class="topic-chip active" data-topic="0">옴 vs 키르히호프</button>
+        <button class="topic-chip" data-topic="1">직류 vs 교류</button>
+        <button class="topic-chip" data-topic="2">이론 vs 시뮬레이션</button>
+      </div>
+    </section>
+
+    <!-- 토론 주제 헤더 -->
+    <section class="mb-5 px-5 py-4 rounded-xl flex items-center gap-4"
+             style="background: linear-gradient(90deg, rgba(255,59,74,0.08), rgba(59,130,255,0.08)); border: 1px solid var(--line);">
+      <div class="text-[11px] mono uppercase px-2 py-1 rounded-md"
+           style="background: rgba(255,255,255,0.06); color: var(--text-2); letter-spacing: 0.18em;">
+        TOPIC #<span id="topic-num">01</span>
+      </div>
+      <div class="flex-1">
+        <div class="text-[18px] md:text-[20px] font-extrabold" id="topic-title">
+          옴의 법칙 vs 키르히호프 — 어느 것이 더 중요한가?
+        </div>
+        <div class="text-[12.5px] mt-0.5" style="color: var(--text-2);" id="topic-sub">
+          전기 회로 해석의 두 기둥, 무엇이 합격의 핵심인가?
+        </div>
+      </div>
+      <div class="hidden md:flex items-center gap-2 mono text-[12px]" style="color: var(--text-3);">
+        <span id="round-label">ROUND 1 / 5</span>
+      </div>
+    </section>
+
+    <!-- 메인 스튜디오 16:9 -->
+    <section class="studio-shell mb-6">
+      <div class="relative" style="aspect-ratio: 16 / 9; min-height: 360px;">
+        <!-- SVG 토론 무대 -->
+        <svg viewBox="0 0 1600 900" class="absolute inset-0 w-full h-full" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="stageFloor" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0a1320" />
+              <stop offset="1" stop-color="#050810" />
+            </linearGradient>
+            <linearGradient id="proSide" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ff3b4a" stop-opacity="0.25" />
+              <stop offset="1" stop-color="#ff3b4a" stop-opacity="0" />
+            </linearGradient>
+            <linearGradient id="conSide" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3b82ff" stop-opacity="0.25" />
+              <stop offset="1" stop-color="#3b82ff" stop-opacity="0" />
+            </linearGradient>
+            <radialGradient id="spot" cx="0.5" cy="0" r="0.7">
+              <stop offset="0" stop-color="#fff7d6" stop-opacity="0.18" />
+              <stop offset="1" stop-color="#fff7d6" stop-opacity="0" />
+            </radialGradient>
+            <linearGradient id="audienceGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0b1220" />
+              <stop offset="1" stop-color="#020409" />
+            </linearGradient>
+            <linearGradient id="screenBg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1a2235" />
+              <stop offset="1" stop-color="#0b1120" />
+            </linearGradient>
+          </defs>
+
+          <!-- 배경 -->
+          <rect width="1600" height="900" fill="#04060c" />
+
+          <!-- 청중석 (뒤) -->
+          <rect x="0" y="0" width="1600" height="380" fill="url(#audienceGrad)" />
+
+          <!-- 대형 LED 스크린 (배경) -->
+          <g transform="translate(380, 60)">
+            <rect width="840" height="220" rx="6" fill="url(#screenBg)" stroke="#2a3552" stroke-width="2" />
+            <text x="420" y="80" text-anchor="middle" fill="#eef1f7" font-size="44" font-weight="900" font-family="Inter, sans-serif" letter-spacing="0.05em">SPARK DEBATE</text>
+            <text x="420" y="125" text-anchor="middle" fill="#a8b0c2" font-size="22" font-weight="600" letter-spacing="0.15em">스파크 토론 광장</text>
+            <g transform="translate(380, 150)">
+              <circle cx="0" cy="10" r="6" fill="#ff2a3a">
+                <animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite" />
+              </circle>
+              <text x="14" y="16" fill="#ff2a3a" font-size="18" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.2em">LIVE</text>
+            </g>
+            <!-- 토픽 사이드바 (스크린 안) -->
+            <text x="20" y="200" fill="#6c7588" font-size="14" font-family="JetBrains Mono, monospace">TOPIC · 옴 vs 키르히호프</text>
+            <text x="820" y="200" text-anchor="end" fill="#6c7588" font-size="14" font-family="JetBrains Mono, monospace">ROUND 1/5</text>
+          </g>
+
+          <!-- 청중 실루엣 (3줄) -->
+          <g opacity="0.7">
+            <!-- 뒷줄 -->
+            <g transform="translate(0,310)">
+              <!-- repeated heads -->
+              <g id="audRow"></g>
+            </g>
+          </g>
+          <!-- 청중 실루엣 직접 그림 -->
+          <g fill="#0a1422" opacity="0.95">
+            <!-- 뒷줄 -->
+            <g transform="translate(0, 250)">
+              <g id="aud-back"></g>
+            </g>
+            <!-- 앞줄 -->
+            <g transform="translate(0, 295)">
+              <g id="aud-front"></g>
+            </g>
+          </g>
+
+          <!-- 청중 점광 (반응 점등) -->
+          <g id="audience-sparks"></g>
+
+          <!-- 무대 바닥 -->
+          <polygon points="0,420 1600,420 1700,900 -100,900" fill="url(#stageFloor)" />
+
+          <!-- 좌측 옹호 사이드 조명 -->
+          <polygon points="0,420 720,420 600,900 -100,900" fill="url(#proSide)" />
+          <!-- 우측 반박 사이드 조명 -->
+          <polygon points="880,420 1600,420 1700,900 1000,900" fill="url(#conSide)" />
+
+          <!-- 스포트라이트 (중앙) -->
+          <ellipse cx="800" cy="500" rx="400" ry="120" fill="url(#spot)" />
+
+          <!-- 무대 라인 -->
+          <line x1="0" y1="420" x2="1600" y2="420" stroke="#1a2235" stroke-width="2" />
+          <line x1="800" y1="420" x2="800" y2="900" stroke="#1a2235" stroke-width="2" stroke-dasharray="6,8" opacity="0.5" />
+
+          <!-- ============== 좌측: 옹호 패널 2명 ============== -->
+          <!-- 패널 P1 (옴 전문가) -->
+          <g id="stage-p1" transform="translate(180, 480)" class="cursor-pointer">
+            <!-- 의자/책상 -->
+            <rect x="-90" y="200" width="180" height="40" rx="6" fill="#0e1626" stroke="#1f2a3f" stroke-width="2" />
+            <text x="0" y="226" text-anchor="middle" fill="#ff7081" font-size="14" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.18em">P1 · OHM</text>
+            <!-- 인물 (실루엣) -->
+            <g>
+              <!-- 몸통 -->
+              <path d="M -70,200 Q -70,120 0,110 Q 70,120 70,200 Z" fill="#1a2540" />
+              <!-- 머리 -->
+              <circle cx="0" cy="80" r="42" fill="#2a3654" />
+              <!-- 안경 -->
+              <circle cx="-13" cy="80" r="9" fill="none" stroke="#ff7081" stroke-width="2" />
+              <circle cx="13" cy="80" r="9" fill="none" stroke="#ff7081" stroke-width="2" />
+              <line x1="-4" y1="80" x2="4" y2="80" stroke="#ff7081" stroke-width="2" />
+              <!-- 명패 빛 -->
+              <rect x="-92" y="198" width="184" height="3" fill="#ff3b4a" opacity="0.6" />
+            </g>
+            <!-- 마이크 펄스 -->
+            <circle class="mic-indicator" data-panel="p1" cx="55" cy="160" r="10" fill="#ff3b4a" opacity="0">
+              <animate attributeName="r" values="10;18;10" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          <!-- 패널 P2 (패러데이 후예) -->
+          <g id="stage-p2" transform="translate(440, 500)" class="cursor-pointer">
+            <rect x="-90" y="180" width="180" height="40" rx="6" fill="#0e1626" stroke="#1f2a3f" stroke-width="2" />
+            <text x="0" y="206" text-anchor="middle" fill="#ff7081" font-size="14" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.18em">P2 · FARADAY</text>
+            <g>
+              <path d="M -70,180 Q -70,100 0,90 Q 70,100 70,180 Z" fill="#1a2540" />
+              <circle cx="0" cy="60" r="42" fill="#2a3654" />
+              <!-- 콧수염 -->
+              <path d="M -14,68 Q 0,76 14,68" fill="none" stroke="#ff7081" stroke-width="2.5" stroke-linecap="round" />
+              <rect x="-92" y="178" width="184" height="3" fill="#ff3b4a" opacity="0.6" />
+            </g>
+            <circle class="mic-indicator" data-panel="p2" cx="55" cy="140" r="10" fill="#ff3b4a" opacity="0">
+              <animate attributeName="r" values="10;18;10" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          <!-- ============== 중앙: 사회자 ============== -->
+          <g id="stage-m" transform="translate(800, 560)" class="cursor-pointer">
+            <!-- 단상 -->
+            <rect x="-65" y="160" width="130" height="55" rx="4" fill="#16203a" stroke="#2a3654" stroke-width="2" />
+            <text x="0" y="190" text-anchor="middle" fill="#ffc23b" font-size="11" font-weight="900" font-family="Inter, sans-serif" letter-spacing="0.2em">MODERATOR</text>
+            <text x="0" y="206" text-anchor="middle" fill="#a8b0c2" font-size="9.5" font-family="JetBrains Mono, monospace">사회자</text>
+            <g>
+              <path d="M -52,160 Q -52,90 0,80 Q 52,90 52,160 Z" fill="#1f2a3f" />
+              <circle cx="0" cy="50" r="34" fill="#2f3c5e" />
+              <!-- 마이크 -->
+              <rect x="-4" y="100" width="8" height="32" rx="3" fill="#0e1626" stroke="#ffc23b" stroke-width="1.5" />
+              <circle cx="0" cy="100" r="7" fill="#ffc23b" />
+              <rect x="-92" y="158" width="184" height="3" fill="#ffc23b" opacity="0.6" />
+            </g>
+            <circle class="mic-indicator" data-panel="m" cx="0" cy="100" r="14" fill="#ffc23b" opacity="0">
+              <animate attributeName="r" values="14;22;14" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          <!-- ============== 우측: 반박 패널 2명 ============== -->
+          <!-- 패널 P3 (키르히호프 전공) -->
+          <g id="stage-p3" transform="translate(1160, 500)" class="cursor-pointer">
+            <rect x="-90" y="180" width="180" height="40" rx="6" fill="#0e1626" stroke="#1f2a3f" stroke-width="2" />
+            <text x="0" y="206" text-anchor="middle" fill="#74a4ff" font-size="14" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.18em">P3 · KIRCHHOFF</text>
+            <g>
+              <path d="M -70,180 Q -70,100 0,90 Q 70,100 70,180 Z" fill="#17253f" />
+              <circle cx="0" cy="60" r="42" fill="#27375a" />
+              <!-- 안경 -->
+              <rect x="-22" y="55" width="44" height="14" rx="3" fill="none" stroke="#74a4ff" stroke-width="2" />
+              <line x1="0" y1="62" x2="0" y2="62" stroke="#74a4ff" stroke-width="2" />
+              <rect x="-92" y="178" width="184" height="3" fill="#3b82ff" opacity="0.6" />
+            </g>
+            <circle class="mic-indicator" data-panel="p3" cx="-55" cy="140" r="10" fill="#3b82ff" opacity="0">
+              <animate attributeName="r" values="10;18;10" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          <!-- 패널 P4 (테슬라 학자) -->
+          <g id="stage-p4" transform="translate(1420, 480)" class="cursor-pointer">
+            <rect x="-90" y="200" width="180" height="40" rx="6" fill="#0e1626" stroke="#1f2a3f" stroke-width="2" />
+            <text x="0" y="226" text-anchor="middle" fill="#74a4ff" font-size="14" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.18em">P4 · TESLA</text>
+            <g>
+              <path d="M -70,200 Q -70,120 0,110 Q 70,120 70,200 Z" fill="#17253f" />
+              <circle cx="0" cy="80" r="42" fill="#27375a" />
+              <!-- 헤어 -->
+              <path d="M -38,52 Q 0,30 38,52 L 38,68 Q 0,58 -38,68 Z" fill="#3b82ff" opacity="0.4" />
+              <rect x="-92" y="198" width="184" height="3" fill="#3b82ff" opacity="0.6" />
+            </g>
+            <circle class="mic-indicator" data-panel="p4" cx="-55" cy="160" r="10" fill="#3b82ff" opacity="0">
+              <animate attributeName="r" values="10;18;10" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          <!-- 좌측 / 우측 진영 라벨 -->
+          <g transform="translate(180, 850)">
+            <rect x="-100" y="-22" width="200" height="32" rx="16" fill="rgba(255,59,74,0.15)" stroke="#ff3b4a" stroke-width="1" />
+            <text x="0" y="-2" text-anchor="middle" fill="#ff7081" font-size="14" font-weight="800" letter-spacing="0.2em">옹호 · PRO</text>
+          </g>
+          <g transform="translate(1420, 850)">
+            <rect x="-100" y="-22" width="200" height="32" rx="16" fill="rgba(59,130,255,0.15)" stroke="#3b82ff" stroke-width="1" />
+            <text x="0" y="-2" text-anchor="middle" fill="#74a4ff" font-size="14" font-weight="800" letter-spacing="0.2em">반박 · CON</text>
+          </g>
+        </svg>
+
+        <!-- 청중 채워넣기 (JS) -->
+        <!-- 발언 자막 (하단) -->
+        <div class="absolute left-0 right-0 bottom-0 caption-box px-5 md:px-8 py-4 md:py-5 z-40">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+              <div id="caption-tag" class="text-[10.5px] mono font-bold uppercase tracking-[0.22em] px-2.5 py-1 rounded-md"
+                   style="background: rgba(255,59,74,0.18); color: var(--pro-2); border: 1px solid rgba(255,59,74,0.45);">
+                옹호 · P1
+              </div>
+              <div id="caption-name" class="text-[13px] font-bold mt-1.5">옴 전문가</div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div id="caption-text" class="text-[15px] md:text-[17px] font-semibold leading-relaxed text-white">
+                옴의 법칙은 모든 전기 분석의 기초입니다. V = IR 이 한 줄에 회로의 본질이 들어 있죠.
+              </div>
+              <div class="flex items-center gap-3 mt-2 text-[11px] mono" style="color: var(--text-3);">
+                <span>발언 <span id="speaker-time" class="num text-white">00:08</span></span>
+                <span>·</span>
+                <span>남은 시간 <span id="speaker-remain" class="num">00:09</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 우상단 정보 (LIVE/시청) -->
+        <div class="absolute top-3 right-3 z-40 flex items-center gap-2">
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-md live-badge"
+               style="background: rgba(255,42,58,0.22); border: 1px solid rgba(255,42,58,0.5);">
+            <span class="live-dot"></span>
+            <span class="text-[11px] font-bold tracking-widest" style="color: var(--live);">LIVE</span>
+          </div>
+          <div class="text-[11px] mono px-2 py-1 rounded-md"
+               style="background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.08); color: var(--text-2);">
+            <span class="num" id="viewer-count-2">12,847</span> 시청
+          </div>
+        </div>
+
+        <!-- 좌상단 프로그램 워터마크 -->
+        <div class="absolute top-3 left-3 z-40">
+          <div class="text-[10.5px] mono uppercase tracking-[0.22em] px-2 py-1 rounded-md"
+               style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); color: var(--text-2);">
+            EP. 027 · 가상 토론
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 진행 정보 (스피커 큐 / 박수) -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+      <!-- 다음 발언자 큐 -->
+      <div class="lg:col-span-2 p-5 rounded-xl" style="background: var(--bg-2); border: 1px solid var(--line);">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[12px] mono uppercase tracking-[0.22em]" style="color: var(--text-3);">SPEAKING ORDER · 발언 큐</div>
+          <div class="text-[11px] mono" style="color: var(--text-3);">자동 회전 · <span id="rotate-sec" class="num text-white">9</span>s</div>
+        </div>
+        <div id="speaking-order" class="grid grid-cols-5 gap-2">
+          <!-- JS 렌더 -->
+        </div>
+      </div>
+
+      <!-- 청중 박수 게이지 -->
+      <div class="p-5 rounded-xl" style="background: var(--bg-2); border: 1px solid var(--line);">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[12px] mono uppercase tracking-[0.22em]" style="color: var(--text-3);">AUDIENCE · 박수 게이지</div>
+          <div class="text-[12px] num font-bold" id="applause-pct" style="color: var(--green);">68%</div>
+        </div>
+        <div class="applause-bar">
+          <div class="applause-fill" id="applause-fill" style="width: 68%;"></div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div class="text-[10px] mono" style="color: var(--text-3);">박수</div>
+            <div class="text-[14px] font-bold num" id="stat-clap">312</div>
+          </div>
+          <div>
+            <div class="text-[10px] mono" style="color: var(--text-3);">환호</div>
+            <div class="text-[14px] font-bold num" id="stat-cheer">187</div>
+          </div>
+          <div>
+            <div class="text-[10px] mono" style="color: var(--text-3);">야유</div>
+            <div class="text-[14px] font-bold num" id="stat-boo">42</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 패널 카드 5명 -->
+    <section class="mb-6">
+      <div class="flex items-end justify-between mb-3">
+        <div>
+          <h2 class="text-[20px] font-extrabold">오늘의 출연자 <span class="text-[14px] font-semibold" style="color: var(--text-3);">패널 4 · 사회자 1</span></h2>
+          <p class="text-[12.5px]" style="color: var(--text-2);">카드 클릭 시 상세 프로필이 열립니다. 모두 가상 인물입니다.</p>
+        </div>
+      </div>
+      <div id="panel-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <!-- JS 렌더 -->
+      </div>
+    </section>
+
+    <!-- 시청자 투표 & 라이브 채팅 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+
+      <!-- 시청자 투표 -->
+      <div class="lg:col-span-2 p-5 rounded-xl" style="background: var(--bg-2); border: 1px solid var(--line);">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-[12px] mono uppercase tracking-[0.22em] mb-1" style="color: var(--text-3);">LIVE POLL · 시청자 투표</div>
+            <div class="text-[16px] font-bold">실시간 — 총 <span id="vote-total" class="num">8,421</span>표 (가상)</div>
+          </div>
+          <div class="text-[11px] mono px-2 py-1 rounded-md" style="background: var(--bg-3); border: 1px solid var(--line); color: var(--text-2);">
+            ROUND <span id="round-num" class="num text-white">1</span>/5
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 옹호 -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" style="background: var(--pro);"></span>
+                <span class="text-[13px] font-bold" style="color: var(--pro-2);">옹호 · 옴의 법칙 우선</span>
+              </div>
+              <div class="text-[14px] font-extrabold num" id="vote-pro-pct" style="color: var(--pro-2);">54%</div>
+            </div>
+            <div class="vote-bar">
+              <div class="vote-fill" id="vote-pro-bar" style="width: 54%; background: linear-gradient(90deg, var(--pro) 0%, var(--pro-2) 100%);"></div>
+            </div>
+            <div class="text-[11px] mono mt-1" style="color: var(--text-3);">
+              <span class="num" id="vote-pro-cnt">4,547</span>표
+            </div>
+          </div>
+
+          <!-- 반박 -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" style="background: var(--con);"></span>
+                <span class="text-[13px] font-bold" style="color: var(--con-2);">반박 · 키르히호프 우선</span>
+              </div>
+              <div class="text-[14px] font-extrabold num" id="vote-con-pct" style="color: var(--con-2);">46%</div>
+            </div>
+            <div class="vote-bar">
+              <div class="vote-fill" id="vote-con-bar" style="width: 46%; background: linear-gradient(90deg, var(--con) 0%, var(--con-2) 100%);"></div>
+            </div>
+            <div class="text-[11px] mono mt-1" style="color: var(--text-3);">
+              <span class="num" id="vote-con-cnt">3,874</span>표
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <button id="btn-vote-pro" class="flex-1 min-w-[140px] py-2.5 rounded-lg font-bold text-[13px]"
+                  style="background: linear-gradient(135deg, var(--pro) 0%, #d62a3a 100%); color: white;">
+            옹호에 투표하기
+          </button>
+          <button id="btn-vote-con" class="flex-1 min-w-[140px] py-2.5 rounded-lg font-bold text-[13px]"
+                  style="background: linear-gradient(135deg, var(--con) 0%, #2a66d6 100%); color: white;">
+            반박에 투표하기
+          </button>
+        </div>
+        <div class="mt-2 text-[10.5px] mono" style="color: var(--text-3);">
+          * 1회만 투표 가능 · 결과는 시뮬레이션 값입니다.
+        </div>
+      </div>
+
+      <!-- 라이브 채팅 -->
+      <div class="p-4 rounded-xl flex flex-col" style="background: var(--bg-2); border: 1px solid var(--line); min-height: 480px;">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="live-dot"></span>
+            <div class="text-[12px] mono uppercase tracking-[0.22em]" style="color: var(--text-3);">LIVE CHAT</div>
+          </div>
+          <div class="text-[11px] num" style="color: var(--text-3);"><span id="chat-online">1,284</span> 접속</div>
+        </div>
+        <div id="chat-box" class="flex-1 overflow-y-auto pr-1 space-y-1">
+          <!-- JS -->
+        </div>
+        <div class="mt-3 flex gap-2">
+          <input id="chat-input" type="text" maxlength="80" placeholder="채팅 입력 (최대 80자)"
+                 class="flex-1 px-3 py-2 rounded-lg text-[13px] outline-none"
+                 style="background: var(--bg-3); border: 1px solid var(--line); color: var(--text);" />
+          <button id="chat-send" class="px-4 py-2 rounded-lg text-[13px] font-bold"
+                  style="background: var(--bg-4); border: 1px solid var(--line-2); color: var(--text);">
+            보내기
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 명장면 / 인용 -->
+    <section class="mb-8">
+      <div class="text-[12px] mono uppercase tracking-[0.22em] mb-3" style="color: var(--text-3);">HIGHLIGHTS · 명장면 인용</div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <blockquote class="p-5 rounded-xl" style="background: linear-gradient(180deg, rgba(255,59,74,0.07), var(--bg-2)); border: 1px solid rgba(255,59,74,0.25);">
+          <div class="text-[11px] mono uppercase mb-2" style="color: var(--pro-2); letter-spacing: 0.2em;">PRO · P1</div>
+          <p class="text-[14px] font-semibold leading-relaxed">"V = IR. 이 짧은 식 하나로 세계의 모든 회로를 풀어낼 수 있습니다. 기초가 무너지면 그 위 무엇도 서지 못합니다."</p>
+          <div class="mt-3 text-[11.5px]" style="color: var(--text-3);">— 옴 전문가 (가상)</div>
+        </blockquote>
+        <blockquote class="p-5 rounded-xl" style="background: linear-gradient(180deg, rgba(59,130,255,0.07), var(--bg-2)); border: 1px solid rgba(59,130,255,0.25);">
+          <div class="text-[11px] mono uppercase mb-2" style="color: var(--con-2); letter-spacing: 0.2em;">CON · P3</div>
+          <p class="text-[14px] font-semibold leading-relaxed">"옴의 법칙은 한 점만 봅니다. 회로 전체를 보려면 KCL·KVL — 키르히호프 두 법칙이 절대적입니다."</p>
+          <div class="mt-3 text-[11.5px]" style="color: var(--text-3);">— 키르히호프 전공 (가상)</div>
+        </blockquote>
+        <blockquote class="p-5 rounded-xl" style="background: linear-gradient(180deg, rgba(255,194,59,0.07), var(--bg-2)); border: 1px solid rgba(255,194,59,0.25);">
+          <div class="text-[11px] mono uppercase mb-2" style="color: var(--mod-2); letter-spacing: 0.2em;">MODERATOR</div>
+          <p class="text-[14px] font-semibold leading-relaxed">"두 법칙은 적이 아닙니다. 옴은 부분, 키르히호프는 전체 — 전기기능사 시험에서 둘 다 손에 익혀야 합격합니다."</p>
+          <div class="mt-3 text-[11.5px]" style="color: var(--text-3);">— 사회자 (가상)</div>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- 푸터 -->
+    <footer class="pt-6 pb-10 border-t" style="border-color: var(--line);">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-md flex items-center justify-center text-white font-black text-[12px]"
+               style="background: linear-gradient(135deg, var(--pro) 0%, var(--con) 100%);">S</div>
+          <div class="text-[12.5px]" style="color: var(--text-2);">
+            <span class="font-bold text-white">SPARK DEBATE</span> · 스파크 토론 광장 — 전기기능사 학습 소식지
+          </div>
+        </div>
+        <div class="text-[11.5px]" style="color: var(--text-3);">
+          가상 토론 시뮬레이션 · 실제 방송·인물·기관과 무관 · © 2026 Sparky Lab
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- 패널 프로필 모달 -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card">
+      <div id="modal-head" class="px-6 py-5 flex items-center gap-4"
+           style="background: linear-gradient(135deg, rgba(255,59,74,0.15), rgba(59,130,255,0.15));">
+        <div id="modal-avatar" class="w-16 h-16 rounded-full flex items-center justify-center font-black text-2xl text-white flex-shrink-0"
+             style="background: linear-gradient(135deg, var(--pro), var(--con));">P</div>
+        <div class="min-w-0">
+          <div id="modal-side" class="text-[10.5px] mono uppercase tracking-[0.22em] mb-0.5" style="color: var(--text-3);">PRO · P1</div>
+          <div id="modal-name" class="text-[18px] font-extrabold">옴 전문가</div>
+          <div id="modal-title" class="text-[12.5px]" style="color: var(--text-2);">옴의 법칙 옹호 측 패널</div>
+        </div>
+      </div>
+      <div class="px-6 py-5">
+        <div class="text-[11.5px] mono uppercase mb-2" style="color: var(--text-3); letter-spacing: 0.2em;">대표 발언</div>
+        <p id="modal-quote" class="text-[14px] font-semibold leading-relaxed mb-4">"V = IR 한 줄에 회로의 본질이 담겨 있습니다."</p>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 rounded-lg" style="background: var(--bg-3); border: 1px solid var(--line);">
+            <div class="text-[10px] mono uppercase mb-1" style="color: var(--text-3);">발언</div>
+            <div id="modal-stat-speak" class="text-[15px] font-bold num">14</div>
+          </div>
+          <div class="p-3 rounded-lg" style="background: var(--bg-3); border: 1px solid var(--line);">
+            <div class="text-[10px] mono uppercase mb-1" style="color: var(--text-3);">박수</div>
+            <div id="modal-stat-clap" class="text-[15px] font-bold num">82</div>
+          </div>
+          <div class="p-3 rounded-lg" style="background: var(--bg-3); border: 1px solid var(--line);">
+            <div class="text-[10px] mono uppercase mb-1" style="color: var(--text-3);">호감</div>
+            <div id="modal-stat-like" class="text-[15px] font-bold num" style="color: var(--green);">+72%</div>
+          </div>
+        </div>
+        <div class="mt-5 pt-4 border-t" style="border-color: var(--line);">
+          <div class="text-[11.5px]" style="color: var(--text-3);">
+            * 가상 인물입니다. 실재 인물·방송과 무관합니다.
+          </div>
+        </div>
+      </div>
+      <div class="px-6 pb-5 flex justify-end">
+        <button id="modal-close" class="px-4 py-2 rounded-lg text-[13px] font-bold"
+                style="background: var(--bg-3); border: 1px solid var(--line-2); color: var(--text);">
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ====== escape ======
+  const escapeHTML = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+
+  // ====== 데이터 ======
+  const PANELS = [
+    {
+      id: 'p1', side: 'pro', shortSide: 'PRO',
+      name: '옴 전문가', alias: 'OHM',
+      title: '옴의 법칙 옹호 · 회로 기초 연구',
+      avatar: 'O', accent: 'var(--pro)',
+      quote: '"V = IR. 이 짧은 식 하나로 세계의 모든 회로를 풀어낼 수 있습니다."'
+    },
+    {
+      id: 'p2', side: 'pro', shortSide: 'PRO',
+      name: '패러데이 후예', alias: 'FARADAY',
+      title: '전자기 유도 옹호 · 기초 수업 강사',
+      avatar: 'F', accent: 'var(--pro)',
+      quote: '"유도 기전력의 출발도 결국 옴입니다. 기초가 답입니다."'
+    },
+    {
+      id: 'm',  side: 'mod', shortSide: 'MOD',
+      name: '사회자', alias: 'MODERATOR',
+      title: '진행 · 토론 조율',
+      avatar: 'M', accent: 'var(--mod)',
+      quote: '"두 법칙은 적이 아닙니다. 합격에는 둘 다 필요합니다."'
+    },
+    {
+      id: 'p3', side: 'con', shortSide: 'CON',
+      name: '키르히호프 전공', alias: 'KIRCHHOFF',
+      title: '키르히호프 법칙 옹호 · 회로망 해석',
+      avatar: 'K', accent: 'var(--con)',
+      quote: '"옴의 법칙은 한 점만 봅니다. 회로 전체는 KCL·KVL입니다."'
+    },
+    {
+      id: 'p4', side: 'con', shortSide: 'CON',
+      name: '테슬라 학자', alias: 'TESLA',
+      title: '교류 회로 옹호 · 시뮬레이션 전문',
+      avatar: 'T', accent: 'var(--con)',
+      quote: '"실전 회로는 시뮬레이션을 거쳐야 손에 잡힙니다."'
+    }
+  ];
+
+  // 토픽 (3개)
+  const TOPICS = [
+    {
+      title: '옴의 법칙 vs 키르히호프 — 어느 것이 더 중요한가?',
+      sub: '전기 회로 해석의 두 기둥, 무엇이 합격의 핵심인가?',
+      proLabel: '옹호 · 옴의 법칙 우선',
+      conLabel: '반박 · 키르히호프 우선',
+      lines: [
+        { who: 'p1', text: '옴의 법칙은 모든 전기 분석의 기초입니다. V = IR 이 한 줄에 회로의 본질이 들어 있죠.' },
+        { who: 'p3', text: '하지만 회로가 복잡해지면 옴만으로는 부족합니다. KCL·KVL 없이 회로망을 풀 수 있나요?' },
+        { who: 'm',  text: '두 분 모두 좋습니다. 정확히 무엇이 "더 기초"인지부터 정리해 봅시다.' },
+        { who: 'p2', text: '옴이 점이라면 키르히호프는 그 점들을 잇는 규칙입니다. 점이 먼저입니다.' },
+        { who: 'p4', text: '시뮬레이션을 돌려보면 즉시 보입니다. 실전은 키르히호프의 영역입니다.' },
+        { who: 'p1', text: '실전이라 해도 V=IR 없이는 한 노드도 못 풉니다. 기초는 기초입니다.' },
+        { who: 'p3', text: '시험 문제 60% 이상이 회로망입니다. 옴만으로 풀리는 문제는 절반도 안 됩니다.' },
+        { who: 'm',  text: '시청자 여러분, 어느 쪽이 더 설득력 있나요? 투표로 알려주세요.' }
+      ]
+    },
+    {
+      title: '직류 vs 교류 — 전기 시대의 승자는?',
+      sub: 'DC vs AC, 130년 논쟁이 다시 불붙는다 (가상).',
+      proLabel: '옹호 · 직류(DC)',
+      conLabel: '반박 · 교류(AC)',
+      lines: [
+        { who: 'p1', text: '직류는 단순합니다. 배터리·태양광·전기차 — 미래는 결국 DC입니다.' },
+        { who: 'p4', text: '하지만 송전은 다릅니다. 변압 효율을 보면 교류 없이는 도시도 없습니다.' },
+        { who: 'm',  text: '근거리 vs 원거리, 관점을 나눠서 보겠습니다.' },
+        { who: 'p2', text: '가정용 콘센트가 220V AC인 이유 — 효율적인 변압 때문입니다.' },
+        { who: 'p3', text: 'HVDC 송전은 장거리에서 AC를 이미 이깁니다. 직류 시대가 옵니다.' },
+        { who: 'p4', text: '도시 전체를 DC로? 변환 손실은 어떻게 감당하시겠습니까?' },
+        { who: 'p1', text: '반도체 전력 변환 기술이 폭발했습니다. 손실은 이제 거의 무시할 수준입니다.' },
+        { who: 'm',  text: '두 분 의견 모두 강력합니다. 시청자 투표를 받겠습니다.' }
+      ]
+    },
+    {
+      title: '이론 학습 vs 시뮬레이션 학습 — 합격 비법은?',
+      sub: '교과서 vs 회로 시뮬레이터, 60시간 안에 합격하려면?',
+      proLabel: '옹호 · 이론 우선',
+      conLabel: '반박 · 시뮬레이션 우선',
+      lines: [
+        { who: 'p2', text: '이론이 없으면 시뮬레이션 결과도 해석을 못 합니다. 책이 먼저입니다.' },
+        { who: 'p4', text: '눈으로 본 한 번이 책 열 페이지를 이깁니다. 시뮬은 직관을 줍니다.' },
+        { who: 'm',  text: '두 분 모두 일리가 있습니다. 시간 효율 측면에서 비교해 보죠.' },
+        { who: 'p1', text: '60시간 학습에서 이론 40 + 문제 20 — 시뮬레이션은 보조입니다.' },
+        { who: 'p3', text: '시뮬레이션으로 직관을 잡으면 이론 이해 속도가 2배 빨라집니다.' },
+        { who: 'p4', text: '저희 학생들 시뮬 먼저 시키면 합격률이 18% 올라갑니다 (가상 데이터).' },
+        { who: 'p2', text: '실기는 결국 손으로 결선해야 합니다. 책에서 시작해야 흔들리지 않습니다.' },
+        { who: 'm',  text: '시청자 여러분의 학습 스타일은 어느 쪽인가요?' }
+      ]
+    }
+  ];
+
+  // 채팅 풀
+  const CHAT_NAMES = [
+    'sparky_07', '회로러버', '전기왕고시', '키르히호프팬', '옴팬클럽',
+    '실기합격기원', 'voltage_kim', '60시간합격', '학생A', '강의중독',
+    '문제풀이맨', 'CBT마스터', 'AC교주', 'DC전도사', '회로해석러'
+  ];
+  const CHAT_LINES_POOL = [
+    '옴 측 논리 깔끔하네요 +1',
+    '키르히호프 ㄹㅇ 회로망에선 필수임',
+    '사회자 정리 잘하심 ㅋㅋ',
+    '저는 옴 옹호 시뮬보다 책이 먼저',
+    '시뮬 안 돌리면 감 안 와요',
+    'V=IR이 진리지',
+    'KCL KVL 두 줄이면 다 풀림',
+    '둘 다 중요한 거 같음 ㅠㅠ',
+    '실기 결선은 손이 답이다',
+    'P3 발음 좋다',
+    'P1 안경 멋짐',
+    '오늘 토론 명장면 갱신',
+    '시청자 투표 어디서 함?',
+    '저 옹호에 한 표',
+    '반박 측이 더 설득력 있는 듯',
+    '60시간 합격 가능?',
+    'CBT 모의고사 풀어봤는데 회로 비중 큼',
+    '교류 송전이 효율적이긴 해',
+    'DC가 미래라는 말 동감',
+    '사회자 진행 매끄러움 추천'
+  ];
+
+  // ====== 상태 ======
+  const state = {
+    topicIdx: 0,
+    lineIdx: 0,
+    speakerTimer: null,
+    rotateSeconds: 9,
+    secondsLeft: 9,
+    voted: false,
+    vote: { proPct: 54, conPct: 46, proCnt: 4547, conCnt: 3874, total: 8421 },
+    applause: 68,
+    statClap: 312, statCheer: 187, statBoo: 42,
+    viewers: 12847,
+    chatOnline: 1284,
+    round: 1
+  };
+
+  // ====== DOM helpers ======
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  // ====== Clock ======
+  function tickClock() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    $('#clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+
+  // ====== 청중 실루엣 채우기 ======
+  function renderAudience() {
+    const back  = document.getElementById('aud-back');
+    const front = document.getElementById('aud-front');
+    if (!back || !front) return;
+    back.innerHTML = '';
+    front.innerHTML = '';
+    // 뒷줄 32명
+    for (let i = 0; i < 32; i++) {
+      const x = 30 + i * 49;
+      const r = 13 + (i % 3) * 1;
+      back.insertAdjacentHTML('beforeend',
+        `<circle cx="${x}" cy="40" r="${r}" />` +
+        `<rect x="${x-16}" y="55" width="32" height="20" rx="6" />`
+      );
+    }
+    // 앞줄 28명 (가운데에 사회자 자리 비움)
+    for (let i = 0; i < 28; i++) {
+      // skip middle 6 spots so it's like seats facing the stage edge
+      const x = 60 + i * 54;
+      const r = 14 + (i % 2) * 1;
+      front.insertAdjacentHTML('beforeend',
+        `<circle cx="${x}" cy="42" r="${r}" />` +
+        `<rect x="${x-18}" y="58" width="36" height="22" rx="6" />`
+      );
+    }
+    // 작은 스파크 점광 (랜덤 깜빡임)
+    const sparks = document.getElementById('audience-sparks');
+    if (sparks) {
+      sparks.innerHTML = '';
+      for (let i = 0; i < 14; i++) {
+        const cx = 60 + Math.floor(Math.random() * 1480);
+        const cy = 270 + Math.floor(Math.random() * 80);
+        const delay = (Math.random() * 3).toFixed(2);
+        sparks.insertAdjacentHTML('beforeend', `
+          <circle cx="${cx}" cy="${cy}" r="1.5" fill="#ffe27a" opacity="0.6">
+            <animate attributeName="opacity" values="0.1;0.9;0.1" dur="${1.5 + Math.random()*2}s" begin="${delay}s" repeatCount="indefinite" />
+          </circle>
+        `);
+      }
+    }
+  }
+  renderAudience();
+
+  // ====== 패널 카드 ======
+  function panelHeadSVG(panel) {
+    // 작은 인물 SVG (카드용)
+    const accent = panel.accent;
+    const body = panel.side === 'pro' ? '#1a2540' : panel.side === 'con' ? '#17253f' : '#1f2a3f';
+    const head = panel.side === 'pro' ? '#2a3654' : panel.side === 'con' ? '#27375a' : '#2f3c5e';
+    return `
+      <svg viewBox="0 0 100 100" class="w-full h-full">
+        <defs>
+          <linearGradient id="cardBg-${panel.id}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="${panel.side === 'pro' ? '#21142a' : panel.side === 'con' ? '#0f1a30' : '#1e1a0d'}" />
+            <stop offset="1" stop-color="${panel.side === 'pro' ? '#0e0a14' : panel.side === 'con' ? '#070b18' : '#0e0c06'}" />
+          </linearGradient>
+        </defs>
+        <rect width="100" height="100" fill="url(#cardBg-${panel.id})" />
+        <path d="M 28,100 Q 28,55 50,50 Q 72,55 72,100 Z" fill="${body}" />
+        <circle cx="50" cy="38" r="22" fill="${head}" />
+        ${panel.id === 'p1' ? `
+          <circle cx="42" cy="38" r="5" fill="none" stroke="${accent}" stroke-width="1.5" />
+          <circle cx="58" cy="38" r="5" fill="none" stroke="${accent}" stroke-width="1.5" />
+          <line x1="47" y1="38" x2="53" y2="38" stroke="${accent}" stroke-width="1.5" />
+        ` : ''}
+        ${panel.id === 'p2' ? `<path d="M 42,44 Q 50,49 58,44" fill="none" stroke="${accent}" stroke-width="1.8" stroke-linecap="round" />` : ''}
+        ${panel.id === 'p3' ? `<rect x="38" y="34" width="24" height="8" rx="2" fill="none" stroke="${accent}" stroke-width="1.5" />` : ''}
+        ${panel.id === 'p4' ? `<path d="M 32,28 Q 50,16 68,28 L 68,34 Q 50,26 32,34 Z" fill="${accent}" opacity="0.5" />` : ''}
+        ${panel.id === 'm'  ? `
+          <rect x="46" y="58" width="8" height="20" rx="3" fill="#0e1626" stroke="${accent}" stroke-width="1.5" />
+          <circle cx="50" cy="58" r="5" fill="${accent}" />
+        ` : ''}
+        <rect x="0" y="98" width="100" height="2" fill="${accent}" opacity="0.6" />
+      </svg>
+    `;
+  }
+
+  function renderPanels() {
+    const grid = $('#panel-grid');
+    grid.innerHTML = PANELS.map((p, idx) => {
+      const sideTone = p.side === 'pro' ? 'var(--pro-2)' : p.side === 'con' ? 'var(--con-2)' : 'var(--mod-2)';
+      return `
+        <article class="panel-card ${p.side}" data-panel-id="${p.id}" data-idx="${idx}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} 프로필 보기">
+          <div class="aspect-[4/3] overflow-hidden rounded-t-[11px]">
+            ${panelHeadSVG(p)}
+          </div>
+          <div class="p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] mono font-bold uppercase tracking-[0.18em]" style="color: ${sideTone};">
+                ${p.shortSide} · ${escapeHTML(p.alias)}
+              </span>
+              <span class="text-[10px] mono" style="color: var(--text-3);">${p.id.toUpperCase()}</span>
+            </div>
+            <div class="text-[14px] font-extrabold leading-tight">${escapeHTML(p.name)}</div>
+            <div class="text-[11.5px] mt-0.5 line-clamp-2" style="color: var(--text-2);">${escapeHTML(p.title)}</div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    // 클릭/키보드
+    $$('#panel-grid .panel-card').forEach((el) => {
+      el.addEventListener('click', () => openModal(el.dataset.panelId));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openModal(el.dataset.panelId);
+        }
+      });
+    });
+  }
+
+  // ====== 발언 큐 (5명) ======
+  function renderSpeakingOrder(activeId) {
+    const wrap = $('#speaking-order');
+    if (!wrap) return;
+    wrap.innerHTML = PANELS.map((p) => {
+      const active = p.id === activeId;
+      const sideTone = p.side === 'pro' ? 'var(--pro-2)' : p.side === 'con' ? 'var(--con-2)' : 'var(--mod-2)';
+      const bg = active ? (p.side === 'pro' ? 'rgba(255,59,74,0.15)' : p.side === 'con' ? 'rgba(59,130,255,0.15)' : 'rgba(255,194,59,0.15)') : 'var(--bg-3)';
+      const border = active
+        ? (p.side === 'pro' ? 'var(--pro)' : p.side === 'con' ? 'var(--con)' : 'var(--mod)')
+        : 'var(--line)';
+      return `
+        <div class="px-2 py-2 rounded-lg text-center" style="background: ${bg}; border: 1px solid ${border};">
+          <div class="text-[10px] mono uppercase mb-0.5" style="color: ${sideTone}; letter-spacing: 0.18em;">${p.shortSide}</div>
+          <div class="text-[12.5px] font-bold leading-tight">${escapeHTML(p.alias)}</div>
+          <div class="text-[10px] mt-0.5" style="color: var(--text-3);">${escapeHTML(p.name)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ====== 모달 ======
+  function openModal(id) {
+    const p = PANELS.find((x) => x.id === id);
+    if (!p) return;
+    const modal = $('#modal');
+    const sideTone = p.side === 'pro' ? 'var(--pro-2)' : p.side === 'con' ? 'var(--con-2)' : 'var(--mod-2)';
+    $('#modal-avatar').textContent = p.avatar;
+    $('#modal-avatar').style.background = p.side === 'pro'
+      ? 'linear-gradient(135deg, var(--pro), var(--pro-2))'
+      : p.side === 'con'
+      ? 'linear-gradient(135deg, var(--con), var(--con-2))'
+      : 'linear-gradient(135deg, var(--mod), var(--mod-2))';
+    $('#modal-head').style.background = p.side === 'pro'
+      ? 'linear-gradient(135deg, rgba(255,59,74,0.18), rgba(255,59,74,0.05))'
+      : p.side === 'con'
+      ? 'linear-gradient(135deg, rgba(59,130,255,0.18), rgba(59,130,255,0.05))'
+      : 'linear-gradient(135deg, rgba(255,194,59,0.18), rgba(255,194,59,0.05))';
+    $('#modal-side').textContent = `${p.shortSide} · ${p.alias}`;
+    $('#modal-side').style.color = sideTone;
+    $('#modal-name').textContent = p.name;
+    $('#modal-title').textContent = p.title;
+    $('#modal-quote').textContent = p.quote;
+    // 가상 stats
+    const seed = p.id.charCodeAt(0) + p.id.charCodeAt(1);
+    $('#modal-stat-speak').textContent = 8 + (seed % 11);
+    $('#modal-stat-clap').textContent  = 60 + (seed % 40);
+    $('#modal-stat-like').textContent  = `+${55 + (seed % 30)}%`;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+  function closeModal() {
+    const modal = $('#modal');
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  $('#modal-close').addEventListener('click', closeModal);
+  $('#modal').addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ====== 토픽 변경 ======
+  function setTopic(idx) {
+    state.topicIdx = idx;
+    state.lineIdx = 0;
+    state.round = 1;
+    state.voted = false;
+    $$('button.topic-chip').forEach((b) => b.classList.toggle('active', Number(b.dataset.topic) === idx));
+    const t = TOPICS[idx];
+    $('#topic-title').textContent = t.title;
+    $('#topic-sub').textContent = t.sub;
+    $('#topic-num').textContent = String(idx + 1).padStart(2, '0');
+    // 투표 라벨
+    $$('.vote-bar').forEach(()=>{});
+    document.querySelector('#vote-pro-pct').parentElement.querySelector('span.text-\\[13px\\]').textContent = t.proLabel;
+    document.querySelector('#vote-con-pct').parentElement.querySelector('span.text-\\[13px\\]').textContent = t.conLabel;
+    // 투표 초기값 (토픽별 가상)
+    if (idx === 0) state.vote = { proPct: 54, conPct: 46, proCnt: 4547, conCnt: 3874, total: 8421 };
+    if (idx === 1) state.vote = { proPct: 38, conPct: 62, proCnt: 3201, conCnt: 5220, total: 8421 };
+    if (idx === 2) state.vote = { proPct: 47, conPct: 53, proCnt: 3958, conCnt: 4463, total: 8421 };
+    renderVote();
+    speakNext(true); // 즉시 첫 발언
+  }
+
+  // ====== 발언 자동 회전 ======
+  function setActivePanel(id) {
+    // 스튜디오 SVG 마이크 펄스
+    $$('.mic-indicator').forEach((el) => {
+      el.style.opacity = el.dataset.panel === id ? '1' : '0';
+    });
+    // 패널 카드 active
+    $$('#panel-grid .panel-card').forEach((el) => {
+      el.classList.toggle('active', el.dataset.panelId === id);
+    });
+    // 발언 큐
+    renderSpeakingOrder(id);
+  }
+
+  function speakNext(reset = false) {
+    const t = TOPICS[state.topicIdx];
+    if (reset) state.lineIdx = 0;
+    const line = t.lines[state.lineIdx % t.lines.length];
+    const p = PANELS.find((x) => x.id === line.who);
+    if (!p) return;
+
+    // 자막
+    const tag = $('#caption-tag');
+    const name = $('#caption-name');
+    const text = $('#caption-text');
+    text.textContent = line.text;
+    name.textContent = p.name;
+    tag.textContent = `${p.side === 'pro' ? '옹호' : p.side === 'con' ? '반박' : '사회'} · ${p.id.toUpperCase()}`;
+    if (p.side === 'pro') {
+      tag.style.background = 'rgba(255,59,74,0.18)';
+      tag.style.color = 'var(--pro-2)';
+      tag.style.borderColor = 'rgba(255,59,74,0.45)';
+    } else if (p.side === 'con') {
+      tag.style.background = 'rgba(59,130,255,0.18)';
+      tag.style.color = 'var(--con-2)';
+      tag.style.borderColor = 'rgba(59,130,255,0.45)';
+    } else {
+      tag.style.background = 'rgba(255,194,59,0.18)';
+      tag.style.color = 'var(--mod-2)';
+      tag.style.borderColor = 'rgba(255,194,59,0.45)';
+    }
+
+    setActivePanel(p.id);
+    state.secondsLeft = state.rotateSeconds;
+    $('#speaker-time').textContent = '00:00';
+    $('#speaker-remain').textContent = `00:${String(state.rotateSeconds).padStart(2,'0')}`;
+    state.lineIdx += 1;
+
+    // 라운드 표시
+    state.round = Math.floor(state.lineIdx / 2) % 5 + 1;
+    $('#round-num').textContent = state.round;
+    $('#round-label').textContent = `ROUND ${state.round} / 5`;
+
+    // 박수/투표 미세 변동
+    nudgeApplauseFromSpeech(p.side);
+    nudgeVoteFromSpeech(p.side);
+  }
+
+  function startRotation() {
+    if (state.speakerTimer) clearInterval(state.speakerTimer);
+    state.speakerTimer = setInterval(() => {
+      state.secondsLeft -= 1;
+      const elapsed = state.rotateSeconds - state.secondsLeft;
+      $('#speaker-time').textContent  = `00:${String(elapsed).padStart(2,'0')}`;
+      $('#speaker-remain').textContent = `00:${String(Math.max(0,state.secondsLeft)).padStart(2,'0')}`;
+      $('#rotate-sec').textContent = state.rotateSeconds;
+      if (state.secondsLeft <= 0) {
+        speakNext();
+      }
+    }, 1000);
+  }
+
+  // ====== 투표 ======
+  function renderVote() {
+    const v = state.vote;
+    $('#vote-pro-pct').textContent = `${v.proPct}%`;
+    $('#vote-con-pct').textContent = `${v.conPct}%`;
+    $('#vote-pro-bar').style.width = `${v.proPct}%`;
+    $('#vote-con-bar').style.width = `${v.conPct}%`;
+    $('#vote-pro-cnt').textContent = v.proCnt.toLocaleString();
+    $('#vote-con-cnt').textContent = v.conCnt.toLocaleString();
+    $('#vote-total').textContent   = v.total.toLocaleString();
+  }
+  function nudgeVoteFromSpeech(side) {
+    // 발언자 진영 쪽으로 1-3표 미세 이동
+    const delta = 1 + Math.floor(Math.random() * 3);
+    if (side === 'pro') { state.vote.proCnt += delta; }
+    else if (side === 'con') { state.vote.conCnt += delta; }
+    state.vote.total = state.vote.proCnt + state.vote.conCnt;
+    const proPct = Math.round((state.vote.proCnt / state.vote.total) * 100);
+    state.vote.proPct = proPct;
+    state.vote.conPct = 100 - proPct;
+    renderVote();
+  }
+  $('#btn-vote-pro').addEventListener('click', () => userVote('pro'));
+  $('#btn-vote-con').addEventListener('click', () => userVote('con'));
+  function userVote(side) {
+    if (state.voted) {
+      flashToast('이미 투표하셨습니다.');
+      return;
+    }
+    state.voted = true;
+    if (side === 'pro') state.vote.proCnt += 1;
+    else state.vote.conCnt += 1;
+    state.vote.total = state.vote.proCnt + state.vote.conCnt;
+    const proPct = Math.round((state.vote.proCnt / state.vote.total) * 100);
+    state.vote.proPct = proPct;
+    state.vote.conPct = 100 - proPct;
+    renderVote();
+    addChat('me', `(${side === 'pro' ? '옹호' : '반박'}에 투표 완료)`, true);
+    flashToast(side === 'pro' ? '옹호에 투표했습니다.' : '반박에 투표했습니다.');
+  }
+
+  // 토스트 (간이)
+  let toastTimer = null;
+  function flashToast(msg) {
+    let el = document.getElementById('mini-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'mini-toast';
+      el.style.cssText = 'position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:#0d1118;border:1px solid #2f394d;color:#eef1f7;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);opacity:0;transition:opacity .2s;';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+  }
+
+  // ====== 박수 게이지 ======
+  function renderApplause() {
+    $('#applause-fill').style.width = `${state.applause}%`;
+    $('#applause-pct').textContent = `${state.applause}%`;
+    $('#stat-clap').textContent  = state.statClap;
+    $('#stat-cheer').textContent = state.statCheer;
+    $('#stat-boo').textContent   = state.statBoo;
+  }
+  function nudgeApplauseFromSpeech(side) {
+    // 진영 색에 따라 ±5
+    const swing = Math.floor(Math.random() * 14) - 4;
+    state.applause = Math.max(28, Math.min(96, state.applause + swing));
+    if (Math.random() < 0.6) state.statClap  += Math.floor(Math.random() * 8) + 1;
+    if (Math.random() < 0.5) state.statCheer += Math.floor(Math.random() * 5) + 1;
+    if (Math.random() < 0.2) state.statBoo   += Math.floor(Math.random() * 3) + 1;
+    renderApplause();
+  }
+
+  // ====== 시청자수 미세 변동 ======
+  setInterval(() => {
+    const delta = Math.floor(Math.random() * 30) - 8;
+    state.viewers = Math.max(8000, state.viewers + delta);
+    $('#viewer-count').textContent  = state.viewers.toLocaleString();
+    $('#viewer-count-2').textContent = state.viewers.toLocaleString();
+    state.chatOnline = Math.max(800, state.chatOnline + Math.floor(Math.random() * 10) - 4);
+    $('#chat-online').textContent = state.chatOnline.toLocaleString();
+  }, 3500);
+
+  // ====== 라이브 채팅 ======
+  function addChat(user, text, mine = false) {
+    const box = $('#chat-box');
+    const line = document.createElement('div');
+    line.className = 'chat-line';
+    if (mine) {
+      line.style.background = 'rgba(22,217,134,0.08)';
+      line.innerHTML = `<span style="color: var(--green); font-weight: 700;">나</span> <span style="color: var(--text);">${escapeHTML(text)}</span>`;
+    } else {
+      // 사용자별 색 (해시)
+      const hash = Array.from(user).reduce((a, c) => a + c.charCodeAt(0), 0);
+      const colors = ['#ff7081', '#74a4ff', '#ffc23b', '#16d986', '#c084fc', '#fb923c', '#22d3ee'];
+      const color = colors[hash % colors.length];
+      line.innerHTML = `<span style="color: ${color}; font-weight: 700;">${escapeHTML(user)}</span> <span style="color: var(--text-2);">${escapeHTML(text)}</span>`;
+    }
+    box.appendChild(line);
+    // 최대 80줄 유지
+    while (box.children.length > 80) box.removeChild(box.firstChild);
+    box.scrollTop = box.scrollHeight;
+  }
+  function chatAutoTick() {
+    const u = CHAT_NAMES[Math.floor(Math.random() * CHAT_NAMES.length)];
+    const t = CHAT_LINES_POOL[Math.floor(Math.random() * CHAT_LINES_POOL.length)];
+    addChat(u, t);
+  }
+  // 초기 채팅 시드
+  for (let i = 0; i < 6; i++) chatAutoTick();
+  setInterval(chatAutoTick, 2200);
+
+  // 채팅 입력
+  $('#chat-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendChat();
+    }
+  });
+  $('#chat-send').addEventListener('click', sendChat);
+  function sendChat() {
+    const input = $('#chat-input');
+    const v = (input.value || '').trim();
+    if (!v) return;
+    if (v.length > 80) return;
+    addChat('me', v, true);
+    input.value = '';
+  }
+
+  // ====== 토픽 칩 ======
+  $$('button.topic-chip').forEach((btn) => {
+    btn.addEventListener('click', () => setTopic(Number(btn.dataset.topic)));
+  });
+
+  // ====== 스튜디오 SVG 패널 클릭 ======
+  ['p1','p2','p3','p4','m'].forEach((id) => {
+    const el = document.getElementById('stage-' + id);
+    if (el) el.addEventListener('click', () => openModal(id));
+  });
+
+  // ====== 초기화 ======
+  renderPanels();
+  renderSpeakingOrder('p1');
+  renderVote();
+  renderApplause();
+  setTopic(0);
+  startRotation();
+
+})();
+</script>
+</body>
+</html>

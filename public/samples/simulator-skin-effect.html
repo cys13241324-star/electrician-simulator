@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 표피 효과 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 114, 182, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(56, 189, 248, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.5), rgba(168,139,250,0.45), rgba(56,189,248,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(244, 114, 182, 0.40),
+        0 0 40px rgba(168, 139, 250, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #f472b6; box-shadow: 0 0 12px #f472b6;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #f472b6; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(168,139,250,0.4), rgba(56,189,248,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #7dd3fc);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-f { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-r { background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.5); color: #fcd34d; }
+.chip-d { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-a { background: linear-gradient(135deg, rgba(56,189,248,0.22), rgba(56,189,248,0.06)); border-color: rgba(56,189,248,0.5); color: #7dd3fc; }
+.chip-loss { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.5); color: #fda4af; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #7dd3fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.mat-btn {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.mat-btn:hover { background: rgba(148, 163, 184, 0.18); transform: translateY(-1px); }
+.mat-btn.active.copper {
+    background: linear-gradient(135deg, rgba(251,146,60,0.40), rgba(245,158,11,0.30));
+    border-color: rgba(251, 146, 60, 0.65);
+    color: white;
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.45);
+}
+.mat-btn.active.aluminum {
+    background: linear-gradient(135deg, rgba(148,163,184,0.45), rgba(203,213,225,0.30));
+    border-color: rgba(203, 213, 225, 0.65);
+    color: white;
+    box-shadow: 0 0 22px rgba(203, 213, 225, 0.45);
+}
+
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(244,114,182,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 114, 182, 0.35);
+}
+.math-container { font-size: 1.1rem; color: #fce7f3; }
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(244,114,182,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(244, 114, 182, 0.4);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), transparent);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-pink-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · SKIN EFFECT · J(r) FIELD
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-200 via-violet-200 to-sky-200 bg-clip-text text-transparent">
+            🌊 표피 효과 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">고주파 전류는 도체 표면으로 집중된다. 주파수 f↑ → 표피 깊이 δ↓ → 유효 단면적 ↓ → 실효저항 R<sub>AC</sub> ↑</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-delta">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">표피 깊이 δ</p>
+            <p class="mt-1 text-lg font-bold"><span id="deltaVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-aeff">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">유효 단면적 A<sub>eff</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="aeffVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-rratio">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">R<sub>AC</sub> / R<sub>DC</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="rratioVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-loss">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">손실 증가율</p>
+            <p class="mt-1 text-lg font-bold"><span id="lossVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">CROSS SECTION · 좌 — 도체 단면 J(r) · 우 — 반지름 vs J(r) 곡선</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="matCopper" class="mat-btn copper active rounded-md px-3 py-1.5 text-xs font-bold">구리 (Cu)</button>
+                    <button id="matAluminum" class="mat-btn aluminum rounded-md px-3 py-1.5 text-xs font-bold">알루미늄 (Al)</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <div class="formula-card rounded-xl p-4 mt-4">
+                <p class="text-[10px] uppercase tracking-widest text-pink-200 mb-2 font-bold">📐 핵심 공식</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest text-pink-300">표피 깊이</p>
+                        <p class="mt-1">$$\delta = \sqrt{\frac{2}{\omega \mu \sigma}} = \sqrt{\frac{\rho}{\pi f \mu}}$$</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest text-pink-300">전류 밀도</p>
+                        <p class="mt-1">$$J(r) = J_s \cdot e^{-(R-r)/\delta}$$</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest text-pink-300">실효 저항비</p>
+                        <p class="mt-1">$$\frac{R_{AC}}{R_{DC}} \approx \frac{R}{2\delta} \;\; (R \gg \delta)$$</p>
+                    </div>
+                </div>
+                <p class="mt-3 text-[11px] text-slate-400">ω=2πf · μ: 투자율 · σ: 도전율 · ρ: 저항률 · R: 도체 반경 · r: 중심에서의 거리</p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-pink-200">변수 조절</h2>
+
+            <div class="chip-f chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>주파수 f</span><span id="fDisp" class="font-mono text-base">60 Hz</span></label>
+                <input type="range" id="f" min="0" max="100" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1">60 Hz ~ 1 MHz (로그 스케일)</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>도체 반경 R</span><span id="rDisp" class="font-mono text-base">5.0</span></label>
+                <input type="range" id="r" min="10" max="100" step="1" value="50" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mm (1.0 ~ 10.0)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="rounded-lg p-3" style="background: rgba(244,114,182,0.10); border: 1px solid rgba(244,114,182,0.35);">
+                <p class="text-[10px] tracking-widest text-slate-500 font-bold mb-1">현재 도체</p>
+                <p id="matBadge" class="font-bold text-orange-300">🟠 구리 (σ = 5.96×10⁷ S/m)</p>
+                <p class="text-[10px] text-slate-500 mt-2">도전율이 높을수록 표피 깊이는 얕아져 표피 효과가 더 강해진다. 알루미늄은 구리의 약 58 % 도전율.</p>
+            </div>
+
+            <div class="rounded-lg p-3 border border-slate-700/60 bg-slate-900/40 text-[11px] text-slate-400 leading-relaxed">
+                <p class="font-bold text-slate-300 mb-1">💡 학습 포인트</p>
+                <p>구리·60 Hz → δ ≈ <span class="text-pink-300 font-semibold">8.5 mm</span> (전력선 기준)</p>
+                <p class="mt-1">구리·1 MHz → δ ≈ <span class="text-violet-300 font-semibold">66 μm</span> (RF 표면 도금 필요)</p>
+                <p class="mt-1">송전선이 <span class="text-sky-300 font-semibold">중공·연선</span>인 이유.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 보조 카드 -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">📐 표피 깊이 (Skin Depth)</h3>
+            <div class="math-container">
+                $$\delta = \sqrt{\frac{\rho}{\pi f \mu}}\;[m]$$
+            </div>
+            <p class="mt-2 text-[11px] text-slate-400">주파수가 4배 → δ는 1/2배 감소.</p>
+        </div>
+        <div class="math-card rounded-2xl p-5">
+            <h3 class="font-bold text-sm mb-3 tracking-wider text-pink-200">📐 실효저항 (Approx.)</h3>
+            <div class="math-container">
+                $$R_{AC} \approx R_{DC}\cdot\frac{R}{2\delta}\;\;(R \gg \delta)$$
+            </div>
+            <p class="mt-2 text-[11px] text-slate-400">손실 P = I²·R<sub>AC</sub> → 고주파일수록 도체 손실 증가.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+// 물리 상수
+const MU0 = 4 * Math.PI * 1e-7;             // H/m
+const MATERIALS = {
+    copper:   { name: '구리',     rho: 1.68e-8, sigma: 5.96e7, color: '#fb923c', glow: '#f97316', label: '🟠 구리 (σ = 5.96×10⁷ S/m)' },
+    aluminum: { name: '알루미늄', rho: 2.82e-8, sigma: 3.50e7, color: '#cbd5e1', glow: '#94a3b8', label: '⚪ 알루미늄 (σ = 3.50×10⁷ S/m)' },
+};
+
+// 상태
+let state = {
+    f: 60,            // Hz
+    R: 5e-3,          // m (반경)
+    material: 'copper',
+    tick: 0,
+};
+
+function skinDepth() {
+    const m = MATERIALS[state.material];
+    return Math.sqrt(m.rho / (Math.PI * state.f * MU0)); // m
+}
+// 실효저항 비 (정확식 근사):  R << δ → 1,  R >> δ → R/(2δ)
+// 부드러운 보간으로 0.6+ 영역에서도 자연스럽게.
+function rRatio() {
+    const R = state.R, d = skinDepth();
+    const x = R / d;                          // 무차원
+    // 표준 근사:  R_ac/R_dc ≈ x/2 + 1/4 + 3/(32x) (x>>1)
+    // x<1 영역은 ≈ 1, 부드럽게 보간
+    if (x <= 1) {
+        return 1 + 0.08 * x * x;              // x=1에서 약 1.08
+    }
+    return x / 2 + 0.25 + 3 / (32 * x);
+}
+function rDcOhmPerKm() {
+    const m = MATERIALS[state.material];
+    const A = Math.PI * state.R * state.R;    // m²
+    return m.rho / A * 1000;                  // Ω/km
+}
+// 유효 단면적 (R >> δ:  2πRδ,  그 외 부드럽게 πR² 한계)
+function effectiveArea() {
+    const R = state.R, d = skinDepth();
+    const Aphys = Math.PI * R * R;
+    const Ashell = 2 * Math.PI * R * d - Math.PI * d * d; // 표피 도넛 (R-δ ~ R)
+    const Aeff = Math.min(Aphys, Math.max(Ashell, 0));
+    return { Aphys, Aeff };
+}
+
+// 캔버스 크기
+const CIRCLE_W = 0.50;     // 좌측 원형 단면 영역 비율
+const GRAPH_W = 0.50;      // 우측 J(r) 그래프 영역 비율
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 560;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ====================================================
+// 배경
+// ====================================================
+function drawBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 격자
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+
+    // 좌/우 분할 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.65)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ CROSS SECTION · 단면 J(r) 분포', 12, 10);
+
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.65)';
+    ctx.textAlign = 'right';
+    ctx.fillText('◯ J(r) PROFILE · 반지름 vs 전류 밀도', canvas.width - 12, 10);
+
+    // 좌·우 분할선 (세로)
+    const dx = canvas.width * CIRCLE_W;
+    const divGrad = ctx.createLinearGradient(dx, 0, dx, canvas.height);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(244, 114, 182, 0.45)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dx, 32); ctx.lineTo(dx, canvas.height - 12);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ====================================================
+// 좌 : 도체 원형 단면 (J(r) 시각화)
+// ====================================================
+function drawConductorSection() {
+    const W = canvas.width, H = canvas.height;
+    const cx = W * CIRCLE_W * 0.5;
+    const cy = H * 0.55;
+
+    // 표시 반경 (캔버스 px): 도체 반경에 비례 — 1mm = 16px (max 10mm = 160px), 캔버스 한계 고려
+    const maxR = Math.min(W * CIRCLE_W * 0.42, H * 0.40);
+    const Rdisp = Math.max(28, Math.min(maxR, (state.R * 1000) * 16));
+
+    const d = skinDepth();
+    // 캔버스 픽셀에서 δ를 표현하려면: pxPerMeter = Rdisp / state.R
+    const pxPerM = Rdisp / state.R;
+    const dPx = d * pxPerM;
+
+    const m = MATERIALS[state.material];
+
+    // 외곽 글로우
+    ctx.save();
+    const glowGrad = ctx.createRadialGradient(cx, cy, Rdisp * 0.7, cx, cy, Rdisp * 1.9);
+    glowGrad.addColorStop(0, `rgba(244, 114, 182, ${0.10 + 0.18 * Math.sin(state.tick * 0.05)})`);
+    glowGrad.addColorStop(1, 'rgba(244, 114, 182, 0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath(); ctx.arc(cx, cy, Rdisp * 1.9, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 도체 본체 (어두운 베이스)
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = m.glow;
+    const baseGrad = ctx.createRadialGradient(cx, cy, Rdisp * 0.1, cx, cy, Rdisp);
+    baseGrad.addColorStop(0, '#0a0d1a');
+    baseGrad.addColorStop(1, '#181a2d');
+    ctx.fillStyle = baseGrad;
+    ctx.beginPath(); ctx.arc(cx, cy, Rdisp, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // J(r) 분포: 동심원 N개를 안→밖으로 그리며 색·투명도로 표현
+    // J(r) ∝ exp(-(R-r)/δ). 중심(r=0)에서 exp(-R/δ), 표면(r=R)에서 1.
+    ctx.save();
+    const N = 80;                              // 동심원 수
+    for (let k = N; k >= 1; k--) {
+        const r = (k / N) * Rdisp;
+        const rMeter = (k / N) * state.R;
+        const Jrel = Math.exp(-(state.R - rMeter) / d); // 0~1
+        // 색: 흰색 ↔ 도체색  (J 작으면 어둡고 차가운, 크면 밝게)
+        const alpha = 0.04 + 0.45 * Jrel;
+        // 그라데이션 블렌딩: 핑크-바이올렛 (J 큰 영역) ↔ 진청 (J 작은 영역)
+        // 단순화: 색 = J에 따라 hue 보간
+        if (Jrel > 0.6) {
+            ctx.fillStyle = `rgba(252, 165, 165, ${alpha})`;  // 표피 — 핫
+        } else if (Jrel > 0.3) {
+            ctx.fillStyle = `rgba(196, 181, 253, ${alpha * 0.9})`; // 중간
+        } else if (Jrel > 0.08) {
+            ctx.fillStyle = `rgba(125, 211, 252, ${alpha * 0.8})`; // 안쪽
+        } else {
+            ctx.fillStyle = `rgba(30, 41, 59, ${alpha + 0.10})`; // 중심부 — 거의 0
+        }
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 표면 강조 (J_s, 가장 바깥 링)
+    ctx.save();
+    ctx.shadowBlur = 26;
+    ctx.shadowColor = '#f472b6';
+    ctx.strokeStyle = `rgba(254, 205, 211, ${0.85 + 0.10 * Math.sin(state.tick * 0.18)})`;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Rdisp - 1, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // 표피 깊이 δ 표시 — 내부 점선 원 (R - δ)
+    if (dPx < Rdisp * 0.97 && dPx > 1) {
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(196, 181, 253, 0.85)';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#a78bfa';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(2, Rdisp - dPx), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // δ 화살표 (표면에서 안쪽으로)
+        ctx.save();
+        ctx.strokeStyle = 'rgba(196, 181, 253, 0.95)';
+        ctx.fillStyle = 'rgba(196, 181, 253, 0.95)';
+        ctx.lineWidth = 1.4;
+        const ax = cx + Rdisp + 2;
+        const ay = cy;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax + 22, ay - 22);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx + Rdisp - dPx / Math.SQRT2 * 0.4, cy - dPx / Math.SQRT2 * 0.4, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        const dLbl = `δ = ${formatLen(d)}`;
+        const tw = ctx.measureText(dLbl).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, ax + 26, ay - 32, tw + 12, 18, 9);
+        ctx.fill();
+        ctx.fillStyle = '#c4b5fd';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(dLbl, ax + 32, ay - 23);
+        ctx.restore();
+    }
+
+    // 중심 라벨 & 반경 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    // 반경 라벨
+    const rLbl = `R = ${(state.R * 1000).toFixed(1)} mm`;
+    const rw = ctx.measureText(rLbl).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, cx - rw/2 - 6, cy + Rdisp + 12, rw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(rLbl, cx, cy + Rdisp + 21);
+
+    // 재질 라벨 (위)
+    const mLbl = `${m.name} · ${(state.f >= 1e6) ? (state.f/1e6).toFixed(2) + ' MHz' : (state.f >= 1e3) ? (state.f/1e3).toFixed(2) + ' kHz' : state.f.toFixed(0) + ' Hz'}`;
+    const mw = ctx.measureText(mLbl).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, cx - mw/2 - 6, cy - Rdisp - 28, mw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = m.color;
+    ctx.fillText(mLbl, cx, cy - Rdisp - 19);
+
+    // 표피 표시 (J 강한 외곽링)
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#fda4af';
+    ctx.fillText('J_s (표면)', cx, cy - Rdisp + 14);
+    ctx.fillStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.fillText('J ≈ 0 (중심)', cx, cy);
+    ctx.restore();
+}
+
+// ====================================================
+// 우 : 반지름 vs J(r) 곡선
+// ====================================================
+function drawProfile() {
+    const W = canvas.width, H = canvas.height;
+    const padL = W * CIRCLE_W + 60;
+    const padR = 30;
+    const padT = 48;
+    const padB = 56;
+    const plotX = padL;
+    const plotW = W - padL - padR;
+    const plotY = padT;
+    const plotH = H - padT - padB;
+
+    const d = skinDepth();
+    const Rphys = state.R;
+    // x축: r/R ∈ [0, 1]
+    // y축: J/J_s ∈ [0, 1]
+    // J/J_s = exp(-(R-r)/δ) = exp(-(1-r/R)·R/δ)
+
+    // 축 박스
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, plotX - 8, plotY - 8, plotW + 16, plotH + 16, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.10)';
+    ctx.lineWidth = 1;
+    for (let k = 0; k <= 5; k++) {
+        const x = plotX + (k / 5) * plotW;
+        ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+    }
+    for (let k = 0; k <= 4; k++) {
+        const y = plotY + (k / 4) * plotH;
+        ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+    }
+    ctx.restore();
+
+    // x축 라벨
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let k = 0; k <= 5; k++) {
+        const x = plotX + (k / 5) * plotW;
+        const v = (k / 5).toFixed(1);
+        ctx.fillText(v === '0.0' ? '0' : v, x, plotY + plotH + 6);
+    }
+    ctx.fillStyle = 'rgba(196, 181, 253, 0.85)';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillText('r / R  (중심 → 표면)', plotX + plotW / 2, plotY + plotH + 24);
+    ctx.restore();
+
+    // y축 라벨
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let k = 0; k <= 4; k++) {
+        const y = plotY + plotH - (k / 4) * plotH;
+        ctx.fillText((k / 4).toFixed(2), plotX - 8, y);
+    }
+    // y축 타이틀 (회전 없이 위에)
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('J / J_s', plotX - 4, plotY - 12);
+    ctx.restore();
+
+    // 곡선 데이터: J/J_s vs r/R
+    const N = 200;
+    const points = [];
+    for (let i = 0; i <= N; i++) {
+        const u = i / N;             // r/R
+        const Jrel = Math.exp(-(1 - u) * Rphys / d);
+        points.push({ u, J: Jrel });
+    }
+
+    // 채움
+    ctx.save();
+    const fillGrad = ctx.createLinearGradient(plotX, plotY, plotX, plotY + plotH);
+    fillGrad.addColorStop(0, 'rgba(244, 114, 182, 0.45)');
+    fillGrad.addColorStop(1, 'rgba(244, 114, 182, 0.02)');
+    ctx.fillStyle = fillGrad;
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+        const x = plotX + p.u * plotW;
+        const y = plotY + plotH - p.J * plotH;
+        if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(plotX + plotW, plotY + plotH);
+    ctx.lineTo(plotX, plotY + plotH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 메인 곡선
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#f472b6';
+    const lineGrad = ctx.createLinearGradient(plotX, 0, plotX + plotW, 0);
+    lineGrad.addColorStop(0, 'rgba(125, 211, 252, 0.95)');
+    lineGrad.addColorStop(0.5, 'rgba(196, 181, 253, 0.98)');
+    lineGrad.addColorStop(1, 'rgba(244, 114, 182, 0.98)');
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+        const x = plotX + p.u * plotW;
+        const y = plotY + plotH - p.J * plotH;
+        if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // 표피 깊이 마커 (r = R - δ → u = 1 - δ/R)
+    const uMark = Math.max(0, 1 - d / Rphys);
+    if (uMark > 0 && uMark < 1) {
+        const xMark = plotX + uMark * plotW;
+        const Jmark = Math.exp(-1); // J/J_s = 1/e ≈ 0.368
+        const yMark = plotY + plotH - Jmark * plotH;
+
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = 'rgba(196, 181, 253, 0.8)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(xMark, plotY); ctx.lineTo(xMark, plotY + plotH);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(plotX, yMark); ctx.lineTo(plotX + plotW, yMark);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 1/e 라벨
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#c4b5fd';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText('1/e ≈ 0.368', plotX + 4, yMark - 2);
+
+        // δ 마커 라벨
+        const dLbl = `r = R−δ`;
+        const tw = ctx.measureText(dLbl).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        roundRect(ctx, xMark - tw/2 - 5, plotY + 4, tw + 10, 16, 8);
+        ctx.fill();
+        ctx.fillStyle = '#c4b5fd';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(dLbl, xMark, plotY + 12);
+
+        // 점
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#a78bfa';
+        ctx.fillStyle = 'rgba(196, 181, 253, 0.98)';
+        ctx.beginPath();
+        ctx.arc(xMark, yMark, 5 + Math.sin(state.tick * 0.15), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.restore();
+    } else if (uMark <= 0) {
+        // δ > R 일 때: 표피효과 거의 없음
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(110, 231, 183, 0.92)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const t = '✓ δ > R · 거의 균일 (DC 동일)';
+        const tw = ctx.measureText(t).width;
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.18)';
+        roundRect(ctx, plotX + plotW/2 - tw/2 - 10, plotY + 8, tw + 20, 22, 11);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(110, 231, 183, 0.4)';
+        ctx.stroke();
+        ctx.fillStyle = '#6ee7b7';
+        ctx.fillText(t, plotX + plotW/2, plotY + 19);
+        ctx.restore();
+    }
+
+    // 표면 끝점 표시 (J_s)
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#f472b6';
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.98)';
+    const xs = plotX + plotW;
+    const ys = plotY;
+    ctx.beginPath();
+    ctx.arc(xs, ys, 5 + Math.sin(state.tick * 0.18) * 1.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    const sLbl = `J_s = 1.0 (표면)`;
+    const sw = ctx.measureText(sLbl).width;
+    roundRect(ctx, xs - sw - 14, ys + 10, sw + 10, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#f9a8d4';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(sLbl, xs - sw - 9, ys + 18);
+    ctx.restore();
+}
+
+// ====================================================
+// 슬라이더 → 상태
+// ====================================================
+function freqFromSlider(v) {
+    // 0~100 로그 매핑: 60 Hz ~ 1 MHz
+    const fMin = 60, fMax = 1e6;
+    const lnMin = Math.log(fMin), lnMax = Math.log(fMax);
+    return Math.exp(lnMin + (v / 100) * (lnMax - lnMin));
+}
+function radiusFromSlider(v) {
+    // 10~100 → 1.0~10.0 mm
+    return (v / 10) * 1e-3; // m
+}
+
+function formatLen(m) {
+    if (m >= 1e-2) return `${(m * 1000).toFixed(2)} mm`;
+    if (m >= 1e-4) return `${(m * 1000).toFixed(3)} mm`;
+    if (m >= 1e-6) return `${(m * 1e6).toFixed(1)} μm`;
+    return `${(m * 1e9).toFixed(1)} nm`;
+}
+function formatArea(m2) {
+    const mm2 = m2 * 1e6;
+    if (mm2 >= 0.01) return `${mm2.toFixed(3)} mm²`;
+    return `${(mm2 * 1000).toFixed(2)} ×10⁻³ mm²`;
+}
+function formatFreq(f) {
+    if (f >= 1e6) return `${(f / 1e6).toFixed(2)} MHz`;
+    if (f >= 1e3) return `${(f / 1e3).toFixed(2)} kHz`;
+    return `${f.toFixed(0)} Hz`;
+}
+
+function readControls() {
+    state.f = freqFromSlider(+$('f').value);
+    state.R = radiusFromSlider(+$('r').value);
+    $('fDisp').textContent = formatFreq(state.f);
+    $('rDisp').textContent = (state.R * 1000).toFixed(1);
+}
+
+function updateLive() {
+    const d = skinDepth();
+    const { Aphys, Aeff } = effectiveArea();
+    const ratio = rRatio();
+    // 손실 증가율: ΔP/P_DC = R_ac/R_dc - 1
+    const lossPct = (ratio - 1) * 100;
+
+    $('deltaVal').textContent = formatLen(d);
+    $('aeffVal').textContent = `${formatArea(Aeff)} / ${formatArea(Aphys)}`;
+    $('rratioVal').textContent = ratio.toFixed(3);
+    $('lossVal').textContent = `+${lossPct.toFixed(1)} %`;
+
+    // 표피효과 큰 영역에서 글로우
+    const pillR = $('pill-rratio');
+    if (ratio > 2.0) {
+        pillR.style.borderColor = 'rgba(244, 63, 94, 0.65)';
+        pillR.style.boxShadow = '0 0 24px rgba(244, 63, 94, 0.40)';
+    } else if (ratio > 1.2) {
+        pillR.style.borderColor = 'rgba(244, 114, 182, 0.55)';
+        pillR.style.boxShadow = '0 0 22px rgba(244, 114, 182, 0.30)';
+    } else {
+        pillR.style.borderColor = 'rgba(148, 163, 184, 0.15)';
+        pillR.style.boxShadow = '';
+    }
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+    document.querySelectorAll('.live-pill').forEach(el => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 350);
+    });
+}
+
+['f', 'r'].forEach(id => {
+    $(id).addEventListener('input', () => { readControls(); flashCard(); });
+});
+
+function setMaterial(mat) {
+    state.material = mat;
+    $('matCopper').classList.toggle('active', mat === 'copper');
+    $('matAluminum').classList.toggle('active', mat === 'aluminum');
+    $('matBadge').textContent = MATERIALS[mat].label;
+    $('matBadge').className = 'font-bold ' + (mat === 'copper' ? 'text-orange-300' : 'text-slate-300');
+    flashCard();
+}
+$('matCopper').addEventListener('click', () => setMaterial('copper'));
+$('matAluminum').addEventListener('click', () => setMaterial('aluminum'));
+
+// ====================================================
+// 메인 루프
+// ====================================================
+function animate() {
+    state.tick++;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawConductorSection();
+    drawProfile();
+    updateLive();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    readControls();
+    resize();
+    requestAnimationFrame(animate);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

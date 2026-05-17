@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크쌤 합격 학습 — 전기기능사 모바일 학습 앱 콘셉트</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --brand-green: #10b981;
+    --brand-green-light: #d1fae5;
+    --brand-green-dark: #047857;
+    --brand-orange: #f97316;
+    --brand-orange-light: #ffedd5;
+    --brand-ink: #0f172a;
+    --brand-soft: #f8fafc;
+  }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% 0%, #ecfdf5 0%, transparent 60%),
+      radial-gradient(1000px 500px at 90% 10%, #fff7ed 0%, transparent 60%),
+      linear-gradient(180deg, #fafafa 0%, #f1f5f9 100%);
+    min-height: 100vh;
+  }
+  /* Phone frame */
+  .phone-frame {
+    width: 280px;
+    height: 580px;
+    background: #0f172a;
+    border-radius: 38px;
+    padding: 12px;
+    box-shadow:
+      0 30px 60px -20px rgba(15, 23, 42, 0.4),
+      0 18px 36px -18px rgba(15, 23, 42, 0.3),
+      inset 0 0 0 2px rgba(255,255,255,0.08);
+    position: relative;
+    transition: transform .3s ease, box-shadow .3s ease;
+    cursor: pointer;
+  }
+  .phone-frame:hover {
+    transform: translateY(-8px) rotate(-1deg);
+    box-shadow:
+      0 40px 80px -20px rgba(15, 23, 42, 0.5),
+      0 24px 48px -18px rgba(16, 185, 129, 0.25);
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 24px;
+    background: #0f172a;
+    border-radius: 14px;
+    z-index: 30;
+  }
+  .phone-side-btn {
+    position: absolute;
+    background: #1e293b;
+    border-radius: 2px;
+  }
+  .phone-side-btn.power { right: -3px; top: 130px; width: 4px; height: 60px; }
+  .phone-side-btn.vol-up { left: -3px; top: 120px; width: 4px; height: 36px; }
+  .phone-side-btn.vol-dn { left: -3px; top: 165px; width: 4px; height: 36px; }
+  .phone-side-btn.mute { left: -3px; top: 80px; width: 4px; height: 22px; }
+
+  .status-bar {
+    height: 36px;
+    padding: 14px 22px 0 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .home-indicator {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  /* Mascot SVG container */
+  .mascot {
+    filter: drop-shadow(0 8px 16px rgba(16, 185, 129, 0.25));
+  }
+
+  /* Progress bar pulse */
+  @keyframes progressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+  }
+  .progress-pulse {
+    animation: progressPulse 2s ease-in-out infinite;
+  }
+
+  /* Streak fire animation */
+  @keyframes flicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    50% { transform: scale(1.08) rotate(2deg); }
+  }
+  .fire-flicker { animation: flicker 1.4s ease-in-out infinite; }
+
+  /* Quiz timer pulse */
+  @keyframes timerPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+    50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+  }
+  .timer-pulse { animation: timerPulse 1.2s ease-in-out infinite; }
+
+  /* Modal */
+  .modal-backdrop {
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+  }
+  .modal-phone {
+    width: 340px;
+    height: 700px;
+    transform: scale(1);
+    transition: transform .3s ease;
+  }
+  @media (max-width: 640px) {
+    .modal-phone { width: 280px; height: 580px; }
+  }
+
+  /* Carousel */
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    transition: all .3s ease;
+  }
+  .carousel-dot.active {
+    width: 24px;
+    border-radius: 4px;
+    background: var(--brand-green);
+  }
+
+  /* Star rating */
+  .star {
+    cursor: pointer;
+    transition: transform .15s ease;
+  }
+  .star:hover { transform: scale(1.15); }
+  .star.active { color: #fbbf24; }
+  .star.inactive { color: #e2e8f0; }
+
+  /* App badge */
+  .app-badge {
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .app-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -8px rgba(15, 23, 42, 0.3);
+  }
+
+  /* Subtle float */
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .floaty { animation: floaty 4s ease-in-out infinite; }
+
+  /* Section title underline */
+  .section-title::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--brand-green) 0%, var(--brand-orange) 100%);
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+
+  /* Quiz option hover */
+  .quiz-option {
+    transition: all .15s ease;
+  }
+  .quiz-option:hover {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+
+  /* Avatar */
+  .avatar-circle {
+    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  }
+
+  /* Badge shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .badge-shimmer {
+    background: linear-gradient(90deg, #fbbf24 0%, #fcd34d 50%, #fbbf24 100%);
+    background-size: 200% 100%;
+    animation: shimmer 3s linear infinite;
+  }
+
+  /* Tab indicator */
+  .tab-item.active .tab-icon {
+    color: var(--brand-green);
+  }
+  .tab-item.active .tab-label {
+    color: var(--brand-green);
+    font-weight: 700;
+  }
+</style>
+</head>
+<body class="text-slate-900">
+
+<!-- ============= HEADER ============= -->
+<header class="border-b border-slate-200 bg-white/70 backdrop-blur-md sticky top-0 z-40">
+  <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div>
+        <div class="text-base font-extrabold tracking-tight">스파크쌤 합격 학습</div>
+        <div class="text-[11px] text-slate-500">전기기능사 · 모바일 학습 앱 콘셉트</div>
+      </div>
+    </div>
+    <div class="hidden sm:flex items-center gap-4 text-sm text-slate-600">
+      <a href="#screens" class="hover:text-emerald-600">화면 미리보기</a>
+      <a href="#download" class="hover:text-emerald-600">다운로드</a>
+      <a href="#reviews" class="hover:text-emerald-600">리뷰</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============= HERO ============= -->
+<section class="max-w-6xl mx-auto px-5 pt-12 pb-8">
+  <div class="grid md:grid-cols-2 gap-10 items-center">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold mb-5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Beta · 모바일 학습 앱 미리보기
+      </div>
+      <h1 class="text-4xl sm:text-5xl font-black leading-tight tracking-tight">
+        하루 <span class="text-emerald-600">15분</span>이면<br>
+        전기기능사 합격 <span class="text-orange-500">한 걸음 더</span>.
+      </h1>
+      <p class="mt-5 text-slate-600 text-base leading-relaxed">
+        플립카드 · 5지선다 퀴즈 · 진척률 · 친구 랭킹까지.<br>
+        스파크쌤이 매일 출제하는 맞춤 과제로 부담 없이 시작하세요.
+      </p>
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="#download" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          앱 받기 (가상)
+        </a>
+        <a href="#screens" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-400 text-slate-800 font-bold transition">
+          화면 둘러보기
+        </a>
+      </div>
+      <div class="mt-7 flex items-center gap-6 text-sm">
+        <div>
+          <div class="text-2xl font-black text-emerald-600" id="dlCounter">128,403</div>
+          <div class="text-xs text-slate-500">누적 다운로드 (가상)</div>
+        </div>
+        <div class="w-px h-10 bg-slate-200"></div>
+        <div>
+          <div class="text-2xl font-black text-orange-500">4.8 <span class="text-base">★</span></div>
+          <div class="text-xs text-slate-500">평균 평점 · 1,284 리뷰</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero phone -->
+    <div class="flex justify-center md:justify-end">
+      <div class="phone-frame floaty" data-screen="home" role="button" tabindex="0" aria-label="홈 화면 확대 보기">
+        <div class="phone-notch"></div>
+        <span class="phone-side-btn mute"></span>
+        <span class="phone-side-btn vol-up"></span>
+        <span class="phone-side-btn vol-dn"></span>
+        <span class="phone-side-btn power"></span>
+        <div class="phone-screen">
+          <!-- Home screen content (mini) -->
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="flex items-center gap-1">
+              <svg width="14" height="10" viewBox="0 0 14 10" fill="currentColor"><rect x="0" y="6" width="2" height="4" rx="1"/><rect x="3" y="4" width="2" height="6" rx="1"/><rect x="6" y="2" width="2" height="8" rx="1"/><rect x="9" y="0" width="2" height="10" rx="1"/></svg>
+              <svg width="18" height="10" viewBox="0 0 18 10" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="0.5" y="0.5" width="14" height="9" rx="2"/><rect x="2" y="2" width="11" height="6" rx="1" fill="currentColor"/><rect x="15.5" y="3" width="1.5" height="4" rx="0.5" fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="px-4 pt-1">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-[11px] text-slate-500">반갑습니다,</div>
+                <div class="text-sm font-black">예비 전기기능사 님</div>
+              </div>
+              <div class="w-9 h-9 rounded-full avatar-circle flex items-center justify-center text-white text-xs font-black">예</div>
+            </div>
+
+            <!-- Mascot card -->
+            <div class="mt-3 p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 relative overflow-hidden">
+              <div class="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">오늘의 한마디</div>
+              <div class="text-xs font-bold text-slate-800 mt-1 leading-snug">"옴의 법칙은 V=IR.<br>커피 한 잔에 한 번 외우기!"</div>
+              <svg class="mascot absolute right-1 bottom-0" width="56" height="56" viewBox="0 0 64 64">
+                <!-- Spark mascot -->
+                <circle cx="32" cy="34" r="20" fill="#fbbf24"/>
+                <circle cx="26" cy="32" r="3" fill="#0f172a"/>
+                <circle cx="38" cy="32" r="3" fill="#0f172a"/>
+                <path d="M25 40 Q32 46 39 40" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M32 8 L28 22 L34 22 L30 32" stroke="#f97316" stroke-width="3" fill="#fef3c7" stroke-linejoin="round" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <!-- Streak + progress -->
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-100">
+                <div class="flex items-center gap-1.5">
+                  <span class="fire-flicker text-lg">🔥</span>
+                  <span class="text-[10px] font-bold text-orange-700">연속 학습</span>
+                </div>
+                <div class="text-lg font-black text-orange-600 mt-0.5">12일</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
+                <div class="text-[10px] font-bold text-emerald-700">합격 진척률</div>
+                <div class="text-lg font-black text-emerald-600 mt-0.5">68%</div>
+                <div class="h-1 rounded-full bg-emerald-200 mt-1 overflow-hidden">
+                  <div class="h-full bg-emerald-500 progress-pulse" style="width:68%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Today task -->
+            <div class="mt-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">오늘의 과제 · 3개</div>
+            <div class="mt-1.5 space-y-1.5">
+              <div class="p-2 rounded-lg bg-white border border-slate-100 flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-black">⚡</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[11px] font-bold truncate">옴의 법칙 플립카드</div>
+                  <div class="text-[9px] text-slate-500">10장 · 약 5분</div>
+                </div>
+                <div class="text-[10px] font-black text-emerald-600">+15 XP</div>
+              </div>
+              <div class="p-2 rounded-lg bg-white border border-slate-100 flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-black">✏️</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[11px] font-bold truncate">기출 5문제 풀기</div>
+                  <div class="text-[9px] text-slate-500">2024년도 · 약 7분</div>
+                </div>
+                <div class="text-[10px] font-black text-orange-600">+20 XP</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= SCREENS CAROUSEL ============= -->
+<section id="screens" class="max-w-6xl mx-auto px-5 py-12">
+  <h2 class="section-title text-2xl sm:text-3xl font-black">앱 화면 미리보기</h2>
+  <p class="text-slate-600 mt-3 text-sm">폰을 클릭하면 확대해서 볼 수 있어요. 5초마다 자동으로 다음 화면이 강조됩니다.</p>
+
+  <!-- Carousel dots -->
+  <div class="mt-6 flex items-center justify-center gap-2" id="carouselDots"></div>
+
+  <!-- Phones -->
+  <div class="mt-8 grid grid-cols-2 md:grid-cols-5 gap-6 justify-items-center" id="phonesGrid">
+
+    <!-- 1. Home -->
+    <div class="text-center">
+      <div class="phone-frame" data-screen="home" data-index="0" role="button" tabindex="0" aria-label="홈 화면 확대">
+        <div class="phone-notch"></div>
+        <span class="phone-side-btn mute"></span>
+        <span class="phone-side-btn vol-up"></span>
+        <span class="phone-side-btn vol-dn"></span>
+        <span class="phone-side-btn power"></span>
+        <div class="phone-screen">
+          <div class="status-bar"><span>9:41</span><span class="text-[10px]">●●● ⚡</span></div>
+          <div class="px-4 pt-1">
+            <div class="text-[11px] text-slate-500">반갑습니다,</div>
+            <div class="text-sm font-black">예비 전기기능사 님</div>
+            <div class="mt-3 p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 relative overflow-hidden">
+              <div class="text-[10px] font-bold text-emerald-700 uppercase">스파크쌤</div>
+              <div class="text-xs font-bold mt-1 leading-snug">오늘도 15분만<br>같이 풀어볼까요?</div>
+              <svg class="absolute right-1 bottom-0" width="52" height="52" viewBox="0 0 64 64">
+                <circle cx="32" cy="34" r="20" fill="#fbbf24"/>
+                <circle cx="26" cy="32" r="3" fill="#0f172a"/>
+                <circle cx="38" cy="32" r="3" fill="#0f172a"/>
+                <path d="M25 40 Q32 46 39 40" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <div class="p-2 rounded-xl bg-orange-50 border border-orange-100">
+                <div class="text-[9px] font-bold text-orange-700">🔥 연속</div>
+                <div class="text-base font-black text-orange-600">12일</div>
+              </div>
+              <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-100">
+                <div class="text-[9px] font-bold text-emerald-700">진척률</div>
+                <div class="text-base font-black text-emerald-600">68%</div>
+              </div>
+            </div>
+            <div class="mt-3 space-y-1.5">
+              <div class="p-1.5 rounded-lg bg-white border border-slate-100 flex items-center gap-1.5">
+                <div class="w-5 h-5 rounded bg-emerald-100 text-emerald-600 text-[10px] font-black flex items-center justify-center">⚡</div>
+                <div class="text-[10px] font-bold flex-1 truncate">옴의 법칙 카드</div>
+                <div class="text-[9px] text-emerald-600 font-black">+15</div>
+              </div>
+              <div class="p-1.5 rounded-lg bg-white border border-slate-100 flex items-center gap-1.5">
+                <div class="w-5 h-5 rounded bg-orange-100 text-orange-600 text-[10px] font-black flex items-center justify-center">✏️</div>
+                <div class="text-[10px] font-bold flex-1 truncate">기출 5문제</div>
+                <div class="text-[9px] text-orange-600 font-black">+20</div>
+              </div>
+              <div class="p-1.5 rounded-lg bg-white border border-slate-100 flex items-center gap-1.5">
+                <div class="w-5 h-5 rounded bg-sky-100 text-sky-600 text-[10px] font-black flex items-center justify-center">🎧</div>
+                <div class="text-[10px] font-bold flex-1 truncate">오디오북 5분</div>
+                <div class="text-[9px] text-sky-600 font-black">+10</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs font-bold text-slate-700">홈 화면</div>
+      <div class="text-[10px] text-slate-500">오늘의 과제 · 진척률</div>
+    </div>
+
+    <!-- 2. Study (Flipcard) -->
+    <div class="text-center">
+      <div class="phone-frame" data-screen="study" data-index="1" role="button" tabindex="0" aria-label="학습 화면 확대">
+        <div class="phone-notch"></div>
+        <span class="phone-side-btn mute"></span>
+        <span class="phone-side-btn vol-up"></span>
+        <span class="phone-side-btn vol-dn"></span>
+        <span class="phone-side-btn power"></span>
+        <div class="phone-screen">
+          <div class="status-bar"><span>9:42</span><span class="text-[10px]">●●● ⚡</span></div>
+          <div class="px-4 pt-1">
+            <div class="flex items-center justify-between">
+              <div class="text-xs text-slate-500">◀ 옴의 법칙</div>
+              <div class="text-[10px] font-bold text-emerald-600">4 / 10</div>
+            </div>
+            <div class="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600" style="width:40%"></div>
+            </div>
+            <!-- Flipcard -->
+            <div class="mt-4 aspect-[3/4] rounded-2xl bg-gradient-to-br from-white to-emerald-50 border-2 border-emerald-200 shadow-md flex flex-col items-center justify-center p-3 relative">
+              <div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider absolute top-3 left-3">개념</div>
+              <div class="text-[10px] absolute top-3 right-3 text-slate-400">⟲ 탭하여 뒤집기</div>
+              <div class="text-center">
+                <div class="text-xs font-bold text-slate-500">전압 V, 전류 I, 저항 R</div>
+                <div class="mt-3 text-2xl font-black text-emerald-600">V = I × R</div>
+                <div class="mt-3 text-[10px] text-slate-600 leading-relaxed">옴의 법칙은 도체에 흐르는<br>전류가 전압에 비례하고<br>저항에 반비례한다는 법칙</div>
+              </div>
+              <div class="absolute bottom-3 left-3 right-3 flex gap-1">
+                <div class="flex-1 h-1 rounded-full bg-emerald-400"></div>
+                <div class="flex-1 h-1 rounded-full bg-emerald-400"></div>
+                <div class="flex-1 h-1 rounded-full bg-emerald-400"></div>
+                <div class="flex-1 h-1 rounded-full bg-emerald-400"></div>
+                <div class="flex-1 h-1 rounded-full bg-slate-200"></div>
+              </div>
+            </div>
+            <!-- Action -->
+            <div class="mt-3 grid grid-cols-3 gap-1.5">
+              <button class="py-1.5 rounded-lg bg-rose-100 text-rose-600 text-[10px] font-bold">어려움</button>
+              <button class="py-1.5 rounded-lg bg-amber-100 text-amber-700 text-[10px] font-bold">애매함</button>
+              <button class="py-1.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold">쉬움 ✓</button>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs font-bold text-slate-700">학습 화면</div>
+      <div class="text-[10px] text-slate-500">플립카드 · 진행률</div>
+    </div>
+
+    <!-- 3. Quiz -->
+    <div class="text-center">
+      <div class="phone-frame" data-screen="quiz" data-index="2" role="button" tabindex="0" aria-label="퀴즈 화면 확대">
+        <div class="phone-notch"></div>
+        <span class="phone-side-btn mute"></span>
+        <span class="phone-side-btn vol-up"></span>
+        <span class="phone-side-btn vol-dn"></span>
+        <span class="phone-side-btn power"></span>
+        <div class="phone-screen">
+          <div class="status-bar"><span>9:44</span><span class="text-[10px]">●●● ⚡</span></div>
+          <div class="px-3 pt-1">
+            <!-- timer + score -->
+            <div class="flex items-center justify-between">
+              <div class="timer-pulse w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-black">18</div>
+              <div class="text-[10px] font-bold text-slate-600">점수 <span class="text-emerald-600 text-base font-black">340</span></div>
+            </div>
+            <div class="mt-2 text-[10px] text-slate-400">문제 3 / 5</div>
+            <!-- question -->
+            <div class="mt-2 p-2.5 rounded-xl bg-slate-50">
+              <div class="text-[10px] font-bold text-emerald-700">Q3.</div>
+              <div class="text-[11px] font-bold leading-snug mt-0.5">전압 24V, 저항 8Ω일 때<br>전류 I의 값은?</div>
+            </div>
+            <!-- options -->
+            <div class="mt-2.5 space-y-1.5">
+              <div class="quiz-option p-2 rounded-lg border-2 border-slate-100 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full border-2 border-slate-300 text-[9px] font-black flex items-center justify-center">①</div>
+                <div class="text-[11px]">2 A</div>
+              </div>
+              <div class="quiz-option p-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-emerald-500 text-white text-[9px] font-black flex items-center justify-center">②</div>
+                <div class="text-[11px] font-bold text-emerald-700">3 A</div>
+                <div class="ml-auto text-emerald-600 text-xs">✓</div>
+              </div>
+              <div class="quiz-option p-2 rounded-lg border-2 border-slate-100 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full border-2 border-slate-300 text-[9px] font-black flex items-center justify-center">③</div>
+                <div class="text-[11px]">4 A</div>
+              </div>
+              <div class="quiz-option p-2 rounded-lg border-2 border-slate-100 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full border-2 border-slate-300 text-[9px] font-black flex items-center justify-center">④</div>
+                <div class="text-[11px]">8 A</div>
+              </div>
+              <div class="quiz-option p-2 rounded-lg border-2 border-slate-100 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full border-2 border-slate-300 text-[9px] font-black flex items-center justify-center">⑤</div>
+                <div class="text-[11px]">12 A</div>
+              </div>
+            </div>
+            <button class="mt-3 w-full py-2 rounded-lg bg-emerald-500 text-white text-[11px] font-black">답 제출하기</button>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs font-bold text-slate-700">퀴즈 화면</div>
+      <div class="text-[10px] text-slate-500">5지선다 · 타이머</div>
+    </div>
+
+    <!-- 4. Profile -->
+    <div class="text-center">
+      <div class="phone-frame" data-screen="profile" data-index="3" role="button" tabindex="0" aria-label="프로필 화면 확대">
+        <div class="phone-notch"></div>
+        <span class="phone-side-btn mute"></span>
+        <span class="phone-side-btn vol-up"></span>
+        <span class="phone-side-btn vol-dn"></span>
+        <span class="phone-side-btn power"></span>
+        <div class="phone-screen">
+          <div class="status-bar"><span>9:46</span><span class="text-[10px]">●●● ⚡</span></div>
+          <div class="px-3 pt-1">
+            <div class="flex flex-col items-center pt-1">
+              <div class="w-14 h-14 rounded-full avatar-circle flex items-center justify-center text-white text-base font-black shadow-md">예</div>
+              <div class="mt-2 text-xs font-black">예비 전기기능사</div>
+              <div class="text-[10px] text-slate-500">Lv.7 · 총 1,245 XP</div>
+            </div>
+            <!-- Progress to pass -->
+            <div class="mt-3 p-2.5 rounded-xl bg-gradient-to-r from-emerald-50 to-orange-50">
+              <div class="flex items-center justify-between text-[10px] font-bold">
+                <span class="text-slate-600">합격 진척률</span>
+                <span class="text-emerald-700">68%</span>
+              </div>
+              <div class="mt-1.5 h-1.5 rounded-full bg-white overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-emerald-500 to-orange-500" style="width:68%"></div>
+              </div>
+            </div>
+            <!-- Badges -->
+            <div class="mt-3 text-[10px] font-bold text-slate-600 uppercase">획득 뱃지</div>
+            <div class="mt-1.5 grid grid-cols-4 gap-1.5">
+              <div class="aspect-square rounded-lg badge-shimmer flex items-center justify-center text-base">🥇</div>
+              <div class="aspect-square rounded-lg bg-emerald-100 flex items-center justify-center text-base">⚡</div>
+              <div class="aspect-square rounded-lg bg-orange-100 flex items-center justify-center text-base">🔥</div>
+              <div class="aspect-square rounded-lg bg-slate-100 flex items-center justify-center text-base opacity-40">🔒</div>
+            </div>
+            <!-- Ranking -->
+            <div class="mt-3 text-[10px] font-bold text-slate-600 uppercase">친구 랭킹</div>
+            <div class="mt-1.5 space-y-1">
+              <div class="p-1.5 rounded-lg bg-amber-50 flex items-center gap-2">
+                <div class="text-amber-600 text-[10px] font-black w-4">1</div>
+                <div class="w-5 h-5 rounded-full avatar-circle text-white text-[8px] font-black flex items-center justify-center">민</div>
+                <div class="text-[10px] font-bold flex-1 truncate">민수형</div>
+                <div class="text-[9px] text-amber-700 font-black">2,140</div>
+              </div>
+              <div class="p-1.5 rounded-lg bg-emerald-50 flex items-center gap-2">
+                <div class="text-emerald-700 text-[10px] font-black w-4">2</div>
+                <div class="w-5 h-5 rounded-full avatar-circle text-white text-[8px] font-black flex items-center justify-center">예</div>
+                <div class="text-[10px] font-bold flex-1 truncate text-emerald-700">나 (예비)</div>
+                <div class="text-[9px] text-emerald-700 font-black">1,245</div>
+              </div>
+              <div class="p-1.5 rounded-lg bg-slate-50 flex items-center gap-2">
+                <div class="text-slate-500 text-[10px] font-black w-4">3</div>
+                <div class="w-5 h-5 rounded-full avatar-circle text-white text-[8px] font-black flex items-center justify-center">지</div>
+                <div class="text-[10px] font-bold flex-1 truncate">지윤</div>
+                <div class="text-[9px] text-slate-500 font-black">980</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs font-bold text-slate-700">프로필 화면</div>
+      <div class="text-[10px] text-slate-500">뱃지 · 랭킹</div>
+    </div>
+
+    <!-- 5. Notifications -->
+    <div class="text-center">
+      <div class="phone-frame" data-screen="notif" data-index="4" role="button" tabindex="0" aria-label="알림 화면 확대">
+        <div class="phone-notch"></div>
+        <span class="phone-side-btn mute"></span>
+        <span class="phone-side-btn vol-up"></span>
+        <span class="phone-side-btn vol-dn"></span>
+        <span class="phone-side-btn power"></span>
+        <div class="phone-screen">
+          <div class="status-bar"><span>9:48</span><span class="text-[10px]">●●● ⚡</span></div>
+          <div class="px-3 pt-1">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-black">알림</div>
+              <div class="text-[10px] text-emerald-600 font-bold">모두 읽음</div>
+            </div>
+            <div class="mt-3 space-y-2">
+              <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">⚡</span>
+                  <div class="text-[10px] font-black text-emerald-700">스파크쌤</div>
+                  <div class="text-[9px] text-slate-400 ml-auto">방금</div>
+                </div>
+                <div class="text-[10px] mt-1 leading-snug">오늘 과제가 도착했어요! 옴의 법칙 카드 10장이 기다려요.</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-100">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">🔥</span>
+                  <div class="text-[10px] font-black text-orange-700">연속 학습 알림</div>
+                  <div class="text-[9px] text-slate-400 ml-auto">2시간 전</div>
+                </div>
+                <div class="text-[10px] mt-1 leading-snug">12일째 학습 중! 오늘 한 번만 풀면 13일 달성이에요.</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">🥇</span>
+                  <div class="text-[10px] font-black text-amber-700">뱃지 획득</div>
+                  <div class="text-[9px] text-slate-400 ml-auto">어제</div>
+                </div>
+                <div class="text-[10px] mt-1 leading-snug">"기초 마스터" 뱃지를 획득했습니다.</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-sky-50 border border-sky-100">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">👥</span>
+                  <div class="text-[10px] font-black text-sky-700">친구 알림</div>
+                  <div class="text-[9px] text-slate-400 ml-auto">2일 전</div>
+                </div>
+                <div class="text-[10px] mt-1 leading-snug">민수형이 당신을 1위에서 밀어냈어요. 따라잡아요!</div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-100">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">📅</span>
+                  <div class="text-[10px] font-black text-rose-700">시험 D-day</div>
+                  <div class="text-[9px] text-slate-400 ml-auto">3일 전</div>
+                </div>
+                <div class="text-[10px] mt-1 leading-snug">전기기능사 필기시험 D-42. 화이팅!</div>
+              </div>
+            </div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs font-bold text-slate-700">알림 화면</div>
+      <div class="text-[10px] text-slate-500">푸시 알림 리스트</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============= DOWNLOAD ============= -->
+<section id="download" class="max-w-6xl mx-auto px-5 py-12">
+  <div class="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8 sm:p-12 relative overflow-hidden">
+    <div class="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-emerald-500/20 blur-3xl"></div>
+    <div class="absolute -bottom-20 -left-10 w-60 h-60 rounded-full bg-orange-500/20 blur-3xl"></div>
+    <div class="relative grid md:grid-cols-2 gap-8 items-center">
+      <div>
+        <div class="inline-block px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-4">가상 다운로드</div>
+        <h3 class="text-2xl sm:text-3xl font-black leading-tight">지금 다운로드하고<br>합격까지 함께 달려요.</h3>
+        <p class="mt-3 text-slate-300 text-sm">아래 배지는 시뮬레이션입니다. 실제 스토어로 연결되지 않습니다.</p>
+
+        <div class="mt-6 flex flex-wrap gap-3">
+          <!-- Custom store badge 1 -->
+          <button class="app-badge inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-white text-slate-900" data-badge="moonstore">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <div class="text-left leading-tight">
+              <div class="text-[9px] font-bold text-slate-500">다운로드하기</div>
+              <div class="text-sm font-black">MoonStore</div>
+            </div>
+          </button>
+          <!-- Custom store badge 2 -->
+          <button class="app-badge inline-flex items-center gap-3 px-5 py-3 rounded-xl bg-white text-slate-900" data-badge="cloudplay">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <div class="text-left leading-tight">
+              <div class="text-[9px] font-bold text-slate-500">에서 받기</div>
+              <div class="text-sm font-black">CloudPlay</div>
+            </div>
+          </button>
+        </div>
+
+        <div class="mt-6 flex items-center gap-4 text-sm text-slate-300">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            지금 <span class="font-black text-white" id="liveDl">23</span>명이 받는 중
+          </div>
+          <div class="text-slate-500">·</div>
+          <div>누적 <span class="font-black text-white" id="totalDl">128,403</span>건</div>
+        </div>
+      </div>
+
+      <!-- QR / hint phone -->
+      <div class="flex justify-center md:justify-end">
+        <div class="rounded-2xl bg-white p-5 text-slate-900 shadow-2xl max-w-xs">
+          <div class="text-xs font-bold text-slate-500">QR 미리보기 (가상)</div>
+          <div class="mt-3 aspect-square w-40 mx-auto rounded-lg bg-slate-100 grid grid-cols-8 grid-rows-8 gap-0.5 p-2" id="fakeQR">
+            <!-- QR-like pattern generated by JS -->
+          </div>
+          <div class="mt-3 text-center text-[11px] text-slate-600 font-bold">스파크쌤 합격 학습 v1.0</div>
+          <div class="text-center text-[10px] text-slate-400">iOS 14+ / Android 9+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= REVIEWS ============= -->
+<section id="reviews" class="max-w-6xl mx-auto px-5 py-12">
+  <h2 class="section-title text-2xl sm:text-3xl font-black">사용자 리뷰</h2>
+  <p class="text-slate-600 mt-3 text-sm">실제 후기는 아닙니다. 가상 학습 앱 시뮬레이션이에요.</p>
+
+  <!-- Rating summary -->
+  <div class="mt-6 grid sm:grid-cols-3 gap-4">
+    <div class="rounded-2xl bg-white border border-slate-100 p-6 text-center shadow-sm">
+      <div class="text-5xl font-black text-orange-500">4.8</div>
+      <div class="mt-2 text-orange-400" id="ratingStars">
+        <span class="star active" data-rating="1">★</span>
+        <span class="star active" data-rating="2">★</span>
+        <span class="star active" data-rating="3">★</span>
+        <span class="star active" data-rating="4">★</span>
+        <span class="star active" data-rating="5">★</span>
+      </div>
+      <div class="mt-2 text-xs text-slate-500" id="ratingLabel">5점 · 매우 만족</div>
+      <div class="mt-3 text-[11px] text-slate-400">별을 클릭해서 평점을 매겨보세요 (가상)</div>
+    </div>
+    <div class="sm:col-span-2 rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
+      <div class="text-xs font-bold text-slate-600 mb-3">평점 분포</div>
+      <div class="space-y-2">
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-6 text-slate-500">5★</span>
+          <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-emerald-500" style="width:78%"></div></div>
+          <span class="text-xs w-10 text-right text-slate-500">78%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-6 text-slate-500">4★</span>
+          <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-emerald-400" style="width:16%"></div></div>
+          <span class="text-xs w-10 text-right text-slate-500">16%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-6 text-slate-500">3★</span>
+          <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-amber-400" style="width:4%"></div></div>
+          <span class="text-xs w-10 text-right text-slate-500">4%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-6 text-slate-500">2★</span>
+          <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-orange-400" style="width:1%"></div></div>
+          <span class="text-xs w-10 text-right text-slate-500">1%</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs w-6 text-slate-500">1★</span>
+          <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-rose-400" style="width:1%"></div></div>
+          <span class="text-xs w-10 text-right text-slate-500">1%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews grid -->
+  <div class="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4" id="reviewsGrid">
+    <!-- Will be rendered by JS -->
+  </div>
+</section>
+
+<!-- ============= FEATURES STRIP ============= -->
+<section class="max-w-6xl mx-auto px-5 py-8">
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="p-4 rounded-2xl bg-white border border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">⚡</div>
+      <div class="mt-3 text-sm font-black">맞춤 과제</div>
+      <div class="text-xs text-slate-500 mt-1">스파크쌤이 매일 출제</div>
+    </div>
+    <div class="p-4 rounded-2xl bg-white border border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center text-lg">🔥</div>
+      <div class="mt-3 text-sm font-black">연속 학습</div>
+      <div class="text-xs text-slate-500 mt-1">습관이 곧 합격</div>
+    </div>
+    <div class="p-4 rounded-2xl bg-white border border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg">🎧</div>
+      <div class="mt-3 text-sm font-black">오디오북</div>
+      <div class="text-xs text-slate-500 mt-1">출퇴근길에도 학습</div>
+    </div>
+    <div class="p-4 rounded-2xl bg-white border border-slate-100">
+      <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg">👥</div>
+      <div class="mt-3 text-sm font-black">친구 랭킹</div>
+      <div class="text-xs text-slate-500 mt-1">함께 달리면 즐거워요</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= FOOTER ============= -->
+<footer class="border-t border-slate-200 mt-12">
+  <div class="max-w-6xl mx-auto px-5 py-8 text-center">
+    <div class="flex items-center justify-center gap-3 mb-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="font-black text-sm">스파크쌤 합격 학습</div>
+    </div>
+    <div class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+      본 페이지는 <span class="font-bold text-slate-700">가상 학습 앱 시뮬레이션</span>입니다.<br>
+      실재하는 앱·상표·다운로드 수치가 아니며, 디자인 콘셉트 예시 목적으로만 제작되었습니다.
+    </div>
+    <div class="mt-4 text-[11px] text-slate-400">© 2026 전기기능사 학습 서비스 — 콘셉트 미리보기</div>
+  </div>
+</footer>
+
+<!-- ============= MODAL ============= -->
+<div id="phoneModal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-4" role="dialog" aria-modal="true" aria-label="화면 확대 미리보기">
+  <button id="modalClose" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white text-xl flex items-center justify-center transition" aria-label="닫기">✕</button>
+  <div id="modalContent" class="modal-phone phone-frame" style="cursor: default;">
+    <div class="phone-notch"></div>
+    <span class="phone-side-btn mute"></span>
+    <span class="phone-side-btn vol-up"></span>
+    <span class="phone-side-btn vol-dn"></span>
+    <span class="phone-side-btn power"></span>
+    <div class="phone-screen" id="modalScreen"></div>
+  </div>
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/70 text-xs">바깥을 클릭하거나 ESC 를 눌러 닫기</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---- Escape helper ----
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  // ---- Download counter (auto-increment) ----
+  let total = 128403;
+  const dlCounter = document.getElementById('dlCounter');
+  const totalDl = document.getElementById('totalDl');
+  const liveDl = document.getElementById('liveDl');
+
+  function fmt(n){ return n.toLocaleString('ko-KR'); }
+
+  setInterval(() => {
+    const inc = Math.floor(Math.random() * 4) + 1;
+    total += inc;
+    if (dlCounter) dlCounter.textContent = fmt(total);
+    if (totalDl) totalDl.textContent = fmt(total);
+    if (liveDl) liveDl.textContent = String(15 + Math.floor(Math.random() * 25));
+  }, 2200);
+
+  // ---- Reviews data ----
+  const reviews = [
+    { name: '민수형', avatar: '민', color: 'from-emerald-400 to-emerald-600', rating: 5, date: '5월 12일', tag: '실용성', text: '지하철에서 5분씩 풀어도 진척률이 쑥쑥 올라가요. 옴의 법칙 카드가 진짜 잘 만들어졌습니다. 스파크쌤 캐릭터도 귀여워서 부담 없이 켜게 돼요.' },
+    { name: '지윤', avatar: '지', color: 'from-orange-400 to-orange-600', rating: 5, date: '5월 10일', tag: '동기부여', text: '연속 학습 12일째인데 끊을 수가 없네요. 친구 랭킹 덕분에 매일 한 번이라도 켜게 됩니다. 합격까지 같이 갑시다!' },
+    { name: '도현', avatar: '도', color: 'from-sky-400 to-sky-600', rating: 4, date: '5월 8일', tag: '오디오북', text: '출퇴근 시간에 오디오북 챕터 듣는 게 너무 좋아요. 다만 일부 챕터는 호흡이 조금 빨라서 1.0배속이 빠르게 느껴질 때가 있어요.' },
+    { name: '서영', avatar: '서', color: 'from-rose-400 to-rose-600', rating: 5, date: '5월 6일', tag: '플립카드', text: '40대 늦깎이 도전인데 이 앱 덕분에 두렵지가 않아요. 플립카드 난이도 평가가 다음 학습에 반영되는 게 똑똑합니다.' },
+    { name: '재훈', avatar: '재', color: 'from-amber-400 to-amber-600', rating: 5, date: '5월 4일', tag: '퀴즈 UX', text: '5지선다 퀴즈 타이머 디자인이 깔끔합니다. 시간 압박이 너무 세지 않아서 초심자에게도 좋아요. 점수 누적 보는 재미가 쏠쏠.' },
+    { name: '하나', avatar: '하', color: 'from-violet-400 to-violet-600', rating: 4, date: '5월 2일', tag: '뱃지', text: '뱃지 시스템이 의외로 강력한 동기부여가 됩니다. "기초 마스터" 받으려고 야밤에 카드 돌렸어요 ㅋㅋ 다음 뱃지가 뭔지 궁금합니다.' },
+  ];
+
+  function renderReviews(){
+    const grid = document.getElementById('reviewsGrid');
+    if (!grid) return;
+    grid.innerHTML = reviews.slice(0, 6).map(r => {
+      const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+      return `
+        <div class="rounded-2xl bg-white border border-slate-100 p-5 shadow-sm hover:shadow-md transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br ${escapeHTML(r.color)} flex items-center justify-center text-white text-sm font-black">${escapeHTML(r.avatar)}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-black truncate">${escapeHTML(r.name)}</div>
+              <div class="text-[11px] text-slate-500">${escapeHTML(r.date)} · <span class="text-emerald-600 font-bold">${escapeHTML(r.tag)}</span></div>
+            </div>
+          </div>
+          <div class="mt-2 text-orange-400 text-sm">${stars}</div>
+          <div class="mt-2 text-xs text-slate-700 leading-relaxed">${escapeHTML(r.text)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+  renderReviews();
+
+  // ---- Star rating toggle ----
+  const ratingLabels = ['', '1점 · 별로예요', '2점 · 아쉬워요', '3점 · 보통이에요', '4점 · 좋아요', '5점 · 매우 만족'];
+  document.querySelectorAll('#ratingStars .star').forEach(star => {
+    star.addEventListener('click', () => {
+      const r = parseInt(star.getAttribute('data-rating'), 10);
+      document.querySelectorAll('#ratingStars .star').forEach(s => {
+        const v = parseInt(s.getAttribute('data-rating'), 10);
+        if (v <= r) { s.classList.add('active'); s.classList.remove('inactive'); }
+        else { s.classList.remove('active'); s.classList.add('inactive'); }
+      });
+      const label = document.getElementById('ratingLabel');
+      if (label) label.textContent = ratingLabels[r] || '';
+    });
+  });
+
+  // ---- Carousel dots + auto-highlight ----
+  const phones = document.querySelectorAll('#phonesGrid .phone-frame');
+  const dotsContainer = document.getElementById('carouselDots');
+  let currentIdx = 0;
+
+  if (dotsContainer && phones.length) {
+    phones.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', `화면 ${i + 1}로 이동`);
+      dot.addEventListener('click', () => setActive(i, true));
+      dotsContainer.appendChild(dot);
+    });
+  }
+
+  function setActive(idx, scroll){
+    currentIdx = idx;
+    document.querySelectorAll('#carouselDots .carousel-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === idx);
+    });
+    phones.forEach((p, i) => {
+      if (i === idx) {
+        p.style.transform = 'translateY(-12px) scale(1.04)';
+        p.style.boxShadow = '0 40px 80px -20px rgba(16, 185, 129, 0.35), 0 24px 48px -18px rgba(249, 115, 22, 0.2)';
+        if (scroll) p.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      } else {
+        p.style.transform = '';
+        p.style.boxShadow = '';
+      }
+    });
+  }
+
+  let carouselTimer = setInterval(() => {
+    if (phones.length === 0) return;
+    setActive((currentIdx + 1) % phones.length, false);
+  }, 5000);
+
+  // ---- Modal: click phone to enlarge ----
+  const modal = document.getElementById('phoneModal');
+  const modalScreen = document.getElementById('modalScreen');
+  const modalClose = document.getElementById('modalClose');
+
+  function openModalForPhone(phoneEl){
+    if (!phoneEl || !modal || !modalScreen) return;
+    const screen = phoneEl.querySelector('.phone-screen');
+    if (!screen) return;
+    modalScreen.innerHTML = screen.innerHTML;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.phone-frame[data-screen]').forEach(p => {
+    p.addEventListener('click', () => openModalForPhone(p));
+    p.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openModalForPhone(p);
+      }
+    });
+  });
+
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  if (modal) modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ---- Fake QR pattern ----
+  const qr = document.getElementById('fakeQR');
+  if (qr) {
+    // Deterministic pseudo-random pattern (8x8)
+    const seed = [
+      1,1,1,1,1,0,0,1,
+      1,0,0,1,1,1,0,1,
+      1,0,1,0,0,1,1,0,
+      0,1,1,1,0,0,1,1,
+      1,1,0,0,1,1,0,1,
+      0,0,1,1,1,0,1,0,
+      1,1,0,1,0,1,1,1,
+      1,0,1,1,1,0,0,1,
+    ];
+    qr.innerHTML = seed.map(v => `<div class="rounded-sm ${v ? 'bg-slate-900' : 'bg-slate-100'}"></div>`).join('');
+  }
+
+  // ---- Badge click toast ----
+  document.querySelectorAll('[data-badge]').forEach(b => {
+    b.addEventListener('click', () => {
+      const name = b.getAttribute('data-badge') === 'moonstore' ? 'MoonStore' : 'CloudPlay';
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-2xl';
+      toast.textContent = `${name} 다운로드 시뮬레이션 — 실재하지 않는 가상 스토어입니다.`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2400);
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

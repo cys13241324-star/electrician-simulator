@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기기능사 합격방 — Discord 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root {
+    --bg-app: #36393f;          /* 메인 채팅 영역 */
+    --bg-channels: #2f3136;     /* 채널 사이드바 */
+    --bg-servers: #202225;      /* 좌측 서버 리스트 */
+    --bg-input: #40444b;        /* 입력창/임베드 */
+    --bg-hover: #32353b;
+    --bg-active: #393c43;
+    --bg-msg-hover: #32353b;
+    --bg-modifier-hover: rgba(79,84,92,0.16);
+    --bg-modifier-active: rgba(79,84,92,0.24);
+    --bg-mention: rgba(88,101,242,0.15);
+    --bg-mention-hover: rgba(88,101,242,0.10);
+    --text-normal: #dcddde;
+    --text-muted: #a3a6aa;
+    --text-link: #00aff4;
+    --text-positive: #3ba55d;
+    --text-warning: #faa61a;
+    --text-danger: #ed4245;
+    --interactive-normal: #b9bbbe;
+    --interactive-hover: #dcddde;
+    --interactive-active: #fff;
+    --header-primary: #fff;
+    --header-secondary: #b9bbbe;
+    --brand: #5865f2;
+    --brand-hover: #4752c4;
+    --green: #3ba55d;
+    --yellow: #faa61a;
+    --red: #ed4245;
+    --pink: #eb459e;
+    --divider: #42464d;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    font-family: 'Pretendard', 'Whitney', 'gg sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: #1a1b1e;
+    color: var(--text-normal);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ===== 전체 앱 컨테이너 ===== */
+  .discord-app {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+    background: var(--bg-app);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ===== 1) 좌측 서버 리스트 (72px) ===== */
+  .server-list {
+    width: 72px;
+    background: var(--bg-servers);
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .server-list::-webkit-scrollbar { width: 0; }
+  .server-pill {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+  .server-pill::before {
+    content: "";
+    position: absolute;
+    left: -16px;
+    top: 50%;
+    width: 4px;
+    height: 8px;
+    background: #fff;
+    border-radius: 0 4px 4px 0;
+    transform: translateY(-50%) scale(0);
+    transition: transform 0.2s cubic-bezier(0.4,0,0.2,1), height 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .server-pill:hover::before { transform: translateY(-50%) scale(1); height: 20px; }
+  .server-pill.active::before { transform: translateY(-50%) scale(1); height: 40px; }
+  .server-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+    background: var(--bg-app);
+    color: var(--text-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: border-radius 0.2s cubic-bezier(0.4,0,0.2,1), background 0.2s;
+    overflow: hidden;
+    position: relative;
+  }
+  .server-pill:hover .server-icon,
+  .server-pill.active .server-icon { border-radius: 16px; background: var(--brand); color: #fff; }
+  .server-icon.brand { background: var(--brand); color: #fff; }
+  .server-pill:hover .server-icon.brand { background: var(--brand-hover); }
+  .server-icon.has-grad-1 { background: linear-gradient(135deg, #fbbf24 0%, #ef4444 100%); color:#fff; }
+  .server-icon.has-grad-2 { background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%); color:#fff; }
+  .server-icon.has-grad-3 { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); color:#fff; }
+  .server-icon.has-grad-4 { background: linear-gradient(135deg, #f97316 0%, #facc15 100%); color:#fff; }
+  .server-icon.add { color: var(--green); background: var(--bg-app); font-size: 24px; }
+  .server-pill:hover .server-icon.add { background: var(--green); color: #fff; }
+  .server-divider {
+    width: 32px;
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    margin: 4px 0;
+  }
+  .badge-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: var(--red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 4px solid var(--bg-servers);
+    box-sizing: content-box;
+  }
+  .server-tooltip {
+    position: absolute;
+    left: 64px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #18191c;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 50;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .server-pill:hover .server-tooltip { opacity: 1; }
+
+  /* ===== 2) 채널 사이드바 (240px) ===== */
+  .channel-sidebar {
+    width: 240px;
+    background: var(--bg-channels);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    box-shadow: 1px 0 0 rgba(0,0,0,0.2);
+  }
+  .server-header {
+    height: 48px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0,0,0,0.25);
+    box-shadow: 0 1px 0 rgba(4,4,5,0.2), 0 1px 2px rgba(4,4,5,0.05);
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .server-header:hover { background: var(--bg-active); }
+  .server-header .name {
+    font-weight: 700;
+    color: var(--header-primary);
+    font-size: 15px;
+    letter-spacing: -0.01em;
+  }
+  .server-header .chev {
+    color: var(--interactive-normal);
+    font-size: 18px;
+  }
+  .channels-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0 80px 0;
+    scrollbar-width: thin;
+    scrollbar-color: #202225 transparent;
+  }
+  .channels-scroll::-webkit-scrollbar { width: 8px; }
+  .channels-scroll::-webkit-scrollbar-thumb { background: #202225; border-radius: 4px; }
+  .channel-category {
+    padding: 16px 8px 4px 18px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--interactive-normal);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .channel-category:hover { color: var(--interactive-hover); }
+  .channel-category .chev {
+    transition: transform 0.15s;
+    font-size: 10px;
+  }
+  .channel-list { padding: 0 8px; display: flex; flex-direction: column; gap: 2px; }
+  .channel-item {
+    height: 33px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--interactive-normal);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.1s, color 0.1s;
+    position: relative;
+  }
+  .channel-item:hover { background: var(--bg-modifier-hover); color: var(--interactive-hover); }
+  .channel-item.active { background: var(--bg-modifier-active); color: #fff; }
+  .channel-item.unread { color: #fff; }
+  .channel-item.unread::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 8px;
+    background: #fff;
+    border-radius: 0 4px 4px 0;
+  }
+  .channel-item .hash { color: var(--interactive-normal); font-weight: 400; }
+  .channel-item.active .hash { color: var(--interactive-hover); }
+  .channel-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .channel-item .mention-pill {
+    background: var(--red);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 0 6px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+  }
+  .channel-item .voice-users {
+    padding: 0 6px 6px 26px;
+    color: var(--interactive-normal);
+    font-size: 14px;
+  }
+  .voice-member {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .voice-member .av {
+    width: 20px; height: 20px; border-radius: 10px;
+    background: var(--brand); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+
+  /* ===== 본인 프로필 카드 (하단) ===== */
+  .me-card {
+    height: 52px;
+    background: #292b2f;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .me-av {
+    width: 32px; height: 32px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #5865f2 0%, #eb459e 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .me-av::after {
+    content: "";
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 12px;
+    height: 12px;
+    background: var(--green);
+    border-radius: 50%;
+    border: 3px solid #292b2f;
+    box-sizing: content-box;
+  }
+  .me-meta { flex: 1; min-width: 0; }
+  .me-name {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .me-status {
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .me-actions {
+    display: flex; gap: 2px;
+  }
+  .me-actions button {
+    width: 32px; height: 32px;
+    border-radius: 4px;
+    color: var(--interactive-normal);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .me-actions button:hover { background: var(--bg-modifier-hover); color: var(--interactive-hover); }
+
+  /* ===== 3) 메인 채팅 영역 ===== */
+  .main-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-app);
+  }
+  .channel-header {
+    height: 48px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.25);
+    box-shadow: 0 1px 0 rgba(4,4,5,0.2), 0 1px 2px rgba(4,4,5,0.05);
+    flex-shrink: 0;
+    background: var(--bg-app);
+  }
+  .channel-header .hash {
+    color: var(--interactive-normal);
+    font-size: 24px;
+    font-weight: 400;
+  }
+  .channel-header .name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .channel-header .topic-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--divider);
+    margin: 0 12px;
+  }
+  .channel-header .topic {
+    color: var(--text-muted);
+    font-size: 14px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .channel-header .header-icons {
+    display: flex; gap: 16px;
+    color: var(--interactive-normal);
+  }
+  .channel-header .header-icons span { cursor: pointer; }
+  .channel-header .header-icons span:hover { color: var(--interactive-hover); }
+  .header-search {
+    background: var(--bg-servers);
+    border-radius: 4px;
+    height: 24px;
+    padding: 0 8px;
+    width: 144px;
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .header-search:hover { width: 200px; transition: width 0.2s; }
+
+  /* ===== 메시지 리스트 ===== */
+  .msg-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 0 0 0;
+    scrollbar-width: thin;
+    scrollbar-color: #202225 transparent;
+  }
+  .msg-scroll::-webkit-scrollbar { width: 16px; }
+  .msg-scroll::-webkit-scrollbar-thumb {
+    background: #202225;
+    border-radius: 8px;
+    border: 4px solid var(--bg-app);
+  }
+  .msg-scroll::-webkit-scrollbar-track {
+    background: #2e3035;
+    border-radius: 8px;
+    border: 4px solid var(--bg-app);
+  }
+
+  /* 환영 (채널 시작) */
+  .welcome-banner {
+    padding: 16px;
+    margin-bottom: 8px;
+  }
+  .welcome-icon {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: var(--bg-input);
+    color: var(--interactive-normal);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .welcome-title {
+    color: #fff;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .welcome-desc {
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.4;
+    max-width: 400px;
+  }
+
+  /* 날짜 구분선 */
+  .day-divider {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 16px 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .day-divider .line {
+    flex: 1;
+    height: 1px;
+    background: var(--divider);
+  }
+  .day-divider .label {
+    padding: 2px 8px;
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    background: var(--bg-app);
+    position: relative;
+    top: 0;
+  }
+
+  /* 새 메시지 구분선 */
+  .new-divider {
+    display: flex;
+    align-items: center;
+    margin: 8px 16px;
+    color: var(--red);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .new-divider .line {
+    flex: 1; height: 1px; background: var(--red);
+  }
+  .new-divider .badge {
+    background: var(--red);
+    color: #fff;
+    border-radius: 8px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* 메시지 */
+  .msg {
+    padding: 2px 48px 2px 72px;
+    position: relative;
+    min-height: 22px;
+    margin-top: 0;
+  }
+  .msg.with-av { padding-top: 8px; padding-bottom: 8px; }
+  .msg.grouped { padding-top: 1px; padding-bottom: 1px; }
+  .msg:hover { background: var(--bg-msg-hover); }
+  .msg.mention { background: var(--bg-mention); }
+  .msg.mention::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--brand);
+  }
+  .msg.mention:hover { background: var(--bg-mention-hover); }
+
+  .msg-av {
+    position: absolute;
+    left: 16px;
+    top: 4px;
+    width: 40px; height: 40px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .msg.grouped .msg-av { display: none; }
+  .msg.grouped .msg-timestamp-side {
+    position: absolute;
+    left: 16px;
+    top: 5px;
+    width: 56px;
+    text-align: right;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+  .msg.grouped:hover .msg-timestamp-side { opacity: 1; }
+
+  .msg-head {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+  .msg.grouped .msg-head { display: none; }
+  .msg-author {
+    color: #fff;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .msg-author:hover { text-decoration: underline; }
+  .msg-author.role-mod { color: #1abc9c; }
+  .msg-author.role-admin { color: var(--red); }
+  .msg-author.role-vip { color: #f1c40f; }
+  .msg-author.role-passed { color: #2ecc71; }
+  .msg-author.role-bot, .msg-author.role-system { color: #fff; }
+  .msg-bot-tag {
+    background: var(--brand);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 3px;
+    line-height: 14px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    position: relative;
+    top: -2px;
+  }
+  .msg-time {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-left: 2px;
+  }
+  .msg-body {
+    color: var(--text-normal);
+    font-size: 16px;
+    line-height: 1.375;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  .msg-body .mention {
+    background: rgba(88,101,242,0.3);
+    color: #c9cdfb;
+    padding: 0 2px;
+    border-radius: 3px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .msg-body .mention:hover { background: var(--brand); color: #fff; }
+  .msg-body .channel-link {
+    background: rgba(88,101,242,0.3);
+    color: #c9cdfb;
+    padding: 0 2px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .msg-body .emoji-inline {
+    width: 22px;
+    height: 22px;
+    vertical-align: bottom;
+    display: inline-block;
+    line-height: 22px;
+    font-size: 18px;
+  }
+  .msg-body .jumbo {
+    font-size: 32px;
+    line-height: 1;
+  }
+  .msg-body a {
+    color: var(--text-link);
+    text-decoration: none;
+  }
+  .msg-body a:hover { text-decoration: underline; }
+
+  /* 인라인 코드 / 코드블록 */
+  code.inline {
+    background: #2b2d31;
+    border: 1px solid #1e1f22;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+  }
+  pre.code-block {
+    background: #2b2d31;
+    border: 1px solid #1e1f22;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 6px 0 0 0;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #b9bbbe;
+    overflow-x: auto;
+    white-space: pre;
+    max-width: 720px;
+  }
+  pre.code-block .kw { color: #f47fff; }
+  pre.code-block .str { color: #e3bf7d; }
+  pre.code-block .num { color: #b5cea8; }
+  pre.code-block .cm { color: #7f848e; font-style: italic; }
+  pre.code-block .fn { color: #82aaff; }
+
+  /* 답장(reply) 인용 */
+  .msg-reply {
+    margin-left: 0;
+    margin-bottom: 4px;
+    padding-left: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    max-width: 100%;
+  }
+  .msg-reply::before {
+    content: "";
+    position: absolute;
+    left: -34px;
+    top: 50%;
+    width: 30px;
+    height: 12px;
+    border-left: 2px solid #4f545c;
+    border-top: 2px solid #4f545c;
+    border-top-left-radius: 6px;
+  }
+  .msg-reply .reply-av {
+    width: 16px; height: 16px;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .msg-reply .reply-author {
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .msg-reply .reply-author:hover { text-decoration: underline; }
+  .msg-reply .reply-text {
+    color: var(--interactive-normal);
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 560px;
+  }
+  .msg-reply .reply-text:hover { color: #fff; }
+
+  /* 임베드 (URL preview) */
+  .embed {
+    margin-top: 8px;
+    max-width: 520px;
+    background: #2b2d31;
+    border-left: 4px solid var(--brand);
+    border-radius: 4px;
+    padding: 12px 16px 14px 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .embed.has-thumb { grid-template-columns: 1fr 80px; align-items: start; }
+  .embed-prov {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .embed-title {
+    color: var(--text-link);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+  .embed-title:hover { text-decoration: underline; }
+  .embed-desc {
+    color: var(--text-normal);
+    font-size: 14px;
+    line-height: 1.4;
+    margin-top: 4px;
+  }
+  .embed-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin-top: 8px;
+  }
+  .embed-field-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .embed-field-value {
+    color: var(--text-normal);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .embed-thumb {
+    width: 80px; height: 80px;
+    border-radius: 4px;
+    grid-column: 2;
+    grid-row: 1 / span 4;
+  }
+  .embed-image {
+    width: 100%;
+    height: 240px;
+    border-radius: 4px;
+    margin-top: 12px;
+  }
+  .embed-footer {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 8px;
+  }
+
+  /* 첨부 이미지 (단독) */
+  .attachment-img {
+    margin-top: 8px;
+    max-width: 400px;
+    height: 240px;
+    border-radius: 4px;
+    cursor: zoom-in;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+    color: rgba(255,255,255,0.85);
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .attachment-file {
+    margin-top: 8px;
+    max-width: 432px;
+    background: #2b2d31;
+    border: 1px solid #1e1f22;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .attachment-file .icon {
+    width: 32px; height: 42px;
+    background: var(--brand);
+    border-radius: 4px;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .attachment-file .meta { flex: 1; min-width: 0; }
+  .attachment-file .name {
+    color: var(--text-link);
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer;
+  }
+  .attachment-file .size {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .attachment-file .dl {
+    color: var(--interactive-normal);
+    cursor: pointer;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .attachment-file .dl:hover { color: var(--interactive-hover); }
+
+  /* 반응(이모지) */
+  .reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .reaction {
+    background: var(--bg-input);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 2px 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+    user-select: none;
+  }
+  .reaction:hover {
+    background: #3f444c;
+    border-color: var(--interactive-normal);
+  }
+  .reaction.me {
+    background: rgba(88,101,242,0.15);
+    border-color: var(--brand);
+    color: #c9cdfb;
+  }
+  .reaction.me:hover {
+    background: rgba(88,101,242,0.30);
+  }
+  .reaction .em { font-size: 15px; line-height: 1; }
+  .reaction .cnt { font-weight: 600; font-size: 13px; }
+  .reaction.add-btn {
+    background: var(--bg-input);
+    padding: 2px 6px;
+    color: var(--interactive-normal);
+    opacity: 0;
+    transition: opacity 0.1s, background 0.1s;
+  }
+  .msg:hover .reaction.add-btn { opacity: 1; }
+
+  /* 메시지 액션 호버 */
+  .msg-actions {
+    position: absolute;
+    right: 16px;
+    top: -16px;
+    background: var(--bg-channels);
+    border: 1px solid #1e1f22;
+    border-radius: 4px;
+    padding: 2px;
+    display: none;
+    gap: 0;
+    z-index: 5;
+    box-shadow: 0 1px 0 rgba(4,4,5,0.05), 0 2px 4px rgba(4,4,5,0.15);
+  }
+  .msg:hover .msg-actions { display: flex; }
+  .msg-actions button {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: transparent;
+    color: var(--interactive-normal);
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .msg-actions button:hover {
+    background: var(--bg-modifier-hover);
+    color: var(--interactive-hover);
+  }
+
+  /* 봇 환영 임베드 (콤팩트) */
+  .system-msg {
+    padding: 4px 48px 4px 72px;
+    position: relative;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.375;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .system-msg .icon {
+    position: absolute;
+    left: 36px;
+    top: 6px;
+    width: 16px;
+    height: 16px;
+    color: var(--text-positive);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .system-msg .author {
+    color: #fff;
+    font-weight: 500;
+  }
+  .system-msg .time {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
+  /* ===== 입력창 ===== */
+  .composer-wrap {
+    padding: 0 16px 24px 16px;
+    flex-shrink: 0;
+  }
+  .composer {
+    background: var(--bg-input);
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    padding: 0 0 0 16px;
+    min-height: 44px;
+  }
+  .composer-plus {
+    color: var(--interactive-normal);
+    width: 24px;
+    height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .composer-plus:hover { color: var(--interactive-hover); }
+  .composer-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: var(--text-normal);
+    font-size: 15px;
+    padding: 11px 0;
+    font-family: inherit;
+    min-height: 22px;
+    max-height: 200px;
+    resize: none;
+    line-height: 1.375;
+  }
+  .composer-input::placeholder { color: var(--text-muted); }
+  .composer-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 16px 6px 4px;
+  }
+  .composer-tools button {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 0;
+    color: var(--interactive-normal);
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .composer-tools button:hover { color: var(--interactive-hover); }
+  .typing {
+    height: 24px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    color: var(--text-normal);
+    font-size: 13px;
+  }
+  .typing strong { color: #fff; font-weight: 600; }
+  .typing .dots {
+    display: inline-flex;
+    gap: 2px;
+    margin-right: 6px;
+  }
+  .typing .dots span {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--interactive-normal);
+    animation: bounce 1.2s infinite;
+  }
+  .typing .dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing .dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-3px); opacity: 1; }
+  }
+
+  /* 우측 멤버 리스트 (선택) — 작은 화면에서 숨김 */
+  .member-list {
+    width: 240px;
+    background: var(--bg-channels);
+    flex-shrink: 0;
+    padding: 16px 0;
+    overflow-y: auto;
+  }
+  .member-list::-webkit-scrollbar { width: 8px; }
+  .member-list::-webkit-scrollbar-thumb { background: #202225; border-radius: 4px; }
+  .member-group-title {
+    color: var(--interactive-normal);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 16px 16px 4px 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .member {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1px 8px;
+    margin: 0 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    height: 42px;
+  }
+  .member:hover { background: var(--bg-modifier-hover); }
+  .member-av {
+    width: 32px; height: 32px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .member-av .pres {
+    position: absolute;
+    right: -2px; bottom: -2px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 3px solid var(--bg-channels);
+    box-sizing: content-box;
+  }
+  .member-av .pres.online { background: var(--green); }
+  .member-av .pres.idle { background: var(--yellow); }
+  .member-av .pres.dnd { background: var(--red); }
+  .member-av .pres.offline { background: #747f8d; }
+  .member-name {
+    color: var(--interactive-normal);
+    font-size: 16px;
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .member-name.role-mod { color: #1abc9c; }
+  .member-name.role-admin { color: var(--red); }
+  .member-name.role-vip { color: #f1c40f; }
+  .member-name.role-passed { color: #2ecc71; }
+  .member-tag {
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+  }
+  .member.offline { opacity: 0.4; }
+
+  /* ===== 반응형: 멤버리스트 < 1280 숨김 ===== */
+  @media (max-width: 1280px) {
+    .member-list { display: none; }
+  }
+  /* < 920: 채널 사이드바 숨김 */
+  @media (max-width: 920px) {
+    .server-list { width: 56px; }
+    .channel-sidebar { width: 200px; }
+  }
+  @media (max-width: 720px) {
+    .server-list { display: none; }
+    .channel-sidebar { width: 180px; }
+    .msg { padding-left: 60px; padding-right: 12px; }
+    .msg-av { left: 8px; }
+    .channel-header .topic, .channel-header .topic-divider { display: none; }
+    .header-search { display: none; }
+  }
+
+  /* Aria-current 시각용 */
+  .focus-ring:focus { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  /* 부드러운 등장 */
+  .msg.entering {
+    animation: fadeInUp 0.25s ease-out;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 작은 픽토그램 (text-only icon) */
+  .ico { font-style: normal; display: inline-block; }
+</style>
+</head>
+<body>
+  <div class="discord-app" role="application" aria-label="Discord 소식지">
+
+    <!-- ====== 1) 좌측 서버 리스트 ====== -->
+    <nav class="server-list" aria-label="서버 리스트">
+      <div class="server-pill" data-server="dm" tabindex="0">
+        <div class="server-icon brand">DM</div>
+        <span class="badge-dot">3</span>
+        <span class="server-tooltip">다이렉트 메시지</span>
+      </div>
+      <div class="server-divider"></div>
+      <div class="server-pill active" data-server="elec" tabindex="0">
+        <div class="server-icon brand">전기</div>
+        <span class="server-tooltip">전기기능사 합격방</span>
+      </div>
+      <div class="server-pill" data-server="craft" tabindex="0">
+        <div class="server-icon has-grad-1">자격</div>
+        <span class="badge-dot">12</span>
+        <span class="server-tooltip">자격증 공방</span>
+      </div>
+      <div class="server-pill" data-server="cbt" tabindex="0">
+        <div class="server-icon has-grad-2">CBT</div>
+        <span class="server-tooltip">CBT 모의시험 라운지</span>
+      </div>
+      <div class="server-pill" data-server="grad" tabindex="0">
+        <div class="server-icon has-grad-3">합격</div>
+        <span class="badge-dot">!</span>
+        <span class="server-tooltip">합격생 라운지</span>
+      </div>
+      <div class="server-pill" data-server="elec2" tabindex="0">
+        <div class="server-icon has-grad-4">2종</div>
+        <span class="server-tooltip">전기산업기사 준비방</span>
+      </div>
+      <div class="server-divider"></div>
+      <div class="server-pill" data-server="add" tabindex="0">
+        <div class="server-icon add">+</div>
+        <span class="server-tooltip">서버 추가하기</span>
+      </div>
+      <div class="server-pill" data-server="explore" tabindex="0">
+        <div class="server-icon add" style="color:var(--green);font-size:20px;">🧭</div>
+        <span class="server-tooltip">서버 탐색</span>
+      </div>
+    </nav>
+
+    <!-- ====== 2) 채널 사이드바 ====== -->
+    <aside class="channel-sidebar" aria-label="채널 목록">
+      <div class="server-header" tabindex="0">
+        <span class="name">전기기능사 합격방</span>
+        <span class="chev">⌄</span>
+      </div>
+      <div class="channels-scroll">
+
+        <div class="channel-category"><span class="chev">▾</span><span>정보</span></div>
+        <div class="channel-list">
+          <div class="channel-item" data-channel="welcome">
+            <span class="hash">#</span><span class="name">환영-인사</span>
+          </div>
+          <div class="channel-item unread" data-channel="notice">
+            <span class="hash">📢</span><span class="name">공지사항</span>
+            <span class="mention-pill">2</span>
+          </div>
+          <div class="channel-item" data-channel="rules">
+            <span class="hash">📋</span><span class="name">규칙</span>
+          </div>
+          <div class="channel-item" data-channel="roadmap">
+            <span class="hash">🗺️</span><span class="name">학습-로드맵</span>
+          </div>
+        </div>
+
+        <div class="channel-category"><span class="chev">▾</span><span>학습</span></div>
+        <div class="channel-list">
+          <div class="channel-item active" data-channel="general">
+            <span class="hash">#</span><span class="name">일반</span>
+          </div>
+          <div class="channel-item unread" data-channel="qna">
+            <span class="hash">#</span><span class="name">질문방</span>
+            <span class="mention-pill">14</span>
+          </div>
+          <div class="channel-item" data-channel="past-exam">
+            <span class="hash">#</span><span class="name">기출문제</span>
+          </div>
+          <div class="channel-item" data-channel="simulator">
+            <span class="hash">#</span><span class="name">시뮬레이터</span>
+          </div>
+          <div class="channel-item" data-channel="circuits">
+            <span class="hash">#</span><span class="name">회로해석</span>
+          </div>
+        </div>
+
+        <div class="channel-category"><span class="chev">▾</span><span>커뮤니티</span></div>
+        <div class="channel-list">
+          <div class="channel-item" data-channel="pass-story">
+            <span class="hash">#</span><span class="name">합격후기</span>
+          </div>
+          <div class="channel-item" data-channel="chat">
+            <span class="hash">#</span><span class="name">잡담</span>
+          </div>
+          <div class="channel-item" data-channel="recruit">
+            <span class="hash">#</span><span class="name">구인-구직</span>
+          </div>
+        </div>
+
+        <div class="channel-category"><span class="chev">▾</span><span>음성</span></div>
+        <div class="channel-list">
+          <div class="channel-item" data-channel="study-1">
+            <span class="hash" style="font-size:14px;">🔊</span><span class="name">스터디룸 1</span>
+          </div>
+          <div class="voice-users">
+            <div class="voice-member"><span class="av" style="background:#1abc9c;">박</span><span>박현우</span></div>
+            <div class="voice-member"><span class="av" style="background:#e67e22;">김</span><span>김민지</span></div>
+            <div class="voice-member"><span class="av" style="background:#9b59b6;">최</span><span>최성호</span></div>
+          </div>
+          <div class="channel-item" data-channel="study-2">
+            <span class="hash" style="font-size:14px;">🔊</span><span class="name">스터디룸 2</span>
+          </div>
+          <div class="channel-item" data-channel="afk">
+            <span class="hash" style="font-size:14px;">💤</span><span class="name">AFK</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 본인 프로필 카드 -->
+      <div class="me-card" role="region" aria-label="내 프로필">
+        <div class="me-av" aria-label="아바타">나</div>
+        <div class="me-meta">
+          <div class="me-name">전기수험생 #2026</div>
+          <div class="me-status">시뮬레이터 학습 중</div>
+        </div>
+        <div class="me-actions" aria-label="빠른 액션">
+          <button title="마이크" aria-label="마이크">🎙</button>
+          <button title="헤드셋" aria-label="헤드셋">🎧</button>
+          <button title="설정" aria-label="설정">⚙</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ====== 3) 메인 채팅 영역 ====== -->
+    <main class="main-pane" aria-label="채팅">
+
+      <!-- 채널 헤더 -->
+      <header class="channel-header">
+        <span class="hash">#</span>
+        <span class="name" id="channelName">일반</span>
+        <span class="topic-divider"></span>
+        <span class="topic" id="channelTopic">전기기능사 학습 일반 잡담 · 시험 D-23 · 매일 1문제 챌린지 진행 중</span>
+        <div class="header-icons">
+          <span title="스레드" aria-label="스레드">🧵</span>
+          <span title="고정 메시지" aria-label="고정 메시지">📌</span>
+          <span title="멤버 목록" aria-label="멤버 목록">👥</span>
+          <div class="header-search" title="검색">검색</div>
+          <span title="새 메시지함" aria-label="알림">🔔</span>
+          <span title="도움말" aria-label="도움말">❔</span>
+        </div>
+      </header>
+
+      <!-- 메시지 스크롤 -->
+      <div class="msg-scroll" id="msgScroll">
+        <!-- 환영 배너 -->
+        <div class="welcome-banner">
+          <div class="welcome-icon">#</div>
+          <div class="welcome-title">#일반에 오신 것을 환영합니다!</div>
+          <div class="welcome-desc">전기기능사 합격을 향한 모든 잡담의 시작점입니다. 자유롭게 인사하고 학습 진행 상황을 공유하세요.</div>
+        </div>
+
+        <!-- 날짜 구분: 어제 -->
+        <div class="day-divider">
+          <div class="line"></div>
+          <div class="label">2026년 5월 14일</div>
+          <div class="line"></div>
+        </div>
+
+        <!-- 메시지 컨테이너 -->
+        <div id="messages"></div>
+
+        <!-- 입력 위로 약간의 여백 -->
+        <div style="height:24px;"></div>
+      </div>
+
+      <!-- 타이핑 인디케이터 -->
+      <div class="typing" id="typing" aria-live="polite">
+        <span class="dots"><span></span><span></span><span></span></span>
+        <span><strong>박현우</strong>, <strong>김민지</strong> 님이 입력 중입니다…</span>
+      </div>
+
+      <!-- 입력창 -->
+      <div class="composer-wrap">
+        <div class="composer">
+          <div class="composer-plus" title="첨부 추가">＋</div>
+          <textarea class="composer-input" id="composerInput"
+            placeholder="#일반 채널에 메시지 보내기"
+            rows="1" aria-label="메시지 입력"></textarea>
+          <div class="composer-tools">
+            <button title="GIF" aria-label="GIF">🎞</button>
+            <button title="스티커" aria-label="스티커">🧷</button>
+            <button title="이모지" aria-label="이모지">😀</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ====== 4) 우측 멤버 리스트 ====== -->
+    <aside class="member-list" aria-label="멤버 리스트">
+
+      <div class="member-group-title">관리자 — 2</div>
+      <div class="member">
+        <div class="member-av" style="background:#e74c3c;">관</div>
+        <div class="member-name role-admin">관리자_상철</div>
+        <span class="member-tag" style="background:#e74c3c;">ADMIN</span>
+      </div>
+      <div class="member">
+        <div class="member-av" style="background:#1abc9c;">모<span class="pres online"></span></div>
+        <div class="member-name role-mod">모더_지윤</div>
+        <span class="member-tag" style="background:#1abc9c;">MOD</span>
+      </div>
+
+      <div class="member-group-title">합격생 VIP — 1</div>
+      <div class="member">
+        <div class="member-av" style="background:#f1c40f;color:#222;">정<span class="pres idle"></span></div>
+        <div class="member-name role-vip">정유나_2025합격</div>
+      </div>
+
+      <div class="member-group-title">온라인 — 6</div>
+      <div class="member">
+        <div class="member-av" style="background:#3498db;">박<span class="pres online"></span></div>
+        <div class="member-name">박현우</div>
+      </div>
+      <div class="member">
+        <div class="member-av" style="background:#e67e22;">김<span class="pres online"></span></div>
+        <div class="member-name">김민지</div>
+      </div>
+      <div class="member">
+        <div class="member-av" style="background:#9b59b6;">최<span class="pres dnd"></span></div>
+        <div class="member-name">최성호</div>
+      </div>
+      <div class="member">
+        <div class="member-av" style="background:#2ecc71;">윤<span class="pres online"></span></div>
+        <div class="member-name role-passed">윤서아_합격</div>
+      </div>
+      <div class="member">
+        <div class="member-av" style="background:#34495e;">강<span class="pres idle"></span></div>
+        <div class="member-name">강도현</div>
+      </div>
+      <div class="member">
+        <div class="member-av" style="background:#5865f2;">봇<span class="pres online"></span></div>
+        <div class="member-name" style="color:#5865f2;">전기봇</div>
+        <span class="member-tag">BOT</span>
+      </div>
+
+      <div class="member-group-title">오프라인 — 3</div>
+      <div class="member offline">
+        <div class="member-av" style="background:#7f8c8d;">한<span class="pres offline"></span></div>
+        <div class="member-name">한지호</div>
+      </div>
+      <div class="member offline">
+        <div class="member-av" style="background:#7f8c8d;">송<span class="pres offline"></span></div>
+        <div class="member-name">송예린</div>
+      </div>
+      <div class="member offline">
+        <div class="member-av" style="background:#7f8c8d;">임<span class="pres offline"></span></div>
+        <div class="member-name">임재훈</div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  /* =====================================================
+     데이터 정의
+  ===================================================== */
+  const channels = {
+    welcome:    { name: "환영-인사", topic: "새 멤버를 환영합니다. 자기소개 한 줄 부탁드려요." },
+    notice:     { name: "공지사항", topic: "운영진 공지 전용. 멤버 발언 제한." },
+    rules:      { name: "규칙", topic: "서버 규칙은 반드시 읽고 입장해 주세요." },
+    roadmap:    { name: "학습-로드맵", topic: "12주 합격 로드맵 — 기본기 → 회로 → 기출 → 실기." },
+    general:    { name: "일반", topic: "전기기능사 학습 일반 잡담 · 시험 D-23 · 매일 1문제 챌린지 진행 중" },
+    qna:        { name: "질문방", topic: "막힌 문제 · 회로 · 공식 질문은 여기서. 답변 시 친절하게!" },
+    "past-exam":{ name: "기출문제", topic: "기출 풀이/오답노트 공유 채널." },
+    simulator:  { name: "시뮬레이터", topic: "직병렬 회로/전압분배기 시뮬레이션 토론." },
+    circuits:   { name: "회로해석", topic: "키르히호프, 테브난, 노턴, RLC 해석." },
+    "pass-story":{ name: "합격후기", topic: "합격수기는 자유롭게 — 후배들에게 큰 힘이 됩니다." },
+    chat:       { name: "잡담", topic: "공부 외 모든 잡담. 정치·종교·욕설 금지." },
+    recruit:    { name: "구인-구직", topic: "전기 관련 채용/구직 공유 (서버 검증 후 게시)." },
+  };
+
+  const personas = {
+    parkHW:    { name: "박현우",     color: "#3498db", role: "" },
+    kimMJ:     { name: "김민지",     color: "#e67e22", role: "" },
+    choiSH:    { name: "최성호",     color: "#9b59b6", role: "" },
+    yoonSA:    { name: "윤서아_합격",  color: "#2ecc71", role: "role-passed" },
+    kangDH:    { name: "강도현",     color: "#34495e", role: "" },
+    jiyoon:    { name: "모더_지윤",   color: "#1abc9c", role: "role-mod" },
+    jeongYN:   { name: "정유나_2025합격", color: "#f1c40f", role: "role-vip" },
+    sangchul:  { name: "관리자_상철",  color: "#e74c3c", role: "role-admin" },
+    welcomeBot:{ name: "Welcome Bot", color: "#5865f2", role: "role-bot", bot: true },
+    noticeBot: { name: "전기봇",      color: "#5865f2", role: "role-bot", bot: true },
+    me:        { name: "전기수험생 #2026", color: "#5865f2", role: "" },
+  };
+
+  // 채널별 시드 메시지
+  const messageData = {
+    general: [
+      { id: "m01", user: "welcomeBot", time: "오전 9:02", system: true, text: "<strong>윤서아_합격</strong>님이 서버에 참여했어요. 안녕하세요!" },
+      { id: "m02", user: "yoonSA", time: "오전 9:05",
+        text: "안녕하세요! 작년 2회차에 합격한 윤서아입니다. 후배님들 화이팅이에요 🔥" ,
+        reactions: [{em:"🎉",cnt:12,me:true},{em:"🙌",cnt:8},{em:"👏",cnt:5}]
+      },
+      { id: "m03", user: "parkHW", time: "오전 9:11",
+        text: "오 합격생 등장 ㄷㄷ <span class='mention'>@윤서아_합격</span> 혹시 마지막 2주 어떻게 공부하셨나요?",
+        replyTo: { user: "yoonSA", text: "안녕하세요! 작년 2회차에 합격한 윤서아입니다. 후배님들 화이팅이에요 🔥" }
+      },
+      { id: "m04", user: "yoonSA", time: "오전 9:14",
+        text: "저는 마지막 2주는 그냥 <strong>기출만</strong> 돌렸어요. CBT로 4회분 × 3번 회독했고, 모르는 건 <span class='channel-link'>#회로해석</span>에서 질문 폭격…ㅎㅎ"
+      },
+      { id: "m04b", user: "yoonSA", time: "오전 9:14", grouped: true,
+        text: "특히 단상 유도전동기 슬립 계산은 공식만 외워두면 1초컷이라 추천 🙏",
+        reactions: [{em:"📝",cnt:9,me:true},{em:"💯",cnt:6}]
+      },
+      { id: "m05", user: "kimMJ", time: "오전 10:23",
+        text: "어제 푼 문제 다시 봐도 헷갈리네요... 키르히호프 전류법칙(KCL) 문제인데 한 번만 봐주실 분?",
+        attachImg: { grad: "linear-gradient(135deg, #0ea5e9 0%, #6366f1 50%, #ec4899 100%)", label: "회로_KCL_문제.png · 412KB" }
+      },
+      { id: "m06", user: "choiSH", time: "오전 10:31",
+        replyTo: { user: "kimMJ", text: "어제 푼 문제 다시 봐도 헷갈리네요... 키르히호프 전류법칙(KCL) 문제인데 한 번만 봐주실 분?" },
+        text: "노드 B 기준으로 들어오는 전류 = 나가는 전류. 회로에서 I₁ + I₂ = I₃ 이렇게 풀어보세요.",
+        code: { lang: "수식", lines: [
+          { html: "<span class='cm'>// 노드 B 의 KCL</span>" },
+          { html: "I<span class='num'>1</span> + I<span class='num'>2</span> = I<span class='num'>3</span>" },
+          { html: "(<span class='num'>3</span>A) + (<span class='num'>2</span>A) = I<span class='num'>3</span>" },
+          { html: "I<span class='num'>3</span> = <span class='num'>5</span>A" }
+        ]},
+        reactions: [{em:"💡",cnt:7,me:false},{em:"🙏",cnt:4}]
+      },
+      { id: "m07", user: "kimMJ", time: "오전 10:33",
+        text: "아!!! 아 진짜 단순하네요 ㅋㅋㅋ <span class='mention'>@최성호</span> 감사합니다 🙇‍♀️",
+        reactions: [{em:"😂",cnt:3}]
+      },
+      { id: "DAY", type: "day", label: "오늘 — 2026년 5월 15일" },
+      { id: "m08", user: "noticeBot", time: "오전 7:00", system: true,
+        text: "<strong>매일 1문제 챌린지</strong> Day 18 — <span class='channel-link'>#기출문제</span> 에서 오늘의 문제를 확인하세요." },
+      { id: "m09", user: "sangchul", time: "오전 8:02",
+        mention: true,
+        text: "<span class='mention'>@everyone</span> 5월 시험 응시 예정인 분들께 안내드립니다 📣\n\n수험표 출력은 시험 전날까지 가능하며, 신분증/계산기 지참 필수입니다. 자세한 내용은 임베드 확인해주세요.",
+        embed: {
+          prov: "(가칭)자격검정포털",
+          title: "2026년 정기 기능사 5회 시행 안내",
+          desc: "필기시험은 5월 30일(토) 시행되며, 응시 지역별 시간이 상이합니다. 수험표 출력 및 시험 당일 지참물을 확인해 주세요.",
+          fields: [
+            { name: "시험일", val: "2026.05.30 (토)" },
+            { name: "수험표 출력", val: "~ 05.29 23:59" },
+            { name: "지참물", val: "신분증, 흑색 컴퓨터용 사인펜" },
+            { name: "계산기", val: "공학용(허용 모델만)" }
+          ],
+          footer: "(가칭)자격검정공단 · exam.example.kr"
+        },
+        reactions: [{em:"📌",cnt:23,me:true},{em:"🙏",cnt:14},{em:"💪",cnt:9}]
+      },
+      { id: "m10", user: "kangDH", time: "오전 9:41",
+        text: "헐 D-15네요... 저 아직 기출 1회차도 안 끝났는데 어떡하죠? 😭"
+      },
+      { id: "m10b", user: "kangDH", time: "오전 9:42", grouped: true,
+        text: "회사 다니면서 공부하시는 분들 하루 몇 시간 잡으세요?"
+      },
+      { id: "m11", user: "parkHW", time: "오전 9:48",
+        replyTo: { user: "kangDH", text: "회사 다니면서 공부하시는 분들 하루 몇 시간 잡으세요?" },
+        text: "저는 평일 출퇴근 지하철 왕복 1시간 + 잠들기 전 1시간 = 하루 2시간 잡고 있어요. 주말은 4~5시간.",
+        reactions: [{em:"👍",cnt:5}]
+      },
+      { id: "m12", user: "jiyoon", time: "오전 10:10",
+        text: "📚 학습 팁: <strong>오답노트</strong>를 무조건 만드세요. 같은 문제 또 틀립니다. 진짜로요.",
+        reactions: [{em:"💯",cnt:18,me:true},{em:"📓",cnt:7},{em:"🔥",cnt:4}]
+      },
+      { id: "m13", user: "jeongYN", time: "오전 10:22",
+        text: "저도 동의해요 ㅋㅋ 작년에 같은 문제 3번 틀리고 깨달았…\n그래서 만든 게 이거에요 👇",
+        code: { lang: "오답노트", lines: [
+          { html: "<span class='cm'># 2025-08-12 오답</span>" },
+          { html: "<span class='kw'>Q.</span> 단상 변압기 권수비 a = 20, 1차 전압 6600V → 2차 전압?" },
+          { html: "<span class='kw'>A.</span> V₂ = V₁ / a = <span class='num'>6600</span> / <span class='num'>20</span> = <span class='num'>330</span>V" },
+          { html: "<span class='cm'># 함정: 권수비 정의 = N₁/N₂ = V₁/V₂ (2차 → 1차 아님!)</span>" }
+        ]},
+        reactions: [{em:"📝",cnt:11},{em:"🙇",cnt:5,me:true}]
+      },
+      { id: "m14", user: "choiSH", time: "오전 10:35",
+        text: "혹시 시뮬레이터 사이트 추천해주실 분? 회로 직접 그려보고 싶은데..."
+      },
+      { id: "m15", user: "noticeBot", time: "오전 10:36", system: true,
+        text: "🤖 자동 답변: 우리 서버는 자체 시뮬레이터를 제공해요! 아래 링크에서 직접 만져보세요." },
+      { id: "m16", user: "jiyoon", time: "오전 10:37",
+        text: "👇 운영진이 직접 만든 거라 신뢰도 100%입니다.",
+        embed: {
+          prov: "전기기능사 합격방",
+          title: "전압분배기 시뮬레이터 — 실시간 회로 해석",
+          desc: "저항 값을 슬라이더로 바꿔보며 V_out 변화를 시각적으로 확인하세요. 옴의 법칙·KVL 자동 검산 기능 내장.",
+          fields: [
+            { name: "지원 회로", val: "직렬·병렬·혼합" },
+            { name: "측정", val: "V, I, R, P 실시간" }
+          ],
+          image: "linear-gradient(135deg, #1e3a8a 0%, #5865f2 50%, #a855f7 100%)",
+          footer: "전기봇 · 무료 · 회원가입 불필요"
+        },
+        reactions: [{em:"🔥",cnt:14,me:true},{em:"⚡",cnt:9},{em:"🙌",cnt:6}]
+      },
+      { id: "m17", user: "choiSH", time: "오전 10:40",
+        text: "오 대박 ㄷㄷ <span class='mention'>@모더_지윤</span> 감사합니다!! 바로 들어가 봅니다 ㅎㅎ"
+      },
+      { id: "m18", user: "kimMJ", time: "오전 10:51",
+        text: "여러분 저 방금 작년 1회차 모의고사 <strong>72점</strong> 받았어요 🎯",
+        reactions: [{em:"🎉",cnt:21,me:true},{em:"👏",cnt:15},{em:"🚀",cnt:8},{em:"💪",cnt:4}]
+      },
+      { id: "m18b", user: "kimMJ", time: "오전 10:52", grouped: true,
+        text: "처음 풀었을 때 38점이었던 거 생각하면... 진짜 이 서버 덕분이에요 ㅠㅠ"
+      },
+      { id: "m19", user: "yoonSA", time: "오전 10:55",
+        replyTo: { user: "kimMJ", text: "여러분 저 방금 작년 1회차 모의고사 72점 받았어요 🎯" },
+        text: "<span class='emoji-inline jumbo'>🎉</span><span class='emoji-inline jumbo'>🎉</span><span class='emoji-inline jumbo'>🎉</span>",
+        reactions: [{em:"🥳",cnt:7}]
+      },
+      { id: "m20", user: "parkHW", time: "오전 11:02",
+        text: "오늘 스터디룸 1에서 KCL/KVL 같이 풀어보실 분? 7시 시작합니다. <code class='inline'>!study join</code>",
+        attachFile: { name: "오늘의_스터디_안건.pdf", size: "184KB" },
+        reactions: [{em:"✋",cnt:6,me:true},{em:"🎙",cnt:3}]
+      }
+    ],
+    notice: [
+      { id: "n01", user: "sangchul", time: "오전 8:02", mention: true,
+        text: "<span class='mention'>@everyone</span> 서버 규칙이 5월 1일부로 개정되었습니다. <span class='channel-link'>#규칙</span> 채널에서 확인해 주세요." },
+      { id: "n02", user: "sangchul", time: "오전 10:14",
+        text: "이번 주 금요일 21시, <strong>합격생 정유나 님 라이브 Q&A</strong>가 진행됩니다. 스터디룸 1에서 만나요!" }
+    ],
+    qna: [
+      { id: "q01", user: "kangDH", time: "어제 오후 11:42",
+        text: "테브난 등가회로 구하는 순서가 항상 헷갈려요... 부하 떼고 → 개방전압 → 등가저항 순서 맞나요?",
+        reactions: [{em:"🤔",cnt:2}]
+      },
+      { id: "q02", user: "yoonSA", time: "오늘 오전 8:11",
+        text: "네 맞아요! 1) 부하 단자에서 회로 보고 2) 개방단자전압 V_th 3) 모든 독립전원 0으로 (전압원→단락, 전류원→개방) 후 R_th 4) V_th와 R_th 직렬로 연결 → 끝!" }
+    ],
+    "past-exam": [
+      { id: "p01", user: "noticeBot", time: "오전 7:00", system: true,
+        text: "🎯 <strong>오늘의 문제 (Day 18)</strong> — 단상 변압기에서 1차측 100V를 가했을 때 2차측 5V가 측정되었다. 권수비는?" },
+      { id: "p02", user: "parkHW", time: "오전 7:24", text: "정답: 20!" },
+      { id: "p03", user: "noticeBot", time: "오전 7:25", system: true, text: "✅ <strong>박현우</strong>님 정답입니다! 연속 정답 5일째 🔥" }
+    ]
+  };
+
+  /* =====================================================
+     렌더링
+  ===================================================== */
+  const $msgs = document.getElementById("messages");
+  const $channelName = document.getElementById("channelName");
+  const $channelTopic = document.getElementById("channelTopic");
+  const $composer = document.getElementById("composerInput");
+  let activeChannel = "general";
+  // 채널별 메시지 상태 (입력 추가 반영용)
+  const state = JSON.parse(JSON.stringify(messageData));
+
+  function avBg(user) {
+    return personas[user]?.color || "#5865f2";
+  }
+  function initial(name) {
+    if (!name) return "?";
+    return name.replace(/_.*$/, "").slice(0,1);
+  }
+
+  function renderReactions(rxs) {
+    if (!rxs || !rxs.length) return "";
+    const items = rxs.map(r =>
+      `<button class="reaction ${r.me?'me':''}" data-em="${r.em}" type="button">
+         <span class="em">${r.em}</span><span class="cnt">${r.cnt}</span>
+       </button>`
+    ).join("");
+    return `<div class="reactions">${items}
+      <button class="reaction add-btn" type="button" data-add="1" title="반응 추가">😊+</button>
+    </div>`;
+  }
+
+  function renderCodeBlock(code) {
+    if (!code) return "";
+    const lines = code.lines.map(l => `<div>${l.html}</div>`).join("");
+    return `<pre class="code-block" aria-label="${code.lang} 코드 블록">${lines}</pre>`;
+  }
+
+  function renderEmbed(e) {
+    if (!e) return "";
+    const fields = e.fields ? `
+      <div class="embed-fields">
+        ${e.fields.map(f => `
+          <div>
+            <div class="embed-field-name">${f.name}</div>
+            <div class="embed-field-value">${f.val}</div>
+          </div>
+        `).join("")}
+      </div>` : "";
+    const image = e.image ? `<div class="embed-image" style="background:${e.image};"></div>` : "";
+    const footer = e.footer ? `<div class="embed-footer">${e.footer}</div>` : "";
+    return `
+      <div class="embed">
+        ${e.prov ? `<div class="embed-prov">${e.prov}</div>` : ""}
+        <div class="embed-title">${e.title}</div>
+        ${e.desc ? `<div class="embed-desc">${e.desc}</div>` : ""}
+        ${fields}
+        ${image}
+        ${footer}
+      </div>`;
+  }
+
+  function renderAttachmentImg(img) {
+    if (!img) return "";
+    return `<div class="attachment-img" style="background:${img.grad};">${img.label}</div>`;
+  }
+  function renderAttachmentFile(f) {
+    if (!f) return "";
+    const ext = (f.name.split('.').pop() || "FILE").toUpperCase();
+    return `
+      <div class="attachment-file">
+        <div class="icon">${ext}</div>
+        <div class="meta">
+          <div class="name">${f.name}</div>
+          <div class="size">${f.size}</div>
+        </div>
+        <div class="dl" title="다운로드">⬇</div>
+      </div>`;
+  }
+
+  function renderReply(r) {
+    if (!r) return "";
+    const p = personas[r.user] || { name: r.user, color: "#5865f2" };
+    return `
+      <div class="msg-reply">
+        <div class="reply-av" style="background:${p.color};">${initial(p.name)}</div>
+        <span class="reply-author" style="color:${p.color};">${p.name}</span>
+        <span class="reply-text">${r.text.replace(/<[^>]+>/g, "")}</span>
+      </div>`;
+  }
+
+  function renderMessage(m, prev) {
+    // 시스템(봇 인사/공지) 메시지 — 간소화
+    if (m.type === "day") {
+      return `<div class="day-divider"><div class="line"></div><div class="label">${m.label}</div><div class="line"></div></div>`;
+    }
+    const p = personas[m.user] || { name: m.user, color: "#5865f2" };
+    const grouped = !!m.grouped;
+    const mentionCls = m.mention ? " mention" : "";
+
+    if (m.system && !m.replyTo && !m.embed && !m.code) {
+      // 콤팩트 시스템 라인 (Welcome Bot · 입장 · 정답 알림)
+      return `
+        <div class="system-msg" data-id="${m.id}">
+          <span class="icon">›</span>
+          ${m.text}
+          <span class="time">${m.time}</span>
+        </div>`;
+    }
+
+    const head = grouped ? `
+      <div class="msg-timestamp-side">${m.time}</div>
+    ` : `
+      <div class="msg-av" style="background:${p.color};" aria-label="${p.name} 아바타">${initial(p.name)}</div>
+      <div class="msg-head">
+        <span class="msg-author ${p.role||''}" style="${p.role?'':'color:'+p.color+';'}">${p.name}</span>
+        ${p.bot ? `<span class="msg-bot-tag">앱</span>` : ""}
+        <span class="msg-time">${m.time}</span>
+      </div>`;
+
+    return `
+      <div class="msg ${grouped?'grouped':'with-av'}${mentionCls}" data-id="${m.id}" data-user="${m.user}">
+        ${head}
+        ${renderReply(m.replyTo)}
+        <div class="msg-body">${m.text || ""}</div>
+        ${renderCodeBlock(m.code)}
+        ${renderEmbed(m.embed)}
+        ${renderAttachmentImg(m.attachImg)}
+        ${renderAttachmentFile(m.attachFile)}
+        ${renderReactions(m.reactions)}
+        <div class="msg-actions" role="toolbar" aria-label="메시지 액션">
+          <button title="반응 추가" data-action="react">😊</button>
+          <button title="답장" data-action="reply">↩</button>
+          <button title="스레드 만들기" data-action="thread">🧵</button>
+          <button title="더보기" data-action="more">⋯</button>
+        </div>
+      </div>`;
+  }
+
+  function renderChannel(key) {
+    activeChannel = key;
+    const ch = channels[key] || channels.general;
+    $channelName.textContent = ch.name;
+    $channelTopic.textContent = ch.topic;
+    $composer.placeholder = `#${ch.name} 채널에 메시지 보내기`;
+
+    const data = state[key] || [];
+    $msgs.innerHTML = data.map((m, i) => renderMessage(m, data[i-1])).join("");
+
+    // 스크롤을 가장 아래로
+    const scroll = document.getElementById("msgScroll");
+    requestAnimationFrame(() => { scroll.scrollTop = scroll.scrollHeight; });
+  }
+
+  /* =====================================================
+     이벤트
+  ===================================================== */
+  // 채널 클릭
+  document.querySelectorAll(".channel-item[data-channel]").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll(".channel-item.active").forEach(a => a.classList.remove("active"));
+      el.classList.add("active");
+      el.classList.remove("unread");
+      const pill = el.querySelector(".mention-pill");
+      if (pill) pill.remove();
+      const key = el.getAttribute("data-channel");
+      renderChannel(key);
+    });
+  });
+
+  // 서버 클릭
+  document.querySelectorAll(".server-pill").forEach(el => {
+    el.addEventListener("click", () => {
+      document.querySelectorAll(".server-pill.active").forEach(a => a.classList.remove("active"));
+      el.classList.add("active");
+    });
+  });
+
+  // 이모지 반응 클릭 (위임)
+  $msgs.addEventListener("click", (e) => {
+    const rxBtn = e.target.closest(".reaction");
+    if (rxBtn) {
+      if (rxBtn.dataset.add === "1") {
+        // 임시: 랜덤 이모지 하나 추가
+        const pool = ["⚡","🔋","💡","📐","🧠","🎯","🤝"];
+        const em = pool[Math.floor(Math.random()*pool.length)];
+        const parent = rxBtn.parentElement;
+        const existing = parent.querySelector(`.reaction[data-em="${em}"]`);
+        if (existing) {
+          const c = existing.querySelector(".cnt");
+          c.textContent = (parseInt(c.textContent,10)||0) + 1;
+          existing.classList.add("me");
+        } else {
+          const html = `<button class="reaction me" data-em="${em}" type="button">
+            <span class="em">${em}</span><span class="cnt">1</span></button>`;
+          rxBtn.insertAdjacentHTML("beforebegin", html);
+        }
+        return;
+      }
+      const cntEl = rxBtn.querySelector(".cnt");
+      let n = parseInt(cntEl.textContent, 10) || 0;
+      if (rxBtn.classList.contains("me")) {
+        n--; rxBtn.classList.remove("me");
+        if (n <= 0) { rxBtn.remove(); return; }
+      } else {
+        n++; rxBtn.classList.add("me");
+      }
+      cntEl.textContent = n;
+      return;
+    }
+
+    // 메시지 액션 버튼 (반응/답장/스레드/더보기)
+    const actBtn = e.target.closest(".msg-actions button");
+    if (actBtn) {
+      const action = actBtn.dataset.action;
+      const msg = actBtn.closest(".msg");
+      if (action === "react") {
+        // 빠른 반응 토글
+        const rxs = msg.querySelector(".reactions");
+        if (rxs) {
+          const addBtn = rxs.querySelector(".add-btn");
+          if (addBtn) addBtn.click();
+        } else {
+          const body = msg.querySelector(".msg-body");
+          body.insertAdjacentHTML("afterend",
+            `<div class="reactions"><button class="reaction me" data-em="👍" type="button"><span class="em">👍</span><span class="cnt">1</span></button>
+             <button class="reaction add-btn" type="button" data-add="1">😊+</button></div>`);
+        }
+      } else if (action === "reply") {
+        const author = msg.querySelector(".msg-author")?.textContent
+                    || personas[msg.dataset.user]?.name || "";
+        $composer.focus();
+        $composer.placeholder = `${author}에게 답장 작성 중…`;
+        $composer.dataset.replyTo = msg.dataset.user || "";
+      }
+      return;
+    }
+  });
+
+  // 메시지 입력
+  $composer.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const v = $composer.value.trim();
+      if (!v) return;
+      const now = new Date();
+      const h = now.getHours(), mm = now.getMinutes().toString().padStart(2,"0");
+      const ampm = h < 12 ? "오전" : "오후";
+      const h12 = ((h+11)%12)+1;
+      const m = {
+        id: "u"+Date.now(),
+        user: "me",
+        time: `${ampm} ${h12}:${mm}`,
+        text: escapeHtml(v).replace(/\n/g,"<br>")
+      };
+      if ($composer.dataset.replyTo) {
+        const targetUser = $composer.dataset.replyTo;
+        // 최신 해당 사용자의 메시지를 찾아 인용
+        const list = state[activeChannel] || [];
+        for (let i = list.length-1; i >= 0; i--) {
+          if (list[i].user === targetUser) {
+            m.replyTo = { user: targetUser, text: list[i].text };
+            break;
+          }
+        }
+        delete $composer.dataset.replyTo;
+      }
+      state[activeChannel] = (state[activeChannel]||[]).concat(m);
+      renderChannel(activeChannel);
+      // 입력한 메시지 강조
+      const last = $msgs.lastElementChild;
+      if (last) last.classList.add("entering");
+      $composer.value = "";
+      $composer.style.height = "auto";
+      $composer.placeholder = `#${channels[activeChannel].name} 채널에 메시지 보내기`;
+    }
+  });
+  // textarea 자동 높이
+  $composer.addEventListener("input", () => {
+    $composer.style.height = "auto";
+    $composer.style.height = Math.min($composer.scrollHeight, 200) + "px";
+  });
+
+  // Escape HTML
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+
+  // 타이핑 인디케이터 페이드 인/아웃 (GSAP)
+  if (window.gsap) {
+    gsap.fromTo(".server-list .server-pill",
+      { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.05, ease: "power2.out" });
+    gsap.from(".channel-list .channel-item",
+      { opacity: 0, y: 4, duration: 0.25, stagger: 0.02, ease: "power1.out", delay: 0.1 });
+
+    // 타이핑 인디케이터 주기적 표시
+    const $typing = document.getElementById("typing");
+    function toggleTyping() {
+      const visible = Math.random() > 0.4;
+      gsap.to($typing, { opacity: visible ? 1 : 0, duration: 0.3 });
+      setTimeout(toggleTyping, 4000 + Math.random()*3000);
+    }
+    gsap.set($typing, { opacity: 1 });
+    setTimeout(toggleTyping, 5000);
+  }
+
+  // 초기 렌더
+  renderChannel("general");
+</script>
+</body>
+</html>

@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스마트 미터 (AMI) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 211, 238, 0.10), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(168, 139, 250, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.45), rgba(168,139,250,0.45), rgba(74,222,128,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(34, 211, 238, 0.35),
+        0 0 40px rgba(168, 139, 250, 0.12);
+}
+canvas#meterCanvas {
+    display: block;
+    width: 100%;
+    height: 520px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#tariffCanvas {
+    display: block;
+    width: 100%;
+    height: 230px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,211,238,0.4), rgba(168,139,250,0.4), rgba(74,222,128,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #86efac);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-load { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-hour { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-speed { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-base { background: linear-gradient(135deg, rgba(74,222,128,0.22), rgba(74,222,128,0.06)); border-color: rgba(74,222,128,0.5); color: #86efac; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(110, 231, 183, 0.7);
+    box-shadow: 0 0 24px rgba(110, 231, 183, 0.45);
+}
+.live-pill.warn {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.4);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #86efac);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.formula-card {
+    background: linear-gradient(135deg, rgba(34,211,238,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(34, 211, 238, 0.4);
+}
+.preset-btn {
+    background: rgba(34, 211, 238, 0.18);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    color: #a5f3fc;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(34, 211, 238, 0.32);
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.4);
+}
+.preset-btn.danger {
+    background: rgba(244, 63, 94, 0.18);
+    border-color: rgba(244, 63, 94, 0.45);
+    color: #fda4af;
+}
+.preset-btn.danger:hover {
+    background: rgba(244, 63, 94, 0.32);
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.4);
+}
+.preset-btn.start {
+    background: rgba(74, 222, 128, 0.18);
+    border-color: rgba(74, 222, 128, 0.5);
+    color: #86efac;
+}
+.preset-btn.start:hover {
+    background: rgba(74, 222, 128, 0.32);
+    box-shadow: 0 0 22px rgba(74, 222, 128, 0.4);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+}
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.preset-load {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 180ms;
+}
+.preset-load.active {
+    background: rgba(245, 158, 11, 0.22);
+    border-color: rgba(245, 158, 11, 0.6);
+    color: #fcd34d;
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.3);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · SMART METER (AMI) · TOU TARIFF · REAL-TIME
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 via-violet-200 to-emerald-200 bg-clip-text text-transparent">
+            📡 스마트 미터 (AMI) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">스마트 미터 LCD · 적산 전력량(W·h) · 시간대별 차등 요금(TOU) · 양방향 통신으로 검침 데이터 송신. 부하·시각·시뮬 속도를 조절해 누적 요금을 관찰.</p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-p">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">순시 전력 P</p>
+            <p class="mt-1 text-xl font-bold live-num" id="pNow">— W</p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-e">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">누적 전력량 E</p>
+            <p class="mt-1 text-xl font-bold live-num" id="eNow">— kWh</p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-rate">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">현재 단가 (TOU)</p>
+            <p class="mt-1 text-xl font-bold live-num" id="rateNow">— 원/kWh</p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-bill">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">누적 요금</p>
+            <p class="mt-1 text-xl font-bold live-num" id="billNow">— 원</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인: 스마트 미터 + 통신 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="meterCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">SMART METER DISPLAY · 단자 → 부하 · 안테나 → 검침 서버</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-amber-300"><span class="legend-dot" style="background:#fcd34d;color:#fcd34d"></span>활선</span>
+                        <span class="text-cyan-300"><span class="legend-dot" style="background:#67e8f9;color:#67e8f9"></span>통신</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#86efac;color:#86efac"></span>LCD</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="meterCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 24시간 TOU 차트 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="tariffCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">TIME-OF-USE TARIFF · 24h · 경부하 / 중부하 / 최대부하</span>
+                    <div class="flex items-center gap-2">
+                        <button id="startBtn" class="preset-btn start rounded-md px-3 py-1.5 text-xs font-bold">▶ 시작</button>
+                        <button id="pauseBtn" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">⏸ 일시정지</button>
+                        <button id="resetBtn" class="preset-btn danger rounded-md px-3 py-1.5 text-xs font-bold">↺ 리셋</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="tariffCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-cyan-300 via-violet-200 to-emerald-200 bg-clip-text text-transparent">스마트 미터 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">순시 전력</p>
+                        <div class="math-container mt-2">\(P = V \cdot I \cdot \cos\varphi\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">적산 전력량</p>
+                        <div class="math-container mt-2">\(E = \displaystyle\int P\, dt\;[\text{Wh}]\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-cyan-200">TOU 요금</p>
+                        <div class="math-container mt-2">\(\text{Bill} = \sum r(t) \cdot \Delta E\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">활선·중성선</span> · 미터 단자로 부하에 전력 공급 <span class="text-slate-500">— V·I 측정</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">적산기</span> · Wh를 누적 (디지털 LCD) <span class="text-slate-500">— 8자리 표시</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">양방향 통신</span> · LTE/PLC로 검침값 송신 <span class="text-slate-500">— AMI 헤드엔드</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">TOU 요금제</span> · 시간대별 단가 차등 <span class="text-slate-500">— 피크 회피 유도</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-cyan-200">변수 조절</h2>
+
+            <!-- 부하 종류 프리셋 -->
+            <div>
+                <p class="text-[11px] font-bold tracking-wider text-slate-300 mb-2">부하 종류</p>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button class="preset-load rounded-md py-1.5 text-[10px] font-bold" data-load="home">가정용</button>
+                    <button class="preset-load rounded-md py-1.5 text-[10px] font-bold" data-load="shop">상업용</button>
+                    <button class="preset-load rounded-md py-1.5 text-[10px] font-bold" data-load="factory">공장</button>
+                </div>
+            </div>
+
+            <div class="chip-base chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>기준 부하 전력</span><span id="loadDisp" class="font-mono text-base">3.0</span></label>
+                <input type="range" id="load" min="0.2" max="50" step="0.1" value="3.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">kW (24h 평균)</p>
+            </div>
+
+            <div class="chip-hour chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시각 (시뮬 시간)</span><span id="hourDisp" class="font-mono text-base">00:00</span></label>
+                <input type="range" id="hour" min="0" max="24" step="0.1" value="0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">h (0 ~ 24시)</p>
+            </div>
+
+            <div class="chip-speed chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>시뮬 속도</span><span id="speedDisp" class="font-mono text-base">60</span></label>
+                <input type="range" id="speed" min="1" max="600" step="1" value="60" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">× 실시간 (1x ~ 600x)</p>
+            </div>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>전압 V</span><span id="vDisp" class="font-mono text-base">220</span></label>
+                <input type="range" id="v" min="100" max="400" step="5" value="220" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V (선간/상)</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-cyan-200 tracking-wider mb-2">TOU 시간대 [예시]</p>
+                <p class="feature-row rounded-md p-2 flex items-center justify-between">
+                    <span><span class="legend-dot" style="background:#86efac;color:#86efac"></span><span class="text-emerald-300 font-bold">경부하</span> 23~09시</span>
+                    <span class="font-mono text-emerald-200">60 원</span>
+                </p>
+                <p class="feature-row rounded-md p-2 flex items-center justify-between">
+                    <span><span class="legend-dot" style="background:#fcd34d;color:#fcd34d"></span><span class="text-amber-300 font-bold">중부하</span> 09~13, 17~23시</span>
+                    <span class="font-mono text-amber-200">110 원</span>
+                </p>
+                <p class="feature-row rounded-md p-2 flex items-center justify-between">
+                    <span><span class="legend-dot" style="background:#fca5a5;color:#fca5a5"></span><span class="text-rose-300 font-bold">최대부하</span> 13~17시</span>
+                    <span class="font-mono text-rose-200">190 원</span>
+                </p>
+                <div class="neon-divider"></div>
+                <p class="font-bold text-cyan-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-emerald-300 font-bold">스마트 미터</span>는 적산값을 LCD에 표시하고 <span class="text-cyan-300 font-bold">양방향 통신</span>으로 전송</p>
+                <p class="feature-row rounded-md p-2"><span class="text-amber-300 font-bold">TOU(Time-of-Use)</span>는 시간대 단가 차등으로 피크 부하 회피 유도</p>
+                <p class="feature-row rounded-md p-2"><span class="text-rose-300 font-bold">최대부하 시간</span>(13~17시)에 부하 사용 시 요금 폭증</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const mCv = $('meterCanvas');
+const mctx = mCv.getContext('2d');
+const tCv = $('tariffCanvas');
+const tctx = tCv.getContext('2d');
+
+// ====================================================
+// 부하 종류별 24시간 프로필 (계수 0~1 정규화, 기준=평균)
+// ====================================================
+const PROFILES = {
+    // 가정용: 아침 7~9, 저녁 18~22 피크
+    home: [
+        0.35, 0.30, 0.28, 0.28, 0.30, 0.40, 0.65, 1.10, 1.20, 0.80,
+        0.60, 0.55, 0.70, 0.65, 0.55, 0.55, 0.70, 1.20, 1.60, 1.70,
+        1.55, 1.30, 0.90, 0.55
+    ],
+    // 상업용: 9~21 영업
+    shop: [
+        0.15, 0.12, 0.10, 0.10, 0.10, 0.15, 0.25, 0.55, 0.90, 1.30,
+        1.50, 1.55, 1.50, 1.55, 1.60, 1.55, 1.50, 1.55, 1.60, 1.45,
+        1.10, 0.65, 0.35, 0.20
+    ],
+    // 공장: 8~18 가동, 야간 저감
+    factory: [
+        0.45, 0.45, 0.45, 0.45, 0.45, 0.50, 0.70, 1.20, 1.60, 1.70,
+        1.70, 1.65, 1.20, 1.55, 1.65, 1.65, 1.55, 1.25, 0.95, 0.70,
+        0.55, 0.50, 0.48, 0.45
+    ]
+};
+
+// TOU 단가표 [0~23시 단위 원/kWh]
+function rateAt(hour) {
+    const h = ((hour % 24) + 24) % 24;
+    if (h >= 13 && h < 17) return 190;            // 최대부하
+    if (h >= 23 || h < 9) return 60;              // 경부하
+    return 110;                                    // 중부하
+}
+function rateColor(hour) {
+    const r = rateAt(hour);
+    if (r === 190) return '#fca5a5';
+    if (r === 60)  return '#86efac';
+    return '#fcd34d';
+}
+function rateLabel(hour) {
+    const r = rateAt(hour);
+    if (r === 190) return '최대부하';
+    if (r === 60)  return '경부하';
+    return '중부하';
+}
+
+let state = {
+    profile: 'home',
+    baseLoad: 3.0,    // kW (24h 평균)
+    hour: 0,          // 0~24 (시뮬 시간)
+    speed: 60,        // 실시간 대비 배속
+    V: 220,           // V
+    cosPhi: 0.90,
+    running: false,
+    lastT: 0,         // 마지막 frame timestamp (ms)
+    Etotal: 0,        // kWh 누적
+    bill: 0,          // 원 누적
+    P: 0, I: 0,       // 순시
+    pulse: 0,         // LCD 깜박임
+    commPhase: 0,     // 통신 입자 위상
+    particles: [],    // 통신 입자
+    burst: 0          // 통신 버스트 (0~1)
+};
+
+function resize() {
+    mCv.width = mCv.parentElement.clientWidth - 2;
+    mCv.height = 520;
+    tCv.width = tCv.parentElement.clientWidth - 2;
+    tCv.height = 230;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ====================================================
+// 부하 계수 보간
+// ====================================================
+function loadFactor(hour) {
+    const prof = PROFILES[state.profile];
+    const h = ((hour % 24) + 24) % 24;
+    const i0 = Math.floor(h);
+    const i1 = (i0 + 1) % 24;
+    const f = h - i0;
+    return prof[i0] * (1 - f) + prof[i1] * f;
+}
+
+// ====================================================
+// 메인 캔버스: 스마트 미터 + 부하 + 통신
+// ====================================================
+function drawMeter() {
+    const W = mCv.width, H = mCv.height;
+    mctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = mctx.createRadialGradient(W/2, H/2, 60, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(20, 30, 60, 0.3)');
+    bg.addColorStop(0.5, 'rgba(10, 14, 30, 0.18)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    mctx.fillStyle = bg;
+    mctx.fillRect(0, 0, W, H);
+
+    // 격자
+    mctx.save();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke();
+    }
+    mctx.restore();
+
+    // 좌상 라벨
+    mctx.save();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillText('◯ SMART METER · 단상/3상 호환 · TOU 적산 · AMI 통신', 12, 10);
+    mctx.restore();
+
+    // ===== 좌측: 배전반 (전원) =====
+    const distX = 50, distY = H * 0.5 - 80, distW = 90, distH = 160;
+    mctx.save();
+    // 박스
+    mctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+    roundRect(mctx, distX, distY, distW, distH, 8);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    // 손잡이
+    mctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+    mctx.fillRect(distX + distW/2 - 10, distY + 16, 20, 6);
+    // 라벨
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = '#fcd34d';
+    mctx.textAlign = 'center';
+    mctx.fillText('배전반', distX + distW/2, distY + 50);
+    mctx.font = '9px ui-monospace, monospace';
+    mctx.fillStyle = '#cbd5e1';
+    mctx.fillText('MAIN', distX + distW/2, distY + 68);
+    mctx.fillText(`${state.V.toFixed(0)}V`, distX + distW/2, distY + 82);
+    // 단자 점
+    mctx.fillStyle = '#fcd34d';
+    mctx.shadowBlur = 8; mctx.shadowColor = '#fcd34d';
+    mctx.beginPath(); mctx.arc(distX + distW, distY + 110, 4, 0, Math.PI*2); mctx.fill();
+    mctx.beginPath(); mctx.arc(distX + distW, distY + 130, 4, 0, Math.PI*2); mctx.fill();
+    mctx.restore();
+
+    // ===== 중앙: 스마트 미터 =====
+    const meterW = 320, meterH = 360;
+    const meterX = W * 0.5 - meterW / 2;
+    const meterY = H * 0.5 - meterH / 2;
+
+    mctx.save();
+    // 미터 바디 (그라데이션)
+    const bgrad = mctx.createLinearGradient(meterX, meterY, meterX, meterY + meterH);
+    bgrad.addColorStop(0, '#1f2937');
+    bgrad.addColorStop(1, '#0f172a');
+    mctx.fillStyle = bgrad;
+    roundRect(mctx, meterX, meterY, meterW, meterH, 14);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(34, 211, 238, 0.55)';
+    mctx.lineWidth = 2;
+    mctx.shadowBlur = 18; mctx.shadowColor = 'rgba(34, 211, 238, 0.4)';
+    mctx.stroke();
+    mctx.shadowBlur = 0;
+
+    // 상단 헤더
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(mctx, meterX + 12, meterY + 12, meterW - 24, 30, 6);
+    mctx.fill();
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = '#67e8f9';
+    mctx.textAlign = 'left';
+    mctx.fillText('⚡ SMART METER · AMI · Class 1', meterX + 22, meterY + 32);
+    mctx.font = '9px ui-monospace, monospace';
+    mctx.textAlign = 'right';
+    mctx.fillStyle = '#86efac';
+    mctx.fillText(`S/N 18-0421-${(state.profile.charCodeAt(0)).toString(16).toUpperCase()}`, meterX + meterW - 22, meterY + 32);
+
+    // === LCD 패널 ===
+    const lcdX = meterX + 20, lcdY = meterY + 56, lcdW = meterW - 40, lcdH = 200;
+    // LCD 배경 (녹색 LCD 느낌)
+    const lcdBg = mctx.createLinearGradient(lcdX, lcdY, lcdX, lcdY + lcdH);
+    lcdBg.addColorStop(0, '#0b1f1a');
+    lcdBg.addColorStop(1, '#0e2a22');
+    mctx.fillStyle = lcdBg;
+    roundRect(mctx, lcdX, lcdY, lcdW, lcdH, 8);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(74, 222, 128, 0.5)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+
+    // 깜박이는 활성 표시
+    const blink = (Math.sin(state.pulse * 0.18) + 1) / 2;
+    mctx.fillStyle = `rgba(110, 231, 183, ${0.5 + blink * 0.4})`;
+    mctx.beginPath();
+    mctx.arc(lcdX + 14, lcdY + 14, 3.5, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.font = '8px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(110, 231, 183, 0.7)';
+    mctx.textAlign = 'left';
+    mctx.fillText(state.running ? 'REC' : 'IDLE', lcdX + 22, lcdY + 17);
+    // 통신 표시
+    mctx.fillStyle = state.burst > 0.05 ? '#67e8f9' : 'rgba(103, 232, 249, 0.3)';
+    mctx.shadowBlur = state.burst > 0.05 ? 8 : 0; mctx.shadowColor = '#67e8f9';
+    mctx.beginPath();
+    mctx.arc(lcdX + lcdW - 24, lcdY + 14, 3.5, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.shadowBlur = 0;
+    mctx.fillStyle = 'rgba(103, 232, 249, 0.7)';
+    mctx.textAlign = 'right';
+    mctx.fillText('LTE', lcdX + lcdW - 30, lcdY + 17);
+
+    // 메인 디지털 적산 표시 (8자리 + 소수 3자리)
+    const totalKWhStr = state.Etotal.toFixed(3).padStart(11, '0');
+    mctx.font = 'bold 38px "Courier New", ui-monospace, monospace';
+    mctx.textAlign = 'center';
+    mctx.fillStyle = 'rgba(110, 231, 183, 0.15)';
+    // 그림자 (LCD 세그먼트 효과)
+    mctx.fillText('00000000.000', lcdX + lcdW/2, lcdY + 70);
+    mctx.shadowBlur = 18; mctx.shadowColor = '#6ee7b7';
+    mctx.fillStyle = '#bbf7d0';
+    mctx.fillText(totalKWhStr, lcdX + lcdW/2, lcdY + 70);
+    mctx.shadowBlur = 0;
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(110, 231, 183, 0.7)';
+    mctx.fillText('kWh · TOTAL ACTIVE ENERGY', lcdX + lcdW/2, lcdY + 90);
+
+    // 보조 표시 (순시 P, V, I)
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    mctx.textAlign = 'left';
+    mctx.fillText('P', lcdX + 18, lcdY + 118);
+    mctx.fillText('V', lcdX + 18, lcdY + 138);
+    mctx.fillText('I', lcdX + 18, lcdY + 158);
+    mctx.fillText('cos φ', lcdX + 18, lcdY + 178);
+
+    mctx.textAlign = 'right';
+    mctx.font = 'bold 13px "Courier New", ui-monospace, monospace';
+    mctx.fillStyle = '#fcd34d';
+    mctx.fillText(`${(state.P).toFixed(2)} kW`, lcdX + lcdW - 18, lcdY + 118);
+    mctx.fillStyle = '#a5b4fc';
+    mctx.fillText(`${state.V.toFixed(0)} V`, lcdX + lcdW - 18, lcdY + 138);
+    mctx.fillStyle = '#fda4af';
+    mctx.fillText(`${state.I.toFixed(2)} A`, lcdX + lcdW - 18, lcdY + 158);
+    mctx.fillStyle = '#c4b5fd';
+    mctx.fillText(`${state.cosPhi.toFixed(2)}`, lcdX + lcdW - 18, lcdY + 178);
+
+    // 하단: 시각 + 단가
+    mctx.font = '9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(186, 230, 253, 0.45)';
+    mctx.textAlign = 'left';
+    const hh = Math.floor(state.hour);
+    const mm = Math.floor((state.hour - hh) * 60);
+    const timeStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    mctx.fillText(`TIME ${timeStr}`, lcdX + 18, lcdY + lcdH - 14);
+    mctx.textAlign = 'right';
+    mctx.fillStyle = rateColor(state.hour);
+    mctx.fillText(`${rateLabel(state.hour)} · ${rateAt(state.hour)}원/kWh`, lcdX + lcdW - 18, lcdY + lcdH - 14);
+    mctx.restore();
+
+    // ===== 미터 하단: 단자 (좌측 입력 / 우측 출력) =====
+    mctx.save();
+    const termY = meterY + meterH - 70;
+    // 입력 단자 (왼쪽 2개)
+    [[meterX + 36, termY], [meterX + 36, termY + 30]].forEach(([tx, ty]) => {
+        mctx.fillStyle = '#1e293b';
+        roundRect(mctx, tx - 10, ty - 10, 20, 20, 4);
+        mctx.fill();
+        mctx.strokeStyle = '#94a3b8';
+        mctx.lineWidth = 1.5;
+        mctx.stroke();
+        mctx.fillStyle = '#fcd34d';
+        mctx.shadowBlur = 8; mctx.shadowColor = '#fcd34d';
+        mctx.beginPath(); mctx.arc(tx, ty, 4, 0, Math.PI*2); mctx.fill();
+        mctx.shadowBlur = 0;
+    });
+    // 출력 단자 (오른쪽 2개)
+    [[meterX + meterW - 36, termY], [meterX + meterW - 36, termY + 30]].forEach(([tx, ty]) => {
+        mctx.fillStyle = '#1e293b';
+        roundRect(mctx, tx - 10, ty - 10, 20, 20, 4);
+        mctx.fill();
+        mctx.strokeStyle = '#94a3b8';
+        mctx.lineWidth = 1.5;
+        mctx.stroke();
+        mctx.fillStyle = '#fcd34d';
+        mctx.shadowBlur = 8; mctx.shadowColor = '#fcd34d';
+        mctx.beginPath(); mctx.arc(tx, ty, 4, 0, Math.PI*2); mctx.fill();
+        mctx.shadowBlur = 0;
+    });
+    // 단자 라벨
+    mctx.font = '8px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(252, 211, 77, 0.65)';
+    mctx.textAlign = 'center';
+    mctx.fillText('L  N', meterX + 36, termY + 50);
+    mctx.fillText('L  N', meterX + meterW - 36, termY + 50);
+    mctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    mctx.fillText('IN', meterX + 36, termY - 18);
+    mctx.fillText('OUT', meterX + meterW - 36, termY - 18);
+    mctx.restore();
+
+    // ===== 통신 안테나 (미터 상단) =====
+    const antX = meterX + meterW / 2;
+    const antY = meterY - 30;
+    mctx.save();
+    // 안테나 막대
+    mctx.strokeStyle = '#94a3b8';
+    mctx.lineWidth = 2;
+    mctx.beginPath();
+    mctx.moveTo(antX, antY); mctx.lineTo(antX, meterY);
+    mctx.stroke();
+    // 안테나 신호 호 (3개)
+    for (let k = 1; k <= 3; k++) {
+        const a = 0.7 + 0.3 * Math.sin(state.pulse * 0.1 + k * 0.7);
+        mctx.strokeStyle = `rgba(103, 232, 249, ${a * (0.3 + state.burst * 0.7)})`;
+        mctx.lineWidth = 1.8;
+        mctx.beginPath();
+        mctx.arc(antX, antY, k * 9, Math.PI * 1.25, Math.PI * 1.75);
+        mctx.stroke();
+    }
+    mctx.fillStyle = '#67e8f9';
+    mctx.shadowBlur = 10; mctx.shadowColor = '#67e8f9';
+    mctx.beginPath(); mctx.arc(antX, antY, 3.5, 0, Math.PI*2); mctx.fill();
+    mctx.shadowBlur = 0;
+    mctx.restore();
+
+    // ===== 우측: 부하 (가전/매장/공장 아이콘) =====
+    const loadX = W - 130, loadY = H * 0.5 - 70, loadW = 100, loadH = 140;
+    mctx.save();
+    mctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+    roundRect(mctx, loadX, loadY, loadW, loadH, 8);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+
+    // 부하 아이콘
+    mctx.font = '40px "Apple Color Emoji", sans-serif';
+    mctx.textAlign = 'center';
+    const icon = state.profile === 'home' ? '🏠' : state.profile === 'shop' ? '🏪' : '🏭';
+    mctx.fillText(icon, loadX + loadW/2, loadY + 56);
+
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = '#fcd34d';
+    const lbl = state.profile === 'home' ? '가정용' : state.profile === 'shop' ? '상업용' : '공장';
+    mctx.fillText(lbl, loadX + loadW/2, loadY + 82);
+    mctx.font = '9px ui-monospace, monospace';
+    mctx.fillStyle = '#cbd5e1';
+    mctx.fillText(`기준 ${state.baseLoad.toFixed(1)} kW`, loadX + loadW/2, loadY + 100);
+    mctx.fillStyle = state.P > state.baseLoad * 1.4 ? '#fca5a5' : '#86efac';
+    mctx.fillText(`현재 ${state.P.toFixed(2)} kW`, loadX + loadW/2, loadY + 118);
+
+    // 단자 점
+    mctx.fillStyle = '#fcd34d';
+    mctx.shadowBlur = 8; mctx.shadowColor = '#fcd34d';
+    mctx.beginPath(); mctx.arc(loadX, loadY + 60, 4, 0, Math.PI*2); mctx.fill();
+    mctx.beginPath(); mctx.arc(loadX, loadY + 80, 4, 0, Math.PI*2); mctx.fill();
+    mctx.shadowBlur = 0;
+    mctx.restore();
+
+    // ===== 활선 (배전반 → 미터 IN, 미터 OUT → 부하) =====
+    drawWire(mctx, distX + distW, distY + 110, meterX + 36, termY,
+        '#facc15', '#fef3c7', 1.0);
+    drawWire(mctx, distX + distW, distY + 130, meterX + 36, termY + 30,
+        '#94a3b8', '#cbd5e1', 0.7);
+    drawWire(mctx, meterX + meterW - 36, termY, loadX, loadY + 60,
+        '#facc15', '#fef3c7', 1.0);
+    drawWire(mctx, meterX + meterW - 36, termY + 30, loadX, loadY + 80,
+        '#94a3b8', '#cbd5e1', 0.7);
+
+    // ===== 활선 위 흐름 입자 (부하에 비례) =====
+    drawFlow(mctx, distX + distW, distY + 110, meterX + 36, termY, state.P);
+    drawFlow(mctx, meterX + meterW - 36, termY, loadX, loadY + 60, state.P);
+
+    // ===== 통신 입자 (안테나 → 우상단 서버 아이콘) =====
+    const srvX = W - 80, srvY = 60;
+    // 서버 박스
+    mctx.save();
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(mctx, srvX - 36, srvY - 30, 72, 60, 8);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(103, 232, 249, 0.6)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.font = '24px sans-serif';
+    mctx.textAlign = 'center';
+    mctx.fillText('☁', srvX, srvY + 6);
+    mctx.font = 'bold 9px ui-monospace, monospace';
+    mctx.fillStyle = '#67e8f9';
+    mctx.fillText('AMI 서버', srvX, srvY + 22);
+    mctx.restore();
+
+    // 통신 경로 (안테나 → 서버)
+    mctx.save();
+    mctx.strokeStyle = `rgba(103, 232, 249, ${0.18 + state.burst * 0.5})`;
+    mctx.setLineDash([5, 5]);
+    mctx.lineWidth = 1.4;
+    mctx.beginPath();
+    mctx.moveTo(antX, antY); mctx.lineTo(srvX, srvY + 16);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    mctx.restore();
+
+    // 통신 입자 그리기
+    for (const p of state.particles) {
+        const x = antX + (srvX - antX) * p.t;
+        const y = antY + (srvY + 16 - antY) * p.t;
+        mctx.save();
+        mctx.fillStyle = `rgba(103, 232, 249, ${1 - p.t * 0.4})`;
+        mctx.shadowBlur = 10; mctx.shadowColor = '#67e8f9';
+        mctx.beginPath();
+        mctx.arc(x, y, 3.5, 0, Math.PI*2);
+        mctx.fill();
+        mctx.restore();
+    }
+
+    // ===== 우상단 데이터 패킷 라벨 =====
+    if (state.burst > 0.1) {
+        mctx.save();
+        const a = state.burst;
+        mctx.fillStyle = `rgba(15, 23, 42, ${0.9 * a})`;
+        roundRect(mctx, srvX - 90, srvY + 36, 110, 22, 4);
+        mctx.fill();
+        mctx.strokeStyle = `rgba(103, 232, 249, ${a})`;
+        mctx.lineWidth = 1;
+        mctx.stroke();
+        mctx.font = '8px ui-monospace, monospace';
+        mctx.fillStyle = `rgba(186, 230, 253, ${a})`;
+        mctx.textAlign = 'center';
+        mctx.fillText(`📡 SEND  ${state.Etotal.toFixed(3)} kWh`, srvX - 35, srvY + 50);
+        mctx.restore();
+    }
+
+    state.pulse++;
+}
+
+// 활선 그리기
+function drawWire(ctx, x0, y0, x1, y1, color, light, width) {
+    ctx.save();
+    ctx.strokeStyle = light;
+    ctx.lineWidth = width * 2.5;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 8; ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 활선 위 흐름 입자
+function drawFlow(ctx, x0, y0, x1, y1, P) {
+    const intensity = Math.min(1, Math.abs(P) / 10);
+    if (intensity < 0.02) return;
+    const count = 3;
+    const phase = (state.pulse * (0.005 + intensity * 0.025)) % 1;
+    for (let i = 0; i < count; i++) {
+        const t = (phase + i / count) % 1;
+        const x = x0 + (x1 - x0) * t;
+        const y = y0 + (y1 - y0) * t;
+        ctx.save();
+        ctx.fillStyle = `rgba(254, 240, 138, ${0.5 + intensity * 0.5})`;
+        ctx.shadowBlur = 10; ctx.shadowColor = '#facc15';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// ====================================================
+// TOU 24h 차트
+// ====================================================
+function drawTariff() {
+    const W = tCv.width, H = tCv.height;
+    tctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = tctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    tctx.fillStyle = bg;
+    tctx.fillRect(0, 0, W, H);
+
+    // 격자
+    tctx.save();
+    tctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    tctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        tctx.beginPath(); tctx.moveTo(i, 0); tctx.lineTo(i, H); tctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        tctx.beginPath(); tctx.moveTo(0, i); tctx.lineTo(W, i); tctx.stroke();
+    }
+    tctx.restore();
+
+    tctx.save();
+    tctx.font = 'bold 10px ui-monospace, monospace';
+    tctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    tctx.textAlign = 'left'; tctx.textBaseline = 'top';
+    tctx.fillText('▮ TOU TARIFF · 0h ~ 24h · 부하 프로필 vs 단가', 12, 10);
+    tctx.restore();
+
+    // 차트 영역
+    const padL = 50, padR = 60, padT = 36, padB = 28;
+    const cw = W - padL - padR, ch = H - padT - padB;
+
+    // 시간대 배경 색 (단가 구간)
+    const fillBand = (h0, h1, color) => {
+        const x0 = padL + (h0 / 24) * cw;
+        const x1 = padL + (h1 / 24) * cw;
+        tctx.fillStyle = color;
+        tctx.fillRect(x0, padT, x1 - x0, ch);
+    };
+    fillBand(0, 9, 'rgba(74, 222, 128, 0.10)');    // 경부하
+    fillBand(9, 13, 'rgba(252, 211, 77, 0.10)');   // 중부하
+    fillBand(13, 17, 'rgba(248, 113, 113, 0.13)'); // 최대
+    fillBand(17, 23, 'rgba(252, 211, 77, 0.10)');  // 중부하
+    fillBand(23, 24, 'rgba(74, 222, 128, 0.10)');  // 경부하
+
+    // 축 (시간)
+    tctx.save();
+    tctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    tctx.lineWidth = 1;
+    tctx.beginPath();
+    tctx.moveTo(padL, padT + ch); tctx.lineTo(padL + cw, padT + ch);
+    tctx.stroke();
+    tctx.font = '9px ui-monospace, monospace';
+    tctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    tctx.textAlign = 'center';
+    for (let h = 0; h <= 24; h += 3) {
+        const x = padL + (h / 24) * cw;
+        tctx.fillText(`${h}h`, x, padT + ch + 14);
+        tctx.beginPath();
+        tctx.moveTo(x, padT + ch); tctx.lineTo(x, padT + ch + 4);
+        tctx.stroke();
+    }
+    tctx.restore();
+
+    // y축 1: 부하 (왼쪽)
+    tctx.save();
+    tctx.font = '9px ui-monospace, monospace';
+    tctx.fillStyle = '#fcd34d';
+    tctx.textAlign = 'right';
+    const maxLoad = state.baseLoad * 2.0;
+    for (let k = 0; k <= 4; k++) {
+        const v = (maxLoad * k) / 4;
+        const y = padT + ch - (k / 4) * ch;
+        tctx.fillText(`${v.toFixed(1)}`, padL - 6, y + 3);
+    }
+    tctx.fillStyle = '#fcd34d';
+    tctx.save();
+    tctx.translate(14, padT + ch / 2);
+    tctx.rotate(-Math.PI / 2);
+    tctx.textAlign = 'center';
+    tctx.fillText('kW', 0, 0);
+    tctx.restore();
+    tctx.restore();
+
+    // y축 2: 단가 (오른쪽)
+    tctx.save();
+    tctx.font = '9px ui-monospace, monospace';
+    tctx.fillStyle = '#67e8f9';
+    tctx.textAlign = 'left';
+    for (let v = 0; v <= 200; v += 50) {
+        const y = padT + ch - (v / 200) * ch;
+        tctx.fillText(`${v}`, padL + cw + 6, y + 3);
+    }
+    tctx.save();
+    tctx.translate(W - 14, padT + ch / 2);
+    tctx.rotate(Math.PI / 2);
+    tctx.textAlign = 'center';
+    tctx.fillText('원/kWh', 0, 0);
+    tctx.restore();
+    tctx.restore();
+
+    // 단가 라인 (계단형)
+    tctx.save();
+    tctx.strokeStyle = '#67e8f9';
+    tctx.shadowBlur = 8; tctx.shadowColor = '#67e8f9';
+    tctx.lineWidth = 2;
+    tctx.beginPath();
+    for (let h = 0; h <= 24; h += 0.25) {
+        const r = rateAt(h);
+        const x = padL + (h / 24) * cw;
+        const y = padT + ch - (r / 200) * ch;
+        if (h === 0) tctx.moveTo(x, y);
+        else tctx.lineTo(x, y);
+    }
+    tctx.stroke();
+    tctx.restore();
+
+    // 부하 프로필 라인
+    tctx.save();
+    tctx.strokeStyle = '#fcd34d';
+    tctx.shadowBlur = 10; tctx.shadowColor = '#fcd34d';
+    tctx.lineWidth = 2.4;
+    tctx.beginPath();
+    const STEP = 0.1;
+    for (let h = 0; h <= 24; h += STEP) {
+        const p = loadFactor(h) * state.baseLoad;
+        const x = padL + (h / 24) * cw;
+        const y = padT + ch - Math.min(1, p / maxLoad) * ch;
+        if (h === 0) tctx.moveTo(x, y);
+        else tctx.lineTo(x, y);
+    }
+    tctx.stroke();
+    // 부하 채움
+    tctx.lineTo(padL + cw, padT + ch);
+    tctx.lineTo(padL, padT + ch);
+    tctx.closePath();
+    const lg = tctx.createLinearGradient(0, padT, 0, padT + ch);
+    lg.addColorStop(0, 'rgba(252, 211, 77, 0.32)');
+    lg.addColorStop(1, 'rgba(252, 211, 77, 0.02)');
+    tctx.fillStyle = lg;
+    tctx.fill();
+    tctx.restore();
+
+    // 현재 시각 마커
+    const cx = padL + (state.hour / 24) * cw;
+    tctx.save();
+    tctx.strokeStyle = '#86efac';
+    tctx.shadowBlur = 10; tctx.shadowColor = '#86efac';
+    tctx.lineWidth = 2;
+    tctx.beginPath();
+    tctx.moveTo(cx, padT); tctx.lineTo(cx, padT + ch);
+    tctx.stroke();
+    // 현재 시각 점
+    const curP = loadFactor(state.hour) * state.baseLoad;
+    const cy = padT + ch - Math.min(1, curP / maxLoad) * ch;
+    tctx.fillStyle = '#86efac';
+    tctx.shadowBlur = 14;
+    tctx.beginPath();
+    tctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    tctx.fill();
+    tctx.restore();
+
+    // 시간대 라벨 (밴드 위)
+    tctx.save();
+    tctx.font = 'bold 9px ui-monospace, monospace';
+    tctx.textAlign = 'center';
+    tctx.fillStyle = 'rgba(134, 239, 172, 0.7)';
+    tctx.fillText('경부하', padL + (4.5 / 24) * cw, padT - 4);
+    tctx.fillStyle = 'rgba(252, 211, 77, 0.7)';
+    tctx.fillText('중부하', padL + (11 / 24) * cw, padT - 4);
+    tctx.fillStyle = 'rgba(248, 113, 113, 0.8)';
+    tctx.fillText('최대부하', padL + (15 / 24) * cw, padT - 4);
+    tctx.fillStyle = 'rgba(252, 211, 77, 0.7)';
+    tctx.fillText('중부하', padL + (20 / 24) * cw, padT - 4);
+    tctx.restore();
+}
+
+// ====================================================
+// 시뮬레이션 스텝
+// ====================================================
+function step(dtMs) {
+    // 실시간 진행 (시뮬 속도 적용)
+    const dtSecSim = (dtMs / 1000) * state.speed;
+    const dtHrSim = dtSecSim / 3600;
+    state.hour = (state.hour + dtHrSim) % 24;
+    $('hour').value = state.hour;
+
+    // 순시 전력 (부하 프로필 * 기준)
+    state.P = loadFactor(state.hour) * state.baseLoad;
+    state.I = (state.P * 1000) / (state.V * state.cosPhi);
+
+    // 누적 에너지 (kWh)
+    const dE = state.P * dtHrSim;
+    state.Etotal += dE;
+
+    // 요금 누적
+    state.bill += rateAt(state.hour) * dE;
+
+    // 통신 입자: 일정 주기마다 발사 (15분 시뮬 시간마다)
+    // burst 트리거: 시뮬 시간 15분 = 0.25h
+    if (Math.floor(state.hour * 4) !== Math.floor(((state.hour - dtHrSim + 24) % 24) * 4)) {
+        // 새 패킷 발사
+        for (let i = 0; i < 3; i++) state.particles.push({ t: -i * 0.08 });
+        state.burst = 1;
+    }
+    state.burst = Math.max(0, state.burst - dtMs * 0.0012);
+    // 입자 이동
+    for (const p of state.particles) p.t += dtMs * 0.0009;
+    state.particles = state.particles.filter(p => p.t < 1.05);
+}
+
+// ====================================================
+// UI 갱신
+// ====================================================
+function updateUI() {
+    $('loadDisp').textContent = state.baseLoad.toFixed(1);
+    const hh = Math.floor(state.hour);
+    const mm = Math.floor((state.hour - hh) * 60);
+    $('hourDisp').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    $('speedDisp').textContent = state.speed.toFixed(0);
+    $('vDisp').textContent = state.V.toFixed(0);
+
+    $('pNow').textContent = `${(state.P * 1000).toFixed(0)} W`;
+    $('eNow').textContent = `${state.Etotal.toFixed(3)} kWh`;
+    $('rateNow').textContent = `${rateAt(state.hour)} 원/kWh`;
+    $('billNow').textContent = `${Math.round(state.bill).toLocaleString()} 원`;
+
+    // 플래시
+    const pillRate = $('pill-rate');
+    const r = rateAt(state.hour);
+    pillRate.classList.toggle('warn', r === 190);
+    pillRate.classList.toggle('flash', r === 60);
+}
+
+// ====================================================
+// 메인 루프
+// ====================================================
+function animate(ts) {
+    if (!state.lastT) state.lastT = ts;
+    let dt = ts - state.lastT;
+    if (dt > 100) dt = 100; // 큰 점프 방지
+    state.lastT = ts;
+
+    if (state.running) {
+        step(dt);
+    } else {
+        // 정지 상태에서도 통신 입자/펄스만 흐르도록
+        state.burst = Math.max(0, state.burst - dt * 0.0012);
+        for (const p of state.particles) p.t += dt * 0.0009;
+        state.particles = state.particles.filter(p => p.t < 1.05);
+        // 정지 시에도 슬라이더의 시각/부하에 따라 P 계산
+        state.P = loadFactor(state.hour) * state.baseLoad;
+        state.I = (state.P * 1000) / (state.V * state.cosPhi);
+    }
+
+    updateUI();
+    drawMeter();
+    drawTariff();
+    requestAnimationFrame(animate);
+}
+
+// ====================================================
+// 이벤트
+// ====================================================
+function setProfile(p) {
+    state.profile = p;
+    document.querySelectorAll('.preset-load').forEach(b => {
+        b.classList.toggle('active', b.dataset.load === p);
+    });
+}
+
+document.querySelectorAll('.preset-load').forEach(btn => {
+    btn.addEventListener('click', () => setProfile(btn.dataset.load));
+});
+
+$('load').addEventListener('input', () => { state.baseLoad = +$('load').value; });
+$('hour').addEventListener('input', () => { state.hour = +$('hour').value; });
+$('speed').addEventListener('input', () => { state.speed = +$('speed').value; });
+$('v').addEventListener('input', () => { state.V = +$('v').value; });
+
+$('startBtn').addEventListener('click', () => {
+    state.running = true;
+    if (window.gsap) gsap.fromTo('#meterCard',
+        { boxShadow: '0 0 0 0 rgba(110, 231, 183, 0.5)' },
+        { boxShadow: '0 0 60px 4px rgba(110, 231, 183, 0)', duration: 0.6 });
+});
+$('pauseBtn').addEventListener('click', () => { state.running = false; });
+$('resetBtn').addEventListener('click', () => {
+    state.running = false;
+    state.Etotal = 0;
+    state.bill = 0;
+    state.hour = 0;
+    state.particles = [];
+    state.burst = 0;
+    $('hour').value = 0;
+    if (window.gsap) gsap.fromTo('#meterCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.5)' },
+        { boxShadow: '0 0 60px 4px rgba(244, 63, 94, 0)', duration: 0.6 });
+});
+
+window.onload = () => {
+    resize();
+    setProfile('home');
+    updateUI();
+    requestAnimationFrame(animate);
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#meterCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#tariffCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.32, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

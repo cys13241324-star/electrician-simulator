@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>스파크 모터스 모델E · 학습 합격 드라이브</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --bg:#04070d;
+    --panel:#0a1220;
+    --panel2:#0e1a2e;
+    --line:rgba(120,180,255,0.18);
+    --line2:rgba(120,180,255,0.32);
+    --txt:#e7f0ff;
+    --mute:#7a8aa6;
+    --cyan:#7df0ff;
+    --blue:#5aa8ff;
+    --green:#5ef2b3;
+    --amber:#ffd166;
+    --red:#ff6b8a;
+  }
+  html,body{background:var(--bg);color:var(--txt);}
+  body{
+    font-family: "Rajdhani","Eurostile","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    letter-spacing:.02em;
+    background:
+      radial-gradient(1100px 600px at 78% -10%, rgba(90,168,255,.10), transparent 60%),
+      radial-gradient(900px 500px at 8% 110%, rgba(94,242,179,.08), transparent 60%),
+      var(--bg);
+    min-height:100vh;
+  }
+  .mono{font-family: ui-monospace,"JetBrains Mono","Fira Code",Menlo,Consolas,monospace; letter-spacing:.04em;}
+  .panel{background:linear-gradient(180deg, rgba(14,26,46,.92), rgba(10,18,32,.92)); border:1px solid var(--line); border-radius:14px;}
+  .panel-soft{background:rgba(10,18,32,.62); border:1px solid var(--line); border-radius:12px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;border:1px solid var(--line2);background:rgba(125,240,255,.05);font-size:11px;color:var(--cyan);letter-spacing:.08em;}
+  .chip-warn{color:var(--amber);background:rgba(255,209,102,.06);border-color:rgba(255,209,102,.35);}
+  .chip-ok{color:var(--green);background:rgba(94,242,179,.06);border-color:rgba(94,242,179,.32);}
+  .glow-cyan{filter: drop-shadow(0 0 6px rgba(125,240,255,.55));}
+  .glow-green{filter: drop-shadow(0 0 6px rgba(94,242,179,.5));}
+  .glow-blue{filter: drop-shadow(0 0 6px rgba(90,168,255,.5));}
+  .glow-amber{filter: drop-shadow(0 0 6px rgba(255,209,102,.5));}
+  .hud-grid{
+    background-image:
+      linear-gradient(rgba(120,180,255,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,180,255,.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .scanline::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+    mix-blend-mode:overlay; border-radius:inherit;
+  }
+  .seg-on{background:linear-gradient(180deg, rgba(125,240,255,.22), rgba(90,168,255,.10)); border-color:var(--line2); color:#fff;}
+  .seg-off{color:var(--mute);}
+  .led{width:8px;height:8px;border-radius:999px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+  .led-green{background:var(--green);box-shadow:0 0 8px var(--green);}
+  .led-amber{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+  .led-red{background:var(--red);box-shadow:0 0 8px var(--red);}
+  .marquee{display:flex;gap:48px;animation:scroll 28s linear infinite;}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .pulse-dot{animation: pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+  .blink{animation: blink 1.2s steps(2,end) infinite;}
+  @keyframes blink{50%{opacity:.25}}
+  details>summary{list-style:none;cursor:pointer;}
+  details>summary::-webkit-details-marker{display:none;}
+  .progress-bar{height:6px;border-radius:999px;background:rgba(120,180,255,.12);overflow:hidden;}
+  .progress-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));}
+  .nav-arrow{filter: drop-shadow(0 0 10px rgba(90,168,255,.7));}
+  .ring-track{stroke:rgba(120,180,255,.14);}
+  .vin{letter-spacing:.16em;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid var(--line2);background:rgba(125,240,255,.06);color:var(--txt);font-size:12px;}
+  .btn:hover{background:rgba(125,240,255,.12);}
+  .btn-active{background:linear-gradient(180deg, rgba(125,240,255,.28), rgba(90,168,255,.12));color:#fff;border-color:rgba(125,240,255,.5);}
+  .ring{box-shadow: inset 0 0 0 1px var(--line);}
+  /* speedometer needle */
+  .needle{transform-origin:50% 100%;transition: transform 600ms cubic-bezier(.2,.7,.2,1);}
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ============ TOP STATUS BAR ============ -->
+<header class="border-b border-[var(--line)] bg-[rgba(6,10,18,.85)] backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[1440px] mx-auto px-6 py-2 flex items-center gap-4">
+    <div class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="glow-cyan">
+        <path d="M4 13l8-9 8 9-8 7-8-7z" stroke="#7df0ff" stroke-width="1.5"/>
+        <path d="M12 4v16" stroke="#7df0ff" stroke-width="1.5"/>
+      </svg>
+      <div class="mono text-[13px] tracking-[.22em] text-[var(--cyan)]">SPARK MOTORS</div>
+      <span class="chip ml-2">MODEL E · DRIVE OS 4.7</span>
+    </div>
+    <div class="hidden md:flex items-center gap-3 ml-2 text-[12px] text-[var(--mute)] mono">
+      <span>외기 <span class="text-[var(--txt)]">22.5°C</span></span>
+      <span>·</span>
+      <span>실내 <span class="text-[var(--txt)]">21.0°C</span></span>
+      <span>·</span>
+      <span>오디오 <span class="text-[var(--txt)]" id="audioVol">42</span>%</span>
+    </div>
+    <div class="ml-auto flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2 mono text-[12px]">
+        <span class="led led-green"></span>
+        <span class="text-[var(--green)]">SAFE</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-2 mono text-[12px]">
+        <span class="led"></span>
+        <span class="text-[var(--cyan)]">AUTO-LINK</span>
+      </div>
+      <div class="mono text-[12px] text-[var(--mute)]" id="clock">--:--:--</div>
+    </div>
+  </div>
+  <!-- alert ticker -->
+  <div class="border-t border-[var(--line)] bg-[rgba(125,240,255,.04)] overflow-hidden">
+    <div class="max-w-[1440px] mx-auto px-6 py-1.5 flex items-center gap-3">
+      <span class="chip chip-warn shrink-0">! 알림</span>
+      <div class="overflow-hidden flex-1">
+        <div class="marquee whitespace-nowrap mono text-[12px] text-[var(--txt)]/85">
+          <span id="ticker1">전기기능사 시험까지 D-72 · 오늘의 학습 목표 4단원 · 평균 정답률 78.4%</span>
+          <span>· 연료(집중력) 78% · 다음 충전(휴식) 권장 17분 후 · 가상 차량 시뮬레이션</span>
+          <span id="ticker2">전기기능사 시험까지 D-72 · 오늘의 학습 목표 4단원 · 평균 정답률 78.4%</span>
+          <span>· 연료(집중력) 78% · 다음 충전(휴식) 권장 17분 후 · 가상 차량 시뮬레이션</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
+
+  <!-- ============ HERO TITLE ============ -->
+  <section class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <div class="mono text-[11px] tracking-[.32em] text-[var(--mute)]">SPARK MOTORS · MODEL E · 2026 EDITION</div>
+      <h1 class="mt-1 text-[28px] md:text-[34px] font-semibold text-white">
+        학습 합격 드라이브 <span class="text-[var(--cyan)]">v4.7</span>
+      </h1>
+      <p class="text-[13px] text-[var(--mute)] mt-1">전기기능사 합격까지의 여정을 한 대의 전기차 계기판으로 시각화합니다.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="chip chip-ok">● ONLINE</span>
+      <span class="chip">VIN <span class="vin ml-1">5E·2026·KR·EXAM·072</span></span>
+      <span class="chip">COLOR <span class="ml-1 text-white">미드나잇 인디고</span></span>
+    </div>
+  </section>
+
+  <!-- ============ MAIN DASHBOARD (16:9 SVG) ============ -->
+  <section class="panel relative overflow-hidden">
+    <div class="absolute inset-0 hud-grid opacity-60 pointer-events-none"></div>
+    <div class="absolute inset-0 scanline pointer-events-none"></div>
+
+    <!-- top hud strip -->
+    <div class="relative flex items-center justify-between px-5 pt-4 text-[11px] mono">
+      <div class="flex items-center gap-3 text-[var(--mute)]">
+        <span class="led led-green pulse-dot"></span>
+        <span class="text-[var(--green)]">READY TO DRIVE</span>
+        <span class="text-[var(--line2)]">|</span>
+        <span>기어 <span class="text-white">D</span></span>
+        <span class="text-[var(--line2)]">|</span>
+        <span>주행거리 <span class="text-white" id="odo">72,418</span> km</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="chip chip-warn blink">전기기능사 시험까지 D-<span id="dday">72</span></span>
+        <span class="chip">SPARK NET · 5G</span>
+      </div>
+    </div>
+
+    <!-- SVG dashboard -->
+    <div class="relative px-3 pb-3">
+      <svg viewBox="0 0 1600 720" class="w-full h-auto" preserveAspectRatio="xMidYMid meet" role="img" aria-label="전기차 학습 계기판">
+        <defs>
+          <linearGradient id="ringFill" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="#7df0ff"/>
+            <stop offset="100%" stop-color="#5aa8ff"/>
+          </linearGradient>
+          <linearGradient id="battFill" x1="0" x2="0" y1="1" y2="0">
+            <stop offset="0%" stop-color="#5ef2b3"/>
+            <stop offset="100%" stop-color="#7df0ff"/>
+          </linearGradient>
+          <linearGradient id="regen" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="rgba(94,242,179,0)"/>
+            <stop offset="100%" stop-color="rgba(94,242,179,.7)"/>
+          </linearGradient>
+          <radialGradient id="globePoint" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0%" stop-color="#7df0ff" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#7df0ff" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2"/>
+          </filter>
+        </defs>
+
+        <!-- ============ LEFT: SPEEDOMETER (LEARNING SPEED) ============ -->
+        <g transform="translate(280,360)">
+          <!-- outer arc bg -->
+          <path d="M -220 0 A 220 220 0 1 1 220 0" fill="none" class="ring-track" stroke-width="20"/>
+          <!-- tick marks 0..240 -->
+          <g stroke="#7df0ff" stroke-width="1.5" opacity="0.55">
+            <!-- generated tick lines via script-less manual -->
+          </g>
+          <!-- major ticks -->
+          <g id="speedTicks"></g>
+          <!-- active speed arc -->
+          <path id="speedArc" d="" fill="none" stroke="url(#ringFill)" stroke-width="14" stroke-linecap="round" class="glow-cyan"/>
+          <!-- inner circle -->
+          <circle r="160" fill="rgba(8,16,28,0.85)" stroke="rgba(120,180,255,0.25)"/>
+          <circle r="160" fill="none" stroke="rgba(125,240,255,0.08)" stroke-dasharray="2 6"/>
+          <!-- center labels -->
+          <text x="0" y="-70" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="14" fill="#7a8aa6" letter-spacing="6">LEARNING SPEED</text>
+          <text x="0" y="20" id="speedTxt" text-anchor="middle" font-family="Rajdhani,Eurostile" font-size="120" font-weight="700" fill="#ffffff">86</text>
+          <text x="0" y="60" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="14" fill="#7df0ff" letter-spacing="4">PAGE / HR</text>
+          <text x="0" y="100" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="12" fill="#7a8aa6">현재 챕터 4-3 직류회로</text>
+          <!-- needle -->
+          <g class="needle" id="needle">
+            <path d="M -6 10 L 0 -150 L 6 10 Z" fill="#7df0ff" class="glow-cyan"/>
+            <circle r="10" fill="#0a1220" stroke="#7df0ff" stroke-width="2"/>
+          </g>
+          <!-- mode label below -->
+          <text x="0" y="200" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="12" fill="#7a8aa6">MODE</text>
+          <text x="0" y="222" id="modeBig" text-anchor="middle" font-family="Rajdhani" font-size="22" font-weight="600" fill="#7df0ff" letter-spacing="6">SPORT</text>
+        </g>
+
+        <!-- ============ CENTER: BATTERY + REGEN ============ -->
+        <g transform="translate(800,360)">
+          <!-- big circle frame -->
+          <circle r="260" fill="rgba(8,16,28,0.75)" stroke="rgba(120,180,255,0.22)"/>
+          <circle r="260" fill="none" stroke="rgba(94,242,179,0.18)" stroke-dasharray="3 8"/>
+          <circle r="225" fill="none" stroke="rgba(120,180,255,0.12)"/>
+          <!-- ring battery arc -->
+          <circle r="200" fill="none" class="ring-track" stroke-width="18"/>
+          <circle id="battRing" r="200" fill="none" stroke="url(#battFill)" stroke-width="18" stroke-linecap="round"
+                  transform="rotate(-90)" class="glow-green"
+                  stroke-dasharray="1256.6" stroke-dashoffset="251.3"/>
+          <!-- inner battery shape -->
+          <g>
+            <rect x="-90" y="-110" width="180" height="200" rx="18" fill="rgba(10,18,32,0.9)" stroke="#5ef2b3" stroke-width="2" class="glow-green"/>
+            <rect x="-30" y="-128" width="60" height="20" rx="4" fill="#5ef2b3" class="glow-green"/>
+            <!-- fill bars -->
+            <g id="battBars"></g>
+          </g>
+          <text x="0" y="-160" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="13" fill="#7a8aa6" letter-spacing="6">FOCUS BATTERY</text>
+          <text x="0" y="135" id="battTxt" text-anchor="middle" font-family="Rajdhani" font-size="56" font-weight="700" fill="#ffffff">78%</text>
+          <text x="0" y="165" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="12" fill="#5ef2b3" letter-spacing="3">집중 에너지</text>
+
+          <!-- regen indicator (left) -->
+          <g transform="translate(-260,0)">
+            <rect x="-46" y="-110" width="32" height="220" rx="6" fill="rgba(10,18,32,0.85)" stroke="rgba(120,180,255,0.25)"/>
+            <rect id="regenBar" x="-46" y="-10" width="32" height="120" fill="url(#regen)"/>
+            <text x="-30" y="-130" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="10" fill="#7a8aa6" letter-spacing="3">REGEN</text>
+            <text x="-30" y="135" id="regenTxt" text-anchor="middle" font-family="Rajdhani" font-size="18" font-weight="600" fill="#5ef2b3">+12kW</text>
+          </g>
+          <!-- power indicator (right) -->
+          <g transform="translate(260,0)">
+            <rect x="14" y="-110" width="32" height="220" rx="6" fill="rgba(10,18,32,0.85)" stroke="rgba(120,180,255,0.25)"/>
+            <rect id="pwrBar" x="14" y="-40" width="32" height="150" fill="rgba(125,240,255,0.35)"/>
+            <text x="30" y="-130" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="10" fill="#7a8aa6" letter-spacing="3">POWER</text>
+            <text x="30" y="135" id="pwrTxt" text-anchor="middle" font-family="Rajdhani" font-size="18" font-weight="600" fill="#7df0ff">42kW</text>
+          </g>
+
+          <!-- range below -->
+          <g transform="translate(0,235)">
+            <text x="0" y="0" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6" letter-spacing="4">남은 학습 주행거리</text>
+            <text x="0" y="26" text-anchor="middle" font-family="Rajdhani" font-size="22" font-weight="600" fill="#ffffff"><tspan id="rangeKm">312</tspan> <tspan fill="#7a8aa6" font-size="14">단원 km</tspan></text>
+          </g>
+        </g>
+
+        <!-- ============ RIGHT: MINIMAP (LEARNING ROADMAP) ============ -->
+        <g transform="translate(1320,360)">
+          <circle r="220" fill="rgba(8,16,28,0.85)" stroke="rgba(120,180,255,0.22)"/>
+          <circle r="220" fill="none" stroke="rgba(120,180,255,0.10)" stroke-dasharray="2 6"/>
+          <circle r="170" fill="none" stroke="rgba(120,180,255,0.10)"/>
+          <circle r="120" fill="none" stroke="rgba(120,180,255,0.10)"/>
+          <circle r="70" fill="none" stroke="rgba(120,180,255,0.10)"/>
+          <!-- compass -->
+          <text x="0" y="-194" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7df0ff" letter-spacing="6">N · 합격</text>
+          <text x="200" y="4" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6">E</text>
+          <text x="-200" y="4" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6">W</text>
+          <text x="0" y="210" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6">S · 시작점</text>
+
+          <!-- route path -->
+          <path d="M -120 160 C -60 120, -100 40, -40 0 S 60 -40, 30 -90 S 60 -160, 120 -180"
+                fill="none" stroke="rgba(125,240,255,0.25)" stroke-width="3" stroke-dasharray="4 6"/>
+          <path id="routeDone" d="M -120 160 C -60 120, -100 40, -40 0 S 60 -40, 30 -90"
+                fill="none" stroke="#7df0ff" stroke-width="4" class="glow-cyan"/>
+
+          <!-- waypoints -->
+          <g font-family="ui-monospace,JetBrains Mono" font-size="10" fill="#e7f0ff">
+            <g transform="translate(-120,160)">
+              <circle r="6" fill="#5ef2b3" class="glow-green"/>
+              <text x="12" y="4" fill="#5ef2b3">1단원 시작</text>
+            </g>
+            <g transform="translate(-40,0)">
+              <circle r="6" fill="#5ef2b3" class="glow-green"/>
+              <text x="12" y="4" fill="#5ef2b3">2단원</text>
+            </g>
+            <g transform="translate(30,-90)">
+              <circle r="8" fill="#7df0ff" class="glow-cyan"/>
+              <circle r="14" fill="none" stroke="#7df0ff" opacity="0.6">
+                <animate attributeName="r" values="8;18;8" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <text x="14" y="4" fill="#7df0ff">현재 · 4-3 직류회로</text>
+            </g>
+            <g transform="translate(60,-160)">
+              <circle r="5" fill="rgba(255,209,102,0.85)" class="glow-amber"/>
+              <text x="12" y="4" fill="#ffd166">5단원 변압기 (약점)</text>
+            </g>
+            <g transform="translate(120,-180)">
+              <circle r="7" fill="none" stroke="#7df0ff" stroke-width="2"/>
+              <path d="M -4 0 L 0 -6 L 4 0 M 0 -6 L 0 8" stroke="#7df0ff" stroke-width="1.5" fill="none"/>
+              <text x="12" y="4" fill="#7df0ff">합격 도착지</text>
+            </g>
+          </g>
+
+          <!-- title -->
+          <text x="0" y="240" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6" letter-spacing="6">LEARNING MAP · 진행 <tspan id="mapPct" fill="#7df0ff">62%</tspan></text>
+        </g>
+
+        <!-- bottom hud line -->
+        <g transform="translate(800,680)">
+          <line x1="-700" x2="700" y1="0" y2="0" stroke="rgba(120,180,255,0.18)"/>
+          <text x="-700" y="22" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6">FW v4.7 · DRIVE OS</text>
+          <text x="0" y="22" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6">SPARK MOTORS · MODEL E · 학습 합격 드라이브 · 가상 시뮬레이션</text>
+          <text x="700" y="22" text-anchor="end" font-family="ui-monospace,JetBrains Mono" font-size="11" fill="#7a8aa6">SIGNAL ▓▓▓▓▓░ · 5G</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- bottom warning chips -->
+    <div class="relative px-5 pb-5 flex flex-wrap items-center gap-2 mono text-[11px]">
+      <span class="chip chip-ok">● 시트벨트 OK</span>
+      <span class="chip chip-ok">● 도어 잠김</span>
+      <span class="chip">○ 오토파일럿 보조</span>
+      <span class="chip chip-warn">▲ 5단원 약점 감지</span>
+      <span class="chip">○ 회생제동 활성</span>
+      <span class="chip">○ 차선 유지 (집중 모드)</span>
+    </div>
+  </section>
+
+  <!-- ============ ROW 1: DRIVE MODES + TRIP COMPUTER ============ -->
+  <section class="grid grid-cols-12 gap-6">
+
+    <!-- Drive modes -->
+    <div class="panel p-5 col-span-12 lg:col-span-5">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">DRIVE MODES</div>
+        <span class="chip" id="modeChip">현재: 스포츠 · 속독</span>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">주행 모드 = 학습 모드</h3>
+
+      <div class="mt-4 grid grid-cols-3 gap-2" id="modeBtns">
+        <button data-mode="eco" class="btn flex-col py-3">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 17c4-9 14-10 14-10s-1 10-10 14c-4-1-4-4-4-4z" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span class="mt-1 text-[13px] font-semibold">이코노</span>
+          <span class="text-[10px] text-[var(--mute)] mono">정독 · 깊이 우선</span>
+        </button>
+        <button data-mode="sport" class="btn btn-active flex-col py-3">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span class="mt-1 text-[13px] font-semibold">스포츠</span>
+          <span class="text-[10px] text-[var(--mute)] mono">속독 · 속도 우선</span>
+        </button>
+        <button data-mode="tough" class="btn flex-col py-3">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M6 7l-3 5 3 5M18 7l3 5-3 5" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span class="mt-1 text-[13px] font-semibold">터프</span>
+          <span class="text-[10px] text-[var(--mute)] mono">문제풀이 · 험로</span>
+        </button>
+      </div>
+
+      <dl class="mt-5 grid grid-cols-3 gap-3 mono text-[11px]">
+        <div class="panel-soft p-3">
+          <dt class="text-[var(--mute)]">출력 토크</dt>
+          <dd class="text-[var(--cyan)] text-[18px] font-semibold mt-1" id="m_torque">410 Nm</dd>
+        </div>
+        <div class="panel-soft p-3">
+          <dt class="text-[var(--mute)]">0→100</dt>
+          <dd class="text-[var(--cyan)] text-[18px] font-semibold mt-1" id="m_acc">3.8 s</dd>
+        </div>
+        <div class="panel-soft p-3">
+          <dt class="text-[var(--mute)]">현가 강도</dt>
+          <dd class="text-[var(--cyan)] text-[18px] font-semibold mt-1" id="m_susp">단단함</dd>
+        </div>
+      </dl>
+
+      <p class="mt-3 text-[12px] text-[var(--mute)]" id="modeDesc">
+        스포츠 모드 — 페이지 회전 속도가 빨라지고, 핵심 키워드 위주로 진행합니다. 오답 시 즉시 다음 챕터로 가속.
+      </p>
+    </div>
+
+    <!-- Trip computer -->
+    <div class="panel p-5 col-span-12 lg:col-span-7">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">TRIP COMPUTER · TRIP A</div>
+        <div class="flex items-center gap-2 mono text-[11px]">
+          <span class="chip">시작 2026-03-04</span>
+          <span class="chip chip-ok">정상 운행</span>
+        </div>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">트립 컴퓨터 — 누적 학습 운행 기록</h3>
+
+      <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 mono">
+        <div class="panel-soft p-3">
+          <div class="text-[10px] tracking-[.2em] text-[var(--mute)]">TOTAL DRIVE TIME</div>
+          <div class="text-white text-[22px] font-semibold mt-1">128<span class="text-[var(--mute)] text-[12px]"> h</span> 42<span class="text-[var(--mute)] text-[12px]"> m</span></div>
+          <div class="text-[11px] text-[var(--green)] mt-1">▲ 어제 +2h12m</div>
+        </div>
+        <div class="panel-soft p-3">
+          <div class="text-[10px] tracking-[.2em] text-[var(--mute)]">AVG ACCURACY</div>
+          <div class="text-white text-[22px] font-semibold mt-1">78.4<span class="text-[var(--mute)] text-[12px]"> %</span></div>
+          <div class="text-[11px] text-[var(--cyan)] mt-1">목표 85% · −6.6%p</div>
+        </div>
+        <div class="panel-soft p-3">
+          <div class="text-[10px] tracking-[.2em] text-[var(--mute)]">EST. ARRIVAL</div>
+          <div class="text-white text-[22px] font-semibold mt-1">07-26 <span class="text-[var(--mute)] text-[12px]">금</span></div>
+          <div class="text-[11px] text-[var(--amber)] mt-1">합격 도착 예상 · D-72</div>
+        </div>
+        <div class="panel-soft p-3">
+          <div class="text-[10px] tracking-[.2em] text-[var(--mute)]">ENERGY USE</div>
+          <div class="text-white text-[22px] font-semibold mt-1">14.2<span class="text-[var(--mute)] text-[12px]"> kWh/100p</span></div>
+          <div class="text-[11px] text-[var(--green)] mt-1">효율 등급 A</div>
+        </div>
+      </div>
+
+      <!-- speed history -->
+      <div class="mt-5">
+        <div class="flex items-center justify-between mono text-[11px] text-[var(--mute)]">
+          <span>주간 학습 속도 (페이지/시간)</span>
+          <span>지난 7일</span>
+        </div>
+        <svg viewBox="0 0 720 140" class="w-full mt-2" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="areaG" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#7df0ff" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#7df0ff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g stroke="rgba(120,180,255,0.10)">
+            <line x1="0" x2="720" y1="35" y2="35"/>
+            <line x1="0" x2="720" y1="70" y2="70"/>
+            <line x1="0" x2="720" y1="105" y2="105"/>
+          </g>
+          <path d="M0,100 L100,80 L200,90 L300,55 L400,70 L500,40 L600,60 L720,30 L720,140 L0,140 Z" fill="url(#areaG)"/>
+          <path d="M0,100 L100,80 L200,90 L300,55 L400,70 L500,40 L600,60 L720,30" fill="none" stroke="#7df0ff" stroke-width="2" class="glow-cyan"/>
+          <g fill="#7df0ff">
+            <circle cx="100" cy="80" r="3"/>
+            <circle cx="200" cy="90" r="3"/>
+            <circle cx="300" cy="55" r="3"/>
+            <circle cx="400" cy="70" r="3"/>
+            <circle cx="500" cy="40" r="3"/>
+            <circle cx="600" cy="60" r="3"/>
+            <circle cx="720" cy="30" r="4" class="glow-cyan"/>
+          </g>
+          <g font-family="ui-monospace,JetBrains Mono" font-size="9" fill="#7a8aa6">
+            <text x="0" y="135">월</text><text x="100" y="135">화</text><text x="200" y="135">수</text>
+            <text x="300" y="135">목</text><text x="400" y="135">금</text><text x="500" y="135">토</text>
+            <text x="600" y="135">일</text><text x="700" y="135">오늘</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ROW 2: NAV + AUDIO + DIAGNOSTICS ============ -->
+  <section class="grid grid-cols-12 gap-6">
+
+    <!-- Navigation -->
+    <div class="panel p-5 col-span-12 lg:col-span-5">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">NAVIGATION · GUIDE</div>
+        <span class="chip chip-ok">음성 안내 ON</span>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">다음 단원 안내</h3>
+
+      <div class="mt-4 panel-soft p-4 flex items-center gap-4">
+        <svg width="64" height="64" viewBox="0 0 64 64" class="nav-arrow shrink-0">
+          <path d="M32 6 L52 56 L32 44 L12 56 Z" fill="#7df0ff" stroke="#5aa8ff" stroke-width="1"/>
+        </svg>
+        <div class="flex-1">
+          <div class="mono text-[11px] text-[var(--mute)]">120 m 앞 · 우측 진입</div>
+          <div class="text-white text-[18px] font-semibold mt-1">5단원 변압기로 진입</div>
+          <div class="mono text-[12px] text-[var(--cyan)] mt-1">"잠시 후, 변압기 챕터입니다. 약점 구간이니 속도를 줄이세요."</div>
+        </div>
+      </div>
+
+      <ol class="mt-4 space-y-2 mono text-[12px]">
+        <li class="flex items-center gap-3"><span class="led led-green"></span><span class="text-[var(--mute)] w-12">0.0 km</span><span class="text-white">출발 · 4-3 직류회로</span></li>
+        <li class="flex items-center gap-3"><span class="led"></span><span class="text-[var(--mute)] w-12">1.2 km</span><span class="text-white">우회전 · 4-4 옴의 법칙 정리</span></li>
+        <li class="flex items-center gap-3"><span class="led led-amber"></span><span class="text-[var(--mute)] w-12">2.4 km</span><span class="text-white">합류 · 5단원 변압기 (약점)</span></li>
+        <li class="flex items-center gap-3"><span class="led"></span><span class="text-[var(--mute)] w-12">3.8 km</span><span class="text-white">휴게소 · 모의고사 3회</span></li>
+        <li class="flex items-center gap-3"><span class="led"></span><span class="text-[var(--mute)] w-12">5.0 km</span><span class="text-white">도착 · 합격 도시</span></li>
+      </ol>
+    </div>
+
+    <!-- Audio / Media -->
+    <div class="panel p-5 col-span-12 lg:col-span-4">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">MEDIA · AUDIOBOOK</div>
+        <span class="chip">SPARK SOUND</span>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">오디오북 · 음악</h3>
+
+      <div class="mt-4 panel-soft p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-lg border border-[var(--line2)] flex items-center justify-center bg-[rgba(125,240,255,.05)]">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" id="playIco"><path id="playIcoPath" d="M8 5v14l11-7z" fill="#7df0ff"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-white text-[14px] font-semibold truncate" id="trackTitle">Ch.4 직류회로 — 옴의 법칙 정밀 해설</div>
+            <div class="mono text-[11px] text-[var(--mute)] truncate" id="trackArtist">전기기능사 오디오북 · 합격 라디오</div>
+          </div>
+          <button id="playBtn" class="btn btn-active">▶ 재생</button>
+        </div>
+        <div class="mt-3">
+          <div class="progress-bar"><span id="trackBar" style="width:38%"></span></div>
+          <div class="flex justify-between mono text-[10px] text-[var(--mute)] mt-1">
+            <span id="trackCur">06:42</span><span id="trackDur">17:30</span>
+          </div>
+        </div>
+      </div>
+
+      <ul class="mt-3 space-y-1 mono text-[12px]" id="trackList">
+        <!-- generated -->
+      </ul>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="panel p-5 col-span-12 lg:col-span-3">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">DIAGNOSTICS</div>
+        <span class="chip chip-warn">2 경고</span>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">차량 진단 · 학습 약점</h3>
+
+      <ul class="mt-4 space-y-3">
+        <li class="flex items-start gap-2">
+          <span class="led led-red mt-1.5"></span>
+          <div>
+            <div class="text-white text-[13px] font-semibold">5단원 변압기 — 마모 88%</div>
+            <div class="mono text-[11px] text-[var(--mute)]">코드: E-TRF-501 · 점검 권장</div>
+          </div>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="led led-amber mt-1.5"></span>
+          <div>
+            <div class="text-white text-[13px] font-semibold">3-2 키르히호프 — 압력 저하</div>
+            <div class="mono text-[11px] text-[var(--mute)]">코드: W-KHF-302 · 모니터링</div>
+          </div>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="led led-green mt-1.5"></span>
+          <div>
+            <div class="text-white text-[13px] font-semibold">1-1 전기의 기초 — 정상</div>
+            <div class="mono text-[11px] text-[var(--mute)]">코드: OK-BAS-101</div>
+          </div>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="led led-green mt-1.5"></span>
+          <div>
+            <div class="text-white text-[13px] font-semibold">2-1 회로 해석 — 정상</div>
+            <div class="mono text-[11px] text-[var(--mute)]">코드: OK-CIR-201</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ ROW 3: CHARGE GUIDE + VEHICLE INFO ============ -->
+  <section class="grid grid-cols-12 gap-6">
+
+    <!-- Charging guide -->
+    <div class="panel p-5 col-span-12 lg:col-span-7">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">CHARGING · REST GUIDE</div>
+        <span class="chip">SPARK NETWORK · 충전소 12,480개소</span>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">충전 안내 — 휴식 · 간식 시간</h3>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="panel-soft p-4">
+          <div class="flex items-center justify-between">
+            <div class="mono text-[11px] tracking-[.2em] text-[var(--cyan)]">QUICK CHARGE</div>
+            <span class="chip chip-ok">10분</span>
+          </div>
+          <div class="text-white text-[16px] font-semibold mt-2">짧은 환기</div>
+          <ul class="mt-2 mono text-[11px] text-[var(--mute)] space-y-1">
+            <li>· 창문 열고 심호흡 6회</li>
+            <li>· 물 200ml</li>
+            <li>· 화면 응시 종료, 먼 곳 보기</li>
+          </ul>
+          <div class="mt-3 progress-bar"><span style="width:30%"></span></div>
+          <div class="mono text-[10px] text-[var(--mute)] mt-1">집중 회복 +18%</div>
+        </div>
+        <div class="panel-soft p-4 ring" style="border-color:rgba(125,240,255,.45)">
+          <div class="flex items-center justify-between">
+            <div class="mono text-[11px] tracking-[.2em] text-[var(--cyan)]">FAST CHARGE</div>
+            <span class="chip">권장 · 25분</span>
+          </div>
+          <div class="text-white text-[16px] font-semibold mt-2">간식 · 산책</div>
+          <ul class="mt-2 mono text-[11px] text-[var(--mute)] space-y-1">
+            <li>· 견과류 한 줌 · 바나나</li>
+            <li>· 실내 5분 스트레칭</li>
+            <li>· 짧은 음악 1곡</li>
+          </ul>
+          <div class="mt-3 progress-bar"><span style="width:68%"></span></div>
+          <div class="mono text-[10px] text-[var(--green)] mt-1">집중 회복 +52% · 추천</div>
+        </div>
+        <div class="panel-soft p-4">
+          <div class="flex items-center justify-between">
+            <div class="mono text-[11px] tracking-[.2em] text-[var(--cyan)]">FULL CHARGE</div>
+            <span class="chip chip-warn">90분</span>
+          </div>
+          <div class="text-white text-[16px] font-semibold mt-2">식사 · 낮잠</div>
+          <ul class="mt-2 mono text-[11px] text-[var(--mute)] space-y-1">
+            <li>· 단백질 위주 식사</li>
+            <li>· 20분 파워냅</li>
+            <li>· 가벼운 산책</li>
+          </ul>
+          <div class="mt-3 progress-bar"><span style="width:96%"></span></div>
+          <div class="mono text-[10px] text-[var(--mute)] mt-1">집중 회복 +88%</div>
+        </div>
+      </div>
+
+      <div class="mt-4 mono text-[12px] text-[var(--mute)] flex items-center gap-3">
+        <span class="led led-amber"></span>
+        <span>다음 충전 권장 시점 — <span class="text-[var(--amber)]" id="restIn">17</span> 분 후</span>
+        <span class="text-[var(--line2)]">|</span>
+        <span>오늘 충전 횟수 <span class="text-white">2</span>회 · 평균 <span class="text-white">22</span>분</span>
+      </div>
+    </div>
+
+    <!-- Vehicle info -->
+    <div class="panel p-5 col-span-12 lg:col-span-5">
+      <div class="flex items-center justify-between">
+        <div class="mono text-[11px] tracking-[.28em] text-[var(--mute)]">VEHICLE INFO</div>
+        <span class="chip">REG · 2026.03.04</span>
+      </div>
+      <h3 class="mt-1 text-white text-[18px] font-semibold">가상 차량 정보</h3>
+
+      <!-- car SVG -->
+      <div class="mt-3 panel-soft p-3">
+        <svg viewBox="0 0 480 200" class="w-full">
+          <defs>
+            <linearGradient id="bodyG" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#1a2a4a"/>
+              <stop offset="100%" stop-color="#0a1220"/>
+            </linearGradient>
+          </defs>
+          <!-- ground glow -->
+          <ellipse cx="240" cy="170" rx="200" ry="10" fill="rgba(125,240,255,0.12)" filter="url(#soft)"/>
+          <!-- body -->
+          <path d="M60 140 C 80 100, 150 70, 240 70 C 330 70, 400 100, 420 140 L 420 160 L 60 160 Z" fill="url(#bodyG)" stroke="#5aa8ff" stroke-width="1.5"/>
+          <!-- windows -->
+          <path d="M120 130 C 140 95, 180 80, 240 80 C 300 80, 340 95, 360 130 Z" fill="rgba(125,240,255,0.18)" stroke="#7df0ff" stroke-width="1"/>
+          <line x1="240" y1="80" x2="240" y2="130" stroke="rgba(125,240,255,0.4)"/>
+          <!-- light bar -->
+          <rect x="68" y="128" width="40" height="3" fill="#7df0ff" class="glow-cyan"/>
+          <rect x="372" y="128" width="40" height="3" fill="#ff6b8a" class="glow-amber" style="filter:drop-shadow(0 0 6px #ff6b8a)"/>
+          <!-- wheels -->
+          <circle cx="130" cy="160" r="22" fill="#04070d" stroke="#5aa8ff" stroke-width="1.5"/>
+          <circle cx="130" cy="160" r="10" fill="none" stroke="#7df0ff" stroke-width="1"/>
+          <circle cx="350" cy="160" r="22" fill="#04070d" stroke="#5aa8ff" stroke-width="1.5"/>
+          <circle cx="350" cy="160" r="10" fill="none" stroke="#7df0ff" stroke-width="1"/>
+          <!-- label -->
+          <text x="240" y="195" text-anchor="middle" font-family="ui-monospace,JetBrains Mono" font-size="10" fill="#7a8aa6" letter-spacing="3">SPARK MOTORS · MODEL E</text>
+        </svg>
+      </div>
+
+      <dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 mono text-[12px]">
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">모델</dt><dd class="text-white">Model E · Long Range</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">트림</dt><dd class="text-white">Scholar 4MOTION</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">VIN</dt><dd class="text-white vin">5E2026KREX072</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">색상</dt><dd class="text-white">미드나잇 인디고</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">휠</dt><dd class="text-white">19" 에어로 노바</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">배터리</dt><dd class="text-white">88 kWh · NCM-X</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">출력</dt><dd class="text-white">298 kW · 410 Nm</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">1회 충전 주행</dt><dd class="text-white">512 단원-km</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">소유자</dt><dd class="text-white" id="ownerName">합격 후보 #072</dd></div>
+        <div class="flex justify-between border-b border-[var(--line)] py-1.5"><dt class="text-[var(--mute)]">최종 점검</dt><dd class="text-white">2026-05-13</dd></div>
+      </dl>
+
+      <details class="mt-3">
+        <summary class="mono text-[11px] text-[var(--cyan)] hover:underline">▾ 운전자(학습자) 이름 변경</summary>
+        <div class="mt-2 flex gap-2">
+          <input id="ownerInput" type="text" maxlength="32" placeholder="이름 입력 (최대 32자)" class="flex-1 bg-transparent border border-[var(--line2)] rounded px-2 py-1.5 mono text-[12px] text-white placeholder:text-[var(--mute)] focus:outline-none focus:border-[var(--cyan)]"/>
+          <button id="ownerSave" class="btn">저장</button>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="border-t border-[var(--line)] pt-5 pb-2 mt-8 flex flex-wrap items-center justify-between gap-3 text-[11px] mono text-[var(--mute)]">
+    <div class="flex items-center gap-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 13l8-9 8 9-8 7-8-7z" stroke="#7df0ff" stroke-width="1.5"/></svg>
+      <span>SPARK MOTORS · DRIVE OS 4.7 · 학습 합격 드라이브</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span>가상 차량 시뮬레이션 · 실재 차량/브랜드와 무관</span>
+      <span class="text-[var(--line2)]">|</span>
+      <span id="buildTag">BUILD 26.05.15-DRIVE</span>
+    </div>
+  </footer>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const escapeHTML = (s) => String(s).replace(/[&<>"'`]/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;","`":"&#96;"
+  }[c]));
+
+  // ============ CLOCK ============
+  function tickClock(){
+    const d = new Date();
+    const pad = (n)=> String(n).padStart(2,"0");
+    $("clock").textContent = pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  // ============ SPEED TICKS + ARC ============
+  const speedG = $("speedTicks");
+  const TICK_NS = "http://www.w3.org/2000/svg";
+  function buildTicks(){
+    // arc from 135deg to 405deg (270deg sweep) ~ 0..240
+    const major = 12; // 0,20,...,240
+    for (let i=0;i<=major;i++){
+      const a = (-225 + (270/major)*i) * Math.PI/180;
+      const r1 = 200, r2 = 215;
+      const x1 = Math.cos(a)*r1, y1 = Math.sin(a)*r1;
+      const x2 = Math.cos(a)*r2, y2 = Math.sin(a)*r2;
+      const tx = Math.cos(a)*180, ty = Math.sin(a)*180;
+      const ln = document.createElementNS(TICK_NS,"line");
+      ln.setAttribute("x1",x1); ln.setAttribute("y1",y1);
+      ln.setAttribute("x2",x2); ln.setAttribute("y2",y2);
+      ln.setAttribute("stroke","#7df0ff"); ln.setAttribute("stroke-width","2"); ln.setAttribute("opacity","0.7");
+      speedG.appendChild(ln);
+      const tx2 = document.createElementNS(TICK_NS,"text");
+      tx2.setAttribute("x",tx); tx2.setAttribute("y",ty+4);
+      tx2.setAttribute("text-anchor","middle");
+      tx2.setAttribute("font-family","ui-monospace,JetBrains Mono");
+      tx2.setAttribute("font-size","12");
+      tx2.setAttribute("fill","#7a8aa6");
+      tx2.textContent = String(i*20);
+      speedG.appendChild(tx2);
+    }
+  }
+  buildTicks();
+
+  // ============ BATTERY BARS ============
+  const battBars = $("battBars");
+  function buildBattBars(level){
+    battBars.innerHTML = "";
+    const total = 12;
+    const filled = Math.round((level/100)*total);
+    for (let i=0;i<total;i++){
+      const y = 80 - i*16;
+      const r = document.createElementNS(TICK_NS,"rect");
+      r.setAttribute("x","-72"); r.setAttribute("y",y);
+      r.setAttribute("width","144"); r.setAttribute("height","10"); r.setAttribute("rx","3");
+      if (i < filled){
+        r.setAttribute("fill","#5ef2b3");
+        r.setAttribute("opacity", String(0.5 + (i/total)*0.5));
+        r.setAttribute("filter","");
+      } else {
+        r.setAttribute("fill","rgba(120,180,255,0.10)");
+      }
+      battBars.appendChild(r);
+    }
+  }
+
+  // ============ STATE & ANIMATION ============
+  let state = {
+    speed: 86,      // 0..240
+    battery: 78,    // 0..100
+    regen: 12,      // kW
+    power: 42,      // kW
+    range: 312,
+    mapPct: 62,
+    mode: "sport",
+    odo: 72418,
+    audioVol: 42,
+    playing: false,
+    restIn: 17,
+    dday: 72,
+  };
+
+  function setSpeed(v){
+    state.speed = Math.max(0, Math.min(240, v));
+    $("speedTxt").textContent = Math.round(state.speed);
+    // needle: -135..+135
+    const angle = -135 + (state.speed/240)*270;
+    $("needle").setAttribute("transform","rotate("+angle+")");
+    // arc
+    const start = -225, end = -225 + (state.speed/240)*270;
+    const a1 = start * Math.PI/180, a2 = end * Math.PI/180;
+    const r = 220;
+    const x1 = Math.cos(a1)*r, y1 = Math.sin(a1)*r;
+    const x2 = Math.cos(a2)*r, y2 = Math.sin(a2)*r;
+    const large = (end - start) > 180 ? 1 : 0;
+    $("speedArc").setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`);
+  }
+
+  function setBattery(v){
+    state.battery = Math.max(0, Math.min(100, v));
+    $("battTxt").textContent = Math.round(state.battery)+"%";
+    // ring
+    const C = 2*Math.PI*200;
+    $("battRing").setAttribute("stroke-dasharray", C);
+    $("battRing").setAttribute("stroke-dashoffset", C*(1 - state.battery/100));
+    buildBattBars(state.battery);
+    // range loosely tied to battery
+    state.range = Math.round(state.battery * 4);
+    $("rangeKm").textContent = state.range;
+  }
+
+  function setRegen(v){
+    state.regen = v;
+    const h = Math.max(0, Math.min(220, (v/40)*220));
+    const bar = $("regenBar");
+    bar.setAttribute("height", h);
+    bar.setAttribute("y", 110 - h);
+    $("regenTxt").textContent = (v>=0?"+":"")+v+"kW";
+  }
+  function setPower(v){
+    state.power = v;
+    const h = Math.max(0, Math.min(220, (v/120)*220));
+    const bar = $("pwrBar");
+    bar.setAttribute("height", h);
+    bar.setAttribute("y", 110 - h);
+    $("pwrTxt").textContent = v+"kW";
+  }
+  function setMap(v){
+    state.mapPct = Math.max(0, Math.min(100, v));
+    $("mapPct").textContent = Math.round(state.mapPct)+"%";
+  }
+
+  // initial render
+  setSpeed(state.speed);
+  setBattery(state.battery);
+  setRegen(state.regen);
+  setPower(state.power);
+  setMap(state.mapPct);
+
+  // ============ DRIVE MODE ============
+  const modeData = {
+    eco:   {label:"이코노", sub:"정독 · 깊이 우선",  torque:"260 Nm", acc:"7.2 s", susp:"부드러움", desc:"이코노 모드 — 페이지를 천천히 정독하며 핵심 개념을 깊이 이해합니다. 회생제동 강도가 높아 집중력 소모가 적습니다."},
+    sport: {label:"스포츠", sub:"속독 · 속도 우선",  torque:"410 Nm", acc:"3.8 s", susp:"단단함",   desc:"스포츠 모드 — 페이지 회전 속도가 빨라지고, 핵심 키워드 위주로 진행합니다. 오답 시 즉시 다음 챕터로 가속."},
+    tough: {label:"터프",   sub:"문제풀이 · 험로",   torque:"380 Nm", acc:"5.0 s", susp:"오프로드",  desc:"터프 모드 — 험로(고난도 문제)를 안정적으로 통과하도록 차체가 강화됩니다. 오답을 다시 풀이하는 시간이 길어집니다."},
+  };
+  function applyMode(m){
+    state.mode = m;
+    const d = modeData[m];
+    $("m_torque").textContent = d.torque;
+    $("m_acc").textContent = d.acc;
+    $("m_susp").textContent = d.susp;
+    $("modeDesc").textContent = d.desc;
+    $("modeBig").textContent = m.toUpperCase();
+    $("modeChip").textContent = "현재: "+d.label+" · "+d.sub;
+    document.querySelectorAll("#modeBtns button").forEach(b=>{
+      b.classList.toggle("btn-active", b.getAttribute("data-mode")===m);
+    });
+    // shift targets
+    if (m==="eco")   { state.speed = 42; state.power = 18; state.regen = 22; }
+    if (m==="sport"){ state.speed = 122; state.power = 76; state.regen = 8; }
+    if (m==="tough"){ state.speed = 64; state.power = 42; state.regen = 14; }
+    setSpeed(state.speed); setPower(state.power); setRegen(state.regen);
+  }
+  document.querySelectorAll("#modeBtns button").forEach(b=>{
+    b.addEventListener("click", ()=> applyMode(b.getAttribute("data-mode")));
+  });
+
+  // ============ AUDIO PLAYER ============
+  const tracks = [
+    {t:"Ch.4 직류회로 — 옴의 법칙 정밀 해설", a:"전기기능사 오디오북", d:"17:30"},
+    {t:"Ch.5 변압기 — 권수비와 손실 핵심", a:"합격 라디오 · 약점 보강", d:"22:14"},
+    {t:"Lo-Fi 집중 비트 vol.7", a:"SPARK SOUND · 학습 BGM", d:"40:00"},
+    {t:"Ch.3 회로 해석 — 키르히호프 정리", a:"오디오북 · 정독 시리즈", d:"19:48"},
+    {t:"화이트 노이즈 — 빗소리 · 카페", a:"SPARK SOUND · 배경음", d:"60:00"},
+    {t:"모의고사 3회차 — 음성 해설", a:"문제풀이 라디오", d:"34:06"},
+  ];
+  function renderTracks(activeIdx){
+    const ul = $("trackList");
+    ul.innerHTML = tracks.map((tr,i)=>{
+      const active = i===activeIdx;
+      return `<li class="flex items-center gap-2 px-2 py-1 rounded ${active?'bg-[rgba(125,240,255,.08)] border border-[var(--line)]':''}">
+        <span class="w-5 text-[var(--mute)]">${String(i+1).padStart(2,"0")}</span>
+        <span class="flex-1 truncate ${active?'text-white':'text-[var(--txt)]/85'}">${escapeHTML(tr.t)}</span>
+        <span class="text-[var(--mute)]">${escapeHTML(tr.d)}</span>
+      </li>`;
+    }).join("");
+  }
+  let activeTrack = 0;
+  renderTracks(activeTrack);
+  function selectTrack(i){
+    activeTrack = i;
+    $("trackTitle").textContent = tracks[i].t;
+    $("trackArtist").textContent = tracks[i].a;
+    $("trackDur").textContent = tracks[i].d;
+    renderTracks(i);
+  }
+  $("trackList").addEventListener("click", (e)=>{
+    const li = e.target.closest("li"); if (!li) return;
+    const i = Array.from($("trackList").children).indexOf(li);
+    if (i>=0) selectTrack(i);
+  });
+  const playBtn = $("playBtn");
+  playBtn.addEventListener("click", ()=>{
+    state.playing = !state.playing;
+    playBtn.textContent = state.playing ? "❚❚ 일시정지" : "▶ 재생";
+    $("playIcoPath").setAttribute("d", state.playing ? "M6 4h4v16H6zM14 4h4v16h-4z" : "M8 5v14l11-7z");
+  });
+
+  // progress fake
+  let trackPct = 38;
+  setInterval(()=>{
+    if (state.playing){
+      trackPct += 0.4;
+      if (trackPct>100) trackPct=0;
+      $("trackBar").style.width = trackPct+"%";
+      const total = 17*60+30;
+      const cur = Math.round(total*trackPct/100);
+      const m = Math.floor(cur/60), s = cur%60;
+      $("trackCur").textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    }
+  }, 800);
+
+  // ============ OWNER NAME ============
+  $("ownerSave").addEventListener("click", ()=>{
+    const v = ($("ownerInput").value||"").trim();
+    if (!v){ $("ownerName").textContent = "합격 후보 #072"; return; }
+    $("ownerName").textContent = escapeHTML(v.slice(0,32));
+  });
+  $("ownerInput").addEventListener("keydown", (e)=>{ if (e.key==="Enter") $("ownerSave").click(); });
+
+  // ============ AUTO DRIFT (gauges) ============
+  setInterval(()=>{
+    // small drift around current mode target
+    const jitter = (a)=> (Math.random()*2-1)*a;
+    setSpeed(state.speed + jitter(6));
+    setPower(Math.max(0, Math.round(state.power + jitter(4))));
+    setRegen(Math.max(0, Math.round(state.regen + jitter(2))));
+    // odometer slowly increases
+    state.odo += Math.round(Math.random()*3);
+    $("odo").textContent = state.odo.toLocaleString();
+    // map progress crawl
+    if (Math.random() < 0.4){
+      setMap(state.mapPct + 0.1);
+    }
+    // battery slow decay then auto top-up
+    setBattery(state.battery - 0.2);
+    if (state.battery < 18){
+      // simulate fast charge
+      let i=0; const ch = setInterval(()=>{
+        setBattery(state.battery + 4); i++;
+        if (i>20 || state.battery>=92){ clearInterval(ch); }
+      }, 220);
+    }
+  }, 1400);
+
+  // alert ticker auto refresh (rotating)
+  const alerts = [
+    "전기기능사 시험까지 D-72 · 오늘의 학습 목표 4단원 · 평균 정답률 78.4%",
+    "오토파일럿 보조: 약점 단원(변압기) 자동 우회 경로 안내 중",
+    "회생제동 활성 — 휴식 중에도 집중 에너지 +0.6%/min 회복",
+    "충전소 도착 예정 17분 · 권장 휴식 25분 (간식·산책)",
+    "주간 베스트 드라이브 · 토요일 132 페이지/시간 (최고 기록)",
+  ];
+  let ai = 0;
+  setInterval(()=>{
+    ai = (ai+1) % alerts.length;
+    const txt = alerts[ai] + " · 연료(집중력) "+Math.round(state.battery)+"% · 가상 차량 시뮬레이션";
+    $("ticker1").textContent = txt;
+    $("ticker2").textContent = txt;
+  }, 5200);
+
+  // D-day countdown of restIn
+  setInterval(()=>{
+    state.restIn = Math.max(0, state.restIn - 1);
+    if (state.restIn <= 0) state.restIn = 25;
+    $("restIn").textContent = state.restIn;
+  }, 6000);
+
+})();
+</script>
+</body>
+</html>

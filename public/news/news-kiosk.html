@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK BURGER · 스파크 버거 키오스크 — 전기기능사 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --spark-red: #d7263d;
+    --spark-red-dark: #a01528;
+    --spark-yellow: #ffcc1a;
+    --spark-yellow-dark: #f5b800;
+    --spark-cream: #fff8e6;
+    --spark-ink: #1a1a1a;
+    --spark-gray: #6b6b6b;
+    --spark-line: #e6e1d4;
+  }
+  html, body {
+    font-family: 'Inter', 'Noto Sans KR', system-ui, sans-serif;
+    background: linear-gradient(180deg, #fff8e6 0%, #ffe9b3 100%);
+    color: var(--spark-ink);
+  }
+  .font-display { font-family: 'Inter', 'Noto Sans KR', sans-serif; font-weight: 900; letter-spacing: -0.02em; }
+  .kiosk-frame {
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(160, 21, 40, 0.25), 0 0 0 14px #1a1a1a, 0 0 0 18px #d7263d;
+    overflow: hidden;
+  }
+  .menu-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+  }
+  .menu-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(215,38,61,.18); }
+  .menu-card:active { transform: translateY(0) scale(.98); }
+  .cat-tab.active {
+    background: var(--spark-red);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(215,38,61,.35);
+  }
+  .big-btn { font-weight: 900; letter-spacing: -0.01em; }
+  .scroll-hide::-webkit-scrollbar { width: 8px; }
+  .scroll-hide::-webkit-scrollbar-thumb { background: #e6e1d4; border-radius: 4px; }
+  /* 큰 글씨 모드 */
+  body.large-text .menu-name { font-size: 1.5rem !important; }
+  body.large-text .menu-price { font-size: 1.5rem !important; }
+  body.large-text .cart-name { font-size: 1.4rem !important; }
+  body.large-text .cat-tab { font-size: 1.3rem !important; padding-top: 1.1rem !important; padding-bottom: 1.1rem !important; }
+  body.large-text .receipt-line { font-size: 1.15rem !important; }
+  /* 펄스 */
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(215,38,61,.6); }
+    70% { box-shadow: 0 0 0 18px rgba(215,38,61,0); }
+    100% { box-shadow: 0 0 0 0 rgba(215,38,61,0); }
+  }
+  .pulse { animation: pulseRing 2s infinite; }
+  /* 영수증 */
+  .receipt {
+    font-family: 'Inter', monospace;
+    background: #fffef7;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 24px, #f5efde 24px, #f5efde 25px);
+  }
+  .ticket-edge {
+    --m: radial-gradient(circle at 8px 8px, transparent 8px, #000 9px);
+    -webkit-mask-image:
+      linear-gradient(#000, #000),
+      radial-gradient(circle at center, #000 6px, transparent 7px);
+  }
+  /* 점선 */
+  .dashed { background-image: linear-gradient(90deg, #999 50%, transparent 0); background-size: 8px 1px; background-repeat: repeat-x; background-position: 0 50%; }
+  /* 토글 */
+  .toggle {
+    width: 52px; height: 28px; background: #ddd; border-radius: 999px; position: relative; cursor: pointer; transition: background .2s;
+  }
+  .toggle.on { background: var(--spark-red); }
+  .toggle::after {
+    content: ''; width: 22px; height: 22px; background: #fff; border-radius: 999px; position: absolute; top: 3px; left: 3px; transition: left .2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+  .toggle.on::after { left: 27px; }
+
+  .ribbon {
+    background: repeating-linear-gradient(45deg, #ffcc1a, #ffcc1a 12px, #d7263d 12px, #d7263d 24px);
+  }
+  .badge-hot {
+    background: var(--spark-red);
+    color: #fff;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+  }
+  .badge-new {
+    background: var(--spark-yellow);
+    color: var(--spark-ink);
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+  }
+  .modal-backdrop {
+    background: rgba(15,15,20,.65);
+    backdrop-filter: blur(4px);
+  }
+  .qr-grid {
+    background:
+      conic-gradient(#000 25%, transparent 0) 0 0/8px 8px,
+      conic-gradient(transparent 25%, #000 0) 4px 4px/8px 8px;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- 헤더 (뉴스레터 컨텍스트) -->
+<header class="max-w-[1500px] mx-auto px-6 pt-6 pb-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center text-white font-display text-xl">⚡</div>
+    <div>
+      <div class="font-display text-lg leading-tight">전기기능사 소식지</div>
+      <div class="text-xs text-gray-500">콘셉트 #키오스크 · 가상 매장 시뮬레이션</div>
+    </div>
+  </div>
+  <a href="./" class="text-sm text-gray-600 hover:text-red-600 underline underline-offset-4">← 소식지 목록</a>
+</header>
+
+<!-- 키오스크 본체 -->
+<main class="max-w-[1500px] mx-auto px-6 pb-12">
+
+  <div class="kiosk-frame">
+
+    <!-- 키오스크 상단 바 -->
+    <div class="bg-red-600 text-white px-8 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-xl bg-yellow-300 text-red-700 font-display text-3xl flex items-center justify-center shadow-inner">⚡</div>
+        <div>
+          <div class="font-display text-3xl tracking-tight">SPARK BURGER</div>
+          <div class="text-xs text-yellow-200 -mt-1 font-medium tracking-[0.2em]">스파크 버거 · SELF ORDER KIOSK</div>
+        </div>
+        <div class="hidden md:flex items-center gap-2 ml-6 px-3 py-1.5 bg-red-700/60 rounded-lg text-xs">
+          <span class="w-2 h-2 rounded-full bg-green-400 pulse"></span>
+          매장 ID <span class="font-bold ml-1" id="storeId">SPK-031</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- 언어 -->
+        <div class="flex bg-red-700/50 rounded-lg overflow-hidden text-sm font-bold">
+          <button id="langKo" class="px-4 py-2 bg-yellow-300 text-red-700">한</button>
+          <button id="langEn" class="px-4 py-2 text-yellow-100 hover:bg-red-800/50">EN</button>
+        </div>
+        <!-- 음성 -->
+        <button id="voiceToggle" class="flex items-center gap-2 px-4 py-2 bg-red-700/50 rounded-lg text-sm font-bold hover:bg-red-800/50" aria-pressed="false">
+          <span id="voiceIcon">🔇</span>
+          <span data-i18n="voice">음성 안내</span>
+          <span id="voiceState" class="text-yellow-200">OFF</span>
+        </button>
+        <!-- 큰 글씨 -->
+        <button id="largeToggle" class="flex items-center gap-2 px-4 py-2 bg-red-700/50 rounded-lg text-sm font-bold hover:bg-red-800/50" aria-pressed="false">
+          <span class="text-base">🔠</span>
+          <span data-i18n="bigtext">큰 글씨</span>
+        </button>
+        <!-- 시각·청각 모드 -->
+        <button id="a11yToggle" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-yellow-300 text-red-700 rounded-lg text-sm font-bold hover:bg-yellow-400">
+          <span>♿</span>
+          <span data-i18n="a11y">배리어프리</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 환영 배너 -->
+    <div class="ribbon h-3"></div>
+    <div class="bg-yellow-50 border-b border-yellow-200 px-8 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3 text-sm">
+        <span class="badge-hot">EVENT</span>
+        <span class="font-bold" data-i18n="banner">"옴 버거 세트" 주문 시 합격 콜라 1잔 무료! · 전기기능사 합격 응원 이벤트</span>
+      </div>
+      <div class="text-xs text-gray-500" id="kioskTime">--:--:--</div>
+    </div>
+
+    <!-- 본문 그리드: 카테고리 + 메뉴 + 카트 -->
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_400px]">
+
+      <!-- 좌측: 카테고리 + 메뉴 -->
+      <section class="p-6 lg:p-8 bg-stone-50">
+        <!-- 카테고리 탭 -->
+        <div class="flex flex-wrap gap-2 mb-6" id="categoryTabs" role="tablist">
+          <button class="cat-tab active px-5 py-4 rounded-xl font-display text-lg bg-white border-2 border-stone-200 hover:border-red-400" data-cat="set" role="tab">🍔 <span data-i18n="cat_set">세트</span></button>
+          <button class="cat-tab px-5 py-4 rounded-xl font-display text-lg bg-white border-2 border-stone-200 hover:border-red-400" data-cat="single" role="tab">🥪 <span data-i18n="cat_single">단품</span></button>
+          <button class="cat-tab px-5 py-4 rounded-xl font-display text-lg bg-white border-2 border-stone-200 hover:border-red-400" data-cat="side" role="tab">🍟 <span data-i18n="cat_side">사이드</span></button>
+          <button class="cat-tab px-5 py-4 rounded-xl font-display text-lg bg-white border-2 border-stone-200 hover:border-red-400" data-cat="dessert" role="tab">🍦 <span data-i18n="cat_dessert">디저트</span></button>
+          <button class="cat-tab px-5 py-4 rounded-xl font-display text-lg bg-white border-2 border-stone-200 hover:border-red-400" data-cat="drink" role="tab">🥤 <span data-i18n="cat_drink">음료</span></button>
+          <button class="cat-tab px-5 py-4 rounded-xl font-display text-lg bg-white border-2 border-stone-200 hover:border-red-400" data-cat="option" role="tab">➕ <span data-i18n="cat_option">옵션</span></button>
+        </div>
+
+        <!-- 메뉴 그리드 -->
+        <div id="menuGrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" role="tabpanel">
+          <!-- JS로 채움 -->
+        </div>
+
+        <!-- 알레르기/안내 -->
+        <div class="mt-6 p-4 bg-white border-2 border-dashed border-stone-300 rounded-xl text-xs text-stone-600 leading-relaxed">
+          <span class="font-bold text-stone-800" data-i18n="allergy_title">알레르기 안내 ·</span>
+          <span data-i18n="allergy_body">본 매장은 가상 시뮬레이션이며 실제 식품 정보가 아닙니다. 메뉴명은 전기기능사 학습 개념(옴·키르히호프·패러데이·테슬라·맥스웰 등)에서 영감을 얻은 패러디입니다.</span>
+        </div>
+      </section>
+
+      <!-- 우측: 카트 -->
+      <aside class="bg-white border-l-2 border-stone-100 flex flex-col">
+        <div class="p-6 bg-stone-900 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-xs text-yellow-300 font-bold tracking-widest" data-i18n="cart_title">주문 내역</div>
+              <div class="font-display text-2xl mt-1">MY ORDER</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-stone-400" data-i18n="cart_items">품목</div>
+              <div class="font-display text-3xl text-yellow-300" id="cartCount">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cartList" class="flex-1 overflow-y-auto scroll-hide p-4 space-y-2 min-h-[280px] max-h-[420px]">
+          <!-- 빈 상태 -->
+          <div id="cartEmpty" class="h-full flex flex-col items-center justify-center text-center py-12">
+            <div class="w-20 h-20 rounded-full bg-stone-100 flex items-center justify-center text-4xl mb-3">🛒</div>
+            <div class="font-bold text-stone-700" data-i18n="cart_empty_title">아직 담긴 메뉴가 없어요</div>
+            <div class="text-xs text-stone-500 mt-1" data-i18n="cart_empty_sub">왼쪽에서 메뉴를 선택해 주세요</div>
+          </div>
+        </div>
+
+        <!-- 합계 -->
+        <div class="border-t-2 border-stone-100 p-6 space-y-3">
+          <div class="flex justify-between text-sm text-stone-600">
+            <span data-i18n="cart_subtotal">소계</span>
+            <span id="subtotal">0 원</span>
+          </div>
+          <div class="flex justify-between text-sm text-stone-600">
+            <span data-i18n="cart_discount">이벤트 할인</span>
+            <span id="discount" class="text-red-600">- 0 원</span>
+          </div>
+          <div class="flex justify-between items-baseline">
+            <span class="font-display text-xl" data-i18n="cart_total">총 결제금액</span>
+            <span class="font-display text-3xl text-red-600" id="total">0<span class="text-base ml-1">원</span></span>
+          </div>
+
+          <button id="clearBtn" class="w-full py-2 text-xs text-stone-500 hover:text-red-600 underline" data-i18n="cart_clear">전체 비우기</button>
+
+          <button id="payBtn" class="big-btn w-full py-6 rounded-2xl bg-red-600 text-white text-2xl shadow-lg hover:bg-red-700 disabled:bg-stone-300 disabled:cursor-not-allowed disabled:shadow-none transition-colors" disabled>
+            <span data-i18n="pay_btn">결제하기</span> →
+          </button>
+          <div class="text-center text-[10px] text-stone-400" data-i18n="pay_note">매장 식사 · 포장 옵션은 결제 후 선택</div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 키오스크 푸터 -->
+    <footer class="bg-stone-900 text-stone-400 px-8 py-4 flex items-center justify-between text-xs">
+      <div class="flex items-center gap-4">
+        <span>© SPARK BURGER (가상 매장)</span>
+        <span class="hidden md:inline">·</span>
+        <span class="hidden md:inline" data-i18n="footer_sim">가상 키오스크 시뮬레이션 — 실제 결제·주문이 발생하지 않습니다</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span data-i18n="footer_help">도움이 필요하면 직원을 호출하세요</span>
+        <button class="px-3 py-1.5 bg-yellow-300 text-red-700 rounded-lg font-bold hover:bg-yellow-400" id="staffCall" data-i18n="footer_staff">🛎 직원 호출</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- 콘셉트 설명 (아래) -->
+  <section class="mt-10 grid md:grid-cols-3 gap-6">
+    <div class="bg-white rounded-2xl p-6 border border-stone-200">
+      <div class="text-3xl mb-2">📺</div>
+      <div class="font-display text-lg mb-1">풀스크린 키오스크 UI</div>
+      <p class="text-sm text-stone-600 leading-relaxed">매장 내 셀프 주문기에 영감을 받은 가상 콘셉트입니다. 큰 메뉴 카드, 큰 버튼, 진한 빨강·노랑 톤.</p>
+    </div>
+    <div class="bg-white rounded-2xl p-6 border border-stone-200">
+      <div class="text-3xl mb-2">⚡</div>
+      <div class="font-display text-lg mb-1">전기 개념 패러디 메뉴</div>
+      <p class="text-sm text-stone-600 leading-relaxed">옴 버거, 키르히호프 빅맥, 변압기 치킨, 패러데이 프라이즈 등 — 학습 개념을 친근하게 만나는 소식지 콘셉트.</p>
+    </div>
+    <div class="bg-white rounded-2xl p-6 border border-stone-200">
+      <div class="text-3xl mb-2">♿</div>
+      <div class="font-display text-lg mb-1">배리어프리 모드</div>
+      <p class="text-sm text-stone-600 leading-relaxed">큰 글씨 토글·음성 안내(시각 표시)·키보드 접근. 시각·청각 장애 사용자를 위한 기본 UI 패턴.</p>
+    </div>
+  </section>
+</main>
+
+<!-- 결제 모달 -->
+<div id="payModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl">
+    <div class="bg-red-600 text-white p-6 flex items-center justify-between">
+      <div>
+        <div class="text-xs text-yellow-200 font-bold tracking-widest" data-i18n="pay_step">STEP 2 / 3</div>
+        <div class="font-display text-2xl mt-1" data-i18n="pay_title">결제 수단 선택</div>
+      </div>
+      <button class="text-3xl leading-none hover:text-yellow-200" data-close="payModal" aria-label="닫기">×</button>
+    </div>
+    <div class="p-8 grid grid-cols-3 gap-4">
+      <button class="pay-method group border-2 border-stone-200 hover:border-red-500 hover:bg-red-50 rounded-2xl p-6 flex flex-col items-center gap-3 transition" data-method="card">
+        <div class="w-16 h-16 rounded-xl bg-blue-500 text-white flex items-center justify-center text-3xl">💳</div>
+        <div class="font-display text-lg" data-i18n="pay_card">신용/체크카드</div>
+        <div class="text-xs text-stone-500" data-i18n="pay_card_sub">단말기에 카드를 꽂아주세요</div>
+      </button>
+      <button class="pay-method group border-2 border-stone-200 hover:border-red-500 hover:bg-red-50 rounded-2xl p-6 flex flex-col items-center gap-3 transition" data-method="cash">
+        <div class="w-16 h-16 rounded-xl bg-green-500 text-white flex items-center justify-center text-3xl">💵</div>
+        <div class="font-display text-lg" data-i18n="pay_cash">현금</div>
+        <div class="text-xs text-stone-500" data-i18n="pay_cash_sub">카운터에서 결제</div>
+      </button>
+      <button class="pay-method group border-2 border-stone-200 hover:border-red-500 hover:bg-red-50 rounded-2xl p-6 flex flex-col items-center gap-3 transition" data-method="qr">
+        <div class="w-16 h-16 rounded-xl bg-stone-900 text-white flex items-center justify-center text-3xl">📱</div>
+        <div class="font-display text-lg" data-i18n="pay_qr">QR / 간편결제</div>
+        <div class="text-xs text-stone-500" data-i18n="pay_qr_sub">카메라로 코드를 스캔</div>
+      </button>
+    </div>
+    <div class="px-8 pb-6 text-center text-xs text-stone-500" data-i18n="pay_disclaimer">⚠ 가상 시뮬레이션 — 실제 결제는 일어나지 않습니다.</div>
+  </div>
+</div>
+
+<!-- 카드 결제 진행 모달 -->
+<div id="processModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl max-w-md w-full p-10 text-center">
+    <div class="w-24 h-24 mx-auto rounded-full bg-yellow-100 flex items-center justify-center text-5xl mb-6 animate-pulse" id="processIcon">💳</div>
+    <div class="font-display text-2xl mb-2" id="processTitle">카드를 인식하는 중…</div>
+    <div class="text-sm text-stone-500" id="processSub">단말기에서 카드를 빼지 마세요</div>
+    <div class="mt-6 h-2 bg-stone-100 rounded-full overflow-hidden">
+      <div id="processBar" class="h-full bg-red-500 transition-all duration-300" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- QR 결제 모달 -->
+<div id="qrModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-3xl max-w-md w-full p-8 text-center">
+    <div class="font-display text-2xl mb-1" data-i18n="qr_title">QR 코드 스캔</div>
+    <div class="text-sm text-stone-500 mb-6" data-i18n="qr_sub">앱 카메라로 아래 코드를 인식해 주세요</div>
+    <div class="w-56 h-56 mx-auto bg-white border-4 border-stone-900 rounded-xl p-3 relative">
+      <svg viewBox="0 0 100 100" class="w-full h-full">
+        <rect width="100" height="100" fill="#fff"/>
+        <!-- 모서리 마커 -->
+        <rect x="2" y="2" width="22" height="22" fill="#000"/>
+        <rect x="6" y="6" width="14" height="14" fill="#fff"/>
+        <rect x="10" y="10" width="6" height="6" fill="#000"/>
+        <rect x="76" y="2" width="22" height="22" fill="#000"/>
+        <rect x="80" y="6" width="14" height="14" fill="#fff"/>
+        <rect x="84" y="10" width="6" height="6" fill="#000"/>
+        <rect x="2" y="76" width="22" height="22" fill="#000"/>
+        <rect x="6" y="80" width="14" height="14" fill="#fff"/>
+        <rect x="10" y="84" width="6" height="6" fill="#000"/>
+        <!-- 노이즈 모듈 -->
+        <g id="qrNoise"></g>
+      </svg>
+      <div class="absolute inset-x-0 top-1/2 h-0.5 bg-red-500 animate-pulse"></div>
+    </div>
+    <div class="mt-6 text-xs text-stone-500" data-i18n="qr_note">⚠ 가상 코드입니다. 스캔되지 않습니다.</div>
+    <button class="mt-4 px-6 py-3 bg-stone-900 text-white rounded-xl font-bold" id="qrFakeOk" data-i18n="qr_simulate">스캔 완료(시뮬레이션)</button>
+  </div>
+</div>
+
+<!-- 영수증 모달 -->
+<div id="receiptModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="max-w-md w-full">
+    <div class="receipt rounded-t-3xl rounded-b-xl p-8 shadow-2xl text-stone-800 relative">
+      <!-- 톱니 위 -->
+      <div class="absolute -top-2 left-0 right-0 h-3 flex">
+        <div class="flex-1 flex">
+          <div class="w-full h-3" style="background-image: radial-gradient(circle at 6px 0, #fffef7 6px, transparent 7px); background-size: 12px 12px; background-position: 0 -6px;"></div>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <div class="font-display text-2xl tracking-tight">SPARK BURGER</div>
+        <div class="text-[10px] tracking-[0.25em] mt-1">SELF ORDER · RECEIPT</div>
+        <div class="text-[10px] text-stone-500 mt-1">매장 ID <span id="rStore">SPK-031</span> · <span id="rDate">--</span></div>
+      </div>
+
+      <div class="dashed h-px my-4"></div>
+
+      <!-- 대기 번호 -->
+      <div class="text-center my-4">
+        <div class="text-xs text-stone-500" data-i18n="receipt_no">대기 번호</div>
+        <div class="font-display text-6xl text-red-600 tracking-tight" id="orderNo">A-000</div>
+        <div class="text-xs text-stone-500 mt-1" data-i18n="receipt_wait">현재 예상 대기 <span id="waitMin" class="font-bold">4</span>분</div>
+      </div>
+
+      <div class="dashed h-px my-4"></div>
+
+      <!-- 영수증 라인 -->
+      <div id="receiptLines" class="space-y-1 text-sm receipt-lines"></div>
+
+      <div class="dashed h-px my-4"></div>
+
+      <div class="flex justify-between text-sm receipt-line"><span data-i18n="receipt_subtotal">소계</span><span id="rSubtotal">0</span></div>
+      <div class="flex justify-between text-sm receipt-line"><span data-i18n="receipt_discount">할인</span><span id="rDiscount" class="text-red-600">- 0</span></div>
+      <div class="flex justify-between font-display text-xl mt-2 receipt-line"><span data-i18n="receipt_total">합계</span><span id="rTotal">0 원</span></div>
+      <div class="flex justify-between text-xs text-stone-500 mt-2 receipt-line"><span data-i18n="receipt_method">결제수단</span><span id="rMethod">카드</span></div>
+
+      <div class="dashed h-px my-4"></div>
+
+      <div class="text-center text-xs text-stone-600 leading-relaxed">
+        <div data-i18n="receipt_thanks">합격을 응원합니다 ⚡</div>
+        <div class="mt-1 text-[10px] text-stone-400" data-i18n="receipt_sim">가상 영수증 · 본 거래는 실제 발생하지 않았습니다</div>
+      </div>
+
+      <!-- 바코드 -->
+      <div class="mt-4 flex justify-center gap-px h-10 items-end">
+        <!-- JS로 생성 -->
+        <div id="barcode" class="flex gap-px h-10 items-end"></div>
+      </div>
+      <div class="text-center text-[10px] tracking-[0.3em] mt-1" id="barcodeNum">0000-0000-0000</div>
+
+      <!-- 톱니 아래 -->
+      <div class="absolute -bottom-2 left-0 right-0 h-3" style="background-image: radial-gradient(circle at 6px 12px, #fffef7 6px, transparent 7px); background-size: 12px 12px;"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="big-btn py-4 rounded-2xl bg-white text-stone-700 border-2 border-stone-200 hover:border-red-400" id="newOrderBtn" data-i18n="receipt_new">새 주문</button>
+      <button class="big-btn py-4 rounded-2xl bg-yellow-300 text-red-700 hover:bg-yellow-400" id="printBtn" data-i18n="receipt_print">🖨 인쇄(시뮬)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 직원 호출 토스트 -->
+<div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-6 py-3 rounded-full shadow-2xl text-sm hidden z-[60]">
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+/* =========================================================
+   SPARK BURGER · 가상 키오스크 (전기기능사 소식지 콘셉트)
+   ========================================================= */
+
+// ---------- 안전한 텍스트 처리 ----------
+const escapeHTML = (s) => String(s ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+// ---------- SVG 음식 일러스트 ----------
+// 가상 일러스트만 사용 (외부 이미지 없음)
+const SVG = {
+  burger: `<svg viewBox="0 0 100 80" class="w-full h-full">
+    <ellipse cx="50" cy="20" rx="36" ry="14" fill="#e8b15a"/>
+    <ellipse cx="50" cy="16" rx="36" ry="10" fill="#f3c878"/>
+    <circle cx="40" cy="11" r="1.2" fill="#fff8e1"/><circle cx="55" cy="13" r="1.2" fill="#fff8e1"/><circle cx="62" cy="9" r="1.2" fill="#fff8e1"/>
+    <rect x="14" y="28" width="72" height="6" rx="3" fill="#7bc257"/>
+    <rect x="14" y="34" width="72" height="7" rx="2" fill="#f6c43d"/>
+    <rect x="14" y="41" width="72" height="9" rx="3" fill="#7a3a1c"/>
+    <rect x="14" y="50" width="72" height="6" rx="2" fill="#d6443a"/>
+    <ellipse cx="50" cy="62" rx="36" ry="12" fill="#d99b4a"/>
+  </svg>`,
+  bigmac: `<svg viewBox="0 0 100 90" class="w-full h-full">
+    <ellipse cx="50" cy="14" rx="34" ry="11" fill="#f3c878"/>
+    <rect x="16" y="22" width="68" height="6" rx="2" fill="#7a3a1c"/>
+    <rect x="16" y="28" width="68" height="5" rx="2" fill="#fff"/>
+    <rect x="16" y="33" width="68" height="6" rx="2" fill="#7bc257"/>
+    <ellipse cx="50" cy="42" rx="34" ry="6" fill="#e8b15a"/>
+    <rect x="16" y="48" width="68" height="6" rx="2" fill="#7a3a1c"/>
+    <rect x="16" y="54" width="68" height="5" rx="2" fill="#f6c43d"/>
+    <rect x="16" y="59" width="68" height="6" rx="2" fill="#d6443a"/>
+    <ellipse cx="50" cy="74" rx="34" ry="11" fill="#d99b4a"/>
+  </svg>`,
+  chicken: `<svg viewBox="0 0 100 80" class="w-full h-full">
+    <path d="M20,60 Q20,30 50,30 Q80,30 80,60 Z" fill="#cf8a3a"/>
+    <path d="M22,60 Q22,34 50,34 Q78,34 78,60" fill="none" stroke="#a8661f" stroke-width="1.5"/>
+    <circle cx="35" cy="44" r="2" fill="#8e5318"/>
+    <circle cx="50" cy="40" r="2" fill="#8e5318"/>
+    <circle cx="65" cy="44" r="2" fill="#8e5318"/>
+    <circle cx="42" cy="50" r="2" fill="#8e5318"/>
+    <circle cx="58" cy="50" r="2" fill="#8e5318"/>
+    <rect x="14" y="60" width="72" height="8" rx="2" fill="#e9e4d2"/>
+    <rect x="14" y="60" width="72" height="2" fill="#c9c2a8"/>
+  </svg>`,
+  cheese: `<svg viewBox="0 0 100 80" class="w-full h-full">
+    <ellipse cx="50" cy="18" rx="34" ry="11" fill="#f3c878"/>
+    <rect x="16" y="26" width="68" height="9" rx="3" fill="#ffd54a"/>
+    <rect x="16" y="35" width="68" height="8" rx="2" fill="#7a3a1c"/>
+    <rect x="16" y="43" width="68" height="6" rx="2" fill="#d6443a"/>
+    <rect x="16" y="49" width="68" height="5" rx="2" fill="#7bc257"/>
+    <ellipse cx="50" cy="63" rx="34" ry="11" fill="#d99b4a"/>
+  </svg>`,
+  hotdog: `<svg viewBox="0 0 100 60" class="w-full h-full">
+    <rect x="8" y="20" width="84" height="22" rx="11" fill="#e8b15a"/>
+    <rect x="12" y="24" width="76" height="14" rx="7" fill="#c9492a"/>
+    <path d="M14,30 Q30,22 50,30 T86,30" stroke="#f8d958" stroke-width="2.5" fill="none"/>
+    <path d="M14,34 Q30,42 50,34 T86,34" stroke="#d6443a" stroke-width="2.5" fill="none"/>
+  </svg>`,
+  fries: `<svg viewBox="0 0 100 100" class="w-full h-full">
+    <rect x="22" y="55" width="56" height="38" rx="4" fill="#d6443a"/>
+    <rect x="22" y="55" width="56" height="10" fill="#a3261a"/>
+    <text x="50" y="80" text-anchor="middle" fill="#fff" font-family="Inter" font-weight="900" font-size="12">SPARK</text>
+    <rect x="32" y="20" width="6" height="40" rx="1" fill="#f6c43d"/>
+    <rect x="40" y="14" width="6" height="46" rx="1" fill="#f8d958"/>
+    <rect x="48" y="10" width="6" height="50" rx="1" fill="#f6c43d"/>
+    <rect x="56" y="16" width="6" height="44" rx="1" fill="#f8d958"/>
+    <rect x="64" y="22" width="6" height="38" rx="1" fill="#f6c43d"/>
+  </svg>`,
+  nugget: `<svg viewBox="0 0 100 80" class="w-full h-full">
+    <path d="M20,30 Q15,50 25,60 Q40,68 55,60 Q70,68 80,55 Q88,40 78,30 Q60,22 50,30 Q35,22 20,30 Z" fill="#cf8a3a"/>
+    <circle cx="35" cy="42" r="2" fill="#8e5318"/><circle cx="50" cy="38" r="2" fill="#8e5318"/><circle cx="62" cy="46" r="2" fill="#8e5318"/>
+    <ellipse cx="78" cy="62" rx="6" ry="3" fill="#d6443a" opacity=".8"/>
+  </svg>`,
+  salad: `<svg viewBox="0 0 100 80" class="w-full h-full">
+    <ellipse cx="50" cy="55" rx="40" ry="18" fill="#fff" stroke="#cbb98a" stroke-width="2"/>
+    <circle cx="35" cy="48" r="9" fill="#7bc257"/>
+    <circle cx="55" cy="44" r="11" fill="#5fa845"/>
+    <circle cx="68" cy="52" r="8" fill="#7bc257"/>
+    <circle cx="44" cy="56" r="4" fill="#d6443a"/>
+    <circle cx="60" cy="58" r="4" fill="#d6443a"/>
+    <ellipse cx="50" cy="40" rx="6" ry="3" fill="#f6c43d"/>
+  </svg>`,
+  cola: `<svg viewBox="0 0 100 100" class="w-full h-full">
+    <path d="M28,18 L72,18 L68,90 L32,90 Z" fill="#d6443a"/>
+    <path d="M30,22 L70,22 L67,86 L33,86 Z" fill="#7a1a14"/>
+    <rect x="36" y="28" width="28" height="10" fill="#fff" rx="1"/>
+    <text x="50" y="36" text-anchor="middle" fill="#d6443a" font-family="Inter" font-weight="900" font-size="7">PASS</text>
+    <ellipse cx="50" cy="14" rx="22" ry="5" fill="#bcbcbc"/>
+    <rect x="42" y="10" width="16" height="3" fill="#888"/>
+    <path d="M48,8 L54,8 L52,18 L50,18 Z" fill="#fff"/>
+  </svg>`,
+  shake: `<svg viewBox="0 0 100 100" class="w-full h-full">
+    <path d="M28,30 L72,30 L66,92 L34,92 Z" fill="#fff5d6" stroke="#cbb98a" stroke-width="1.5"/>
+    <ellipse cx="50" cy="30" rx="22" ry="6" fill="#fff8e6"/>
+    <path d="M30,32 Q50,16 70,32 Q60,22 50,22 Q40,22 30,32 Z" fill="#fff"/>
+    <circle cx="55" cy="22" r="4" fill="#d6443a"/>
+    <rect x="48" y="6" width="4" height="22" rx="1" fill="#7bc257"/>
+  </svg>`,
+  icecream: `<svg viewBox="0 0 100 100" class="w-full h-full">
+    <path d="M30,60 L70,60 L50,95 Z" fill="#d99b4a"/>
+    <path d="M32,60 L68,60 L50,90 Z" fill="#f3c878"/>
+    <path d="M30,40 Q35,20 50,18 Q65,20 70,40 Q70,60 50,62 Q30,60 30,40 Z" fill="#fff"/>
+    <circle cx="42" cy="36" r="6" fill="#f7c5c5"/>
+    <circle cx="55" cy="32" r="7" fill="#fff5d6"/>
+    <circle cx="50" cy="44" r="5" fill="#c98a4f"/>
+    <circle cx="50" cy="22" r="3" fill="#d6443a"/>
+  </svg>`,
+  dessert: `<svg viewBox="0 0 100 100" class="w-full h-full">
+    <rect x="22" y="50" width="56" height="34" rx="4" fill="#cf8a3a"/>
+    <rect x="22" y="50" width="56" height="6" fill="#a86922"/>
+    <circle cx="40" cy="42" r="6" fill="#fff5d6"/>
+    <circle cx="55" cy="38" r="8" fill="#f7c5c5"/>
+    <circle cx="68" cy="44" r="6" fill="#7bc257"/>
+    <rect x="48" y="20" width="3" height="22" fill="#7bc257"/>
+    <path d="M50,18 L60,8 L70,18 Z" fill="#d6443a"/>
+  </svg>`
+};
+
+// ---------- 메뉴 데이터 (가상) ----------
+// 모든 가격은 가상, KRW.
+const MENU = [
+  { id:'omSet', cat:'set', name:'옴 버거 세트', en:'Ohm Burger Set', desc:'옴의 법칙으로 완성된 시그니처 세트', price:8900, kcal:920, art:'burger', badge:'HOT' },
+  { id:'kirchhoffBigmac', cat:'set', name:'키르히호프 빅맥', en:'Kirchhoff Big Stack', desc:'전류·전압 법칙처럼 균형잡힌 빅 스택', price:9900, kcal:1050, art:'bigmac', badge:'HOT' },
+  { id:'transChicken', cat:'set', name:'변압기 치킨 세트', en:'Transformer Chicken Set', desc:'1차·2차 코일처럼 두 겹 크리스피', price:10900, kcal:1180, art:'chicken' },
+  { id:'rlcCheese', cat:'set', name:'RLC 치즈버거', en:'RLC Cheese Burger', desc:'R·L·C 3중 치즈가 공명', price:7900, kcal:880, art:'cheese' },
+  { id:'phaseHotdog', cat:'single', name:'3상 결선 핫도그', en:'3-Phase Hot Dog', desc:'Y결선처럼 균형잡힌 토핑', price:5500, kcal:620, art:'hotdog', badge:'NEW' },
+  { id:'faradayFries', cat:'side', name:'패러데이 프라이즈', en:'Faraday Fries', desc:'전자기 유도처럼 끌어당기는 맛', price:3500, kcal:420, art:'fries' },
+  { id:'teslaNugget', cat:'side', name:'테슬라 너겟', en:'Tesla Nuggets', desc:'고전압 바삭함 8조각', price:4500, kcal:560, art:'nugget' },
+  { id:'safetySalad', cat:'side', name:'안전 샐러드', en:'Safety Salad', desc:'접지된 신선함', price:4900, kcal:180, art:'salad' },
+  { id:'passCola', cat:'drink', name:'합격 콜라', en:'PASS Cola', desc:'L 사이즈, 시원한 합격의 맛', price:2500, kcal:200, art:'cola' },
+  { id:'maxwellShake', cat:'drink', name:'맥스웰 셰이크', en:'Maxwell Shake', desc:'4방정식처럼 진한 4겹 셰이크', price:3900, kcal:480, art:'shake' },
+  { id:'resonanceIce', cat:'dessert', name:'공명 아이스크림', en:'Resonance Ice', desc:'주파수가 맞으면 폭발하는 단맛', price:2900, kcal:320, art:'icecream' },
+  { id:'sparkDessert', cat:'dessert', name:'스파크 디저트', en:'Spark Dessert', desc:'바삭바삭 스파크 토핑 컵', price:3700, kcal:390, art:'dessert', badge:'NEW' },
+  // 옵션
+  { id:'optUpSize', cat:'option', name:'사이즈 업그레이드', en:'Size Up', desc:'음료·감자 L → XL', price:800, kcal:120, art:'fries' },
+  { id:'optExtraSauce', cat:'option', name:'특제 소스 추가', en:'Extra Sauce', desc:'스파크 시그니처 소스', price:500, kcal:60, art:'cheese' },
+  { id:'optExtraCheese', cat:'option', name:'치즈 추가', en:'Extra Cheese', desc:'노란 슬라이스 1장 더', price:700, kcal:90, art:'cheese' }
+];
+
+// ---------- 다국어 ----------
+const I18N = {
+  ko: {
+    voice:'음성 안내', bigtext:'큰 글씨', a11y:'배리어프리',
+    banner:'"옴 버거 세트" 주문 시 합격 콜라 1잔 무료! · 전기기능사 합격 응원 이벤트',
+    cat_set:'세트', cat_single:'단품', cat_side:'사이드', cat_dessert:'디저트', cat_drink:'음료', cat_option:'옵션',
+    allergy_title:'알레르기 안내 ·',
+    allergy_body:'본 매장은 가상 시뮬레이션이며 실제 식품 정보가 아닙니다. 메뉴명은 전기기능사 학습 개념(옴·키르히호프·패러데이·테슬라·맥스웰 등)에서 영감을 얻은 패러디입니다.',
+    cart_title:'주문 내역', cart_items:'품목',
+    cart_empty_title:'아직 담긴 메뉴가 없어요', cart_empty_sub:'왼쪽에서 메뉴를 선택해 주세요',
+    cart_subtotal:'소계', cart_discount:'이벤트 할인', cart_total:'총 결제금액', cart_clear:'전체 비우기',
+    pay_btn:'결제하기', pay_note:'매장 식사 · 포장 옵션은 결제 후 선택',
+    footer_sim:'가상 키오스크 시뮬레이션 — 실제 결제·주문이 발생하지 않습니다',
+    footer_help:'도움이 필요하면 직원을 호출하세요', footer_staff:'🛎 직원 호출',
+    pay_step:'STEP 2 / 3', pay_title:'결제 수단 선택',
+    pay_card:'신용/체크카드', pay_card_sub:'단말기에 카드를 꽂아주세요',
+    pay_cash:'현금', pay_cash_sub:'카운터에서 결제',
+    pay_qr:'QR / 간편결제', pay_qr_sub:'카메라로 코드를 스캔',
+    pay_disclaimer:'⚠ 가상 시뮬레이션 — 실제 결제는 일어나지 않습니다.',
+    qr_title:'QR 코드 스캔', qr_sub:'앱 카메라로 아래 코드를 인식해 주세요', qr_note:'⚠ 가상 코드입니다. 스캔되지 않습니다.', qr_simulate:'스캔 완료(시뮬레이션)',
+    receipt_no:'대기 번호', receipt_wait_prefix:'현재 예상 대기 ',
+    receipt_subtotal:'소계', receipt_discount:'할인', receipt_total:'합계', receipt_method:'결제수단',
+    receipt_thanks:'합격을 응원합니다 ⚡', receipt_sim:'가상 영수증 · 본 거래는 실제 발생하지 않았습니다',
+    receipt_new:'새 주문', receipt_print:'🖨 인쇄(시뮬)'
+  },
+  en: {
+    voice:'Audio Guide', bigtext:'Large Text', a11y:'Accessibility',
+    banner:'Free PASS Cola with "Ohm Burger Set"! · Cheer-on event for exam takers',
+    cat_set:'Sets', cat_single:'À la carte', cat_side:'Sides', cat_dessert:'Desserts', cat_drink:'Drinks', cat_option:'Options',
+    allergy_title:'Allergen Notice ·',
+    allergy_body:'Virtual store simulation — menu names are parodies inspired by electrical concepts (Ohm, Kirchhoff, Faraday, Tesla, Maxwell, etc.).',
+    cart_title:'My Order', cart_items:'items',
+    cart_empty_title:'Your cart is empty', cart_empty_sub:'Tap a menu on the left to add',
+    cart_subtotal:'Subtotal', cart_discount:'Event discount', cart_total:'Total', cart_clear:'Clear all',
+    pay_btn:'Checkout', pay_note:'Dine-in / take-out chosen after payment',
+    footer_sim:'Virtual kiosk simulation — no real transactions occur',
+    footer_help:'Need help? Call a staff member', footer_staff:'🛎 Call Staff',
+    pay_step:'STEP 2 / 3', pay_title:'Select Payment',
+    pay_card:'Credit / Debit', pay_card_sub:'Insert card into terminal',
+    pay_cash:'Cash', pay_cash_sub:'Pay at counter',
+    pay_qr:'QR / Mobile Pay', pay_qr_sub:'Scan with your camera',
+    pay_disclaimer:'⚠ Virtual simulation — no real payment.',
+    qr_title:'Scan QR Code', qr_sub:'Use your app camera', qr_note:'⚠ Mock code, will not scan.', qr_simulate:'Mark as scanned',
+    receipt_no:'Order No.', receipt_wait_prefix:'Est. wait ',
+    receipt_subtotal:'Subtotal', receipt_discount:'Discount', receipt_total:'Total', receipt_method:'Method',
+    receipt_thanks:'Good luck on the exam ⚡', receipt_sim:'Mock receipt · no real transaction',
+    receipt_new:'New Order', receipt_print:'🖨 Print (mock)'
+  }
+};
+
+let lang = 'ko';
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (I18N[lang][k]) el.textContent = I18N[lang][k];
+  });
+  document.documentElement.lang = (lang === 'ko') ? 'ko' : 'en';
+  renderMenu();
+  renderCart();
+}
+
+document.getElementById('langKo').addEventListener('click', () => {
+  lang = 'ko';
+  document.getElementById('langKo').classList.add('bg-yellow-300','text-red-700');
+  document.getElementById('langKo').classList.remove('text-yellow-100');
+  document.getElementById('langEn').classList.remove('bg-yellow-300','text-red-700');
+  document.getElementById('langEn').classList.add('text-yellow-100');
+  applyLang();
+});
+document.getElementById('langEn').addEventListener('click', () => {
+  lang = 'en';
+  document.getElementById('langEn').classList.add('bg-yellow-300','text-red-700');
+  document.getElementById('langEn').classList.remove('text-yellow-100');
+  document.getElementById('langKo').classList.remove('bg-yellow-300','text-red-700');
+  document.getElementById('langKo').classList.add('text-yellow-100');
+  applyLang();
+});
+
+// ---------- 음성 / 큰 글씨 토글 ----------
+let voiceOn = false;
+document.getElementById('voiceToggle').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  document.getElementById('voiceIcon').textContent = voiceOn ? '🔊' : '🔇';
+  document.getElementById('voiceState').textContent = voiceOn ? 'ON' : 'OFF';
+  e.currentTarget.setAttribute('aria-pressed', String(voiceOn));
+  speak(voiceOn ? (lang==='ko'?'음성 안내를 시작합니다':'Audio guide on') : '');
+});
+
+let largeText = false;
+function setLarge(on) {
+  largeText = on;
+  document.body.classList.toggle('large-text', on);
+  document.getElementById('largeToggle').setAttribute('aria-pressed', String(on));
+}
+document.getElementById('largeToggle').addEventListener('click', () => setLarge(!largeText));
+document.getElementById('a11yToggle').addEventListener('click', () => {
+  setLarge(!largeText);
+  if (!voiceOn) document.getElementById('voiceToggle').click();
+});
+
+// 음성 (시각 표시만, 실제 TTS는 옵션)
+function speak(text) {
+  if (!voiceOn || !text) return;
+  showToast('🔊 ' + text);
+  // 보이스 합성은 환경 의존이므로 호출하지 않음 (시뮬레이션)
+}
+
+// ---------- 카테고리 ----------
+let currentCat = 'set';
+document.querySelectorAll('.cat-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentCat = tab.getAttribute('data-cat');
+    renderMenu();
+  });
+});
+
+// ---------- 메뉴 렌더 ----------
+function priceText(n) { return n.toLocaleString('ko-KR') + (lang==='ko' ? ' 원' : ' KRW'); }
+
+function renderMenu() {
+  const grid = document.getElementById('menuGrid');
+  const items = MENU.filter(m => m.cat === currentCat);
+  grid.innerHTML = items.map(m => {
+    const name = (lang === 'ko') ? m.name : m.en;
+    const desc = escapeHTML(m.desc);
+    const badge = m.badge === 'HOT'
+      ? `<span class="badge-hot absolute top-3 right-3">${escapeHTML(m.badge)}</span>`
+      : m.badge === 'NEW'
+        ? `<span class="badge-new absolute top-3 right-3">${escapeHTML(m.badge)}</span>`
+        : '';
+    return `
+    <button class="menu-card relative bg-white rounded-2xl border-2 border-stone-200 hover:border-red-400 p-4 text-left flex flex-col" data-id="${escapeHTML(m.id)}">
+      ${badge}
+      <div class="aspect-square bg-gradient-to-br from-yellow-50 to-stone-100 rounded-xl p-3 mb-3 flex items-center justify-center">
+        ${SVG[m.art] || SVG.burger}
+      </div>
+      <div class="menu-name font-display text-base leading-snug">${escapeHTML(name)}</div>
+      <div class="text-[11px] text-stone-500 mt-1 leading-snug line-clamp-2">${desc}</div>
+      <div class="flex items-end justify-between mt-3 pt-3 border-t border-stone-100">
+        <div class="menu-price font-display text-lg text-red-600">${priceText(m.price)}</div>
+        <div class="text-[10px] text-stone-400">${m.kcal} kcal</div>
+      </div>
+    </button>`;
+  }).join('');
+
+  grid.querySelectorAll('.menu-card').forEach(card => {
+    card.addEventListener('click', () => addToCart(card.getAttribute('data-id')));
+  });
+}
+
+// ---------- 카트 ----------
+let cart = []; // {id, qty}
+
+function addToCart(id) {
+  const m = MENU.find(x => x.id === id);
+  if (!m) return;
+  const existing = cart.find(c => c.id === id);
+  if (existing) existing.qty += 1;
+  else cart.push({ id, qty: 1 });
+  renderCart();
+  pulsePayBtn();
+  speak((lang==='ko'?m.name:m.en) + (lang==='ko'?' 담았어요':' added'));
+}
+
+function changeQty(id, delta) {
+  const c = cart.find(x => x.id === id);
+  if (!c) return;
+  c.qty += delta;
+  if (c.qty <= 0) cart = cart.filter(x => x.id !== id);
+  renderCart();
+}
+
+function removeItem(id) {
+  cart = cart.filter(x => x.id !== id);
+  renderCart();
+}
+
+function clearCart() {
+  cart = [];
+  renderCart();
+}
+
+function calcTotals() {
+  let subtotal = 0;
+  cart.forEach(c => {
+    const m = MENU.find(x => x.id === c.id);
+    if (m) subtotal += m.price * c.qty;
+  });
+  // 이벤트 할인: "옴 버거 세트" 있으면 합격 콜라 1개 무료
+  let discount = 0;
+  const hasOm = cart.find(c => c.id === 'omSet');
+  const cola = cart.find(c => c.id === 'passCola');
+  if (hasOm && cola) {
+    discount = MENU.find(m => m.id === 'passCola').price; // 1개 무료
+  }
+  return { subtotal, discount, total: Math.max(0, subtotal - discount) };
+}
+
+function renderCart() {
+  const list = document.getElementById('cartList');
+  const count = cart.reduce((a,c)=>a+c.qty,0);
+  document.getElementById('cartCount').textContent = count;
+
+  if (cart.length === 0) {
+    list.innerHTML = `
+      <div id="cartEmpty" class="h-full flex flex-col items-center justify-center text-center py-12">
+        <div class="w-20 h-20 rounded-full bg-stone-100 flex items-center justify-center text-4xl mb-3">🛒</div>
+        <div class="font-bold text-stone-700">${escapeHTML(I18N[lang].cart_empty_title)}</div>
+        <div class="text-xs text-stone-500 mt-1">${escapeHTML(I18N[lang].cart_empty_sub)}</div>
+      </div>`;
+  } else {
+    list.innerHTML = cart.map(c => {
+      const m = MENU.find(x => x.id === c.id);
+      const name = (lang==='ko') ? m.name : m.en;
+      return `
+      <div class="bg-stone-50 rounded-xl p-3 flex items-center gap-3 border border-stone-100">
+        <div class="w-14 h-14 bg-white rounded-lg p-1 flex items-center justify-center flex-shrink-0">${SVG[m.art] || SVG.burger}</div>
+        <div class="flex-1 min-w-0">
+          <div class="cart-name font-bold text-sm truncate">${escapeHTML(name)}</div>
+          <div class="text-xs text-red-600 font-bold">${priceText(m.price * c.qty)}</div>
+        </div>
+        <div class="flex items-center gap-1">
+          <button class="qty-minus w-8 h-8 rounded-lg bg-white border border-stone-200 font-bold hover:bg-red-50" data-id="${escapeHTML(c.id)}">−</button>
+          <div class="w-8 text-center font-display">${c.qty}</div>
+          <button class="qty-plus w-8 h-8 rounded-lg bg-white border border-stone-200 font-bold hover:bg-red-50" data-id="${escapeHTML(c.id)}">+</button>
+          <button class="qty-del w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" data-id="${escapeHTML(c.id)}" aria-label="삭제">×</button>
+        </div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.qty-minus').forEach(b => b.addEventListener('click', () => changeQty(b.dataset.id, -1)));
+    list.querySelectorAll('.qty-plus').forEach(b => b.addEventListener('click', () => changeQty(b.dataset.id, +1)));
+    list.querySelectorAll('.qty-del').forEach(b => b.addEventListener('click', () => removeItem(b.dataset.id)));
+  }
+
+  const t = calcTotals();
+  document.getElementById('subtotal').textContent = priceText(t.subtotal);
+  document.getElementById('discount').textContent = '- ' + priceText(t.discount);
+  document.getElementById('total').innerHTML = t.total.toLocaleString('ko-KR') + '<span class="text-base ml-1">원</span>';
+
+  const pay = document.getElementById('payBtn');
+  pay.disabled = cart.length === 0;
+}
+
+function pulsePayBtn() {
+  const b = document.getElementById('payBtn');
+  if (!b.disabled) b.classList.add('pulse');
+  setTimeout(() => b.classList.remove('pulse'), 1800);
+}
+
+document.getElementById('clearBtn').addEventListener('click', clearCart);
+
+// ---------- 결제 흐름 ----------
+const $ = (id) => document.getElementById(id);
+function openModal(id) { $(id).classList.remove('hidden'); $(id).classList.add('flex'); }
+function closeModal(id) { $(id).classList.add('hidden'); $(id).classList.remove('flex'); }
+
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
+});
+
+$('payBtn').addEventListener('click', () => {
+  if (cart.length === 0) return;
+  openModal('payModal');
+});
+
+document.querySelectorAll('.pay-method').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const method = btn.getAttribute('data-method');
+    closeModal('payModal');
+    if (method === 'qr') {
+      openModal('qrModal');
+      generateQrNoise();
+    } else if (method === 'card') {
+      runProcess('card');
+    } else {
+      runProcess('cash');
+    }
+  });
+});
+
+$('qrFakeOk').addEventListener('click', () => {
+  closeModal('qrModal');
+  runProcess('qr');
+});
+
+function runProcess(method) {
+  openModal('processModal');
+  const titles = {
+    card: { ko:'카드를 인식하는 중…', en:'Reading card…', icon:'💳', sub: { ko:'단말기에서 카드를 빼지 마세요', en:'Do not remove the card'} },
+    cash: { ko:'카운터에서 결제 진행 중…', en:'Processing at counter…', icon:'💵', sub:{ ko:'잠시만 기다려 주세요', en:'Please wait'} },
+    qr:   { ko:'간편결제 처리 중…', en:'Processing mobile pay…', icon:'📱', sub:{ ko:'결제 앱에서 승인을 진행해 주세요', en:'Approve in your pay app'} }
+  };
+  const cfg = titles[method];
+  $('processTitle').textContent = lang==='ko' ? cfg.ko : cfg.en;
+  $('processSub').textContent = lang==='ko' ? cfg.sub.ko : cfg.sub.en;
+  $('processIcon').textContent = cfg.icon;
+
+  let pct = 0;
+  $('processBar').style.width = '0%';
+  const interval = setInterval(() => {
+    pct += Math.random()*18 + 8;
+    if (pct > 100) pct = 100;
+    $('processBar').style.width = pct + '%';
+    if (pct >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        closeModal('processModal');
+        finalizeOrder(method);
+      }, 350);
+    }
+  }, 220);
+}
+
+// ---------- 영수증 ----------
+let orderCounter = parseInt(localStorage.getItem('sparkOrderNo') || '0', 10);
+
+function finalizeOrder(method) {
+  orderCounter = (orderCounter % 99) + 1;
+  try { localStorage.setItem('sparkOrderNo', String(orderCounter)); } catch(e) {}
+  const orderNo = 'A-' + String(orderCounter).padStart(3,'0');
+  $('orderNo').textContent = orderNo;
+  $('waitMin').textContent = String(2 + Math.floor(cart.reduce((a,c)=>a+c.qty,0) / 2));
+  const now = new Date();
+  $('rDate').textContent = now.toLocaleString(lang==='ko'?'ko-KR':'en-US');
+  $('rStore').textContent = $('storeId').textContent;
+
+  const methodLabel = {
+    card: lang==='ko'?'카드':'Card',
+    cash: lang==='ko'?'현금':'Cash',
+    qr:   lang==='ko'?'QR/간편결제':'QR/Mobile'
+  };
+  $('rMethod').textContent = methodLabel[method] || '-';
+
+  const lines = cart.map(c => {
+    const m = MENU.find(x => x.id === c.id);
+    const name = lang==='ko' ? m.name : m.en;
+    return `<div class="flex justify-between receipt-line">
+      <span class="truncate pr-2">${escapeHTML(name)} <span class="text-stone-500">× ${c.qty}</span></span>
+      <span>${(m.price*c.qty).toLocaleString('ko-KR')}</span>
+    </div>`;
+  }).join('');
+  $('receiptLines').innerHTML = lines;
+
+  const t = calcTotals();
+  $('rSubtotal').textContent = t.subtotal.toLocaleString('ko-KR');
+  $('rDiscount').textContent = '- ' + t.discount.toLocaleString('ko-KR');
+  $('rTotal').textContent = t.total.toLocaleString('ko-KR') + (lang==='ko'?' 원':' KRW');
+
+  // 바코드
+  generateBarcode();
+
+  openModal('receiptModal');
+  speak((lang==='ko'?'주문 완료, 대기 번호 ':'Order complete, number ') + orderNo);
+}
+
+function generateBarcode() {
+  const bar = $('barcode');
+  let html = '';
+  let num = '';
+  for (let i=0;i<48;i++) {
+    const w = 1 + Math.floor(Math.random()*3);
+    html += `<div style="width:${w}px;height:${10 + Math.floor(Math.random()*30)}px;background:#1a1a1a"></div>`;
+  }
+  for (let i=0;i<12;i++) num += Math.floor(Math.random()*10);
+  bar.innerHTML = html;
+  $('barcodeNum').textContent = num.replace(/(\d{4})(\d{4})(\d{4})/, '$1-$2-$3');
+}
+
+function generateQrNoise() {
+  const g = document.getElementById('qrNoise');
+  let s = '';
+  for (let y=2; y<98; y+=4) {
+    for (let x=2; x<98; x+=4) {
+      // 모서리 마커 영역 제외
+      const corner = (x<26 && y<26) || (x>74 && y<26) || (x<26 && y>74);
+      if (corner) continue;
+      if (Math.random() > 0.5) {
+        s += `<rect x="${x}" y="${y}" width="4" height="4" fill="#000"/>`;
+      }
+    }
+  }
+  g.innerHTML = s;
+}
+
+$('newOrderBtn').addEventListener('click', () => {
+  closeModal('receiptModal');
+  clearCart();
+});
+$('printBtn').addEventListener('click', () => {
+  showToast(lang==='ko'?'🖨 영수증이 출력되었습니다 (시뮬)':'🖨 Receipt printed (mock)');
+});
+
+// ---------- 토스트 ----------
+let toastTimer;
+function showToast(msg) {
+  const t = $('toast');
+  $('toastMsg').textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
+}
+
+$('staffCall').addEventListener('click', () => {
+  showToast(lang==='ko'?'🛎 직원을 호출했습니다. 잠시만 기다려 주세요.':'🛎 Staff has been called.');
+});
+
+// ---------- 시계 ----------
+function tickClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  $('kioskTime').textContent = `${hh}:${mm}:${ss}`;
+}
+setInterval(tickClock, 1000); tickClock();
+
+// ---------- ESC 닫기 ----------
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    ['payModal','processModal','qrModal','receiptModal'].forEach(id => {
+      if (!$(id).classList.contains('hidden')) closeModal(id);
+    });
+  }
+});
+
+// ---------- 초기 ----------
+applyLang();
+renderMenu();
+renderCart();
+</script>
+</body>
+</html>

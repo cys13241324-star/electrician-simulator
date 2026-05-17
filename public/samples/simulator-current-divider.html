@@ -3,175 +3,1064 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>전류분배 법칙 시뮬레이터</title>
+<title>전류 분배기 시뮬레이터</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
-  body { background:#f8fafc; font-family:'Pretendard',system-ui,sans-serif; }
-  .panel { background:#fff; border-radius:12px; box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.08); }
-  input[type=range]{accent-color:#2563eb;}
-  .bar-cell{transition:height .25s ease;}
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(59, 130, 246, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(16, 185, 129, 0.14), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.45), rgba(16,185,129,0.45), rgba(244,114,182,0.45));
+    box-shadow: 0 30px 100px -20px rgba(59, 130, 246, 0.30), 0 0 40px rgba(16, 185, 129, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 620px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(59,130,246,0.4), rgba(16,185,129,0.4), rgba(244,114,182,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #93c5fd, #6ee7b7, #f9a8d4);
+    box-shadow: 0 0 22px rgba(110, 231, 183, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-vin { background: linear-gradient(135deg, rgba(244,114,182,0.20), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-r1  { background: linear-gradient(135deg, rgba(59,130,246,0.20), rgba(59,130,246,0.06)); border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.chip-r2  { background: linear-gradient(135deg, rgba(16,185,129,0.20), rgba(16,185,129,0.06)); border-color: rgba(16,185,129,0.5); color: #6ee7b7; }
+.chip-rl  { background: linear-gradient(135deg, rgba(251,146,60,0.20), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.5); color: #fdba74; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(16, 185, 129, 0.7);
+    box-shadow: 0 0 24px rgba(16, 185, 129, 0.4);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #93c5fd, #6ee7b7, #fcd34d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.35);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.toggle-btn {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.toggle-btn:hover { background: rgba(148, 163, 184, 0.18); }
+.toggle-btn.active {
+    background: linear-gradient(135deg, rgba(251,146,60,0.3), rgba(245,158,11,0.25));
+    border-color: rgba(251, 146, 60, 0.6);
+    color: white;
+    box-shadow: 0 0 20px rgba(251, 146, 60, 0.4);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(16,185,129,0.2));
+    border: 1px solid rgba(59,130,246,0.45);
+    color: #93c5fd;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(59,130,246,0.35), rgba(16,185,129,0.35));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(59,130,246,0.45);
+}
 </style>
 </head>
 <body class="p-4 md:p-8">
-  <div class="max-w-6xl mx-auto">
-    <header class="mb-6 text-center">
-      <h1 class="text-3xl font-bold text-slate-800">🔀 전류분배 법칙 시뮬레이터</h1>
-      <p class="text-slate-600 mt-2">병렬 회로에서 각 가지로 전류가 어떻게 분배되는지 시각화. 저항이 작은 쪽에 더 많이 흐릅니다.</p>
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-emerald-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · CURRENT DIVIDER · DUAL VIEW
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-200 via-emerald-200 to-pink-200 bg-clip-text text-transparent">
+            ⚡ 전류 분배기 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">위 — 병렬 회로(전자 흐름) · 아래 — I_total 대비 I₁ · I₂ 막대. 저항이 <span class="text-emerald-300 font-semibold">작은</span> 가지에 더 많은 전류가 흐릅니다.</p>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 panel p-6">
-        <svg id="diagram" viewBox="0 0 640 320" class="w-full bg-white rounded-lg border border-slate-100"></svg>
-
-        <div class="mt-6">
-          <p class="text-sm font-bold text-slate-700 mb-2">전류 분배 비율</p>
-          <div class="flex items-end gap-2 h-40 px-2 border-b-2 border-slate-200">
-            <div id="bar1" class="bar-cell flex-1 bg-blue-500 rounded-t flex items-end justify-center pb-1 text-white text-xs font-bold" style="height:0%">I₁</div>
-            <div id="bar2" class="bar-cell flex-1 bg-emerald-500 rounded-t flex items-end justify-center pb-1 text-white text-xs font-bold" style="height:0%">I₂</div>
-          </div>
-          <div class="grid grid-cols-2 gap-2 text-center mt-2 text-xs text-slate-600">
-            <div>R₁ 가지</div><div>R₂ 가지</div>
-          </div>
+    <!-- 라이브 데이터 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-itot">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">총 전류 I_total</p>
+            <p class="mt-1 text-lg font-bold"><span id="iTotDisp" class="live-num">2.40</span> <span class="text-xs opacity-60 font-normal">A</span></p>
         </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 text-center">
-          <div class="bg-rose-50 rounded-lg p-3"><div class="text-xs text-rose-700">전원 V</div><div id="vOut" class="text-lg font-bold text-rose-900">-</div></div>
-          <div class="bg-violet-50 rounded-lg p-3"><div class="text-xs text-violet-700">총 전류 I</div><div id="iTot" class="text-lg font-bold text-violet-900">-</div></div>
-          <div class="bg-blue-50 rounded-lg p-3"><div class="text-xs text-blue-700">I₁</div><div id="i1Out" class="text-lg font-bold text-blue-900">-</div></div>
-          <div class="bg-emerald-50 rounded-lg p-3"><div class="text-xs text-emerald-700">I₂</div><div id="i2Out" class="text-lg font-bold text-emerald-900">-</div></div>
+        <div class="live-pill rounded-xl p-3" id="pill-i1">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">가지 전류 I₁</p>
+            <p class="mt-1 text-lg font-bold"><span id="i1Disp" class="live-num">1.20</span> <span class="text-xs opacity-60 font-normal">A</span></p>
         </div>
-        <div class="bg-slate-50 rounded-lg p-3 mt-3 text-center">
-          <div class="text-xs text-slate-600">합성 저항 (병렬)</div>
-          <div id="rEq" class="text-lg font-bold text-slate-800">-</div>
+        <div class="live-pill rounded-xl p-3" id="pill-i2">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">가지 전류 I₂</p>
+            <p class="mt-1 text-lg font-bold"><span id="i2Disp" class="live-num">1.20</span> <span class="text-xs opacity-60 font-normal">A</span></p>
         </div>
-      </div>
-
-      <div class="panel p-6 space-y-4">
-        <h2 class="font-bold text-slate-800">변수 조절</h2>
-
-        <div>
-          <label class="text-sm flex justify-between"><span>전원 V</span><span id="vVal" class="font-mono">12</span> V</label>
-          <input type="range" id="v" min="1" max="50" value="12" class="w-full">
+        <div class="live-pill rounded-xl p-3" id="pill-req">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">합성 저항 R_eq</p>
+            <p class="mt-1 text-lg font-bold"><span id="reqDisp" class="live-num">5.00</span> <span class="text-xs opacity-60 font-normal">Ω</span></p>
         </div>
-        <div>
-          <label class="text-sm flex justify-between"><span class="text-blue-700">R₁</span><span id="r1Val" class="font-mono">2</span> Ω</label>
-          <input type="range" id="r1" min="1" max="50" value="2" class="w-full">
-        </div>
-        <div>
-          <label class="text-sm flex justify-between"><span class="text-emerald-700">R₂</span><span id="r2Val" class="font-mono">4</span> Ω</label>
-          <input type="range" id="r2" min="1" max="50" value="4" class="w-full">
-        </div>
-
-        <div class="bg-slate-50 rounded-lg p-3 text-xs text-slate-600 space-y-1">
-          <p class="font-bold text-slate-800">전류분배 공식 (두 저항)</p>
-          <p>I₁ = I · R₂ / (R₁+R₂)</p>
-          <p>I₂ = I · R₁ / (R₁+R₂)</p>
-          <p class="pt-1 text-amber-700">주의: 분자에 상대 저항!</p>
-        </div>
-
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-          <p class="font-bold">💡 실험 포인트</p>
-          <p class="mt-1">R₁을 R₂의 절반으로 맞춰보세요. I₁이 I₂의 두 배가 되는지 확인.</p>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">CIRCUIT · 전자 흐름 속도 ∝ I · I₁ = I·R₂/(R₁+R₂)</span>
+                    <div class="flex gap-2">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="equal">R₁ = R₂ (½ : ½)</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="r1small">R₁ ≪ R₂ (I₁↑)</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="r2small">R₁ ≫ R₂ (I₂↑)</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-blue-200 to-emerald-200 bg-clip-text text-transparent">전류 분배 핵심 공식</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$I_1 = I \cdot \frac{R_2}{R_1 + R_2}, \quad I_2 = I \cdot \frac{R_1}{R_1 + R_2}, \quad R_{eq} = \frac{R_1 R_2}{R_1 + R_2}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">분자에 <span class="text-emerald-300 font-semibold">상대 저항</span>이 온다는 점에 주의! 부하 \(R_L\)을 켜면 세 번째 가지가 추가되어 I_total이 증가합니다.</p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-emerald-200">변수 조절</h2>
+
+            <div class="chip-vin chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>입력 전압 V_in</span><span id="vinVal" class="font-mono text-base">12</span></label>
+                <input type="range" id="vin" min="5" max="50" step="1" value="12" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V</p>
+            </div>
+            <div class="chip-r1 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>저항 R₁ (가지 1)</span><span id="r1Val" class="font-mono text-base">10</span></label>
+                <input type="range" id="r1" min="1" max="100" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+            <div class="chip-r2 chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>저항 R₂ (가지 2)</span><span id="r2Val" class="font-mono text-base">10</span></label>
+                <input type="range" id="r2" min="1" max="100" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-bold text-xs tracking-wider text-orange-200">부하 R_L (3번째 가지)</h3>
+                    <button id="rlToggle" class="toggle-btn rounded-md px-2 py-1 text-[10px] font-bold">OFF</button>
+                </div>
+                <div id="rlBox" class="chip-rl chip rounded-lg p-3 opacity-50">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 R_L</span><span id="rlVal" class="font-mono text-base">50</span></label>
+                    <input type="range" id="rl" min="2" max="500" step="1" value="50" class="w-full mt-2 cursor-pointer" disabled>
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">Ω · R₁·R₂와 병렬</p>
+                </div>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">R₁ = R₂</span> → I₁ = I₂ = ½ I_total</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-blue-300">R₁ ≪ R₂</span> → 작은 R₁ 가지에 전류 몰림</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">KCL</span> I_total = I₁ + I₂ (+ I_L)</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
-["v","r1","r2"].forEach(id => $(id).addEventListener("input", render));
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
 
-function render() {
-  const V = +$("v").value;
-  const R1 = +$("r1").value, R2 = +$("r2").value;
-  $("vVal").textContent = V;
-  $("r1Val").textContent = R1; $("r2Val").textContent = R2;
+const CIRCUIT_H = 360;
+const PLOT_H = 260;
+const TOTAL_H = CIRCUIT_H + PLOT_H;
 
-  // 병렬: 각 가지에 V가 동일하게 걸림
-  const I1 = V / R1, I2 = V / R2;
-  const Itot = I1 + I2;
-  const Req = (R1 * R2) / (R1 + R2);
+const state = {
+    Vin: 12, R1: 10, R2: 10, RL: 50,
+    loadOn: false,
+    t: 0,
+    // computed
+    I: 2.4, I1: 1.2, I2: 1.2, IL: 0, Req: 5
+};
 
-  $("vOut").textContent = V.toFixed(1) + " V";
-  $("iTot").textContent = Itot.toFixed(3) + " A";
-  $("i1Out").textContent = I1.toFixed(3) + " A";
-  $("i2Out").textContent = I2.toFixed(3) + " A";
-  $("rEq").textContent = Req.toFixed(2) + " Ω";
+let mainPathTop = [];     // 상단 본선 (배터리+ → 분기 노드 A)
+let mainPathBot = [];     // 하단 본선 (합류 노드 B → 배터리-)
+let branch1Path = [];     // 가지 1: A → R1 → B
+let branch2Path = [];     // 가지 2: A → R2 → B
+let branchLPath = [];     // 가지 L: A → R_L → B
+let mainTopSegs = [], mainBotSegs = [], b1Segs = [], b2Segs = [], bLSegs = [];
+let mainTopLen = 0, mainBotLen = 0, b1Len = 0, b2Len = 0, bLLen = 0;
+let mainTopParts = [], mainBotParts = [], b1Parts = [], b2Parts = [], bLParts = [];
+let comp = {};
 
-  const max = Math.max(I1, I2, 0.001);
-  $("bar1").style.height = (I1/max*100).toFixed(1) + "%";
-  $("bar2").style.height = (I2/max*100).toFixed(1) + "%";
-  $("bar1").textContent = "I₁ " + I1.toFixed(2) + "A";
-  $("bar2").textContent = "I₂ " + I2.toFixed(2) + "A";
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildCircuit();
+    seedParticles();
+}
+window.addEventListener('resize', resize);
 
-  drawCircuit(V, R1, R2, I1, I2, Itot);
+function buildPath(points) {
+    const segs = [];
+    let len = 0;
+    for (let k = 0; k < points.length - 1; k++) {
+        const a = points[k], b = points[k+1];
+        const sl = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, len: sl, start: len });
+        len += sl;
+    }
+    return { segs, len };
 }
 
-function drawCircuit(V, R1, R2, I1, I2, Itot) {
-  const svg = $("diagram");
-  let s = "";
-  // 전압원 (left)
-  s += `<rect x="30" y="130" width="50" height="80" fill="none" stroke="#0f172a" stroke-width="2" rx="6"/>`;
-  s += `<text x="55" y="165" text-anchor="middle" font-size="16" font-weight="bold" fill="#dc2626">${V}V</text>`;
-  s += `<text x="55" y="185" text-anchor="middle" font-size="10" fill="#64748b">전원</text>`;
+function buildCircuit() {
+    const W = canvas.width;
+    const margin = 60;
+    const top = 90, bot = CIRCUIT_H - 60;
+    const startX = margin + 40;          // 배터리 X
+    const endX   = W - margin;
+    // 노드 A (분기) — 상단 우측 가까이
+    const nodeAx = startX + (endX - startX) * 0.28;
+    // 노드 B (합류) — 하단 우측 가까이
+    const nodeBx = endX - (endX - startX) * 0.18;
+    // 가지 R 박스 X 위치
+    const branchSpan = nodeBx - nodeAx;
+    const r1cx = nodeAx + branchSpan * 0.5;
+    const r2cx = nodeAx + branchSpan * 0.5;
+    const rLcx = nodeAx + branchSpan * 0.5;
+    // 가지 Y (위·아래로 분기) — 노드 A·B 위·아래로 굽힘
+    const yBranch1 = top - 30;            // R1 가지: 위로
+    const yBranch2 = bot + 30;            // R2 가지: 아래로
+    const yBranchL = (top + bot) / 2;     // R_L 가지: 중앙
 
-  // 상단 라인 (전압원에서 분기점까지)
-  s += `<line x1="80" y1="150" x2="280" y2="150" stroke="#0f172a" stroke-width="2"/>`;
-  // 하단 라인
-  s += `<line x1="80" y1="190" x2="280" y2="190" stroke="#0f172a" stroke-width="2"/>`;
+    // 본선 상단 (배터리+ → 노드 A)
+    const mtPoints = [
+        { x: startX, y: bot },     // 배터리 - 쪽 (전자 시작점)
+        { x: startX, y: top },     // 배터리 + 쪽
+        { x: nodeAx, y: top }      // 노드 A
+    ];
+    // 본선 하단 (노드 B → 배터리-)
+    const mbPoints = [
+        { x: nodeBx, y: bot },
+        { x: endX,   y: bot },
+        // dummy: 본선 하단은 노드 B 부터 좌측으로 와서 배터리 -로
+        { x: endX,   y: top },
+        // 위 라인 사용 안 함 — 정정: 단순화
+    ];
+    // 단순화: 하단 본선은 노드B(상단) → 우측 끝 → 배터리 좌측-
+    const mbPoints2 = [
+        { x: nodeBx, y: top },
+        { x: endX,   y: top },
+        { x: endX,   y: bot },
+        { x: startX, y: bot }
+    ];
 
-  // 분기점 → 두 갈래
-  // 위쪽 가지 (R1)
-  s += `<line x1="280" y1="150" x2="280" y2="80" stroke="#0f172a" stroke-width="2"/>`;
-  s += `<line x1="280" y1="80" x2="500" y2="80" stroke="#0f172a" stroke-width="2"/>`;
-  s += `<rect x="350" y="65" width="80" height="30" fill="white" stroke="#3b82f6" stroke-width="3" rx="4"/>`;
-  s += `<text x="390" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#3b82f6">R₁=${R1}Ω</text>`;
-  s += `<line x1="500" y1="80" x2="500" y2="150" stroke="#0f172a" stroke-width="2"/>`;
+    // 본선 (상단): 배터리+ 우측 → 노드 A
+    // 본선 (하단): 노드 B → 우측 → 하단 → 배터리-
+    // 실제로 회로: 배터리 - (좌하) → 좌측 위로 → top 라인 → 노드 A → [3 병렬] → 노드 B → top 라인 → 우측 → bot 라인 → 배터리 -
+    // 깔끔히: A·B 모두 top y에 두고, 가지는 top에서 분기. R1 위로(top-X), R2 아래로(top+X), R_L 더 위로.
+    const yBus = top + 20;            // A·B 버스 y
+    const yR1 = yBus - 70;            // R1 가지 (위)
+    const yR2 = yBus + 70;            // R2 가지 (아래)
+    const yRL = yBus + 140;           // R_L 가지 (더 아래)
+    const yGnd = bot;                 // GND (하단 본선)
 
-  // 아래쪽 가지 (R2)
-  s += `<line x1="280" y1="190" x2="280" y2="260" stroke="#0f172a" stroke-width="2"/>`;
-  s += `<line x1="280" y1="260" x2="500" y2="260" stroke="#0f172a" stroke-width="2"/>`;
-  s += `<rect x="350" y="245" width="80" height="30" fill="white" stroke="#10b981" stroke-width="3" rx="4"/>`;
-  s += `<text x="390" y="265" text-anchor="middle" font-size="13" font-weight="bold" fill="#10b981">R₂=${R2}Ω</text>`;
-  s += `<line x1="500" y1="190" x2="500" y2="260" stroke="#0f172a" stroke-width="2"/>`;
+    // 본선 상단 (배터리+ → 노드 A)
+    const topPath = [
+        { x: startX, y: yGnd },     // 배터리 -
+        { x: startX, y: yBus },     // 배터리 + (상단)
+        { x: nodeAx, y: yBus }      // 노드 A
+    ];
+    ({ segs: mainTopSegs, len: mainTopLen } = buildPath(topPath));
+    mainPathTop = topPath;
 
-  // 우측 합류
-  s += `<line x1="500" y1="150" x2="580" y2="150" stroke="#0f172a" stroke-width="2"/>`;
-  s += `<line x1="500" y1="190" x2="580" y2="190" stroke="#0f172a" stroke-width="2"/>`;
-  s += `<line x1="580" y1="150" x2="580" y2="190" stroke="#0f172a" stroke-width="2"/>`;
+    // 본선 하단 (노드 B → 배터리-)
+    const botPath = [
+        { x: nodeBx, y: yBus },
+        { x: endX,   y: yBus },
+        { x: endX,   y: yGnd },
+        { x: startX + 20, y: yGnd }  // 배터리 - 직전까지
+    ];
+    ({ segs: mainBotSegs, len: mainBotLen } = buildPath(botPath));
+    mainPathBot = botPath;
 
-  // 분기점 마커
-  s += `<circle cx="280" cy="150" r="4" fill="#0f172a"/>`;
-  s += `<circle cx="280" cy="190" r="4" fill="#0f172a"/>`;
-  s += `<circle cx="500" cy="150" r="4" fill="#0f172a"/>`;
-  s += `<circle cx="500" cy="190" r="4" fill="#0f172a"/>`;
+    // 가지 1 (R1, 위): A → 위로 → R1 → 위에서 → 아래로 → B
+    branch1Path = [
+        { x: nodeAx, y: yBus },
+        { x: nodeAx, y: yR1 },
+        { x: nodeBx, y: yR1 },
+        { x: nodeBx, y: yBus }
+    ];
+    ({ segs: b1Segs, len: b1Len } = buildPath(branch1Path));
 
-  // 전류 라벨
-  s += `<text x="180" y="140" font-size="12" font-weight="bold" fill="#8b5cf6">I = ${Itot.toFixed(2)}A →</text>`;
-  s += `<text x="320" y="55" font-size="12" font-weight="bold" fill="#3b82f6">I₁ = ${I1.toFixed(2)}A</text>`;
-  s += `<text x="320" y="295" font-size="12" font-weight="bold" fill="#10b981">I₂ = ${I2.toFixed(2)}A</text>`;
+    // 가지 2 (R2, 아래)
+    branch2Path = [
+        { x: nodeAx, y: yBus },
+        { x: nodeAx, y: yR2 },
+        { x: nodeBx, y: yR2 },
+        { x: nodeBx, y: yBus }
+    ];
+    ({ segs: b2Segs, len: b2Len } = buildPath(branch2Path));
 
-  // 흐름 애니메이션 — 위 가지
-  const flow1 = Math.min(12, Math.max(2, I1*4));
-  for (let n=0; n<flow1; n++) {
-    const x = 295 + n*16;
-    if (x < 495) {
-      s += `<circle cx="${x}" cy="80" r="3" fill="#3b82f6"><animate attributeName="cx" from="${x}" to="${x+16}" dur="0.5s" repeatCount="indefinite"/></circle>`;
-    }
-  }
-  const flow2 = Math.min(12, Math.max(2, I2*4));
-  for (let n=0; n<flow2; n++) {
-    const x = 295 + n*16;
-    if (x < 495) {
-      s += `<circle cx="${x}" cy="260" r="3" fill="#10b981"><animate attributeName="cx" from="${x}" to="${x+16}" dur="0.5s" repeatCount="indefinite"/></circle>`;
-    }
-  }
-  s += `<text x="320" y="315" text-anchor="middle" font-size="11" fill="#64748b">I = I₁ + I₂ (KCL)</text>`;
+    // 가지 L (R_L, 더 아래)
+    branchLPath = [
+        { x: nodeAx, y: yBus },
+        { x: nodeAx, y: yRL },
+        { x: nodeBx, y: yRL },
+        { x: nodeBx, y: yBus }
+    ];
+    ({ segs: bLSegs, len: bLLen } = buildPath(branchLPath));
 
-  svg.innerHTML = s;
+    comp = {
+        bat: { cx: startX, cy: (yGnd + yBus) / 2 },
+        nodeA: { cx: nodeAx, cy: yBus },
+        nodeB: { cx: nodeBx, cy: yBus },
+        R1:  { cx: r1cx, cy: yR1, w: 90, h: 28 },
+        R2:  { cx: r2cx, cy: yR2, w: 90, h: 28 },
+        RL:  { cx: rLcx, cy: yRL, w: 90, h: 28 },
+        yBus, yR1, yR2, yRL, yGnd,
+        startX, endX, nodeAx, nodeBx
+    };
 }
 
-render();
+function pointAt(progress, segs, len) {
+    let p = ((progress % len) + len) % len;
+    for (const s of segs) {
+        if (p <= s.start + s.len) {
+            const lp = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * lp, y: s.a.y + (s.b.y - s.a.y) * lp };
+        }
+    }
+    return segs[0].a;
+}
+
+function seedParticles() {
+    const make = (n, len) => {
+        const arr = [];
+        for (let i = 0; i < n; i++) {
+            arr.push({ progress: (i / n) * len, size: 1.3 + Math.random() * 0.7, jit: Math.random() * 0.3 - 0.15 });
+        }
+        return arr;
+    };
+    mainTopParts = make(14, mainTopLen);
+    mainBotParts = make(14, mainBotLen);
+    b1Parts = make(12, b1Len);
+    b2Parts = make(12, b2Len);
+    bLParts = make(10, bLLen);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// =========================================================
+// 계산
+// =========================================================
+function computeState() {
+    state.Vin = +$('vin').value;
+    state.R1  = +$('r1').value;
+    state.R2  = +$('r2').value;
+    state.RL  = +$('rl').value;
+
+    // 각 가지 전류 (병렬: 각 가지에 V_in 동일하게 걸림)
+    state.I1 = state.Vin / state.R1;
+    state.I2 = state.Vin / state.R2;
+    state.IL = state.loadOn ? state.Vin / state.RL : 0;
+    state.I  = state.I1 + state.I2 + state.IL;
+    // 합성 저항
+    let invR = 1/state.R1 + 1/state.R2;
+    if (state.loadOn) invR += 1/state.RL;
+    state.Req = 1 / invR;
+}
+
+function updateDisplays() {
+    $('vinVal').textContent = state.Vin.toFixed(0);
+    $('r1Val').textContent  = state.R1.toFixed(0);
+    $('r2Val').textContent  = state.R2.toFixed(0);
+    $('rlVal').textContent  = state.RL.toFixed(0);
+    $('iTotDisp').textContent = state.I.toFixed(2);
+    $('i1Disp').textContent   = state.I1.toFixed(2);
+    $('i2Disp').textContent   = state.I2.toFixed(2);
+    $('reqDisp').textContent  = state.Req.toFixed(2);
+}
+
+// =========================================================
+// 위: 회로 그리기
+// =========================================================
+function drawCircuitBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, CIRCUIT_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, CIRCUIT_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CIRCUIT_H); ctx.stroke();
+    }
+    for (let i = 0; i < CIRCUIT_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ PARALLEL CIRCUIT · V_in → [A] → R₁ ∥ R₂ ∥ R_L → [B] → GND', 12, 10);
+    ctx.restore();
+}
+
+function strokePath(points, color, glow, lw) {
+    ctx.save();
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let k = 0; k < points.length; k++) {
+        const p = points[k];
+        if (k === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawWires() {
+    // 본선
+    strokePath(mainPathTop, 'rgba(125, 211, 252, 0.85)', 12, 3);
+    strokePath(mainPathBot, 'rgba(125, 211, 252, 0.85)', 12, 3);
+    // 가지 1 (R1, 청색)
+    strokePath(branch1Path, 'rgba(147, 197, 253, 0.75)', 8, 2.4);
+    // 가지 2 (R2, 녹색)
+    strokePath(branch2Path, 'rgba(110, 231, 183, 0.75)', 8, 2.4);
+    // 가지 L (R_L)
+    if (state.loadOn) {
+        strokePath(branchLPath, 'rgba(253, 186, 116, 0.78)', 8, 2.4);
+    } else {
+        ctx.save();
+        ctx.setLineDash([4, 5]);
+        strokePath(branchLPath, 'rgba(253, 186, 116, 0.18)', 0, 1.5);
+        ctx.restore();
+    }
+}
+
+function drawBattery() {
+    const b = comp.bat;
+    const pulseA = 0.4 + Math.sin(state.t * 0.06) * 0.22;
+    ctx.save();
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = `rgba(244, 114, 182, ${pulseA})`;
+    // + (위, 긴 막대)
+    ctx.strokeStyle = 'rgba(254, 205, 211, 0.95)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(b.cx - 22, b.cy - 14); ctx.lineTo(b.cx + 22, b.cy - 14);
+    ctx.stroke();
+    // - (아래, 짧은 막대)
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(b.cx - 12, b.cy + 14); ctx.lineTo(b.cx + 12, b.cy + 14);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fda4af';
+    ctx.fillText('+', b.cx, b.cy - 28);
+    ctx.fillText('−', b.cx, b.cy + 28);
+    // 값 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    const label = `V_in = ${state.Vin.toFixed(0)} V`;
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, b.cx - tw/2 - 6, b.cy + 42, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = '#f9a8d4';
+    ctx.fillText(label, b.cx, b.cy + 51);
+    ctx.restore();
+}
+
+function drawResistorBox(c, color1, color2, color3, ringColor, label, valStr, intensity) {
+    ctx.save();
+    ctx.shadowBlur = 8 + intensity * 26;
+    ctx.shadowColor = ringColor.replace('1)', `${0.4 + intensity * 0.6})`);
+    const g = ctx.createLinearGradient(c.cx - c.w/2, c.cy - c.h/2, c.cx + c.w/2, c.cy + c.h/2);
+    g.addColorStop(0, color1);
+    g.addColorStop(0.5, color2);
+    g.addColorStop(1, color3);
+    ctx.fillStyle = g;
+    roundRect(ctx, c.cx - c.w/2, c.cy - c.h/2, c.w, c.h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    // zig-zag
+    ctx.strokeStyle = `rgba(255,255,255,${0.5 + intensity * 0.45})`;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    const zs = c.cx - c.w/2 + 10, ze = c.cx + c.w/2 - 10;
+    const zSteps = 7;
+    for (let k = 0; k <= zSteps; k++) {
+        const x = zs + ((ze - zs) * k) / zSteps;
+        const y = c.cy + (k % 2 === 0 ? -6 : 6);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, c.cx - lw/2 - 6, c.cy - c.h/2 - 22, lw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = ringColor.replace('1)', '1)');
+    ctx.fillText(label, c.cx, c.cy - c.h/2 - 13);
+    const vw = ctx.measureText(valStr).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, c.cx - vw/2 - 6, c.cy + c.h/2 + 6, vw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = ringColor.replace('1)', '1)');
+    ctx.fillText(valStr, c.cx, c.cy + c.h/2 + 15);
+    ctx.restore();
+}
+
+function drawResistors() {
+    // 전력 비율로 발열 강도
+    const P1 = state.I1 * state.I1 * state.R1;
+    const P2 = state.I2 * state.I2 * state.R2;
+    const heatR1 = Math.min(1, P1 / 60);
+    const heatR2 = Math.min(1, P2 / 60);
+    drawResistorBox(
+        comp.R1,
+        '#bfdbfe', '#3b82f6', '#1e3a8a',
+        'rgba(59,130,246,1)',
+        `R₁ · I₁ = ${state.I1.toFixed(2)}A`,
+        `${state.R1.toFixed(0)} Ω`,
+        heatR1
+    );
+    drawResistorBox(
+        comp.R2,
+        '#bbf7d0', '#10b981', '#065f46',
+        'rgba(16,185,129,1)',
+        `R₂ · I₂ = ${state.I2.toFixed(2)}A`,
+        `${state.R2.toFixed(0)} Ω`,
+        heatR2
+    );
+    if (state.loadOn) {
+        const PL = state.IL * state.IL * state.RL;
+        const heatRL = Math.min(1, PL / 60);
+        drawResistorBox(
+            comp.RL,
+            '#fed7aa', '#f97316', '#7c2d12',
+            'rgba(251,146,60,1)',
+            `R_L · I_L = ${state.IL.toFixed(2)}A`,
+            `${state.RL.toFixed(0)} Ω`,
+            heatRL
+        );
+    }
+}
+
+function drawNode(n, color, label) {
+    const pulse = 0.5 + Math.sin(state.t * 0.08) * 0.5;
+    const rOuter = 14 + pulse * 6;
+    ctx.save();
+    ctx.strokeStyle = color.replace('1)', `${0.4 + pulse * 0.4})`);
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.arc(n.cx, n.cy, rOuter, 0, Math.PI * 2);
+    ctx.stroke();
+    const g = ctx.createRadialGradient(n.cx, n.cy, 1, n.cx, n.cy, 8);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.6, color.replace('1)', '0.8)'));
+    g.addColorStop(1, color.replace('1)', '0.2)'));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(n.cx, n.cy, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, n.cx - tw/2 - 8, n.cy - 34, tw + 16, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color.replace('1)', '1)');
+    ctx.fillText(label, n.cx, n.cy - 23);
+    ctx.restore();
+}
+
+function drawNodes() {
+    drawNode(comp.nodeA, 'rgba(167, 243, 208, 1)', 'A · 분기');
+    drawNode(comp.nodeB, 'rgba(252, 211, 77, 1)', 'B · 합류');
+}
+
+function drawFlowOn(parts, segs, len, speedFactor, color, glow) {
+    const speed = Math.min(7, 0.3 + speedFactor * 2.2);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of parts) {
+        p.progress = (p.progress + speed) % len;
+        const pt = pointAt(p.progress, segs, len);
+        ctx.fillStyle = color;
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jit, pt.y + p.jit, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawElectronFlow() {
+    // 본선 (I_total)
+    drawFlowOn(mainTopParts, mainTopSegs, mainTopLen, state.I, 'rgba(186, 230, 253, 0.95)', 12);
+    drawFlowOn(mainBotParts, mainBotSegs, mainBotLen, state.I, 'rgba(186, 230, 253, 0.95)', 12);
+    // 각 가지
+    drawFlowOn(b1Parts, b1Segs, b1Len, state.I1, 'rgba(147, 197, 253, 0.95)', 10);
+    drawFlowOn(b2Parts, b2Segs, b2Len, state.I2, 'rgba(110, 231, 183, 0.95)', 10);
+    if (state.loadOn) {
+        drawFlowOn(bLParts, bLSegs, bLLen, state.IL, 'rgba(253, 186, 116, 0.95)', 10);
+    }
+}
+
+function drawArrowAt(x, y, ang, color, glow) {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(ang);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(7, 0); ctx.lineTo(-5, -4.5); ctx.lineTo(-5, 4.5); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawArrowHeads() {
+    const yBus = comp.yBus;
+    // 본선 진입
+    drawArrowAt((comp.startX + comp.nodeAx) / 2, yBus, 0, 'rgba(207, 250, 254, 0.95)', 8);
+    // 가지 R1 (위쪽 경로 진행 방향)
+    drawArrowAt((comp.nodeAx + comp.nodeBx) / 2, comp.yR1, 0, 'rgba(186, 230, 253, 0.95)', 8);
+    // 가지 R2
+    drawArrowAt((comp.nodeAx + comp.nodeBx) / 2, comp.yR2, 0, 'rgba(167, 243, 208, 0.95)', 8);
+    // 가지 R_L
+    if (state.loadOn) {
+        drawArrowAt((comp.nodeAx + comp.nodeBx) / 2, comp.yRL, 0, 'rgba(253, 186, 116, 0.95)', 8);
+    }
+    // 본선 복귀
+    drawArrowAt((comp.nodeBx + comp.endX) / 2, yBus, 0, 'rgba(207, 250, 254, 0.95)', 8);
+}
+
+// =========================================================
+// 아래: 막대 그래프 (I_total / I₁ / I₂ [/ I_L])
+// =========================================================
+function drawPlot() {
+    const W = canvas.width;
+    const top0 = CIRCUIT_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + PLOT_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, PLOT_H);
+
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(110, 231, 183, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.7)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ CURRENT DISTRIBUTION · I_total을 각 가지가 어떻게 나눠 갖는지', 12, top0 + 10);
+    ctx.restore();
+
+    const splitX = W * 0.5;
+    drawBars(top0, splitX);
+    drawRatioRing(top0, splitX, W);
+}
+
+function drawBars(top0, leftEndX) {
+    const padL = 50, padT = 50, padB = 44;
+    const barAreaTop = top0 + padT;
+    const barAreaBot = top0 + PLOT_H - padB;
+    const barAreaH = barAreaBot - barAreaTop;
+
+    const items = [
+        { label: 'I_total',  v: state.I,  color: '#67e8f9', topColor: '#cffafe', glow: 'rgba(34,211,238,0.6)' },
+        { label: 'I₁ (R₁)',  v: state.I1, color: '#3b82f6', topColor: '#dbeafe', glow: 'rgba(59,130,246,0.6)' },
+        { label: 'I₂ (R₂)',  v: state.I2, color: '#10b981', topColor: '#bbf7d0', glow: 'rgba(16,185,129,0.6)' }
+    ];
+    if (state.loadOn) {
+        items.push({ label: 'I_L (R_L)', v: state.IL, color: '#f97316', topColor: '#fed7aa', glow: 'rgba(251,146,60,0.6)' });
+    }
+    const N = items.length;
+    const barW = Math.min(56, (leftEndX - padL - 60) / N - 18);
+    const slotGap = (leftEndX - padL - 30) / N;
+
+    // 축 라벨 (max = I_total)
+    ctx.save();
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const maxI = Math.max(state.I, 0.01);
+    for (let k = 0; k <= 4; k++) {
+        const frac = k / 4;
+        const yLine = barAreaBot - barAreaH * frac;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(padL, yLine); ctx.lineTo(leftEndX - 10, yLine);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText((maxI * frac).toFixed(1) + 'A', padL - 4, yLine);
+    }
+    ctx.restore();
+
+    items.forEach((s, idx) => {
+        const x = padL + 20 + idx * slotGap;
+        const h = barAreaH * (s.v / maxI);
+        const y = barAreaBot - h;
+        ctx.save();
+        // 배경
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        roundRect(ctx, x, barAreaTop, barW, barAreaH, 6);
+        ctx.fill();
+        // 실제
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = s.glow;
+        const g = ctx.createLinearGradient(x, y, x, barAreaBot);
+        g.addColorStop(0, s.topColor);
+        g.addColorStop(1, s.color);
+        ctx.fillStyle = g;
+        roundRect(ctx, x, y, barW, h, 6);
+        ctx.fill();
+        ctx.restore();
+
+        // 값
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillStyle = '#e5e7eb';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(s.v.toFixed(2) + 'A', x + barW/2, y - 4);
+        // 라벨
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.85)';
+        ctx.textBaseline = 'top';
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillText(s.label, x + barW/2, barAreaBot + 6);
+        // 비율
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.font = '10px ui-monospace, monospace';
+        const pct = idx === 0 ? '100%' : (s.v / maxI * 100).toFixed(0) + '%';
+        ctx.fillText(pct, x + barW/2, barAreaBot + 18);
+        ctx.restore();
+    });
+
+    // KCL 검증 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const sum = state.I1 + state.I2 + state.IL;
+    const sumStr = state.loadOn
+        ? `KCL  I₁ + I₂ + I_L = ${sum.toFixed(2)} A  ≈  I_total ${state.I.toFixed(2)} A`
+        : `KCL  I₁ + I₂ = ${sum.toFixed(2)} A  ≈  I_total ${state.I.toFixed(2)} A`;
+    ctx.fillText(sumStr, padL, top0 + 26);
+    ctx.restore();
+}
+
+function drawRatioRing(top0, leftEndX, totalW) {
+    const cx = (leftEndX + totalW) / 2;
+    const cy = top0 + PLOT_H / 2 + 8;
+    const r = Math.min(78, (totalW - leftEndX) / 2.6);
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('RATIO RING · 가지별 전류 비중 (I/I_total)', leftEndX + 20, top0 + 26);
+    ctx.restore();
+
+    // 비율 도넛
+    const total = Math.max(state.I, 0.001);
+    const fracs = [
+        { v: state.I1 / total, color: '#3b82f6', glow: 'rgba(59,130,246,0.6)', label: 'I₁' },
+        { v: state.I2 / total, color: '#10b981', glow: 'rgba(16,185,129,0.6)', label: 'I₂' }
+    ];
+    if (state.loadOn) fracs.push({ v: state.IL / total, color: '#f97316', glow: 'rgba(251,146,60,0.6)', label: 'I_L' });
+
+    // 외곽 가이드
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    let startA = -Math.PI / 2;
+    const lw = 22;
+    for (const f of fracs) {
+        const endA = startA + Math.PI * 2 * f.v;
+        ctx.save();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = f.glow;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = lw;
+        ctx.lineCap = 'butt';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, startA, endA);
+        ctx.stroke();
+        ctx.restore();
+
+        // 라벨 (호 중앙)
+        const midA = (startA + endA) / 2;
+        const lx = cx + Math.cos(midA) * (r + lw / 2 + 14);
+        const ly = cy + Math.sin(midA) * (r + lw / 2 + 14);
+        if (f.v > 0.04) {
+            ctx.save();
+            ctx.font = 'bold 10px ui-monospace, monospace';
+            ctx.fillStyle = f.color;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(`${f.label} ${(f.v * 100).toFixed(0)}%`, lx, ly);
+            ctx.restore();
+        }
+        startA = endA;
+    }
+
+    // 중앙: I_total
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('I_total', cx, cy - 14);
+    ctx.font = 'bold 18px ui-monospace, monospace';
+    const grd = ctx.createLinearGradient(cx - 40, cy, cx + 40, cy);
+    grd.addColorStop(0, '#93c5fd');
+    grd.addColorStop(0.5, '#6ee7b7');
+    grd.addColorStop(1, '#fcd34d');
+    ctx.fillStyle = grd;
+    ctx.fillText(state.I.toFixed(2) + ' A', cx, cy + 4);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(168, 139, 250, 0.85)';
+    ctx.fillText(`R_eq = ${state.Req.toFixed(2)} Ω`, cx, cy + 22);
+    ctx.restore();
+}
+
+// =========================================================
+// 메인 루프
+// =========================================================
+function frame() {
+    state.t++;
+    computeState();
+    updateDisplays();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCircuitBg();
+    drawWires();
+    drawBattery();
+    drawResistors();
+    drawElectronFlow();
+    drawNodes();
+    drawArrowHeads();
+    drawPlot();
+    requestAnimationFrame(frame);
+}
+
+// =========================================================
+// 인터랙션
+// =========================================================
+function flashPanel(idTarget) {
+    if (!window.gsap) return;
+    gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(16, 185, 129, 0)', duration: 0.6 });
+    const pill = document.getElementById(idTarget);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 400);
+    }
+}
+
+['vin', 'r1', 'r2', 'rl'].forEach(id => {
+    const map = { vin: 'pill-itot', r1: 'pill-i1', r2: 'pill-i2', rl: 'pill-req' };
+    $(id).addEventListener('input', () => flashPanel(map[id]));
+});
+
+$('rlToggle').addEventListener('click', () => {
+    state.loadOn = !state.loadOn;
+    const btn = $('rlToggle');
+    const box = $('rlBox');
+    const slider = $('rl');
+    if (state.loadOn) {
+        btn.classList.add('active');
+        btn.textContent = 'ON';
+        box.classList.remove('opacity-50');
+        slider.disabled = false;
+        if (window.gsap) gsap.fromTo(box, { scale: 0.96 }, { scale: 1, duration: 0.35, ease: 'back.out(1.6)' });
+    } else {
+        btn.classList.remove('active');
+        btn.textContent = 'OFF';
+        box.classList.add('opacity-50');
+        slider.disabled = true;
+    }
+    flashPanel('pill-itot');
+});
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        let r1Target = 10, r2Target = 10;
+        if (mode === 'equal')   { r1Target = 10; r2Target = 10; }
+        if (mode === 'r1small') { r1Target = 5;  r2Target = 50; }  // R₁ ≪ R₂ → I₁ ↑
+        if (mode === 'r2small') { r1Target = 50; r2Target = 5;  }  // R₁ ≫ R₂ → I₂ ↑
+        if (window.gsap) {
+            gsap.to($('r1'), { value: r1Target, duration: 0.6, ease: 'power3.out',
+                onUpdate: () => { $('r1Val').textContent = Math.round($('r1').value); } });
+            gsap.to($('r2'), { value: r2Target, duration: 0.6, ease: 'power3.out',
+                onUpdate: () => { $('r2Val').textContent = Math.round($('r2').value); } });
+        } else {
+            $('r1').value = r1Target;
+            $('r2').value = r2Target;
+        }
+        flashPanel('pill-i1');
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeState();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.4, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
 </script>
 </body>
 </html>

@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 인덕터 직병렬 합성 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+window.MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(245, 158, 11, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(168, 139, 250, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.62;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(245,158,11,0.45), rgba(168,139,250,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(168, 139, 250, 0.45),
+        0 0 40px rgba(245, 158, 11, 0.18);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border-radius: 17px;
+    background: #050714;
+    touch-action: none;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(245,158,11,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fcd34d, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip-L { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border: 1px solid rgba(168,139,250,0.5); color: #ddd6fe; }
+.chip-phi { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border: 1px solid rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-w { background: linear-gradient(135deg, rgba(34,211,238,0.20), rgba(34,211,238,0.06)); border: 1px solid rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-m { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border: 1px solid rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-v { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border: 1px solid rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-L1 { background: linear-gradient(135deg, rgba(251,146,60,0.22), rgba(251,146,60,0.06)); border: 1px solid rgba(251,146,60,0.5); color: #fdba74; }
+.chip-L2 { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border: 1px solid rgba(34,197,94,0.5); color: #86efac; }
+.chip-L3 { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border: 1px solid rgba(34,211,238,0.5); color: #67e8f9; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 220ms, box-shadow 220ms;
+}
+.live-pill.flash {
+    border-color: rgba(168, 139, 250, 0.6);
+    box-shadow: 0 0 26px rgba(168, 139, 250, 0.35);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fcd34d, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.35);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+
+.mode-tab {
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    transition: all 220ms;
+    cursor: pointer;
+}
+.mode-tab:hover { background: rgba(148, 163, 184, 0.18); }
+.mode-tab.active.series {
+    background: linear-gradient(135deg, rgba(251,146,60,0.32), rgba(244,114,182,0.22));
+    border-color: rgba(251, 146, 60, 0.6);
+    color: white;
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.4);
+}
+.mode-tab.active.parallel {
+    background: linear-gradient(135deg, rgba(34,211,238,0.32), rgba(168,139,250,0.22));
+    border-color: rgba(34, 211, 238, 0.6);
+    color: white;
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.4);
+}
+.reset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.reset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.compare-card {
+    background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(34,211,238,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168, 139, 250, 0.4);
+}
+.bar-track {
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+.bar-fill-series {
+    background: linear-gradient(90deg, rgba(251,146,60,0.7), rgba(244,114,182,0.85));
+    box-shadow: 0 0 14px rgba(251, 146, 60, 0.45);
+    transition: width 360ms cubic-bezier(.22,.61,.36,1);
+}
+.bar-fill-parallel {
+    background: linear-gradient(90deg, rgba(34,211,238,0.7), rgba(168,139,250,0.85));
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+    transition: width 360ms cubic-bezier(.22,.61,.36,1);
+}
+.contrast-card {
+    background: linear-gradient(135deg, rgba(244,63,94,0.16), rgba(34,211,238,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+}
+.contrast-cell {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+.cell-head {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.energy-bar {
+    height: 6px;
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 9999px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+.energy-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fcd34d, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 14px rgba(196, 181, 253, 0.6);
+    transition: width 220ms ease-out;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · INDUCTOR · SERIES vs PARALLEL
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            인덕터 직병렬 합성 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            저항과 같은 패턴 — 콘덴서와는 정반대!
+            <span class="text-orange-300 font-semibold">직렬</span>은 단순히 더해서 커지고,
+            <span class="text-cyan-300 font-semibold">병렬</span>은 합성 인덕턴스가 작아집니다. 코일 turn 수와 자속선으로 직관적으로 확인하세요.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="chip-L live-pill rounded-xl p-3" id="pill-L">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">합성 인덕턴스 L<sub>eq</sub></p>
+            <p class="mt-1 text-2xl font-bold"><span id="leqVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal" id="leqUnit">mH</span></p>
+        </div>
+        <div class="chip-phi live-pill rounded-xl p-3" id="pill-phi">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">총 자속 Φ = L<sub>eq</sub>·I</p>
+            <p class="mt-1 text-2xl font-bold"><span id="phiVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal" id="phiUnit">mWb</span></p>
+            <div class="energy-bar mt-2"><div class="energy-bar-fill" id="phiBar" style="width:0%"></div></div>
+        </div>
+        <div class="chip-w live-pill rounded-xl p-3" id="pill-w">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">자기 에너지 W = ½L·I²</p>
+            <p class="mt-1 text-2xl font-bold"><span id="wVal" class="live-num">—</span> <span class="text-xs opacity-70 font-normal" id="wUnit">mJ</span></p>
+        </div>
+        <div class="chip-m live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">회로 모드</p>
+            <p class="mt-1 text-2xl font-bold"><span id="modeVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 캔버스 카드 (sticky) -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">CIRCUIT · 전원 ↔ L₁/L₂/L₃ · 코일 turn / 자속선 Φ</span>
+                <div class="flex gap-2">
+                    <button id="tabSeries" class="mode-tab series active rounded-md px-3 py-1.5 text-xs font-bold">직렬</button>
+                    <button id="tabParallel" class="mode-tab parallel rounded-md px-3 py-1.5 text-xs font-bold">병렬</button>
+                    <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">초기화</button>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="main"></canvas>
+            </div>
+
+            <!-- 슬라이더 4종 -->
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="chip-v rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>전류 I</span><span class="font-mono text-sm"><span id="iDisp">2.0</span></span>
+                    </label>
+                    <input type="range" id="iIn" min="1" max="100" value="20" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">A (×0.1)</p>
+                </div>
+                <div class="chip-L1 rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>L₁</span><span class="font-mono text-sm"><span id="l1Disp">10</span></span>
+                    </label>
+                    <input type="range" id="l1" min="1" max="100" value="10" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">mH</p>
+                </div>
+                <div class="chip-L2 rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>L₂</span><span class="font-mono text-sm"><span id="l2Disp">20</span></span>
+                    </label>
+                    <input type="range" id="l2" min="1" max="100" value="20" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">mH</p>
+                </div>
+                <div class="chip-L3 rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                        <span>L₃</span><span class="font-mono text-sm"><span id="l3Disp">30</span></span>
+                    </label>
+                    <input type="range" id="l3" min="1" max="100" value="30" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">mH</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사이드 컬럼 -->
+        <div class="space-y-4" id="sideCol">
+            <!-- 합성 인덕턴스 비교 -->
+            <div class="compare-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">⚖️ 합성 인덕턴스 비교</h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] font-bold tracking-wider mb-1">
+                            <span class="text-orange-300">직렬 L<sub>eq</sub> (커짐, 단순합)</span>
+                            <span id="leqSeriesText" class="font-mono text-orange-200">— mH</span>
+                        </div>
+                        <div class="bar-track rounded-full h-2.5 overflow-hidden">
+                            <div id="barSeries" class="bar-fill-series h-full rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] font-bold tracking-wider mb-1">
+                            <span class="text-cyan-300">병렬 L<sub>eq</sub> (작아짐, 역수합)</span>
+                            <span id="leqParallelText" class="font-mono text-cyan-200">— mH</span>
+                        </div>
+                        <div class="bar-track rounded-full h-2.5 overflow-hidden">
+                            <div id="barParallel" class="bar-fill-parallel h-full rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">직렬 / 병렬 비율: <span id="ratioVal" class="text-indigo-200 font-mono font-bold">—</span> 배</p>
+            </div>
+
+            <!-- 인덕터 vs 콘덴서 패턴 대조 -->
+            <div class="contrast-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-3 tracking-wider text-rose-200">🔁 인덕터 vs 콘덴서 패턴</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="contrast-cell">
+                        <p class="cell-head text-amber-300">인덕터 L (저항과 동일)</p>
+                        <p class="text-[11px] mt-1 text-slate-300">직렬: L₁+L₂ <span class="text-amber-300 font-bold">↑</span></p>
+                        <p class="text-[11px] text-slate-300">병렬: 1/Σ(1/L) <span class="text-amber-300 font-bold">↓</span></p>
+                    </div>
+                    <div class="contrast-cell">
+                        <p class="cell-head text-cyan-300">콘덴서 C (정반대)</p>
+                        <p class="text-[11px] mt-1 text-slate-300">직렬: 1/Σ(1/C) <span class="text-cyan-300 font-bold">↓</span></p>
+                        <p class="text-[11px] text-slate-300">병렬: C₁+C₂ <span class="text-cyan-300 font-bold">↑</span></p>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-3 text-center">인덕터·저항은 같은 패턴, 콘덴서만 직렬/병렬 자리가 뒤바뀜!</p>
+            </div>
+
+            <!-- 직렬 핵심 -->
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="bg-gradient-to-r from-orange-300 to-pink-300 bg-clip-text text-transparent">직렬 인덕터 핵심</span>
+                </h2>
+                <ul class="mt-3 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-orange-300">합성 L</span> · L = L₁+L₂+L₃ (↑ 단순 합산, 저항과 동일)</li>
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-orange-300">전류 I</span> · 모든 인덕터에 같은 I (한 줄 통과)</li>
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-orange-300">자속 Φ</span> · Φ = Φ₁+Φ₂+Φ₃ (각 코일에서 발생, 직렬로 합산)</li>
+                </ul>
+            </div>
+
+            <!-- 병렬 핵심 -->
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="bg-gradient-to-r from-cyan-300 to-indigo-200 bg-clip-text text-transparent">병렬 인덕터 핵심</span>
+                </h2>
+                <ul class="mt-3 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-cyan-300">합성 L</span> · 1/L = 1/L₁+1/L₂+1/L₃ (↓ 가장 작은 L보다도 작아짐)</li>
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-cyan-300">전압</span> · 모든 인덕터에 같은 V</li>
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-cyan-300">전류 I</span> · I = I₁+I₂+I₃ (작은 L에 큰 I)</li>
+                </ul>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-2 tracking-wider text-indigo-200">📐 합성 공식</h3>
+                <div class="math-container text-center">
+                    $$L_{직렬} = L_1+L_2+L_3$$
+                    $$\frac{1}{L_{병렬}} = \frac{1}{L_1}+\frac{1}{L_2}+\frac{1}{L_3}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <div class="math-container text-center">
+                    $$\Phi = L\,I, \quad W = \tfrac{1}{2}LI^2$$
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const state = {
+    I: 2.0,                            // A
+    L1: 10, L2: 20, L3: 30,            // mH
+    Leq: 0,                            // mH
+    Phi: 0,                            // mWb
+    W: 0,                              // mJ
+    Phi1: 0, Phi2: 0, Phi3: 0,         // 각 코일 자속 (mWb)
+    I1: 0, I2: 0, I3: 0,               // 각 가지 전류 (A) — 병렬에서 의미 있음
+    mode: 'series',
+    t: 0
+};
+
+const COLORS = {
+    L1: { color: '#fb923c', accent: '#fdba74', glow: 'rgba(251,146,60,' },
+    L2: { color: '#22c55e', accent: '#86efac', glow: 'rgba(34,197,94,' },
+    L3: { color: '#22d3ee', accent: '#67e8f9', glow: 'rgba(34,211,238,' }
+};
+
+let geo = {};
+let seriesParticles, parallelBranches;
+let coilFluxParticles = { L1: [], L2: [], L3: [] };
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 560;
+    buildGeometry();
+}
+window.addEventListener('resize', resize);
+
+function buildGeometry() {
+    const W = canvas.width, H = canvas.height;
+    const topY = H * 0.32;
+    const botY = H * 0.80;
+    const leftX = W * 0.13;
+    const rightX = W * 0.87;
+    const nodeAx = W * 0.24;
+    const nodeBx = W * 0.76;
+
+    geo = {
+        W, H,
+        leftX, rightX, topY, botY,
+        nodeAx, nodeBx,
+        // 직렬 코일 슬롯 (윗줄)
+        seriesSlots: [
+            { x: leftX + (rightX - leftX) * 0.22, y: topY },
+            { x: leftX + (rightX - leftX) * 0.50, y: topY },
+            { x: leftX + (rightX - leftX) * 0.78, y: topY }
+        ],
+        // 병렬 가지의 y (3가지)
+        parallelYs: [ topY - 50, topY + 12, topY + 74 ]
+    };
+
+    // 직렬 경로: 전원 + (우하) → 우상 → L3 → L2 → L1 → 좌상 → 좌하 → 전원 -
+    const seriesPath = [
+        { x: rightX, y: botY },
+        { x: rightX, y: topY },
+        { x: leftX, y: topY },
+        { x: leftX, y: botY },
+        { x: rightX, y: botY }
+    ];
+    const segsS = pathToSegments(seriesPath);
+    seriesParticles = {
+        path: seriesPath,
+        segments: segsS.segments,
+        total: segsS.total,
+        particles: makeParticles(22, segsS.total)
+    };
+
+    // 병렬: 노드 A (좌측) ↔ 3가지 ↔ 노드 B (우측)
+    const A = { x: nodeAx, y: topY };
+    const B = { x: nodeBx, y: topY };
+    const ys = geo.parallelYs;
+    parallelBranches = [
+        makeBranch('L1', A, B, ys[0]),
+        makeBranch('L2', A, B, ys[1]),
+        makeBranch('L3', A, B, ys[2])
+    ];
+    // 메인 라인 (전원 ↔ 노드 A/B)
+    const mainPathR = [
+        { x: rightX, y: botY },
+        { x: rightX, y: topY },
+        { x: B.x, y: topY }
+    ];
+    const mainPathL = [
+        { x: A.x, y: topY },
+        { x: leftX, y: topY },
+        { x: leftX, y: botY }
+    ];
+    geo.mainR = seedLine(mainPathR, 9);
+    geo.mainL = seedLine(mainPathL, 9);
+    geo.parallelA = A; geo.parallelB = B;
+
+    // 코일 자속선 시드
+    seedCoilFlux();
+}
+
+function makeBranch(name, A, B, midY) {
+    const path = [
+        { x: A.x, y: A.y },
+        { x: A.x + 22, y: A.y },
+        { x: A.x + 22, y: midY },
+        { x: B.x - 22, y: midY },
+        { x: B.x - 22, y: B.y },
+        { x: B.x, y: B.y }
+    ];
+    const segs = pathToSegments(path);
+    return {
+        name,
+        path,
+        segments: segs.segments,
+        total: segs.total,
+        particles: makeParticles(10, segs.total),
+        coilMid: { x: (A.x + 22 + B.x - 22) / 2, y: midY }
+    };
+}
+
+function seedLine(path, n) {
+    const segs = pathToSegments(path);
+    return {
+        path,
+        segments: segs.segments,
+        total: segs.total,
+        particles: makeParticles(n, segs.total)
+    };
+}
+function pathToSegments(path) {
+    let total = 0; const segments = [];
+    for (let k = 0; k < path.length - 1; k++) {
+        const a = path[k], b = path[k + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        segments.push({ a, b, len, start: total });
+        total += len;
+    }
+    return { segments, total };
+}
+function makeParticles(n, total) {
+    const arr = [];
+    for (let i = 0; i < n; i++) arr.push({
+        progress: (i / n) * total,
+        size: 1.6 + Math.random() * 0.8,
+        jitter: (Math.random() - 0.5) * 0.6
+    });
+    return arr;
+}
+function pointAt(segments, total, progress) {
+    let p = ((progress % total) + total) % total;
+    for (const s of segments) {
+        if (p <= s.start + s.len) {
+            const tt = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * tt, y: s.a.y + (s.b.y - s.a.y) * tt };
+        }
+    }
+    return segments[0].a;
+}
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// 코일 자속선 입자: 각 코일 내부에서 축방향으로 흐름 (총합 파티클 ≤ ~30)
+function seedCoilFlux() {
+    coilFluxParticles = { L1: [], L2: [], L3: [] };
+    const perCoil = 6;
+    for (const name of ['L1', 'L2', 'L3']) {
+        for (let i = 0; i < perCoil; i++) {
+            coilFluxParticles[name].push({
+                progress: Math.random(),
+                lane: (Math.random() - 0.5) * 1.4,
+                speed: 0.005 + Math.random() * 0.004,
+                size: 1.2 + Math.random() * 0.8
+            });
+        }
+    }
+}
+
+// ============== 배경 ==============
+function drawBg() {
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.restore();
+    // 헤더
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.55)';
+    ctx.fillText('▮ INDUCTOR · SERIES vs PARALLEL · L₁/L₂/L₃', 12, 10);
+    ctx.textAlign = 'right';
+    const modeLabel = state.mode === 'series' ? '◯ MODE · SERIES (커짐)' : '◯ MODE · PARALLEL (작아짐)';
+    ctx.fillStyle = state.mode === 'series' ? 'rgba(251, 146, 60, 0.85)' : 'rgba(34, 211, 238, 0.85)';
+    ctx.fillText(modeLabel, canvas.width - 12, 10);
+    ctx.restore();
+}
+
+// ============== 전원 ==============
+function drawSource() {
+    const leftEnd = { x: geo.leftX, y: geo.botY };
+    const rightEnd = { x: geo.rightX, y: geo.botY };
+
+    // (+) 오른쪽 - 긴 선
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = '#f472b6';
+    ctx.strokeStyle = '#fce7f3';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(rightEnd.x + 14, rightEnd.y - 18);
+    ctx.lineTo(rightEnd.x + 14, rightEnd.y + 18);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fbcfe8';
+    ctx.beginPath();
+    ctx.moveTo(rightEnd.x + 24, rightEnd.y - 10);
+    ctx.lineTo(rightEnd.x + 24, rightEnd.y + 10);
+    ctx.stroke();
+    ctx.restore();
+
+    // (-) 왼쪽 - 짧은 선
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#60a5fa';
+    ctx.strokeStyle = '#dbeafe';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(leftEnd.x - 14, leftEnd.y - 10);
+    ctx.lineTo(leftEnd.x - 14, leftEnd.y + 10);
+    ctx.stroke();
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(leftEnd.x - 24, leftEnd.y - 18);
+    ctx.lineTo(leftEnd.x - 24, leftEnd.y + 18);
+    ctx.stroke();
+    ctx.restore();
+
+    // I 라벨
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `I = ${state.I.toFixed(1)} A`;
+    const tw = ctx.measureText(txt).width;
+    const cx = (geo.leftX + geo.rightX) / 2, cy = geo.botY + 30;
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.18)';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#f472b6';
+    roundRect(ctx, cx - tw / 2 - 10, cy - 11, tw + 20, 22, 11);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.fillStyle = '#fce7f3';
+    ctx.shadowBlur = 0;
+    ctx.fillText(txt, cx, cy + 1);
+    // +/-
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillStyle = '#fbcfe8';
+    ctx.fillText('+', rightEnd.x + 40, rightEnd.y);
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillText('−', leftEnd.x - 40, leftEnd.y);
+    ctx.restore();
+}
+
+// ============== 직렬 ==============
+function drawSeriesWires() {
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#fdba74';
+    ctx.strokeStyle = 'rgba(252, 211, 77, 0.85)';
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const p = seriesParticles.path;
+    ctx.beginPath();
+    p.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
+    ctx.stroke();
+    ctx.restore();
+}
+function drawSeriesInductors() {
+    const slots = geo.seriesSlots;
+    const data = [
+        { name: 'L1', L: state.L1, phi: state.Phi1, label: 'L₁', ...COLORS.L1 },
+        { name: 'L2', L: state.L2, phi: state.Phi2, label: 'L₂', ...COLORS.L2 },
+        { name: 'L3', L: state.L3, phi: state.Phi3, label: 'L₃', ...COLORS.L3 }
+    ];
+    for (let k = 0; k < 3; k++) {
+        drawInductorBox(slots[k].x, slots[k].y, data[k], 'series');
+    }
+}
+function drawSeriesParticles() {
+    const speed = Math.max(0.4, state.I * 0.5);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of seriesParticles.particles) {
+        p.progress = (p.progress + speed) % seriesParticles.total;
+        const pt = pointAt(seriesParticles.segments, seriesParticles.total, p.progress);
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#facc15';
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jitter, pt.y + p.jitter, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ============== 병렬 ==============
+function drawParallelWires() {
+    // 메인 라인
+    ctx.save();
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#67e8f9';
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.85)';
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const ml of [geo.mainR, geo.mainL]) {
+        ctx.beginPath();
+        ml.path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+        ctx.stroke();
+    }
+    ctx.restore();
+    // 가지
+    for (const b of parallelBranches) {
+        const col = COLORS[b.name];
+        ctx.save();
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = col.color;
+        ctx.strokeStyle = `${col.color}cc`;
+        ctx.lineWidth = 2.6;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        b.path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+function drawParallelInductors() {
+    const phis = [state.Phi1, state.Phi2, state.Phi3];
+    const Ls = [state.L1, state.L2, state.L3];
+    const Is = [state.I1, state.I2, state.I3];
+    const names = ['L₁', 'L₂', 'L₃'];
+    const keys = ['L1', 'L2', 'L3'];
+    for (let k = 0; k < 3; k++) {
+        const b = parallelBranches[k];
+        const d = {
+            name: keys[k],
+            L: Ls[k],
+            phi: phis[k],
+            label: names[k],
+            branchI: Is[k],
+            ...COLORS[keys[k]]
+        };
+        drawInductorBox(b.coilMid.x, b.coilMid.y, d, 'parallel');
+    }
+}
+function drawParallelNodes() {
+    const nodes = [geo.parallelA, geo.parallelB];
+    const labels = ['A', 'B'];
+    for (let k = 0; k < 2; k++) {
+        const n = nodes[k];
+        const phase = k * Math.PI;
+        const pr = 16 + Math.sin(state.t * 0.05 + phase) * 6;
+        const pa = 0.30 + Math.sin(state.t * 0.05 + phase) * 0.18;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, pa);
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, pr, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        ctx.save();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = '#67e8f9';
+        const g = ctx.createRadialGradient(n.x - 3, n.y - 4, 1, n.x, n.y, 13);
+        g.addColorStop(0, '#ffffff');
+        g.addColorStop(0.3, '#bae6fd');
+        g.addColorStop(0.7, '#0ea5e9');
+        g.addColorStop(1, '#0c4a6e');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#0c1224';
+        ctx.fillText(labels[k], n.x, n.y + 1);
+        ctx.restore();
+    }
+}
+function drawParallelParticles() {
+    const currents = [state.I1, state.I2, state.I3];
+    for (let k = 0; k < parallelBranches.length; k++) {
+        const b = parallelBranches[k];
+        const Ib = currents[k];
+        const speed = Math.max(0.3, Ib * 0.45);
+        const col = COLORS[b.name];
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (const p of b.particles) {
+            p.progress = (p.progress + speed) % b.total;
+            const pt = pointAt(b.segments, b.total, p.progress);
+            ctx.fillStyle = `${col.accent}f0`;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = col.color;
+            ctx.beginPath();
+            ctx.arc(pt.x + p.jitter, pt.y + p.jitter, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+    // 메인 라인 (총 전류 기준)
+    const speedM = Math.max(0.4, state.I * 0.45);
+    for (const mp of [geo.mainR, geo.mainL]) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (const p of mp.particles) {
+            p.progress = (p.progress + speedM) % mp.total;
+            const pt = pointAt(mp.segments, mp.total, p.progress);
+            ctx.fillStyle = 'rgba(186, 230, 253, 0.92)';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#7dd3fc';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+// ============== 인덕터 박스 (코일 turn + 자속선) ==============
+// data: { name, L, phi, label, color, accent, glow, branchI? }
+function drawInductorBox(cx, cy, data, mode) {
+    // L 비례 turn 수 (시각용, 4~10) — L 큰 만큼 turn 많아 보임
+    const turns = Math.max(4, Math.min(10, Math.round(3 + data.L / 12)));
+    const coilW = 100;
+    const coilH = 38;
+    const turnSpacing = coilW / (turns - 1);
+    const ellipseRx = Math.max(3.2, turnSpacing * 0.4);
+    const ellipseRy = coilH / 2;
+
+    // 자속 강도 정규화 (0..1)
+    const fluxNorm = Math.max(0, Math.min(1, data.phi / 600));
+
+    ctx.save();
+    // 박스 배경
+    const w = 120, h = 70;
+    ctx.shadowBlur = 8 + fluxNorm * 22;
+    ctx.shadowColor = data.color;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+    roundRect(ctx, cx - w / 2, cy - h / 2, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = `${data.color}aa`;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+
+    // 코어 (자속 글로우)
+    if (fluxNorm > 0.02) {
+        ctx.save();
+        const cgrad = ctx.createLinearGradient(cx - coilW / 2, cy, cx + coilW / 2, cy);
+        cgrad.addColorStop(0, `rgba(252, 211, 77, ${0.05 + fluxNorm * 0.18})`);
+        cgrad.addColorStop(0.5, `rgba(252, 211, 77, ${0.12 + fluxNorm * 0.32})`);
+        cgrad.addColorStop(1, `rgba(252, 211, 77, ${0.05 + fluxNorm * 0.18})`);
+        ctx.fillStyle = cgrad;
+        ctx.fillRect(cx - coilW / 2 - 6, cy - ellipseRy - 2, coilW + 12, ellipseRy * 2 + 4);
+        ctx.restore();
+    }
+
+    // 코일 단자 라인 (좌/우)
+    ctx.save();
+    ctx.strokeStyle = `${data.color}cc`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2 + 6, cy);
+    ctx.lineTo(cx - coilW / 2, cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + coilW / 2, cy);
+    ctx.lineTo(cx + w / 2 - 6, cy);
+    ctx.stroke();
+    ctx.restore();
+
+    // 코일 뒷쪽 반원 (어두운 — 위)
+    ctx.save();
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < turns; i++) {
+        const x = cx - coilW / 2 + i * turnSpacing;
+        ctx.strokeStyle = `${data.color}55`;
+        ctx.shadowBlur = 3;
+        ctx.shadowColor = `${data.color}88`;
+        ctx.beginPath();
+        ctx.ellipse(x, cy, ellipseRx, ellipseRy, 0, Math.PI, 0, false);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 코일 앞쪽 반원 (밝게)
+    ctx.save();
+    ctx.lineWidth = 3.8;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < turns; i++) {
+        const x = cx - coilW / 2 + i * turnSpacing;
+        const grad = ctx.createLinearGradient(x - ellipseRx, cy, x + ellipseRx, cy);
+        grad.addColorStop(0, '#c2a047');
+        grad.addColorStop(0.5, '#fde68a');
+        grad.addColorStop(1, '#b8860b');
+        ctx.strokeStyle = grad;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = data.color;
+        ctx.beginPath();
+        ctx.ellipse(x, cy, ellipseRx, ellipseRy, 0, 0, Math.PI, false);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 전류 방향 ⊗ ⊙ (간격 큰 위치만 — 가독성)
+    const I_eff = (mode === 'parallel' && data.branchI !== undefined) ? data.branchI : state.I;
+    if (I_eff > 0.1 && turns >= 4) {
+        ctx.save();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = data.color;
+        const step = Math.max(1, Math.floor(turns / 3));
+        for (let i = 0; i < turns; i += step) {
+            const x = cx - coilW / 2 + i * turnSpacing;
+            ctx.fillStyle = '#fef3c7';
+            ctx.fillText('⊗', x, cy - ellipseRy - 6);
+            ctx.fillText('⊙', x, cy + ellipseRy + 6);
+        }
+        ctx.restore();
+    }
+
+    // 코일 내부 자속선 입자 (per-coil)
+    const pts = coilFluxParticles[data.name];
+    if (pts && fluxNorm > 0.02) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        const speed = 0.004 + fluxNorm * 0.012;
+        for (const p of pts) {
+            p.progress = (p.progress + speed) % 1;
+            const x = cx - coilW / 2 + p.progress * coilW;
+            const y = cy + p.lane * ellipseRy * 0.7;
+            ctx.fillStyle = `rgba(252, 211, 77, ${0.5 + fluxNorm * 0.5})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#facc15';
+            ctx.beginPath();
+            ctx.arc(x, y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            // 화살촉
+            if (p.progress > 0.96 || p.progress < 0.04) {
+                ctx.fillStyle = `rgba(254, 240, 138, ${0.7})`;
+                ctx.beginPath();
+                ctx.moveTo(x + 4, y);
+                ctx.lineTo(x - 2, y - 2.5);
+                ctx.lineTo(x - 2, y + 2.5);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        ctx.restore();
+    }
+
+    // N/S 극 라벨 (양 끝)
+    drawPoleLabel(cx + coilW / 2 + 12, cy - ellipseRy - 5, 'N', '#fda4af', '#f43f5e');
+    drawPoleLabel(cx - coilW / 2 - 12, cy - ellipseRy - 5, 'S', '#93c5fd', '#60a5fa');
+
+    // 상단 라벨 (L₁=10mH)
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const nameTxt = `${data.label}=${data.L.toFixed(0)}mH`;
+    const nw = ctx.measureText(nameTxt).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, cx - nw / 2 - 6, cy - h / 2 - 22, nw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = data.accent;
+    ctx.fillText(nameTxt, cx, cy - h / 2 - 13);
+
+    // 하단: Φ
+    const phiTxt = `Φ=${data.phi.toFixed(1)}μWb`;
+    const qw = ctx.measureText(phiTxt).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    roundRect(ctx, cx - qw / 2 - 6, cy + h / 2 + 6, qw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = data.accent;
+    ctx.fillText(phiTxt, cx, cy + h / 2 + 15);
+
+    // 하단2: 가지 전류 (병렬) 또는 동일 (직렬)
+    let smallTxt;
+    if (mode === 'parallel') {
+        smallTxt = `I=${data.branchI.toFixed(2)}A`;
+    } else {
+        smallTxt = `I=${state.I.toFixed(2)}A (동일)`;
+    }
+    const vw = ctx.measureText(smallTxt).width;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    roundRect(ctx, cx - vw / 2 - 6, cy + h / 2 + 28, vw + 12, 16, 8);
+    ctx.fill();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = `${data.accent}cc`;
+    ctx.fillText(smallTxt, cx, cy + h / 2 + 36);
+    ctx.restore();
+}
+
+function drawPoleLabel(x, y, txt, color, glow) {
+    ctx.save();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const w = 18, h = 16;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = glow;
+    roundRect(ctx, x - w/2, y - h/2, w, h, 7);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 0;
+    ctx.fillText(txt, x, y + 1);
+    ctx.restore();
+}
+
+// ============== 큰 합성 인덕턴스 라벨 ==============
+function drawLeqBigLabel() {
+    const text = `L_eq = ${state.Leq.toFixed(2)} mH`;
+    const sub = state.mode === 'series'
+        ? `L = L₁+L₂+L₃ = ${(state.L1 + state.L2 + state.L3).toFixed(0)} mH (커짐)`
+        : `1/L = 1/L₁+1/L₂+1/L₃ (작아짐)`;
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height - 36;
+
+    ctx.save();
+    ctx.font = 'bold 20px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(text).width;
+    const padW = Math.max(tw + 36, 240);
+
+    const isS = state.mode === 'series';
+    const baseCol = isS ? 'rgba(251, 146, 60, 0.22)' : 'rgba(34, 211, 238, 0.22)';
+    const strokeCol = isS ? 'rgba(251, 146, 60, 0.65)' : 'rgba(34, 211, 238, 0.65)';
+    const glowCol = isS ? '#fb923c' : '#22d3ee';
+    const textCol = isS ? '#fdba74' : '#67e8f9';
+
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = glowCol;
+    ctx.fillStyle = baseCol;
+    roundRect(ctx, cx - padW / 2, cy - 22, padW, 44, 22);
+    ctx.fill();
+    ctx.strokeStyle = strokeCol;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textCol;
+    ctx.fillText(text, cx, cy - 4);
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(226, 232, 240, 0.6)';
+    ctx.fillText(sub, cx, cy + 12);
+    ctx.restore();
+}
+
+// ============== 모드 배지 ==============
+function drawModeBadge() {
+    const cx = canvas.width / 2;
+    const cy = 38;
+    const txt = state.mode === 'series'
+        ? '직렬 · 모든 인덕터에 같은 I, 자속은 합산 (큰 L이 큰 Φ)'
+        : '병렬 · 모든 인덕터에 같은 V, 전류는 분배 (작은 L에 큰 I)';
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(txt).width;
+    const isS = state.mode === 'series';
+    const baseCol = isS ? 'rgba(251, 146, 60, 0.16)' : 'rgba(34, 211, 238, 0.16)';
+    const strokeCol = isS ? 'rgba(251, 146, 60, 0.5)' : 'rgba(34, 211, 238, 0.5)';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = isS ? '#fb923c' : '#22d3ee';
+    ctx.fillStyle = baseCol;
+    roundRect(ctx, cx - tw / 2 - 14, cy - 13, tw + 28, 26, 13);
+    ctx.fill();
+    ctx.strokeStyle = strokeCol;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = isS ? '#fdba74' : '#67e8f9';
+    ctx.fillText(txt, cx, cy);
+    ctx.restore();
+}
+
+// ============== 계산 ==============
+// 단위 규약: L [mH], I [A], Φ = L·I [mH·A] = [mWb] (mH·A → mWb), W = ½LI² [mH·A²] = [mJ]
+function compute() {
+    state.I = (+$('iIn').value) / 10;   // 0.1~10 A
+    state.L1 = +$('l1').value;
+    state.L2 = +$('l2').value;
+    state.L3 = +$('l3').value;
+
+    const Ls = state.L1 + state.L2 + state.L3;                                  // mH 직렬
+    const Lp = 1 / (1 / state.L1 + 1 / state.L2 + 1 / state.L3);                // mH 병렬
+
+    if (state.mode === 'series') {
+        state.Leq = Ls;
+        // 직렬: 모든 인덕터 같은 전류
+        state.I1 = state.I2 = state.I3 = state.I;
+        // 각 코일 자속 Φ_k = L_k · I  (mH·A = mWb)
+        state.Phi1 = state.L1 * state.I;
+        state.Phi2 = state.L2 * state.I;
+        state.Phi3 = state.L3 * state.I;
+        // 총 자속 = Σ Φ_k = Leq · I
+        state.Phi = state.Leq * state.I;
+    } else {
+        state.Leq = Lp;
+        // 병렬: 모든 인덕터에 같은 V (V = jωLI 식이 아니라 정상 흐름 가정)
+        // 같은 V_L → I_k = (Leq / L_k) · I_total (반비례)
+        // 또는 Φ가 같다는 관점: 각 코일에 걸린 magnetic linkage Φ는 같지 않음.
+        // 표준 해석: V_L 같음 → 정상 DC에선 V_L = 0이지만, 시각화상 dI/dt 가정으로 전류 분배 보여줌.
+        // I_k = I_total * (Leq / L_k)
+        state.I1 = state.I * (state.Leq / state.L1);
+        state.I2 = state.I * (state.Leq / state.L2);
+        state.I3 = state.I * (state.Leq / state.L3);
+        // 각 코일 자속 Φ_k = L_k · I_k = Leq · I_total (모든 가지 동일! ← 병렬 핵심)
+        state.Phi1 = state.L1 * state.I1;
+        state.Phi2 = state.L2 * state.I2;
+        state.Phi3 = state.L3 * state.I3;
+        // 총 자속(쇄교)은 합산 의미가 다름 — 여기서는 Leq·I로 정의 (보기엔 chip에 표시)
+        state.Phi = state.Leq * state.I;
+    }
+    // 에너지 (mJ): ½·L_eq[mH]·I²[A²] = mJ
+    state.W = 0.5 * state.Leq * state.I * state.I;
+
+    $('iDisp').textContent = state.I.toFixed(1);
+    $('l1Disp').textContent = state.L1;
+    $('l2Disp').textContent = state.L2;
+    $('l3Disp').textContent = state.L3;
+
+    // 라이브 4칩
+    $('leqVal').textContent = state.Leq.toFixed(2);
+    $('leqUnit').textContent = 'mH';
+    $('phiVal').textContent = state.Phi.toFixed(2);
+    $('phiUnit').textContent = 'mWb';
+    $('wVal').textContent = state.W.toFixed(2);
+    $('wUnit').textContent = 'mJ';
+    $('modeVal').textContent = state.mode === 'series' ? '직렬' : '병렬';
+
+    // 비교 막대
+    const maxL = Math.max(Ls, 1);
+    $('leqSeriesText').textContent = `${Ls.toFixed(2)} mH`;
+    $('leqParallelText').textContent = `${Lp.toFixed(2)} mH`;
+    $('barSeries').style.width = `${Math.min(100, (Ls / maxL) * 100)}%`;
+    $('barParallel').style.width = `${Math.min(100, (Lp / maxL) * 100)}%`;
+    const ratio = Ls / Math.max(Lp, 1e-6);
+    $('ratioVal').textContent = ratio.toFixed(2);
+
+    // 자속 막대 (총 자속 정규화)
+    const phiMax = Ls * 10; // 이론 최대 Ls(가장 큰 L) × Imax
+    $('phiBar').style.width = `${Math.min(100, (state.Phi / Math.max(phiMax, 1)) * 100)}%`;
+}
+
+function flashLive() {
+    if (!window.gsap) return;
+    gsap.fromTo('#pill-L',
+        { boxShadow: '0 0 0 0 rgba(168, 139, 250, 0.5)' },
+        { boxShadow: '0 0 28px 0 rgba(168, 139, 250, 0)', duration: 0.6 });
+}
+
+['iIn', 'l1', 'l2', 'l3'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); flashLive(); });
+});
+
+$('resetBtn').addEventListener('click', () => {
+    const defaults = { iIn: 20, l1: 10, l2: 20, l3: 30 };
+    if (window.gsap) {
+        Object.keys(defaults).forEach(k => {
+            gsap.to($(k), { value: defaults[k], duration: 0.7, ease: 'power3.out', onUpdate: () => compute() });
+        });
+    } else {
+        Object.keys(defaults).forEach(k => { $(k).value = defaults[k]; });
+        compute();
+    }
+});
+
+function setMode(m) {
+    if (state.mode === m) return;
+    state.mode = m;
+    $('tabSeries').classList.toggle('active', m === 'series');
+    $('tabParallel').classList.toggle('active', m === 'parallel');
+    if (window.gsap) {
+        gsap.fromTo('#canvasCard',
+            { boxShadow: m === 'series'
+                ? '0 0 0 0 rgba(251, 146, 60, 0.6)'
+                : '0 0 0 0 rgba(34, 211, 238, 0.6)' },
+            { boxShadow: m === 'series'
+                ? '0 0 60px 4px rgba(251, 146, 60, 0)'
+                : '0 0 60px 4px rgba(34, 211, 238, 0)', duration: 0.7 });
+        // 입자 progress 정렬
+        seriesParticles.particles.forEach((p, i) => {
+            p.progress = (i / seriesParticles.particles.length) * seriesParticles.total;
+        });
+        parallelBranches.forEach(b => {
+            b.particles.forEach((p, i) => {
+                p.progress = (i / b.particles.length) * b.total;
+            });
+        });
+        gsap.fromTo('#pill-mode',
+            { scale: 1 },
+            { scale: 1.04, duration: 0.18, yoyo: true, repeat: 1 });
+        gsap.fromTo(m === 'series' ? '#barSeries' : '#barParallel',
+            { filter: 'brightness(1.6)' },
+            { filter: 'brightness(1)', duration: 0.8 });
+    }
+    compute();
+}
+$('tabSeries').addEventListener('click', () => setMode('series'));
+$('tabParallel').addEventListener('click', () => setMode('parallel'));
+
+function animate() {
+    state.t++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBg();
+    drawModeBadge();
+    drawSource();
+    if (state.mode === 'series') {
+        drawSeriesWires();
+        drawSeriesInductors();
+        drawSeriesParticles();
+    } else {
+        drawParallelWires();
+        drawParallelInductors();
+        drawParallelNodes();
+        drawParallelParticles();
+    }
+    drawLeqBigLabel();
+    requestAnimationFrame(animate);
+}
+
+window.addEventListener('load', () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

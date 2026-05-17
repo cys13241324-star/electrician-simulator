@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ELECTRIC HEROES Vol.1 — 전기기능사 슈퍼히어로 코믹스</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Comic+Neue:wght@400;700&family=Black+Ops+One&family=Luckiest+Guy&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4ecd8;      /* 만화책 누런 종이 */
+    --paper-2: #ece1c4;
+    --ink: #14110d;
+    --red: #e63946;
+    --blue: #1d3fa8;
+    --yellow: #ffd23f;
+    --orange: #ff7b29;
+    --pink: #ff5ea8;
+    --green: #2ab07f;
+    --purple: #5b2a86;
+  }
+  html, body { background: #2b2a26; color: var(--ink); }
+  body {
+    font-family: 'Comic Neue', 'Comic Sans MS', sans-serif;
+    min-height: 100vh;
+  }
+  .font-bangers { font-family: 'Bangers', 'Luckiest Guy', cursive; letter-spacing: 0.06em; }
+  .font-marker  { font-family: 'Permanent Marker', cursive; }
+  .font-ops     { font-family: 'Black Ops One', cursive; }
+  .font-lucky   { font-family: 'Luckiest Guy', cursive; }
+  .font-comic   { font-family: 'Comic Neue', sans-serif; font-weight: 700; }
+
+  /* ─── 종이 텍스처 ─── */
+  .paper {
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(rgba(0,0,0,0.045) 1px, transparent 1px),
+      radial-gradient(rgba(120,80,30,0.06) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255,235,180,0.0), rgba(180,140,80,0.08));
+    background-size: 4px 4px, 7px 7px, 100% 100%;
+    background-position: 0 0, 2px 2px, 0 0;
+  }
+  .paper-color {
+    background: linear-gradient(135deg, #ffd23f 0%, #ff7b29 35%, #e63946 70%, #5b2a86 100%);
+  }
+  .paper-night {
+    background:
+      radial-gradient(circle at 20% 30%, #2a3da6 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, #5b2a86 0%, transparent 45%),
+      linear-gradient(180deg, #0f1d4d, #1b0c3b);
+  }
+  .vignette {
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.35);
+  }
+
+  /* ─── 패널 (만화 컷) ─── */
+  .panel {
+    position: relative;
+    background: var(--paper);
+    border: 3.5px solid var(--ink);
+    box-shadow:
+      4px 4px 0 0 var(--ink),
+      inset 0 0 40px rgba(120,80,30,0.12);
+    overflow: hidden;
+  }
+  .panel-tilt-l { transform: rotate(-1.2deg); }
+  .panel-tilt-r { transform: rotate(1.2deg); }
+  .panel-jagged {
+    clip-path: polygon(2% 0, 100% 3%, 98% 100%, 0 97%);
+  }
+
+  /* ─── 말풍선 ─── */
+  .bubble {
+    position: relative;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 22px / 18px;
+    padding: 8px 14px;
+    font-family: 'Comic Neue', sans-serif;
+    font-weight: 700;
+    color: var(--ink);
+    box-shadow: 2px 2px 0 0 var(--ink);
+    display: inline-block;
+    max-width: 90%;
+  }
+  .bubble.tail-bl::after, .bubble.tail-br::after, .bubble.tail-tl::after, .bubble.tail-tr::after {
+    content: ""; position: absolute; width: 18px; height: 18px;
+    background: #fff;
+    border-right: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+  }
+  .bubble.tail-bl::after { left: 18px; bottom: -10px; transform: rotate(45deg); }
+  .bubble.tail-br::after { right: 18px; bottom: -10px; transform: rotate(45deg); }
+  .bubble.tail-tl::after { left: 18px; top: -10px;    transform: rotate(225deg); }
+  .bubble.tail-tr::after { right: 18px; top: -10px;   transform: rotate(225deg); }
+  .bubble.think {
+    border-radius: 50% / 40%;
+  }
+  .bubble.shout {
+    background: var(--yellow);
+    clip-path: polygon(
+      0% 20%, 8% 0%, 22% 18%, 35% 0%, 50% 18%, 65% 0%, 80% 18%, 92% 0%, 100% 20%,
+      88% 35%, 100% 50%, 88% 65%, 100% 82%, 90% 100%, 75% 85%, 60% 100%, 45% 85%, 30% 100%, 15% 85%, 0% 100%,
+      12% 80%, 0% 65%, 12% 50%, 0% 35%);
+    border: none;
+    padding: 18px 26px;
+  }
+
+  /* ─── 캡션 박스 (노란 박스) ─── */
+  .caption {
+    background: #fff7b3;
+    border: 2.5px solid var(--ink);
+    box-shadow: 3px 3px 0 0 var(--ink);
+    padding: 8px 12px;
+    font-family: 'Comic Neue', sans-serif;
+    font-weight: 700;
+    color: var(--ink);
+    display: inline-block;
+  }
+
+  /* ─── 효과음 (SFX) ─── */
+  .sfx {
+    position: absolute;
+    font-family: 'Bangers', cursive;
+    letter-spacing: 0.05em;
+    color: var(--yellow);
+    -webkit-text-stroke: 3px var(--ink);
+    text-shadow: 5px 5px 0 var(--ink), 8px 8px 0 var(--red);
+    transform-origin: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+    user-select: none;
+    line-height: 0.9;
+  }
+  .sfx:hover { animation: shake 0.3s infinite; }
+  @keyframes shake {
+    0%   { transform: translate(0,0) rotate(var(--rot, 0deg)); }
+    25%  { transform: translate(-2px,2px) rotate(calc(var(--rot, 0deg) - 4deg)); }
+    50%  { transform: translate(2px,-2px) rotate(calc(var(--rot, 0deg) + 4deg)); }
+    75%  { transform: translate(-2px,-2px) rotate(calc(var(--rot, 0deg) - 4deg)); }
+    100% { transform: translate(0,0) rotate(var(--rot, 0deg)); }
+  }
+
+  /* ─── 폭발/스타버스트 ─── */
+  .starburst {
+    background: var(--red);
+    color: #fff;
+    -webkit-text-stroke: 2px var(--ink);
+    font-family: 'Bangers', cursive;
+    clip-path: polygon(
+      50% 0%, 60% 20%, 80% 10%, 75% 30%, 95% 30%, 78% 45%, 100% 55%, 78% 60%, 90% 80%, 70% 72%, 70% 95%, 55% 78%, 50% 100%, 45% 78%, 30% 95%, 30% 72%, 10% 80%, 22% 60%, 0% 55%, 22% 45%, 5% 30%, 25% 30%, 20% 10%, 40% 20%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* ─── 도트 패턴 (벤데이 도트) ─── */
+  .benday {
+    background-image: radial-gradient(circle, var(--ink) 1.2px, transparent 1.5px);
+    background-size: 7px 7px;
+  }
+  .benday-red {
+    background-color: #ffd6d6;
+    background-image: radial-gradient(circle, var(--red) 1.5px, transparent 2px);
+    background-size: 8px 8px;
+  }
+  .benday-blue {
+    background-color: #d6e4ff;
+    background-image: radial-gradient(circle, var(--blue) 1.5px, transparent 2px);
+    background-size: 8px 8px;
+  }
+  .benday-yellow {
+    background-color: #fff3a3;
+    background-image: radial-gradient(circle, #c97a00 1.4px, transparent 2px);
+    background-size: 8px 8px;
+  }
+
+  /* ─── 스피드 라인 ─── */
+  .speedlines {
+    background:
+      repeating-conic-gradient(from 0deg at 50% 50%,
+        var(--ink) 0deg 1deg, transparent 1deg 6deg);
+    opacity: 0.55;
+  }
+
+  /* ─── 페이지 ─── */
+  .page-wrap {
+    position: relative;
+    width: min(960px, 96vw);
+    margin: 0 auto;
+  }
+  .page {
+    display: none;
+    padding: 28px;
+    border: 5px solid var(--ink);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55), inset 0 0 60px rgba(120,80,30,0.18);
+  }
+  .page.active { display: block; animation: flipIn 0.45s ease-out; }
+  @keyframes flipIn {
+    0%   { opacity: 0; transform: rotateY(-15deg) translateX(-30px); }
+    100% { opacity: 1; transform: rotateY(0) translateX(0); }
+  }
+
+  /* ─── 네비게이션 ─── */
+  .nav-btn {
+    background: var(--yellow);
+    border: 3px solid var(--ink);
+    box-shadow: 3px 3px 0 0 var(--ink);
+    font-family: 'Bangers', cursive;
+    letter-spacing: 0.08em;
+    padding: 10px 18px;
+    transition: all 0.12s;
+    cursor: pointer;
+  }
+  .nav-btn:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 0 var(--ink); }
+  .nav-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 0 var(--ink); }
+  .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 0 var(--ink); }
+
+  .page-dot {
+    width: 14px; height: 14px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .page-dot.active { background: var(--red); }
+
+  /* ─── 헤더 배너 ─── */
+  .cover-title {
+    -webkit-text-stroke: 3px var(--ink);
+    text-shadow: 6px 6px 0 var(--ink), 9px 9px 0 var(--red);
+    color: var(--yellow);
+  }
+
+  /* 모바일 */
+  @media (max-width: 640px) {
+    .page { padding: 14px; }
+    .sfx { -webkit-text-stroke: 2px var(--ink); text-shadow: 3px 3px 0 var(--ink), 5px 5px 0 var(--red); }
+  }
+</style>
+</head>
+<body class="py-6 md:py-10">
+
+<!-- 상단 메타 바 -->
+<div class="max-w-5xl mx-auto px-4 mb-4 flex items-center justify-between text-[#f4ecd8]">
+  <div class="flex items-center gap-2">
+    <span class="font-bangers text-2xl tracking-widest">ELECTRIC HEROES</span>
+    <span class="font-comic text-xs px-2 py-0.5 border border-[#f4ecd8] rounded">VOL.1 · NO.1 · 2026</span>
+  </div>
+  <div class="font-comic text-xs hidden sm:block">전기기능사 소식지 · COMIC EDITION</div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 페이지 컨테이너 -->
+<div class="page-wrap" id="pages">
+
+<!-- ═════════════ COVER ═════════════ -->
+<section class="page active paper-night vignette relative overflow-hidden" data-page="0">
+  <!-- 배경 번개 -->
+  <svg class="absolute inset-0 w-full h-full opacity-30 pointer-events-none" viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="cv-glow" cx="50%" cy="40%" r="60%">
+        <stop offset="0%" stop-color="#ffd23f" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#ffd23f" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="800" height="1000" fill="url(#cv-glow)"/>
+    <polygon points="130,40 180,260 130,260 200,520 110,310 160,310 100,80" fill="#ffd23f" opacity="0.85"/>
+    <polygon points="670,80 720,300 670,300 740,560 650,350 700,350 640,120" fill="#ffd23f" opacity="0.7"/>
+    <!-- 별 -->
+    <g fill="#fff" opacity="0.7">
+      <circle cx="80" cy="120" r="1.8"/><circle cx="240" cy="60" r="1.2"/><circle cx="380" cy="160" r="1.5"/>
+      <circle cx="540" cy="80" r="1.8"/><circle cx="720" cy="180" r="1.2"/><circle cx="600" cy="220" r="1"/>
+      <circle cx="50" cy="280" r="1.4"/><circle cx="780" cy="320" r="1.6"/><circle cx="420" cy="40" r="1"/>
+    </g>
+  </svg>
+
+  <!-- 타이틀 -->
+  <div class="relative z-10 text-center pt-6 pb-3">
+    <div class="font-marker text-[#ffd23f] text-lg md:text-xl tracking-widest drop-shadow">MARVELOUS COMICS PRESENTS</div>
+    <h1 class="font-bangers cover-title text-5xl md:text-7xl lg:text-8xl leading-none mt-3">ELECTRIC<br/>HEROES</h1>
+    <div class="mt-3 font-bangers text-2xl md:text-3xl text-white tracking-widest"
+         style="-webkit-text-stroke:2px #14110d; text-shadow: 3px 3px 0 #14110d;">VOL. 1 — 옴의 법칙, 도시를 구하다!</div>
+  </div>
+
+  <!-- 영웅 일러스트 -->
+  <div class="relative z-10 mx-auto w-full max-w-[640px] mt-2">
+    <svg viewBox="0 0 640 520" class="w-full h-auto drop-shadow-2xl">
+      <!-- 뒤쪽 후광 -->
+      <circle cx="320" cy="240" r="200" fill="#ffd23f" opacity="0.35"/>
+      <polygon points="320,30 305,210 335,210" fill="#fff" opacity="0.15"/>
+
+      <!-- ============ 변압맨 (왼쪽, 뒤) ============ -->
+      <g transform="translate(70,180)">
+        <!-- 망토 -->
+        <path d="M30 50 Q-10 180 30 280 Q70 230 90 250 Q70 160 80 60 Z" fill="#5b2a86" stroke="#14110d" stroke-width="3"/>
+        <!-- 몸 -->
+        <rect x="55" y="80" width="80" height="100" fill="#1d3fa8" stroke="#14110d" stroke-width="3" rx="6"/>
+        <!-- 권수비 마크 (N1:N2) -->
+        <text x="95" y="135" text-anchor="middle" font-family="Bangers" font-size="22" fill="#ffd23f" stroke="#14110d" stroke-width="1">N₁</text>
+        <text x="95" y="155" text-anchor="middle" font-family="Bangers" font-size="18" fill="#ffd23f">:N₂</text>
+        <!-- 머리 -->
+        <circle cx="95" cy="55" r="32" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+        <!-- 마스크 -->
+        <path d="M65 50 Q95 35 125 50 L120 65 Q95 58 70 65 Z" fill="#14110d"/>
+        <circle cx="83" cy="55" r="3" fill="#fff"/><circle cx="107" cy="55" r="3" fill="#fff"/>
+        <!-- 머리카락 -->
+        <path d="M65 38 Q95 18 125 38 Q120 30 95 28 Q72 30 65 38" fill="#3a2418" stroke="#14110d" stroke-width="2"/>
+        <!-- 팔 -->
+        <rect x="35" y="90" width="22" height="70" fill="#1d3fa8" stroke="#14110d" stroke-width="3" rx="6"/>
+        <rect x="135" y="90" width="22" height="70" fill="#1d3fa8" stroke="#14110d" stroke-width="3" rx="6"/>
+        <!-- 손(주먹) -->
+        <circle cx="46" cy="170" r="13" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+        <circle cx="146" cy="170" r="13" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+        <!-- 다리 -->
+        <rect x="62" y="180" width="28" height="80" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+        <rect x="100" y="180" width="28" height="80" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+        <!-- 부츠 -->
+        <ellipse cx="76" cy="265" rx="20" ry="10" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+        <ellipse cx="114" cy="265" rx="20" ry="10" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+      </g>
+
+      <!-- ============ 캡틴 옴 (중앙, 메인) ============ -->
+      <g transform="translate(240,120)">
+        <!-- 망토 -->
+        <path d="M30 60 Q-15 200 30 320 Q90 270 110 300 Q105 260 110 200 Q120 130 95 60 Z" fill="#e63946" stroke="#14110d" stroke-width="3.5"/>
+        <path d="M125 60 Q175 200 125 320 Q90 270 70 300 Q75 260 70 200 Q60 130 80 60 Z" fill="#e63946" stroke="#14110d" stroke-width="3.5"/>
+        <!-- 몸통 -->
+        <rect x="40" y="90" width="100" height="130" fill="#1d3fa8" stroke="#14110d" stroke-width="3.5" rx="8"/>
+        <!-- 가슴 번개 마크 (Ω) -->
+        <circle cx="90" cy="150" r="28" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+        <text x="90" y="166" text-anchor="middle" font-family="Bangers" font-size="38" fill="#14110d">Ω</text>
+        <!-- 벨트 -->
+        <rect x="40" y="210" width="100" height="14" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+        <rect x="82" y="208" width="16" height="18" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+        <!-- 머리 -->
+        <circle cx="90" cy="60" r="38" fill="#f7c8a0" stroke="#14110d" stroke-width="3.5"/>
+        <!-- 마스크 -->
+        <path d="M52 55 Q90 38 128 55 L122 76 Q90 66 58 76 Z" fill="#1d3fa8" stroke="#14110d" stroke-width="2"/>
+        <ellipse cx="73" cy="62" rx="6" ry="5" fill="#fff"/>
+        <ellipse cx="107" cy="62" rx="6" ry="5" fill="#fff"/>
+        <circle cx="73" cy="62" r="2.5" fill="#14110d"/>
+        <circle cx="107" cy="62" r="2.5" fill="#14110d"/>
+        <!-- 입(미소) -->
+        <path d="M78 85 Q90 92 102 85" stroke="#14110d" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- 머리카락 -->
+        <path d="M52 42 Q90 18 128 42 Q120 32 90 30 Q60 32 52 42" fill="#1a1a1a" stroke="#14110d" stroke-width="2"/>
+        <!-- 팔 (한쪽 들어올림) -->
+        <path d="M40 100 Q15 90 5 50 L25 45 Q35 80 50 110 Z" fill="#1d3fa8" stroke="#14110d" stroke-width="3.5"/>
+        <rect x="140" y="100" width="28" height="90" fill="#1d3fa8" stroke="#14110d" stroke-width="3.5" rx="8"/>
+        <!-- 주먹 -->
+        <circle cx="14" cy="40" r="18" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+        <circle cx="154" cy="200" r="16" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+        <!-- 번개 -->
+        <polygon points="-5,15 10,-5 0,12 18,5 5,30" fill="#ffd23f" stroke="#14110d" stroke-width="2"/>
+        <!-- 다리 -->
+        <rect x="50" y="220" width="36" height="90" fill="#0f2768" stroke="#14110d" stroke-width="3.5"/>
+        <rect x="94" y="220" width="36" height="90" fill="#0f2768" stroke="#14110d" stroke-width="3.5"/>
+        <!-- 부츠 -->
+        <ellipse cx="68" cy="315" rx="26" ry="12" fill="#e63946" stroke="#14110d" stroke-width="3.5"/>
+        <ellipse cx="112" cy="315" rx="26" ry="12" fill="#e63946" stroke="#14110d" stroke-width="3.5"/>
+      </g>
+
+      <!-- ============ 닥터 키르히호프 (오른쪽) ============ -->
+      <g transform="translate(440,180)">
+        <!-- 망토 -->
+        <path d="M30 50 Q70 180 30 280 Q-10 230 -30 250 Q-10 160 -20 60 Z" fill="#2ab07f" stroke="#14110d" stroke-width="3"/>
+        <!-- 몸 -->
+        <rect x="-25" y="80" width="80" height="100" fill="#7e3df0" stroke="#14110d" stroke-width="3" rx="6"/>
+        <!-- KCL/KVL 마크 -->
+        <text x="15" y="130" text-anchor="middle" font-family="Bangers" font-size="20" fill="#ffd23f">ΣI=0</text>
+        <text x="15" y="153" text-anchor="middle" font-family="Bangers" font-size="16" fill="#ffd23f">ΣV=0</text>
+        <!-- 머리 -->
+        <circle cx="15" cy="55" r="32" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+        <!-- 안경 -->
+        <circle cx="3" cy="58" r="9" fill="none" stroke="#14110d" stroke-width="2.5"/>
+        <circle cx="27" cy="58" r="9" fill="none" stroke="#14110d" stroke-width="2.5"/>
+        <line x1="12" y1="58" x2="18" y2="58" stroke="#14110d" stroke-width="2.5"/>
+        <circle cx="3" cy="58" r="2" fill="#14110d"/>
+        <circle cx="27" cy="58" r="2" fill="#14110d"/>
+        <!-- 머리카락 -->
+        <path d="M-15 38 Q15 22 45 38 Q40 28 15 28 Q-8 30 -15 38" fill="#c2a47a" stroke="#14110d" stroke-width="2"/>
+        <!-- 수염 -->
+        <path d="M5 75 Q15 80 25 75 Q22 86 15 88 Q8 86 5 75" fill="#c2a47a" stroke="#14110d" stroke-width="2"/>
+        <!-- 팔 -->
+        <rect x="-45" y="90" width="22" height="70" fill="#7e3df0" stroke="#14110d" stroke-width="3" rx="6"/>
+        <rect x="55" y="90" width="22" height="70" fill="#7e3df0" stroke="#14110d" stroke-width="3" rx="6"/>
+        <!-- 손 (하나는 회로 들고) -->
+        <circle cx="-34" cy="170" r="13" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+        <circle cx="66" cy="170" r="13" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+        <!-- 회로 (작은 마름모) -->
+        <g transform="translate(-50,165)" stroke="#14110d" stroke-width="2" fill="none">
+          <rect x="0" y="0" width="14" height="14" fill="#fff"/>
+          <line x1="3" y1="7" x2="11" y2="7" stroke="#e63946"/>
+          <line x1="7" y1="3" x2="7" y2="11" stroke="#1d3fa8"/>
+        </g>
+        <!-- 다리 -->
+        <rect x="-18" y="180" width="28" height="80" fill="#4a1f9e" stroke="#14110d" stroke-width="3"/>
+        <rect x="20" y="180" width="28" height="80" fill="#4a1f9e" stroke="#14110d" stroke-width="3"/>
+        <!-- 부츠 -->
+        <ellipse cx="-4" cy="265" rx="20" ry="10" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+        <ellipse cx="34" cy="265" rx="20" ry="10" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+      </g>
+
+      <!-- 발 아래 그림자/도시 실루엣 -->
+      <rect x="0" y="460" width="640" height="60" fill="#14110d" opacity="0.5"/>
+      <g fill="#14110d" opacity="0.85">
+        <rect x="20"  y="430" width="40" height="30"/>
+        <rect x="70"  y="410" width="50" height="50"/>
+        <rect x="130" y="420" width="40" height="40"/>
+        <rect x="470" y="425" width="45" height="35"/>
+        <rect x="525" y="405" width="55" height="55"/>
+        <rect x="590" y="430" width="35" height="30"/>
+        <!-- 창문 -->
+        <g fill="#ffd23f" opacity="0.8">
+          <rect x="80"  y="420" width="6" height="6"/><rect x="92" y="420" width="6" height="6"/>
+          <rect x="535" y="415" width="6" height="6"/><rect x="555" y="415" width="6" height="6"/>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- 하단 라벨 -->
+  <div class="relative z-10 mt-2 flex flex-col md:flex-row items-center justify-between gap-3 px-2 text-white">
+    <div class="font-bangers text-xl md:text-2xl">최초의 정의 — 옴의 법칙으로 도시를 구하라!</div>
+    <div class="flex items-center gap-2">
+      <span class="font-comic font-bold text-xs px-2 py-1 bg-[#ffd23f] text-[#14110d] border-2 border-black">₩ 0 · FREE</span>
+      <span class="font-comic font-bold text-xs px-2 py-1 bg-[#e63946] text-white border-2 border-black">ALL AGES</span>
+    </div>
+  </div>
+
+  <!-- 우상단 가격 라벨 (스타버스트) -->
+  <div class="absolute top-3 right-3 starburst w-20 h-20 md:w-24 md:h-24 text-base md:text-lg text-center leading-tight"
+       style="--rot:-8deg; transform: rotate(-8deg);">
+    NEW!<br/>VOL.1
+  </div>
+</section>
+
+<!-- ═════════════ PAGE 1 — 위기 발생 ═════════════ -->
+<section class="page paper vignette" data-page="1">
+  <div class="flex items-center justify-between mb-3">
+    <div class="font-bangers text-2xl md:text-3xl">CHAPTER 1 — 도시가 깜빡인다</div>
+    <div class="font-marker text-sm md:text-base text-[#5b2a86]">— PAGE 1 —</div>
+  </div>
+
+  <!-- 4컷 레이아웃 -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <!-- 컷 1: 평화로운 도시 (와이드) -->
+    <div class="md:col-span-8 panel panel-tilt-l" style="height: 240px;">
+      <div class="absolute inset-0 paper-color opacity-50"></div>
+      <div class="absolute inset-0">
+        <svg viewBox="0 0 800 240" class="w-full h-full" preserveAspectRatio="xMidYMid slice">
+          <!-- 하늘 -->
+          <rect width="800" height="240" fill="#9ad8ff"/>
+          <!-- 해 -->
+          <circle cx="700" cy="60" r="34" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+          <g stroke="#14110d" stroke-width="3">
+            <line x1="700" y1="14" x2="700" y2="0"/>
+            <line x1="740" y1="30" x2="755" y2="20"/>
+            <line x1="754" y1="60" x2="770" y2="60"/>
+            <line x1="740" y1="90" x2="755" y2="100"/>
+          </g>
+          <!-- 구름 -->
+          <g fill="#fff" stroke="#14110d" stroke-width="3">
+            <ellipse cx="120" cy="50" rx="40" ry="18"/>
+            <ellipse cx="150" cy="42" rx="28" ry="14"/>
+            <ellipse cx="400" cy="35" rx="36" ry="14"/>
+          </g>
+          <!-- 도시 빌딩 -->
+          <g stroke="#14110d" stroke-width="3">
+            <rect x="20"  y="120" width="80"  height="120" fill="#e63946"/>
+            <rect x="110" y="90"  width="90"  height="150" fill="#ffd23f"/>
+            <rect x="210" y="130" width="70"  height="110" fill="#1d3fa8"/>
+            <rect x="290" y="100" width="100" height="140" fill="#2ab07f"/>
+            <rect x="400" y="80"  width="80"  height="160" fill="#5b2a86"/>
+            <rect x="490" y="120" width="90"  height="120" fill="#ff7b29"/>
+            <rect x="590" y="100" width="80"  height="140" fill="#1d3fa8"/>
+            <rect x="680" y="130" width="100" height="110" fill="#e63946"/>
+          </g>
+          <!-- 창문 (격자) -->
+          <g fill="#fff" stroke="#14110d" stroke-width="1.5">
+            <rect x="35"  y="135" width="14" height="14"/><rect x="58"  y="135" width="14" height="14"/>
+            <rect x="35"  y="160" width="14" height="14"/><rect x="58"  y="160" width="14" height="14"/>
+            <rect x="125" y="110" width="14" height="14"/><rect x="150" y="110" width="14" height="14"/>
+            <rect x="175" y="110" width="14" height="14"/>
+            <rect x="305" y="120" width="16" height="16"/><rect x="335" y="120" width="16" height="16"/>
+            <rect x="365" y="120" width="16" height="16"/>
+            <rect x="415" y="100" width="14" height="14"/><rect x="440" y="100" width="14" height="14"/>
+            <rect x="600" y="120" width="14" height="14"/><rect x="625" y="120" width="14" height="14"/>
+            <rect x="695" y="150" width="16" height="16"/><rect x="725" y="150" width="16" height="16"/>
+          </g>
+        </svg>
+      </div>
+      <!-- 캡션 -->
+      <div class="absolute top-3 left-3 caption text-sm md:text-base">
+        평화로운 옴빌(Ohmville).<br/>전기는 도시의 심장이었다…
+      </div>
+    </div>
+
+    <!-- 컷 2: 빌런 등장 (세로) -->
+    <div class="md:col-span-4 panel panel-tilt-r relative" style="height: 240px;">
+      <div class="absolute inset-0 paper-night"></div>
+      <div class="absolute inset-0 speedlines" style="mix-blend-mode: multiply; opacity: 0.4;"></div>
+      <!-- 빌런 쇼트 서킷 -->
+      <svg viewBox="0 0 280 240" class="w-full h-full absolute inset-0">
+        <!-- 번개 후광 -->
+        <polygon points="140,10 120,90 145,85 100,180 160,90 135,95" fill="#ffd23f" opacity="0.9"/>
+        <!-- 몸 -->
+        <ellipse cx="140" cy="200" rx="80" ry="30" fill="#14110d" opacity="0.6"/>
+        <rect x="100" y="100" width="80" height="110" fill="#1a1a1a" stroke="#ffd23f" stroke-width="3"/>
+        <!-- 머리 -->
+        <circle cx="140" cy="80" r="34" fill="#3a3a3a" stroke="#ffd23f" stroke-width="3"/>
+        <!-- 눈(번개) -->
+        <polygon points="125,75 132,82 128,82 135,92" fill="#e63946"/>
+        <polygon points="148,75 155,82 151,82 158,92" fill="#e63946"/>
+        <!-- 이빨 -->
+        <path d="M128 100 L132 110 L136 100 L140 110 L144 100 L148 110 L152 100" stroke="#ffd23f" stroke-width="2" fill="none"/>
+        <!-- 손에서 번개 -->
+        <polygon points="80,150 60,140 75,160 50,170 90,175" fill="#ffd23f" stroke="#14110d" stroke-width="2"/>
+        <polygon points="200,150 220,140 205,160 230,170 190,175" fill="#ffd23f" stroke="#14110d" stroke-width="2"/>
+      </svg>
+      <!-- 말풍선 -->
+      <div class="absolute bottom-3 left-3 right-3 bubble shout text-center font-bangers text-base md:text-xl"
+           style="color:#14110d;">
+        하하! 도시 전기는<br/>내 손 안에!
+      </div>
+      <!-- SFX -->
+      <div class="sfx text-3xl md:text-5xl" style="top: 6px; right: 8px; --rot:12deg; transform: rotate(12deg); color:#ff5ea8;">ZAP!</div>
+    </div>
+
+    <!-- 컷 3: 정전 사고 (와이드) -->
+    <div class="md:col-span-7 panel relative" style="height: 220px;">
+      <div class="absolute inset-0 benday-red"></div>
+      <svg viewBox="0 0 700 220" class="w-full h-full absolute inset-0" preserveAspectRatio="xMidYMid slice">
+        <!-- 어두워진 빌딩 실루엣 -->
+        <g fill="#14110d">
+          <rect x="20"  y="60"  width="80"  height="160"/>
+          <rect x="110" y="40"  width="100" height="180"/>
+          <rect x="220" y="80"  width="80"  height="140"/>
+          <rect x="310" y="30"  width="110" height="190"/>
+          <rect x="430" y="70"  width="90"  height="150"/>
+          <rect x="530" y="40"  width="100" height="180"/>
+          <rect x="640" y="80"  width="60"  height="140"/>
+        </g>
+        <!-- 깜빡이는 창문 (X 표시) -->
+        <g stroke="#e63946" stroke-width="3" fill="none">
+          <path d="M30 80 L50 100 M50 80 L30 100"/>
+          <path d="M120 70 L140 90 M140 70 L120 90"/>
+          <path d="M340 60 L360 80 M360 60 L340 80"/>
+          <path d="M450 100 L470 120 M470 100 L450 120"/>
+        </g>
+        <!-- 짧은 전선 스파크 -->
+        <g stroke="#ffd23f" stroke-width="3" fill="none" stroke-linecap="round">
+          <path d="M180 30 L200 50 L185 55"/>
+          <path d="M380 20 L395 40 L380 50"/>
+        </g>
+      </svg>
+      <div class="absolute top-3 left-3 caption text-xs md:text-sm">
+        쾅! 도시 전체가 암흑.<br/>창문엔 X 표시만 남았다…
+      </div>
+      <div class="sfx text-4xl md:text-6xl" style="bottom: 14px; right: 18px; --rot:-6deg; transform: rotate(-6deg);">BLACKOUT!</div>
+    </div>
+
+    <!-- 컷 4: 시민의 절규 -->
+    <div class="md:col-span-5 panel panel-tilt-l relative" style="height: 220px;">
+      <div class="absolute inset-0 benday-yellow"></div>
+      <svg viewBox="0 0 500 220" class="w-full h-full absolute inset-0" preserveAspectRatio="xMidYMid slice">
+        <!-- 시민 얼굴(놀란 표정) 클로즈업 -->
+        <circle cx="250" cy="130" r="90" fill="#f7c8a0" stroke="#14110d" stroke-width="4"/>
+        <!-- 머리카락 -->
+        <path d="M170 90 Q200 30 250 28 Q310 35 330 90 Q320 70 280 65 Q250 60 220 65 Q190 70 170 90" fill="#1a1a1a" stroke="#14110d" stroke-width="3"/>
+        <!-- 눈 (놀람) -->
+        <circle cx="215" cy="120" r="14" fill="#fff" stroke="#14110d" stroke-width="3"/>
+        <circle cx="285" cy="120" r="14" fill="#fff" stroke="#14110d" stroke-width="3"/>
+        <circle cx="215" cy="120" r="5" fill="#14110d"/>
+        <circle cx="285" cy="120" r="5" fill="#14110d"/>
+        <!-- 입(O) -->
+        <ellipse cx="250" cy="170" rx="14" ry="20" fill="#5b2a86" stroke="#14110d" stroke-width="3"/>
+        <!-- 땀방울 -->
+        <path d="M150 95 Q145 105 150 115 Q160 110 150 95" fill="#9ad8ff" stroke="#14110d" stroke-width="2.5"/>
+      </svg>
+      <div class="absolute top-3 right-3 bubble tail-bl text-sm md:text-base font-comic">
+        영웅을 불러줘!
+      </div>
+      <div class="sfx text-3xl md:text-5xl" style="bottom: 14px; left: 14px; --rot:-10deg; transform: rotate(-10deg); color:#e63946; text-shadow: 4px 4px 0 #14110d, 7px 7px 0 #ffd23f;">HELP!!</div>
+    </div>
+  </div>
+
+  <!-- 페이지 푸터 캡션 -->
+  <div class="mt-4 caption w-full text-center text-sm md:text-base">
+    한편, 도시 외곽의 비밀 기지에서… <span class="font-bangers text-[#e63946]">우리의 영웅들이 움직인다!</span>
+  </div>
+</section>
+
+<!-- ═════════════ PAGE 2 — 영웅 출동 ═════════════ -->
+<section class="page paper vignette" data-page="2">
+  <div class="flex items-center justify-between mb-3">
+    <div class="font-bangers text-2xl md:text-3xl">CHAPTER 2 — 옴의 법칙, 발동!</div>
+    <div class="font-marker text-sm md:text-base text-[#5b2a86]">— PAGE 2 —</div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <!-- 컷 1: 캡틴 옴의 분석 -->
+    <div class="md:col-span-5 panel relative" style="height: 260px;">
+      <div class="absolute inset-0 benday-blue"></div>
+      <!-- 캡틴 옴 얼굴 클로즈업 -->
+      <svg viewBox="0 0 400 260" class="w-full h-full absolute inset-0">
+        <!-- 후광 -->
+        <circle cx="200" cy="130" r="120" fill="#ffd23f" opacity="0.4"/>
+        <!-- 머리 -->
+        <circle cx="200" cy="130" r="80" fill="#f7c8a0" stroke="#14110d" stroke-width="4"/>
+        <!-- 마스크 -->
+        <path d="M115 125 Q200 90 285 125 L275 165 Q200 145 125 165 Z" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+        <!-- 눈 (집중) -->
+        <ellipse cx="170" cy="138" rx="12" ry="9" fill="#fff"/>
+        <ellipse cx="230" cy="138" rx="12" ry="9" fill="#fff"/>
+        <circle cx="172" cy="140" r="5" fill="#14110d"/>
+        <circle cx="232" cy="140" r="5" fill="#14110d"/>
+        <!-- 입 (결의) -->
+        <path d="M175 195 Q200 200 225 195" stroke="#14110d" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <!-- 머리카락 -->
+        <path d="M120 100 Q200 60 280 100 Q260 80 200 78 Q140 80 120 100" fill="#1a1a1a" stroke="#14110d" stroke-width="3"/>
+        <!-- 옆 번개 -->
+        <polygon points="40,40 60,90 50,90 70,160 35,100 50,100 30,50" fill="#ffd23f" stroke="#14110d" stroke-width="2"/>
+        <polygon points="350,40 370,90 360,90 380,160 345,100 360,100 340,50" fill="#ffd23f" stroke="#14110d" stroke-width="2"/>
+      </svg>
+      <div class="absolute top-3 left-3 bubble tail-br text-xs md:text-sm">
+        제군, 침착하라.<br/>이건 <b>옴의 법칙</b>으로 풀린다!
+      </div>
+      <div class="absolute bottom-3 right-3 caption text-xs md:text-sm">— 캡틴 옴</div>
+    </div>
+
+    <!-- 컷 2: 공식 폭발 -->
+    <div class="md:col-span-7 panel panel-tilt-r relative flex items-center justify-center" style="height: 260px;">
+      <div class="absolute inset-0 paper-color opacity-60"></div>
+      <div class="absolute inset-0 speedlines" style="opacity: 0.25;"></div>
+      <!-- 거대한 V=IR -->
+      <div class="relative z-10 text-center">
+        <div class="font-bangers leading-none"
+             style="font-size: clamp(56px, 13vw, 140px); color:#fff; -webkit-text-stroke: 4px #14110d; text-shadow: 8px 8px 0 #14110d, 12px 12px 0 #e63946;">
+          V = I × R
+        </div>
+        <div class="mt-3 font-bangers text-xl md:text-3xl"
+             style="color:#ffd23f; -webkit-text-stroke:2px #14110d; text-shadow: 3px 3px 0 #14110d;">
+          전압은 전류와 저항의 곱이다!
+        </div>
+      </div>
+      <!-- SFX -->
+      <div class="sfx text-4xl md:text-6xl" style="top: 10px; left: 12px; --rot:-12deg; transform: rotate(-12deg);">BAM!</div>
+      <div class="sfx text-3xl md:text-5xl" style="bottom: 14px; right: 16px; --rot:8deg; transform: rotate(8deg); color:#ffd23f;">POW!</div>
+    </div>
+
+    <!-- 컷 3: 닥터 키르히호프 분석 -->
+    <div class="md:col-span-6 panel panel-tilt-l relative" style="height: 230px;">
+      <div class="absolute inset-0 paper"></div>
+      <!-- 회로도 -->
+      <div class="absolute inset-4 flex items-center">
+        <svg viewBox="0 0 380 180" class="w-full h-full">
+          <!-- 직사각형 회로 -->
+          <rect x="40" y="40" width="300" height="110" fill="none" stroke="#14110d" stroke-width="4"/>
+          <!-- 배터리 -->
+          <line x1="40" y1="95" x2="20" y2="95" stroke="#14110d" stroke-width="4"/>
+          <line x1="20" y1="80" x2="20" y2="110" stroke="#14110d" stroke-width="5"/>
+          <line x1="10" y1="85" x2="10" y2="105" stroke="#14110d" stroke-width="3"/>
+          <text x="2" y="135" font-family="Bangers" font-size="18" fill="#14110d">12V</text>
+          <!-- 저항 R1 -->
+          <path d="M120 40 L130 30 L140 50 L150 30 L160 50 L170 30 L180 50 L190 40" fill="none" stroke="#e63946" stroke-width="4"/>
+          <text x="135" y="22" font-family="Bangers" font-size="18" fill="#e63946">R₁=4Ω</text>
+          <!-- 저항 R2 -->
+          <path d="M220 40 L230 30 L240 50 L250 30 L260 50 L270 30 L280 50 L290 40" fill="none" stroke="#1d3fa8" stroke-width="4"/>
+          <text x="235" y="22" font-family="Bangers" font-size="18" fill="#1d3fa8">R₂=2Ω</text>
+          <!-- 전류 방향 화살표 -->
+          <g fill="#2ab07f" stroke="#14110d" stroke-width="2">
+            <polygon points="200,165 215,158 215,162 230,162 230,168 215,168 215,172"/>
+          </g>
+          <text x="240" y="170" font-family="Bangers" font-size="20" fill="#2ab07f">I = 2A</text>
+        </svg>
+      </div>
+      <!-- 닥터 키르히호프 작은 컷-인 -->
+      <div class="absolute bottom-3 left-3 bubble tail-br text-xs md:text-sm" style="max-width:60%;">
+        <b>KVL:</b> 폐회로 전압 합 = 0!<br/>
+        12 − 2·4 − 2·2 = 0 ✓
+      </div>
+      <div class="absolute top-3 right-3 starburst w-16 h-16 text-xs" style="--rot:10deg; transform: rotate(10deg);">검증<br/>완료!</div>
+    </div>
+
+    <!-- 컷 4: 변압맨의 등판 -->
+    <div class="md:col-span-6 panel panel-jagged relative" style="height: 230px;">
+      <div class="absolute inset-0 paper-night"></div>
+      <div class="absolute inset-0 speedlines" style="opacity: 0.5;"></div>
+      <svg viewBox="0 0 400 230" class="w-full h-full absolute inset-0">
+        <!-- 변압맨 비행 -->
+        <g transform="translate(150,30)">
+          <path d="M50 30 Q-20 80 -10 160 Q40 130 60 150 Q50 90 70 30 Z" fill="#5b2a86" stroke="#14110d" stroke-width="3"/>
+          <rect x="50" y="40" width="60" height="80" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+          <text x="80" y="78" text-anchor="middle" font-family="Bangers" font-size="18" fill="#ffd23f">N₁</text>
+          <text x="80" y="98" text-anchor="middle" font-family="Bangers" font-size="14" fill="#ffd23f">:N₂</text>
+          <circle cx="80" cy="20" r="22" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+          <path d="M60 18 Q80 8 100 18 L96 30 Q80 22 64 30 Z" fill="#14110d"/>
+          <rect x="40" y="50" width="14" height="50" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+          <rect x="106" y="50" width="14" height="50" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+          <!-- 다리 (뒤로 뻗음) -->
+          <path d="M60 120 Q40 150 25 175 L40 180 Q55 155 75 130 Z" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+          <path d="M100 120 Q120 150 135 175 L120 180 Q105 155 85 130 Z" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+        </g>
+        <!-- 속도선 -->
+        <g stroke="#fff" stroke-width="2" opacity="0.8">
+          <line x1="10" y1="60" x2="120" y2="80"/>
+          <line x1="10" y1="100" x2="130" y2="110"/>
+          <line x1="10" y1="140" x2="120" y2="140"/>
+          <line x1="20" y1="180" x2="130" y2="170"/>
+        </g>
+      </svg>
+      <div class="absolute top-3 right-3 bubble shout text-center font-bangers text-base md:text-lg" style="color:#14110d;">
+        권수비 발동!<br/>N₁:N₂ = 10:1!
+      </div>
+      <div class="sfx text-4xl md:text-6xl" style="bottom: 6px; left: 6px; --rot:-8deg; transform: rotate(-8deg); color:#2ab07f;">WHOOSH!</div>
+    </div>
+  </div>
+
+  <div class="mt-4 caption w-full text-center text-sm md:text-base">
+    이제 세 영웅이 한 자리에. 다음 페이지, <span class="font-bangers text-[#e63946]">최종 결전!</span>
+  </div>
+</section>
+
+<!-- ═════════════ PAGE 3 — 최종 결전 + TBC ═════════════ -->
+<section class="page paper-color vignette" data-page="3">
+  <div class="flex items-center justify-between mb-3 text-[#fff]">
+    <div class="font-bangers text-2xl md:text-3xl"
+         style="-webkit-text-stroke:2px #14110d; text-shadow: 3px 3px 0 #14110d;">CHAPTER 3 — FINAL SHOWDOWN</div>
+    <div class="font-marker text-sm md:text-base bg-[#fff] text-[#14110d] px-2 py-0.5 border-2 border-black">— PAGE 3 —</div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <!-- 컷 1: 팀업 풀샷 (와이드 큰 패널) -->
+    <div class="md:col-span-12 panel relative" style="height: 320px;">
+      <div class="absolute inset-0 paper-night"></div>
+      <!-- 폭발 후광 -->
+      <svg viewBox="0 0 1000 320" class="w-full h-full absolute inset-0" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="boom" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ffd23f"/>
+            <stop offset="60%" stop-color="#ff7b29" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#e63946" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="500" cy="160" r="280" fill="url(#boom)"/>
+        <!-- 스피드 라인 -->
+        <g stroke="#fff" stroke-width="2" opacity="0.4">
+          <line x1="0" y1="40" x2="200" y2="120"/>
+          <line x1="0" y1="80" x2="180" y2="140"/>
+          <line x1="0" y1="200" x2="180" y2="180"/>
+          <line x1="0" y1="280" x2="190" y2="200"/>
+          <line x1="1000" y1="40" x2="800" y2="120"/>
+          <line x1="1000" y1="80" x2="820" y2="140"/>
+          <line x1="1000" y1="200" x2="820" y2="180"/>
+          <line x1="1000" y1="280" x2="810" y2="200"/>
+        </g>
+        <!-- 캡틴 옴 (가운데, 주먹 뻗음) -->
+        <g transform="translate(420,80)">
+          <path d="M30 50 Q-20 180 25 270 Q70 230 85 250 Q85 180 95 50 Z" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+          <rect x="30" y="70" width="80" height="100" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+          <circle cx="70" cy="115" r="22" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+          <text x="70" y="128" text-anchor="middle" font-family="Bangers" font-size="30" fill="#14110d">Ω</text>
+          <circle cx="70" cy="45" r="28" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+          <path d="M44 42 Q70 28 96 42 L92 58 Q70 50 48 58 Z" fill="#1d3fa8"/>
+          <circle cx="58" cy="48" r="3" fill="#14110d"/>
+          <circle cx="82" cy="48" r="3" fill="#14110d"/>
+          <!-- 뻗은 팔 -->
+          <path d="M30 80 L-30 130 L-10 160 L40 110 Z" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+          <circle cx="-25" cy="135" r="22" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+          <!-- 다리 -->
+          <rect x="35" y="170" width="32" height="70" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+          <rect x="75" y="170" width="32" height="70" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+          <ellipse cx="51" cy="244" rx="22" ry="10" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+          <ellipse cx="91" cy="244" rx="22" ry="10" fill="#e63946" stroke="#14110d" stroke-width="3"/>
+        </g>
+        <!-- 닥터 키르히호프 (왼쪽) -->
+        <g transform="translate(200,130)">
+          <rect x="30" y="60" width="64" height="80" fill="#7e3df0" stroke="#14110d" stroke-width="3"/>
+          <text x="62" y="100" text-anchor="middle" font-family="Bangers" font-size="14" fill="#ffd23f">ΣV=0</text>
+          <circle cx="62" cy="40" r="26" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+          <circle cx="52" cy="42" r="8" fill="none" stroke="#14110d" stroke-width="2.5"/>
+          <circle cx="72" cy="42" r="8" fill="none" stroke="#14110d" stroke-width="2.5"/>
+          <line x1="60" y1="42" x2="64" y2="42" stroke="#14110d" stroke-width="2.5"/>
+          <rect x="35" y="140" width="24" height="60" fill="#4a1f9e" stroke="#14110d" stroke-width="3"/>
+          <rect x="65" y="140" width="24" height="60" fill="#4a1f9e" stroke="#14110d" stroke-width="3"/>
+        </g>
+        <!-- 변압맨 (오른쪽) -->
+        <g transform="translate(680,130)">
+          <rect x="30" y="60" width="64" height="80" fill="#1d3fa8" stroke="#14110d" stroke-width="3"/>
+          <text x="62" y="100" text-anchor="middle" font-family="Bangers" font-size="14" fill="#ffd23f">N₁:N₂</text>
+          <circle cx="62" cy="40" r="26" fill="#f7c8a0" stroke="#14110d" stroke-width="3"/>
+          <path d="M40 38 Q62 26 84 38 L82 50 Q62 44 42 50 Z" fill="#14110d"/>
+          <rect x="35" y="140" width="24" height="60" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+          <rect x="65" y="140" width="24" height="60" fill="#0f2768" stroke="#14110d" stroke-width="3"/>
+        </g>
+        <!-- 빌런 쇼트 서킷 (날아감) -->
+        <g transform="translate(820,40) rotate(35)">
+          <rect x="0" y="0" width="50" height="70" fill="#1a1a1a" stroke="#ffd23f" stroke-width="3"/>
+          <circle cx="25" cy="-15" r="22" fill="#3a3a3a" stroke="#ffd23f" stroke-width="3"/>
+          <polygon points="15,-20 22,-12 18,-12 25,-2" fill="#e63946"/>
+          <polygon points="32,-20 39,-12 35,-12 42,-2" fill="#e63946"/>
+        </g>
+      </svg>
+      <!-- 큰 SFX -->
+      <div class="sfx text-5xl md:text-8xl" style="top: 30px; right: 6%; --rot:-8deg; transform: rotate(-8deg); color:#ffd23f; text-shadow: 6px 6px 0 #14110d, 12px 12px 0 #e63946;">KABOOM!</div>
+      <div class="sfx text-3xl md:text-5xl" style="bottom: 20px; left: 30px; --rot:6deg; transform: rotate(6deg); color:#ff5ea8;">ZZZAP!</div>
+      <!-- 대사 -->
+      <div class="absolute bottom-4 right-4 bubble tail-tr text-xs md:text-base font-comic" style="max-width: 260px;">
+        세 법칙이 하나로!<br/><b>옴 + 키르히호프 + 권수비!</b>
+      </div>
+    </div>
+
+    <!-- 컷 2: 도시 복원 -->
+    <div class="md:col-span-7 panel panel-tilt-r relative" style="height: 220px;">
+      <div class="absolute inset-0 benday-yellow"></div>
+      <svg viewBox="0 0 700 220" class="w-full h-full absolute inset-0" preserveAspectRatio="xMidYMid slice">
+        <rect width="700" height="220" fill="#9ad8ff"/>
+        <circle cx="600" cy="50" r="30" fill="#ffd23f" stroke="#14110d" stroke-width="3"/>
+        <g stroke="#14110d" stroke-width="3">
+          <rect x="30"  y="100" width="80"  height="120" fill="#e63946"/>
+          <rect x="120" y="70"  width="90"  height="150" fill="#ffd23f"/>
+          <rect x="220" y="110" width="70"  height="110" fill="#2ab07f"/>
+          <rect x="300" y="80"  width="100" height="140" fill="#5b2a86"/>
+          <rect x="410" y="60"  width="80"  height="160" fill="#1d3fa8"/>
+          <rect x="500" y="100" width="90"  height="120" fill="#ff7b29"/>
+          <rect x="600" y="80"  width="80"  height="140" fill="#e63946"/>
+        </g>
+        <!-- 환한 창문 -->
+        <g fill="#ffd23f" stroke="#14110d" stroke-width="1.5">
+          <rect x="45"  y="115" width="14" height="14"/><rect x="65"  y="115" width="14" height="14"/>
+          <rect x="45"  y="140" width="14" height="14"/><rect x="65"  y="140" width="14" height="14"/>
+          <rect x="135" y="90"  width="14" height="14"/><rect x="160" y="90"  width="14" height="14"/>
+          <rect x="315" y="100" width="16" height="16"/><rect x="345" y="100" width="16" height="16"/>
+          <rect x="425" y="80"  width="14" height="14"/><rect x="450" y="80"  width="14" height="14"/>
+          <rect x="615" y="100" width="14" height="14"/><rect x="640" y="100" width="14" height="14"/>
+        </g>
+      </svg>
+      <div class="absolute top-3 left-3 caption text-xs md:text-sm">옴빌(Ohmville)에 다시 빛이!</div>
+      <div class="sfx text-3xl md:text-5xl" style="bottom: 14px; right: 18px; --rot:-4deg; transform: rotate(-4deg); color:#2ab07f;">FLASH!</div>
+    </div>
+
+    <!-- 컷 3: 다음 호 예고 (티저) -->
+    <div class="md:col-span-5 panel relative" style="height: 220px;">
+      <div class="absolute inset-0" style="background: linear-gradient(135deg, #14110d 0%, #5b2a86 100%);"></div>
+      <!-- 그림자 실루엣 (새 빌런) -->
+      <svg viewBox="0 0 400 220" class="w-full h-full absolute inset-0">
+        <g fill="#14110d" stroke="#e63946" stroke-width="2">
+          <ellipse cx="200" cy="200" rx="100" ry="20"/>
+          <rect x="160" y="100" width="80" height="100"/>
+          <circle cx="200" cy="70" r="34"/>
+          <!-- 누전 표시 (파동) -->
+        </g>
+        <g stroke="#ffd23f" stroke-width="3" fill="none" opacity="0.9">
+          <path d="M170 55 Q180 45 190 55 Q200 45 210 55 Q220 45 230 55"/>
+          <path d="M165 80 Q180 65 195 80 Q210 65 225 80 Q240 65 245 80"/>
+        </g>
+        <!-- 빨간 눈 -->
+        <circle cx="188" cy="68" r="4" fill="#e63946"/>
+        <circle cx="212" cy="68" r="4" fill="#e63946"/>
+      </svg>
+      <div class="absolute top-4 left-4 right-4 font-bangers text-white text-center text-xl md:text-2xl"
+           style="-webkit-text-stroke:1.5px #14110d; text-shadow: 3px 3px 0 #14110d;">
+        NEXT ISSUE…<br/>
+        <span style="color:#ffd23f;">닥터 누전</span>의 역습!
+      </div>
+      <div class="absolute bottom-3 right-3 starburst w-20 h-20 text-xs text-center" style="--rot:8deg; transform: rotate(8deg);">VOL.2<br/>곧 출간!</div>
+    </div>
+  </div>
+
+  <!-- TO BE CONTINUED -->
+  <div class="mt-6 text-center">
+    <div class="inline-block px-8 py-4 bg-[#14110d] border-4 border-[#ffd23f] -rotate-2"
+         style="box-shadow: 8px 8px 0 0 #e63946;">
+      <div class="font-bangers text-white text-3xl md:text-5xl tracking-widest"
+           style="color:#ffd23f; -webkit-text-stroke:2px #14110d; text-shadow: 3px 3px 0 #e63946;">
+        TO BE CONTINUED…
+      </div>
+      <div class="font-marker text-white text-sm md:text-base mt-1">— ELECTRIC HEROES VOL.2에서 만나요 —</div>
+    </div>
+  </div>
+
+  <!-- 학습 포인트 박스 -->
+  <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="caption text-xs md:text-sm">
+      <div class="font-bangers text-base text-[#e63946]">캡틴 옴 — 옴의 법칙</div>
+      V = I × R · 전압·전류·저항의 기본 관계
+    </div>
+    <div class="caption text-xs md:text-sm">
+      <div class="font-bangers text-base text-[#1d3fa8]">닥터 키르히호프</div>
+      KCL: ΣI=0 / KVL: ΣV=0
+    </div>
+    <div class="caption text-xs md:text-sm">
+      <div class="font-bangers text-base text-[#5b2a86]">변압맨 — 권수비</div>
+      V₁/V₂ = N₁/N₂ = I₂/I₁
+    </div>
+  </div>
+
+  <!-- 크레딧 -->
+  <div class="mt-5 flex flex-col md:flex-row items-center justify-between text-[#fff] gap-2">
+    <div class="font-comic text-xs md:text-sm bg-[#14110d] px-3 py-1 border-2 border-[#ffd23f]">
+      WRITER: 전기왕 · ART: SVG Bot · COLORS: Tailwind
+    </div>
+    <div class="font-marker text-sm text-[#ffd23f]"
+         style="text-shadow: 1px 1px 0 #14110d;">전기기능사 소식지 — COMIC EDITION © 2026</div>
+  </div>
+</section>
+
+</div>
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+
+<!-- 네비게이션 바 -->
+<div class="max-w-5xl mx-auto px-4 mt-6 mb-10 flex items-center justify-between gap-4">
+  <button id="prevBtn" class="nav-btn text-base md:text-xl">◀ PREV</button>
+  <div class="flex items-center gap-2" id="dots"></div>
+  <button id="nextBtn" class="nav-btn text-base md:text-xl">NEXT ▶</button>
+</div>
+
+<!-- 하단 안내 -->
+<div class="text-center text-[#f4ecd8] font-comic text-xs md:text-sm pb-8 px-4">
+  ← → 키 또는 좌/우 클릭으로 페이지를 넘기세요 · SFX에 마우스를 올려보세요!
+</div>
+
+<script>
+  (function () {
+    const pages = Array.from(document.querySelectorAll('.page'));
+    const prev = document.getElementById('prevBtn');
+    const next = document.getElementById('nextBtn');
+    const dotsBox = document.getElementById('dots');
+    let idx = 0;
+
+    // 도트 생성
+    pages.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'page-dot' + (i === 0 ? ' active' : '');
+      d.dataset.idx = i;
+      d.addEventListener('click', () => go(i));
+      dotsBox.appendChild(d);
+    });
+
+    function go(n) {
+      n = Math.max(0, Math.min(pages.length - 1, n));
+      pages[idx].classList.remove('active');
+      pages[n].classList.add('active');
+      idx = n;
+      document.querySelectorAll('.page-dot').forEach((d, i) =>
+        d.classList.toggle('active', i === idx)
+      );
+      prev.disabled = idx === 0;
+      next.disabled = idx === pages.length - 1;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    prev.addEventListener('click', () => go(idx - 1));
+    next.addEventListener('click', () => go(idx + 1));
+
+    // 키보드
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') go(idx + 1);
+      if (e.key === 'ArrowLeft')  go(idx - 1);
+    });
+
+    // 페이지 좌/우 클릭으로 넘기기 (양 끝 25%)
+    document.querySelector('.page-wrap').addEventListener('click', (e) => {
+      // 버튼/SFX/링크 클릭은 무시
+      if (e.target.closest('button, .sfx, a, .bubble, .caption')) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x < rect.width * 0.18) go(idx - 1);
+      else if (x > rect.width * 0.82) go(idx + 1);
+    });
+
+    go(0);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기기능사 - 노턴 등가 회로 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(34, 211, 238, 0.13), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(250, 204, 21, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.65;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,211,238,0.45), rgba(168,139,250,0.45), rgba(250,204,21,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(168, 139, 250, 0.45),
+        0 0 40px rgba(34, 211, 238, 0.15);
+}
+canvas.circuit {
+    display: block;
+    width: 100%;
+    height: 320px;
+    border-radius: 17px;
+    background: #050714;
+}
+.canvas-label {
+    position: absolute;
+    top: 10px; left: 14px;
+    font-size: 10px; letter-spacing: 0.18em; font-weight: 700;
+    padding: 4px 10px; border-radius: 9999px;
+    background: rgba(15,23,42,0.7); border: 1px solid rgba(148,163,184,0.25);
+    color: #cbd5e1; backdrop-filter: blur(6px);
+}
+.canvas-label.original { color: #fda4af; border-color: rgba(244,114,182,0.5); }
+.canvas-label.norton { color: #fde68a; border-color: rgba(250,204,21,0.5); }
+.canvas-divider {
+    text-align: center; margin: 14px 0;
+    font-size: 11px; letter-spacing: 0.22em; font-weight: 700;
+    color: #fcd34d;
+}
+.canvas-divider::before,
+.canvas-divider::after {
+    content: ''; display: inline-block; vertical-align: middle;
+    width: 36%; height: 1px; margin: 0 14px;
+    background: linear-gradient(90deg, transparent, rgba(250,204,21,0.55), transparent);
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(34,211,238,0.4), rgba(168,139,250,0.4), rgba(250,204,21,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #67e8f9, #c4b5fd, #fde68a);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip-v { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border: 1px solid rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-r1 { background: linear-gradient(135deg, rgba(251,146,60,0.22), rgba(251,146,60,0.06)); border: 1px solid rgba(251,146,60,0.5); color: #fdba74; }
+.chip-r2 { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border: 1px solid rgba(34,197,94,0.5); color: #86efac; }
+.chip-r3 { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border: 1px solid rgba(168,139,250,0.5); color: #c4b5fd; }
+.chip-rl { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border: 1px solid rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-in { background: linear-gradient(135deg, rgba(250,204,21,0.22), rgba(250,204,21,0.06)); border: 1px solid rgba(250,204,21,0.5); color: #fde68a; }
+.chip-rn { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border: 1px solid rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-vl { background: linear-gradient(135deg, rgba(16,185,129,0.22), rgba(16,185,129,0.06)); border: 1px solid rgba(16,185,129,0.5); color: #6ee7b7; }
+.chip-il { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border: 1px solid rgba(244,63,94,0.5); color: #fda4af; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 220ms, box-shadow 220ms;
+}
+.live-pill.match {
+    border-color: rgba(52, 211, 153, 0.55);
+    box-shadow: 0 0 24px rgba(52, 211, 153, 0.3);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.math-card {
+    background:
+        linear-gradient(135deg, rgba(34,211,238,0.20), rgba(168,85,247,0.10)),
+        rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(34, 211, 238, 0.4);
+}
+.transform-btn {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.35), rgba(34, 211, 238, 0.3));
+    border: 1px solid rgba(253, 230, 138, 0.6);
+    color: #fffbeb;
+    transition: all 220ms;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(250, 204, 21, 0.35);
+}
+.transform-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 28px rgba(250, 204, 21, 0.55);
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.5), rgba(34, 211, 238, 0.45));
+}
+.transform-btn:active { transform: translateY(0); }
+.reset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.reset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+}
+.eq-card {
+    background: linear-gradient(135deg, rgba(250,204,21,0.18), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+}
+.swap-card {
+    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(34,211,238,0.12)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244, 114, 182, 0.4);
+}
+.swap-arrow {
+    display: inline-block; padding: 0 6px; font-weight: 700; color: #fde68a;
+    text-shadow: 0 0 12px rgba(250, 204, 21, 0.6);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · NORTON EQUIVALENT
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-200 via-fuchsia-200 to-yellow-200 bg-clip-text text-transparent">
+            노턴 등가 회로 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            복잡한 두 단자 회로는
+            <span class="text-yellow-200 font-semibold">I<sub>N</sub></span> (단락 전류) ‖
+            <span class="text-fuchsia-200 font-semibold">R<sub>N</sub></span> (병렬 저항)으로 단순화됩니다.
+            테브난과 짝: <span class="text-pink-200 font-semibold">I<sub>N</sub> = V<sub>Th</sub> / R<sub>Th</sub></span>,
+            <span class="text-purple-200 font-semibold">R<sub>N</sub> = R<sub>Th</sub></span>.
+        </p>
+    </header>
+
+    <!-- 라이브 데이터 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="chip-in live-pill rounded-xl p-3" id="pill-in">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">I<sub>N</sub> · 단락 전류</p>
+            <p class="mt-1 text-2xl font-bold"><span id="inDisp" class="live-num">—</span> <span class="text-xs opacity-70 font-normal">A</span></p>
+        </div>
+        <div class="chip-rn live-pill rounded-xl p-3" id="pill-rn">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">R<sub>N</sub> · 병렬 저항</p>
+            <p class="mt-1 text-2xl font-bold"><span id="rnDisp" class="live-num">—</span> <span class="text-xs opacity-70 font-normal">Ω</span></p>
+        </div>
+        <div class="chip-vl live-pill rounded-xl p-3" id="pill-vl">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">V<sub>L</sub> · 부하 전압</p>
+            <p class="mt-1 text-2xl font-bold"><span id="vlDisp" class="live-num">—</span> <span class="text-xs opacity-70 font-normal">V</span></p>
+        </div>
+        <div class="chip-il live-pill rounded-xl p-3" id="pill-il">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">I<sub>L</sub> · 부하 전류</p>
+            <p class="mt-1 text-2xl font-bold"><span id="ilDisp" class="live-num">—</span> <span class="text-xs opacity-70 font-normal">A</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">DUAL CIRCUIT · 원회로 ↔ 노턴 등가</span>
+                <div class="flex gap-2">
+                    <button id="transformBtn" class="transform-btn rounded-md px-3 py-1.5 text-xs font-bold">→ 노턴 변환 애니메이션</button>
+                    <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">초기화</button>
+                </div>
+            </div>
+
+            <div class="canvas-wrap relative">
+                <span class="canvas-label original">ORIGINAL · V₁ + R₁ + R₂ + R₃ + R<sub>L</sub></span>
+                <canvas id="canvasOrig" class="circuit"></canvas>
+            </div>
+
+            <div class="canvas-divider">SOURCE TRANSFORMATION · 전원 변환</div>
+
+            <div class="canvas-wrap relative">
+                <span class="canvas-label norton">NORTON · I<sub>N</sub> ‖ R<sub>N</sub> ‖ R<sub>L</sub></span>
+                <canvas id="canvasNo" class="circuit"></canvas>
+            </div>
+
+            <!-- 컨트롤 -->
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div class="chip-v rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>V₁</span><span id="v1Disp" class="font-mono text-sm">24</span></label>
+                    <input type="range" id="v1" min="3" max="48" value="24" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">V</p>
+                </div>
+                <div class="chip-r1 rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>R₁</span><span id="r1Disp" class="font-mono text-sm">6</span></label>
+                    <input type="range" id="r1" min="1" max="40" value="6" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+                </div>
+                <div class="chip-r2 rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>R₂</span><span id="r2Disp" class="font-mono text-sm">12</span></label>
+                    <input type="range" id="r2" min="1" max="40" value="12" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+                </div>
+                <div class="chip-r3 rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>R₃</span><span id="r3Disp" class="font-mono text-sm">4</span></label>
+                    <input type="range" id="r3" min="1" max="40" value="4" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+                </div>
+                <div class="chip-rl rounded-lg p-3">
+                    <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>R<sub>L</sub></span><span id="rlDisp" class="font-mono text-sm">8</span></label>
+                    <input type="range" id="rl" min="1" max="60" value="8" class="w-full mt-2 cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-4" id="sideCol">
+            <div class="glass rounded-2xl p-5">
+                <h2 class="text-base font-bold flex items-center gap-2">
+                    <span class="bg-gradient-to-r from-yellow-200 to-cyan-200 bg-clip-text text-transparent">노턴 정리</span>
+                </h2>
+                <p class="mt-2 text-xs text-slate-400">두 단자 사이를 보면 어떤 선형 회로든 전류원 + 병렬 저항 1개로 등가화됩니다.</p>
+                <div class="math-container mt-2 text-center">
+                    $$I_L = I_N \cdot \frac{R_N}{R_N + R_L}$$
+                </div>
+                <ul class="mt-3 space-y-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-yellow-200">I<sub>N</sub></span> · 두 단자를 단락(쇼트)했을 때 흐르는 단락 전류</li>
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-fuchsia-200">R<sub>N</sub></span> · 모든 독립 전원을 죽이고 본 두 단자 등가 저항 = R<sub>Th</sub></li>
+                    <li class="feature-row rounded-lg p-2"><span class="font-bold text-cyan-200">동일성</span> · 부하 전류·전압은 원회로와 등가회로에서 동일</li>
+                </ul>
+            </div>
+
+            <div class="swap-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-2 tracking-wider text-pink-200">테브난 <span class="swap-arrow">⇄</span> 노턴 변환</h3>
+                <div class="math-container">
+                    $$I_N = \frac{V_{Th}}{R_{Th}} ,\quad R_N = R_{Th}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$V_{Th} = I_N \cdot R_N$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    전압원(직렬 R<sub>Th</sub>) ↔ 전류원(병렬 R<sub>N</sub>)은 외부에서 보기에 완전히 동일합니다.
+                    이 회로의 V<sub>Th</sub>는 <span id="vthMini" class="text-yellow-200 font-mono">—</span> V,
+                    R<sub>Th</sub>는 <span id="rthMini" class="text-purple-200 font-mono">—</span> Ω입니다.
+                </p>
+            </div>
+
+            <div class="eq-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-2 tracking-wider text-yellow-200">이 회로의 I<sub>N</sub> · R<sub>N</sub></h3>
+                <div class="math-container">
+                    $$R_N = R_3 + \frac{R_1 \cdot R_2}{R_1 + R_2}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$I_N = \frac{V_1}{R_1 + R_3 \cdot \frac{R_1 + R_2}{R_2}}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    a-b 단자를 단락시키면 R<sub>2</sub>와 R<sub>3</sub>가 병렬이 되어 단락 전류 I<sub>N</sub>이 흐릅니다.
+                    R<sub>N</sub>은 R<sub>Th</sub>와 동일.
+                </p>
+            </div>
+
+            <div class="math-card rounded-2xl p-5">
+                <h3 class="font-bold text-sm mb-2 tracking-wider text-cyan-200">동일성 검증 · I<sub>L</sub></h3>
+                <p class="text-[11px] text-slate-400 mb-2">원회로 노드 해석과 노턴 공식이 같은 I<sub>L</sub>을 줍니다.</p>
+                <div class="space-y-1 text-xs font-mono">
+                    <p><span class="text-slate-500">원회로</span> · I<sub>L</sub> = <span id="ilOrig" class="text-pink-200 font-bold">—</span> A</p>
+                    <p><span class="text-slate-500">노턴</span> · I<sub>L</sub> = <span id="ilNo" class="text-cyan-200 font-bold">—</span> A</p>
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-emerald-300 font-bold">
+                    오차 |Δ| = <span id="diffVal" class="text-emerald-200">—</span> A <span id="okMark">✓</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvasOrig = $('canvasOrig');
+const canvasNo = $('canvasNo');
+const ctxO = canvasOrig.getContext('2d');
+const ctxN = canvasNo.getContext('2d');
+
+const state = {
+    V1: 24, R1: 6, R2: 12, R3: 4, RL: 8,
+    Vth: 0, Rth: 0,
+    IN: 0, RN: 0,
+    IL: 0, ILorig: 0, VL: 0,
+    t: 0,
+    morph: 0,
+    morphActive: false
+};
+
+let geoO = {}, geoN = {};
+let pathsO = [], pathsN = [];
+
+function resizeAll() {
+    [canvasOrig, canvasNo].forEach(c => {
+        c.width = c.parentElement.clientWidth - 2;
+        c.height = 320;
+    });
+    buildOrig();
+    buildNorton();
+}
+window.addEventListener('resize', resizeAll);
+
+/* ===== 기하 ===== */
+function buildOrig() {
+    const W = canvasOrig.width, H = canvasOrig.height;
+    const top = 70, bot = H - 60;
+    const leftX = 70, rightX = W - 70;
+    const r2x = leftX + (rightX - leftX) * 0.42;
+    const r3x = leftX + (rightX - leftX) * 0.66;
+    const loadX = rightX;
+
+    geoO = {
+        srcX: leftX, top, bot,
+        r1Pos: { x: leftX + (r2x - leftX) * 0.5, y: top },
+        r2Pos: { x: r2x, y: (top + bot) / 2 },
+        r3Pos: { x: (r2x + r3x) / 2 + 30, y: top },
+        loadPos: { x: loadX, y: (top + bot) / 2 },
+        nodeAx: r2x, nodeBx: loadX,
+        nodeY: bot
+    };
+
+    const path1 = [
+        { x: leftX, y: bot },
+        { x: leftX, y: top },
+        { x: rightX, y: top },
+        { x: rightX, y: bot },
+        { x: leftX, y: bot }
+    ];
+    pathsO = [{
+        name: 'outer', color: '#f9a8d4',
+        path: path1
+    }];
+    pathsO.push({
+        name: 'branchR2', color: '#86efac',
+        path: [
+            { x: r2x, y: top },
+            { x: r2x, y: bot }
+        ]
+    });
+    for (const p of pathsO) precomputePath(p, 18);
+}
+
+function buildNorton() {
+    const W = canvasNo.width, H = canvasNo.height;
+    const top = 70, bot = H - 60;
+    // 노턴: 좌측에 전류원(원형 화살표), 그 옆에 병렬 R_N, 오른쪽에 R_L
+    const srcX = 90;
+    const rnX = srcX + (W - 180) * 0.42;
+    const loadX = W - 80;
+
+    geoN = {
+        top, bot, srcX,
+        rnPos: { x: rnX, y: (top + bot) / 2 },        // 수직 저항(병렬)
+        loadPos: { x: loadX, y: (top + bot) / 2 }
+    };
+    // 외부 루프(좌↔우 양쪽 와이어)
+    pathsN = [{
+        name: 'topRail', color: '#fde68a',
+        path: [
+            { x: srcX, y: top },
+            { x: loadX, y: top }
+        ]
+    }];
+    pathsN.push({
+        name: 'botRail', color: '#fde68a',
+        path: [
+            { x: loadX, y: bot },
+            { x: srcX, y: bot }
+        ]
+    });
+    // 전류원 내부 흐름 (아래→위 화살표 방향에 맞춰)
+    pathsN.push({
+        name: 'src', color: '#fcd34d',
+        path: [
+            { x: srcX, y: bot },
+            { x: srcX, y: top }
+        ]
+    });
+    // R_N 가지(아래→위, 부하 → 전류원 쪽으로 일부 전류 분기)
+    pathsN.push({
+        name: 'rnBranch', color: '#d8b4fe',
+        path: [
+            { x: rnX, y: top },
+            { x: rnX, y: bot }
+        ]
+    });
+    for (const p of pathsN) precomputePath(p, 14);
+}
+
+function precomputePath(p, n) {
+    let total = 0;
+    p.segments = [];
+    for (let k = 0; k < p.path.length - 1; k++) {
+        const a = p.path[k], b = p.path[k + 1];
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        p.segments.push({ a, b, len, start: total });
+        total += len;
+    }
+    p.total = total;
+    p.particles = [];
+    for (let i = 0; i < n; i++) p.particles.push({
+        progress: (i / n) * total,
+        size: 1.6 + Math.random() * 0.8
+    });
+}
+
+function pointAtPath(p, progress) {
+    let q = ((progress % p.total) + p.total) % p.total;
+    for (const s of p.segments) {
+        if (q <= s.start + s.len) {
+            const t = (q - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
+        }
+    }
+    return p.segments[0].a;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+/* ===== 공통 그리기 ===== */
+function drawBg(ctx, canvas) {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawWiresFromPath(ctx, path, color, lineWidth) {
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color + 'd9';
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawResistor(ctx, cx, cy, w, h, label, value, color, accent, vertical = false) {
+    const heatI = Math.min(1, Math.abs(state.IL) / 2);
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (vertical) ctx.rotate(Math.PI / 2);
+
+    ctx.shadowBlur = 8 + heatI * 18;
+    ctx.shadowColor = color;
+    const g = ctx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+    g.addColorStop(0, accent);
+    g.addColorStop(0.5, color);
+    g.addColorStop(1, '#1e293b');
+    ctx.fillStyle = g;
+    roundRect(ctx, -w/2, -h/2, w, h, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255,255,255,${0.55 + heatI * 0.4})`;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    const zs = -w/2 + 8, ze = w/2 - 8;
+    const zSteps = 6;
+    for (let k = 0; k <= zSteps; k++) {
+        const x = zs + ((ze - zs) * k) / zSteps;
+        const y = (k % 2 === 0 ? -5 : 5);
+        if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `${label}=${value.toFixed(1)}Ω`;
+    const tw = ctx.measureText(txt).width;
+    const ly = vertical ? cy : cy - h/2 - 14;
+    const lx = vertical ? cx + w/2 + 30 : cx;
+    ctx.fillStyle = 'rgba(15,23,42,0.9)';
+    roundRect(ctx, lx - tw/2 - 6, ly - 9, tw + 12, 18, 9);
+    ctx.fill();
+    ctx.fillStyle = accent;
+    ctx.fillText(txt, lx, ly);
+    ctx.restore();
+}
+
+function drawBattery(ctx, cx, cy, vVal, color, accent, label = 'V') {
+    const pulse = 0.4 + Math.sin(state.t * 0.06) * 0.2;
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = color + Math.floor(pulse * 255).toString(16).padStart(2, '0');
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 20, cy - 14); ctx.lineTo(cx + 20, cy - 14);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - 12, cy + 14); ctx.lineTo(cx + 12, cy + 14);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `${label}=${vVal.toFixed(1)}V`;
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = 'rgba(15,23,42,0.9)';
+    roundRect(ctx, cx - tw/2 - 7, cy + 28, tw + 14, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = accent;
+    ctx.fillText(txt, cx, cy + 38);
+
+    ctx.font = 'bold 13px Arial';
+    ctx.fillStyle = accent;
+    ctx.fillText('+', cx, cy - 26);
+    ctx.fillText('−', cx, cy + 28);
+    ctx.restore();
+}
+
+/* 노턴 전류원: 원 안에 화살표 (위로) */
+function drawCurrentSource(ctx, cx, cy, iVal, color, accent, label = 'I_N') {
+    const pulse = 0.4 + Math.sin(state.t * 0.06) * 0.2;
+    const r = 22;
+    ctx.save();
+    ctx.shadowBlur = 18 + pulse * 6;
+    ctx.shadowColor = color;
+    // 원
+    const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
+    g.addColorStop(0, accent);
+    g.addColorStop(0.7, color);
+    g.addColorStop(1, 'rgba(15,23,42,0.0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    // 내부 화살표(위 방향 = 전류 흐름)
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#0b1020';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 12); ctx.lineTo(cx, cy - 8);
+    ctx.stroke();
+    // 화살촉
+    ctx.fillStyle = '#0b1020';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 14);
+    ctx.lineTo(cx - 6, cy - 4);
+    ctx.lineTo(cx + 6, cy - 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const txt = `${label}=${iVal.toFixed(3)}A`;
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = 'rgba(15,23,42,0.92)';
+    roundRect(ctx, cx - tw/2 - 7, cy + r + 6, tw + 14, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = accent;
+    ctx.fillText(txt, cx, cy + r + 16);
+    ctx.restore();
+}
+
+function drawTerminals(ctx, ax, ay, bx, by) {
+    ctx.save();
+    ctx.shadowBlur = 14; ctx.shadowColor = '#fde68a';
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath(); ctx.arc(ax, ay, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#fde68a';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('a', ax + 8, ay - 12);
+    ctx.fillText('b', bx + 8, by + 12);
+    ctx.restore();
+}
+
+function drawParticles(ctx, paths, speedScale) {
+    for (const p of paths) {
+        const speed = Math.max(0.4, speedScale);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (const par of p.particles) {
+            par.progress = (par.progress + speed) % p.total;
+            const pt = pointAtPath(p, par.progress);
+            ctx.fillStyle = p.color + 'f0';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = p.color;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, par.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+/* ===== 원회로 그리기 ===== */
+function drawOriginal() {
+    drawBg(ctxO, canvasOrig);
+
+    ctxO.save();
+    ctxO.font = 'bold 10px ui-monospace, monospace';
+    ctxO.fillStyle = 'rgba(244,114,182,0.65)';
+    ctxO.textAlign = 'right'; ctxO.textBaseline = 'top';
+    ctxO.fillText(`◯ ORIGINAL · 4 elements`, canvasOrig.width - 12, 12);
+    ctxO.restore();
+
+    drawWiresFromPath(ctxO, pathsO[0].path, '#7dd3fc', 3);
+    drawWiresFromPath(ctxO, pathsO[1].path, '#86efac', 2.6);
+
+    const fade = 1 - state.morph * 0.85;
+    ctxO.save();
+    ctxO.globalAlpha = fade;
+
+    const W = canvasOrig.width, H = canvasOrig.height;
+    const top = 70, bot = H - 60;
+    const leftX = 70;
+    const batY = (top + bot) / 2;
+    drawBattery(ctxO, leftX, batY, state.V1, '#f472b6', '#fce7f3', 'V₁');
+
+    drawResistor(ctxO, geoO.r1Pos.x, geoO.r1Pos.y, 70, 22, 'R₁', state.R1, '#fb923c', '#fdba74');
+    drawResistor(ctxO, geoO.r2Pos.x, geoO.r2Pos.y, 70, 22, 'R₂', state.R2, '#22c55e', '#86efac', true);
+    drawResistor(ctxO, geoO.r3Pos.x, geoO.r3Pos.y, 70, 22, 'R₃', state.R3, '#a855f7', '#c4b5fd');
+
+    const particleScale = (1 - state.morph) * Math.max(0.6, state.IL * 2.2);
+    drawParticles(ctxO, pathsO, particleScale);
+    ctxO.restore();
+
+    drawResistor(ctxO, geoO.loadPos.x, geoO.loadPos.y, 70, 22, 'R_L', state.RL, '#06b6d4', '#67e8f9', true);
+
+    drawCurrentLabel(ctxO, geoO.loadPos.x - 60, top - 8, `I_L=${state.ILorig.toFixed(3)}A`, '#6ee7b7');
+
+    ctxO.save();
+    ctxO.globalAlpha = 0.8 + state.morph * 0.2;
+    drawTerminals(ctxO, geoO.loadPos.x - 38, top, geoO.loadPos.x - 38, bot);
+    ctxO.restore();
+
+    if (state.morph > 0.05) {
+        ctxO.save();
+        ctxO.globalAlpha = state.morph;
+        ctxO.font = 'bold 11px ui-monospace, monospace';
+        ctxO.textAlign = 'center'; ctxO.textBaseline = 'middle';
+        const cx = (leftX + geoO.loadPos.x) / 2;
+        const cy = (top + bot) / 2;
+        const txt = '→ I_N ‖ R_N 으로 흡수';
+        const tw = ctxO.measureText(txt).width;
+        ctxO.fillStyle = 'rgba(250,204,21,0.22)';
+        ctxO.shadowBlur = 18; ctxO.shadowColor = '#facc15';
+        roundRect(ctxO, cx - tw/2 - 12, cy - 14, tw + 24, 28, 14);
+        ctxO.fill();
+        ctxO.fillStyle = '#fef9c3';
+        ctxO.shadowBlur = 0;
+        ctxO.fillText(txt, cx, cy + 1);
+        ctxO.restore();
+    }
+}
+
+/* ===== 노턴 등가 그리기 ===== */
+function drawNorton() {
+    drawBg(ctxN, canvasNo);
+
+    ctxN.save();
+    ctxN.font = 'bold 10px ui-monospace, monospace';
+    ctxN.fillStyle = 'rgba(250,204,21,0.65)';
+    ctxN.textAlign = 'right'; ctxN.textBaseline = 'top';
+    ctxN.fillText(`◯ NORTON · 2 elements (parallel)`, canvasNo.width - 12, 12);
+    ctxN.restore();
+
+    const top = geoN.top, bot = geoN.bot;
+    const srcX = geoN.srcX;
+
+    // 외부 와이어 (상단/하단 레일)
+    drawWiresFromPath(ctxN, pathsN[0].path, '#7dd3fc', 3);
+    drawWiresFromPath(ctxN, pathsN[1].path, '#7dd3fc', 3);
+    // 전류원 내부 점선
+    ctxN.save();
+    ctxN.strokeStyle = 'rgba(250,204,21,0.35)';
+    ctxN.setLineDash([4, 4]);
+    ctxN.lineWidth = 1.5;
+    ctxN.beginPath();
+    ctxN.moveTo(srcX, top); ctxN.lineTo(srcX, bot);
+    ctxN.stroke();
+    ctxN.restore();
+    // R_N 가지 (수직)
+    drawWiresFromPath(ctxN, pathsN[3].path, '#c4b5fd', 2.6);
+    // R_L 가지 (수직, 우측)
+    ctxN.save();
+    ctxN.strokeStyle = 'rgba(34,211,238,0.85)';
+    ctxN.shadowBlur = 12; ctxN.shadowColor = '#22d3ee';
+    ctxN.lineWidth = 3;
+    ctxN.beginPath();
+    ctxN.moveTo(geoN.loadPos.x, top); ctxN.lineTo(geoN.loadPos.x, bot);
+    ctxN.stroke();
+    ctxN.restore();
+
+    const reveal = state.morph;
+
+    // 전류원 I_N (좌측 가운데)
+    ctxN.save();
+    ctxN.globalAlpha = 0.35 + 0.65 * reveal;
+    drawCurrentSource(ctxN, srcX, (top + bot) / 2, state.IN, '#facc15', '#fef3c7', 'I_N');
+    ctxN.restore();
+
+    // R_N (수직, 병렬)
+    ctxN.save();
+    ctxN.globalAlpha = 0.35 + 0.65 * reveal;
+    drawResistor(ctxN, geoN.rnPos.x, geoN.rnPos.y, 80, 22, 'R_N', state.RN, '#a855f7', '#d8b4fe', true);
+    ctxN.restore();
+
+    // R_L (수직)
+    drawResistor(ctxN, geoN.loadPos.x, geoN.loadPos.y, 70, 22, 'R_L', state.RL, '#06b6d4', '#67e8f9', true);
+
+    // 단자 a/b
+    drawTerminals(ctxN, geoN.loadPos.x - 38, top, geoN.loadPos.x - 38, bot);
+
+    // 입자: 상단 레일은 전체 전류, 가지들은 각자 비율
+    // 분류된 전류 비율
+    const totalI = Math.max(0.0001, state.IN);
+    const ratioL = Math.abs(state.IL) / totalI;       // 0~1
+    const ratioR = 1 - ratioL;
+    const baseSpeed = Math.max(0.4, state.IN * 2.0);
+    // topRail/botRail: 전류원에서 나와서 부하/저항으로 흐르므로 IN 전체에 비례
+    pathsN[0].particles.forEach(()=>{});
+    drawParticles(ctxN, [pathsN[0], pathsN[1], pathsN[2]], baseSpeed * (0.4 + 0.6 * reveal));
+    // R_N 가지: ratioR * baseSpeed
+    drawParticles(ctxN, [pathsN[3]], baseSpeed * ratioR * (0.4 + 0.6 * reveal) + 0.2);
+
+    // 라벨: I_L, I_R_N
+    drawCurrentLabel(ctxN, geoN.loadPos.x - 60, top - 8, `I_L=${state.IL.toFixed(3)}A`, '#6ee7b7');
+    drawCurrentLabel(ctxN, geoN.rnPos.x, top - 8, `I_RN=${(state.IN - state.IL).toFixed(3)}A`, '#d8b4fe');
+    drawCurrentLabel(ctxN, (srcX + geoN.rnPos.x) / 2, top - 8, `I_N=${state.IN.toFixed(3)}A`, '#fde68a');
+
+    if (state.morph < 0.98) {
+        ctxN.save();
+        ctxN.font = 'bold 11px ui-monospace, monospace';
+        ctxN.textAlign = 'center'; ctxN.textBaseline = 'middle';
+        ctxN.fillStyle = 'rgba(148,163,184,0.7)';
+        ctxN.fillText('"→ 노턴 변환" 버튼을 눌러 I_N · R_N 이 모이는 모습을 보세요',
+            canvasNo.width / 2, (top + bot) / 2 + 70);
+        ctxN.restore();
+    }
+}
+
+function drawCurrentLabel(ctx, x, y, txt, color) {
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle = 'rgba(15,23,42,0.9)';
+    ctx.shadowBlur = 10; ctx.shadowColor = color;
+    roundRect(ctx, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 0;
+    ctx.fillText(txt, x, y);
+    ctx.restore();
+}
+
+/* ===== 계산 ===== */
+function compute() {
+    state.V1 = +$('v1').value;
+    state.R1 = +$('r1').value;
+    state.R2 = +$('r2').value;
+    state.R3 = +$('r3').value;
+    state.RL = +$('rl').value;
+
+    // 테브난 매개변수 (참고용)
+    state.Vth = state.V1 * state.R2 / (state.R1 + state.R2);
+    const r12par = (state.R1 * state.R2) / (state.R1 + state.R2);
+    state.Rth = state.R3 + r12par;
+
+    // 노턴 (변환)
+    state.RN = state.Rth;
+    state.IN = state.Vth / state.Rth;
+
+    // 부하 전류 (노턴 공식): 전류 분배
+    state.IL = state.IN * state.RN / (state.RN + state.RL);
+    state.VL = state.IL * state.RL;
+
+    // 원회로 직접 해석으로 I_L 검증
+    const Rp = state.R3 + state.RL;
+    const RparR2 = (state.R2 * Rp) / (state.R2 + Rp);
+    const Va = state.V1 * RparR2 / (state.R1 + RparR2);
+    const Vb = Va * state.RL / Rp;
+    state.ILorig = Vb / state.RL;
+
+    $('v1Disp').textContent = state.V1;
+    $('r1Disp').textContent = state.R1;
+    $('r2Disp').textContent = state.R2;
+    $('r3Disp').textContent = state.R3;
+    $('rlDisp').textContent = state.RL;
+
+    $('inDisp').textContent = state.IN.toFixed(3);
+    $('rnDisp').textContent = state.RN.toFixed(2);
+    $('vlDisp').textContent = state.VL.toFixed(2);
+    $('ilDisp').textContent = state.IL.toFixed(3);
+
+    $('vthMini').textContent = state.Vth.toFixed(2);
+    $('rthMini').textContent = state.Rth.toFixed(2);
+
+    $('ilOrig').textContent = state.ILorig.toFixed(4);
+    $('ilNo').textContent = state.IL.toFixed(4);
+    const diff = Math.abs(state.IL - state.ILorig);
+    $('diffVal').textContent = diff.toExponential(2);
+    const ok = diff < 1e-4;
+    $('okMark').textContent = ok ? '✓ 일치' : '✗';
+    $('okMark').style.color = ok ? '#6ee7b7' : '#fda4af';
+    ['pill-in','pill-rn','pill-vl','pill-il'].forEach(id => $(id).classList.toggle('match', ok));
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(250,204,21,0.55)' },
+        { boxShadow: '0 0 60px 4px rgba(250,204,21,0)', duration: 0.6 });
+}
+
+['v1','r1','r2','r3','rl'].forEach(id => {
+    $(id).addEventListener('input', () => { compute(); flashCard(); });
+});
+
+$('resetBtn').addEventListener('click', () => {
+    const defaults = { v1: 24, r1: 6, r2: 12, r3: 4, rl: 8 };
+    if (window.gsap) {
+        Object.keys(defaults).forEach(k => {
+            gsap.to($(k), { value: defaults[k], duration: 0.7, ease: 'power3.out', onUpdate: () => compute() });
+        });
+    } else {
+        Object.keys(defaults).forEach(k => { $(k).value = defaults[k]; });
+        compute();
+    }
+    flashCard();
+});
+
+$('transformBtn').addEventListener('click', () => {
+    if (state.morphActive) return;
+    state.morphActive = true;
+    if (window.gsap) {
+        const tl = gsap.timeline({ onComplete: () => {
+            gsap.to(state, { morph: 0, duration: 1.2, delay: 1.6, ease: 'power2.inOut', onComplete: () => { state.morphActive = false; } });
+        }});
+        tl.to(state, { morph: 1, duration: 1.4, ease: 'power2.inOut' });
+        gsap.fromTo('#pill-in, #pill-rn',
+            { boxShadow: '0 0 0 rgba(168,85,247,0)' },
+            { boxShadow: '0 0 30px rgba(250,204,21,0.55)', duration: 0.8, yoyo: true, repeat: 1 });
+        gsap.fromTo('#canvasCard',
+            { boxShadow: '0 0 0 0 rgba(250,204,21,0.6)' },
+            { boxShadow: '0 0 80px 6px rgba(250,204,21,0.1)', duration: 1.4 });
+    } else {
+        state.morph = 1; setTimeout(() => { state.morph = 0; state.morphActive = false; }, 2500);
+    }
+});
+
+function animate() {
+    state.t++;
+    ctxO.clearRect(0, 0, canvasOrig.width, canvasOrig.height);
+    ctxN.clearRect(0, 0, canvasNo.width, canvasNo.height);
+    drawOriginal();
+    drawNorton();
+    requestAnimationFrame(animate);
+}
+
+window.addEventListener('load', () => {
+    resizeAll();
+    compute();
+    animate();
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#sideCol > *', { x: 30, opacity: 0, duration: 0.6, stagger: 0.12, delay: 0.35, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

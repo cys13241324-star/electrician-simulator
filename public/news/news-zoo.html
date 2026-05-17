@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPARK ZOO · 스파크 동물원 — 전기 학습 동물원 안내</title>
+<meta name="description" content="가상 동물원 시뮬레이션 — 옴라이언·전압코끼리·키르히호프돌고래와 함께하는 전기기능사 학습 동물원.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --leaf-1:#2e6a3a;     /* 짙은 녹 */
+    --leaf-2:#3f8b4d;     /* 녹 */
+    --leaf-3:#7fbf7f;     /* 옅은 녹 */
+    --bark-1:#6b4a2b;     /* 짙은 갈 */
+    --bark-2:#8a6a44;     /* 갈 */
+    --bark-3:#c9a877;     /* 옅은 갈/베이지 */
+    --cream:#f6f1e3;      /* 크림 */
+    --paper:#fbf7ea;      /* 종이 흰 */
+    --sky:#e7f2e1;        /* 하늘(자연톤) */
+    --ink:#2a2418;
+    --ink-soft:#4d4534;
+    --line:#cfc4a4;
+    --accent:#d97746;     /* 풍선/포인트 */
+    --accent-2:#e8b25f;   /* 노을/풍선2 */
+    --water:#a8d2c8;
+  }
+  html,body{background:var(--sky);}
+  body{
+    font-family:'Inter','Noto Sans KR',system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.7), transparent 60%),
+      radial-gradient(circle at 10% 90%, rgba(127,191,127,.35), transparent 50%),
+      radial-gradient(circle at 90% 80%, rgba(232,178,95,.18), transparent 50%),
+      linear-gradient(180deg,#e7f2e1 0%, #f1ecd9 100%);
+    background-attachment:fixed;
+    min-height:100vh;
+  }
+  .han{font-family:'Noto Sans KR','Inter',sans-serif;}
+  /* 카드/패널 */
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(80,60,30,.08), 0 2px 6px rgba(80,60,30,.05);
+  }
+  .panel{
+    background:linear-gradient(180deg, #ffffff 0%, var(--cream) 100%);
+    border:1px solid var(--line);
+    border-radius:22px;
+    box-shadow:0 14px 40px rgba(80,60,30,.1);
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:.4rem;
+    padding:.25rem .6rem;border-radius:999px;font-size:.72rem;font-weight:600;
+    background:#eef6e8;color:var(--leaf-1);border:1px solid #cfe3c2;
+  }
+  .pill-bark{background:#f6ecd9;color:var(--bark-1);border-color:#e2cfa9;}
+  .pill-water{background:#e1f0eb;color:#2d6b5a;border-color:#bcdbd0;}
+  .pill-warn{background:#fdecd9;color:#a04c14;border-color:#f3cea4;}
+  .pill-pink{background:#fbe6e2;color:#a03a28;border-color:#f0c3b7;}
+  .tag{
+    display:inline-flex;align-items:center;gap:.3rem;
+    padding:.18rem .5rem;border-radius:6px;font-size:.68rem;font-weight:600;
+    background:#fff;border:1px solid var(--line);color:var(--ink-soft);
+  }
+  /* 헤더 리본 */
+  .topbar{
+    background:linear-gradient(90deg, var(--leaf-1) 0%, var(--leaf-2) 60%, var(--bark-2) 100%);
+    color:#fff;
+  }
+  /* 입장권 */
+  .ticket{
+    position:relative;
+    background:linear-gradient(135deg,#fffaee 0%, #fbeec9 100%);
+    border:1px dashed #c9a76a;
+    border-radius:16px;
+    box-shadow:0 16px 40px rgba(120,80,20,.18);
+  }
+  .ticket .stub{
+    border-left:2px dashed #b78a45;
+  }
+  .ticket .punch{
+    position:absolute;width:18px;height:18px;border-radius:999px;background:var(--sky);
+    border:1px solid #d8c08a;
+  }
+  .barcode{
+    background-image:
+      repeating-linear-gradient(90deg, #2a2418 0 2px, transparent 2px 4px),
+      repeating-linear-gradient(90deg, #2a2418 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, #2a2418 0 3px, transparent 3px 5px);
+    background-size:6px 100%, 4px 100%, 8px 100%;
+    background-blend-mode:multiply;
+    height:46px;border-radius:4px;
+  }
+  /* 구역 지도 */
+  .map{
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,.6), transparent 35%),
+      radial-gradient(circle at 80% 85%, rgba(127,191,127,.35), transparent 45%),
+      linear-gradient(160deg,#f3ecd2 0%, #e7dcb5 60%, #d6c89a 100%);
+    border:1px solid #cdbd8b;
+    border-radius:18px;
+  }
+  .pin{
+    position:absolute;transform:translate(-50%,-100%);
+    display:flex;flex-direction:column;align-items:center;cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .pin:hover{transform:translate(-50%,-104%) scale(1.05);}
+  .pin .dot{
+    width:38px;height:38px;border-radius:999px;background:#fff;border:3px solid var(--leaf-1);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--leaf-1);
+    box-shadow:0 6px 14px rgba(0,0,0,.18);
+  }
+  .pin .tail{width:2px;height:10px;background:var(--leaf-1);}
+  .pin.active .dot{background:var(--leaf-1);color:#fff;}
+  .pin.bark .dot{border-color:var(--bark-1);color:var(--bark-1);}
+  .pin.bark.active .dot{background:var(--bark-1);color:#fff;}
+  .pin.water .dot{border-color:#2d6b5a;color:#2d6b5a;}
+  .pin.water.active .dot{background:#2d6b5a;color:#fff;}
+  /* 동물 카드 */
+  .animal{
+    background:#fff;border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 6px 20px rgba(80,60,30,.06);
+    transition:transform .15s ease, box-shadow .15s ease;
+    cursor:pointer;overflow:hidden;
+  }
+  .animal:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(80,60,30,.12);}
+  .animal.dim{opacity:.32;filter:grayscale(.4);}
+  .animal.hl{box-shadow:0 0 0 3px var(--leaf-2), 0 12px 28px rgba(80,60,30,.18);}
+  .like-btn{background:#fff;border:1px solid var(--line);border-radius:999px;}
+  .like-btn.on{background:#fbe6e2;border-color:#e0a999;color:#a03a28;}
+  /* 모달 */
+  .backdrop{
+    position:fixed;inset:0;background:rgba(30,20,10,.55);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:1rem;
+  }
+  .backdrop.on{display:flex;}
+  .modal{
+    background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    max-width:760px;width:100%;max-height:90vh;overflow:auto;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+  }
+  /* 잎사귀 데코 */
+  .leaf-bg{
+    background:
+      radial-gradient(circle at 12% 18%, rgba(63,139,77,.18) 0 60px, transparent 62px),
+      radial-gradient(circle at 88% 78%, rgba(107,74,43,.14) 0 70px, transparent 72px);
+  }
+  /* 알림 토스트 */
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:#2a2418;color:#fff;padding:.7rem 1rem;border-radius:10px;
+    font-size:.85rem;opacity:0;transition:opacity .25s ease, transform .25s ease;z-index:60;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+  /* 분리선 */
+  .divider{
+    height:1px;background:repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 12px);
+  }
+  /* 동물 SVG 라벨 */
+  .badge{
+    position:absolute;top:.6rem;left:.6rem;background:rgba(255,255,255,.92);
+    padding:.18rem .45rem;border-radius:6px;font-size:.65rem;font-weight:700;
+    border:1px solid var(--line);color:var(--ink-soft);
+  }
+  /* 스크롤 영역 */
+  .scroll-x{overflow-x:auto;scrollbar-width:thin;}
+  .scroll-x::-webkit-scrollbar{height:8px;}
+  .scroll-x::-webkit-scrollbar-thumb{background:#cdbd8b;border-radius:8px;}
+  /* 부드러운 등장 */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;}}
+  .fadeUp{animation:fadeUp .35s ease both;}
+  /* 풍선 흔들기 */
+  @keyframes sway{0%,100%{transform:rotate(-2deg);}50%{transform:rotate(2deg);}}
+  .sway{transform-origin:50% 0%;animation:sway 4s ease-in-out infinite;}
+  /* 헤더 그리드 라이트 */
+  .stat-card{
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+    border-radius:12px;padding:.55rem .75rem;color:#fff;
+  }
+</style>
+</head>
+<body>
+
+<!-- 상단 안내바 -->
+<div class="topbar text-xs">
+  <div class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-3 han">
+      <span class="font-bold">SPARK ZOO</span>
+      <span class="opacity-80">스파크 동물원 · 전기 학습 동물원</span>
+    </div>
+    <div class="flex items-center gap-3 opacity-90">
+      <span>운영: 09:00–18:00</span>
+      <span class="opacity-50">|</span>
+      <span>오늘 날씨: 맑음 · 22℃ </span>
+      <span class="opacity-50">|</span>
+      <span>방문객: <span id="visitorCount">1,284</span>명</span>
+    </div>
+  </div>
+</div>
+
+<main class="max-w-6xl mx-auto px-4 py-6 space-y-8">
+
+  <!-- 헤더 / 메인 비주얼 -->
+  <section class="panel overflow-hidden">
+    <div class="grid md:grid-cols-5 gap-0">
+      <!-- 좌: 텍스트 -->
+      <div class="md:col-span-2 p-6 md:p-8 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="pill">EST. 2026 (가상)</span>
+            <span class="pill pill-bark">학습 테마파크</span>
+          </div>
+          <h1 class="han text-3xl md:text-4xl font-black leading-tight tracking-tight">
+            전기 학습<br>동물원에 오신 걸 환영합니다
+          </h1>
+          <p class="han mt-3 text-sm md:text-base text-[color:var(--ink-soft)] leading-relaxed">
+            옴라이언이 포효하고, 전압코끼리가 거대한 발걸음을 옮기는 곳.
+            6개 구역·14종의 가상 동물과 함께 전기기능사 개념을 산책하듯 익혀보세요.
+          </p>
+        </div>
+        <div class="mt-5 grid grid-cols-3 gap-2 text-center">
+          <div class="card p-2.5">
+            <div class="text-[10px] text-[color:var(--ink-soft)]">입장료</div>
+            <div class="han font-bold text-sm">₩0 <span class="text-[10px] font-normal">(무료)</span></div>
+          </div>
+          <div class="card p-2.5">
+            <div class="text-[10px] text-[color:var(--ink-soft)]">구역</div>
+            <div class="han font-bold text-sm">6개</div>
+          </div>
+          <div class="card p-2.5">
+            <div class="text-[10px] text-[color:var(--ink-soft)]">동물</div>
+            <div class="han font-bold text-sm">14종</div>
+          </div>
+        </div>
+      </div>
+      <!-- 우: 메인 비주얼 SVG (입구) -->
+      <div class="md:col-span-3 relative" style="background:linear-gradient(180deg,#dff0d8 0%,#f4ecc9 100%);">
+        <svg viewBox="0 0 600 360" class="w-full h-full block" aria-label="동물원 입구">
+          <!-- 하늘 구름 -->
+          <g fill="#ffffff" opacity=".9">
+            <ellipse cx="90" cy="60" rx="40" ry="14"/>
+            <ellipse cx="120" cy="50" rx="30" ry="12"/>
+            <ellipse cx="480" cy="70" rx="50" ry="16"/>
+            <ellipse cx="510" cy="58" rx="34" ry="12"/>
+          </g>
+          <!-- 태양 -->
+          <circle cx="540" cy="40" r="22" fill="#f3c66a"/>
+          <!-- 풀밭 -->
+          <rect x="0" y="280" width="600" height="80" fill="#7fbf7f"/>
+          <path d="M0,290 Q150,260 300,290 T600,290 L600,360 L0,360 Z" fill="#5fa766"/>
+          <!-- 입구 게이트 -->
+          <g>
+            <!-- 기둥 -->
+            <rect x="150" y="160" width="24" height="130" fill="#8a6a44"/>
+            <rect x="426" y="160" width="24" height="130" fill="#8a6a44"/>
+            <rect x="144" y="156" width="36" height="10" fill="#6b4a2b"/>
+            <rect x="420" y="156" width="36" height="10" fill="#6b4a2b"/>
+            <!-- 아치 -->
+            <path d="M150,160 Q300,80 450,160" stroke="#6b4a2b" stroke-width="14" fill="none"/>
+            <!-- 간판 -->
+            <rect x="220" y="108" width="160" height="46" rx="6" fill="#fbf7ea" stroke="#6b4a2b" stroke-width="3"/>
+            <text x="300" y="132" text-anchor="middle" font-family="Inter,Noto Sans KR" font-weight="800" font-size="18" fill="#2e6a3a">SPARK ZOO</text>
+            <text x="300" y="147" text-anchor="middle" font-family="Noto Sans KR" font-size="9" fill="#6b4a2b">스파크 동물원</text>
+          </g>
+          <!-- 풍선 -->
+          <g class="sway">
+            <line x1="120" y1="260" x2="120" y2="200" stroke="#6b4a2b" stroke-width="1"/>
+            <ellipse cx="120" cy="190" rx="14" ry="18" fill="#d97746"/>
+            <line x1="100" y1="260" x2="100" y2="216" stroke="#6b4a2b" stroke-width="1"/>
+            <ellipse cx="100" cy="208" rx="11" ry="14" fill="#e8b25f"/>
+            <line x1="490" y1="260" x2="490" y2="200" stroke="#6b4a2b" stroke-width="1"/>
+            <ellipse cx="490" cy="192" rx="13" ry="17" fill="#3f8b4d"/>
+          </g>
+          <!-- 길 -->
+          <path d="M260,360 Q300,310 340,360 Z" fill="#d8c08a"/>
+          <!-- 작은 동물 (사자 실루엣) -->
+          <g transform="translate(330,250)">
+            <circle r="14" fill="#e8b25f"/>
+            <circle r="20" fill="#e8b25f" opacity=".4"/>
+            <circle cx="-5" cy="-2" r="1.5" fill="#2a2418"/>
+            <circle cx="5" cy="-2" r="1.5" fill="#2a2418"/>
+            <path d="M-3,5 Q0,8 3,5" stroke="#2a2418" stroke-width="1.2" fill="none"/>
+          </g>
+          <!-- 깃발 -->
+          <g>
+            <line x1="60" y1="280" x2="60" y2="220" stroke="#6b4a2b" stroke-width="2"/>
+            <polygon points="60,220 90,228 60,236" fill="#a03a28"/>
+          </g>
+        </svg>
+        <div class="absolute bottom-3 right-3 text-[10px] han bg-white/85 px-2 py-1 rounded border border-[color:var(--line)]">
+          입구 일러스트 · 가상
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 입장권 -->
+  <section>
+    <h2 class="han text-xl font-extrabold mb-3 flex items-center gap-2">
+      <span class="inline-block w-2 h-5 bg-[color:var(--leaf-1)] rounded"></span>
+      오늘의 입장권
+    </h2>
+    <div class="ticket relative grid grid-cols-1 md:grid-cols-[1fr_220px] overflow-hidden">
+      <span class="punch" style="top:50%;left:-9px;transform:translateY(-50%);"></span>
+      <span class="punch" style="top:50%;right:-9px;transform:translateY(-50%);"></span>
+      <!-- 본권 -->
+      <div class="p-5 md:p-6">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-[10px] tracking-[.25em] text-[color:var(--bark-1)] font-bold">SPARK ZOO · ADMISSION</div>
+            <div class="han text-xl md:text-2xl font-black mt-1">스파크 동물원 1일 입장권</div>
+            <div class="han text-xs text-[color:var(--ink-soft)] mt-0.5">전 구역 자유 입장 · 사육사 해설 포함</div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-[color:var(--bark-1)] font-bold">DATE</div>
+            <div class="han text-sm font-bold" id="ticketDate">2026-05-16</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mt-4 text-xs">
+          <div>
+            <div class="text-[10px] text-[color:var(--bark-1)] font-bold">방문자</div>
+            <div class="han font-bold">학습자 #<span id="ticketNo">004217</span></div>
+          </div>
+          <div>
+            <div class="text-[10px] text-[color:var(--bark-1)] font-bold">입장 시각</div>
+            <div class="han font-bold" id="ticketTime">09:00</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-[color:var(--bark-1)] font-bold">코스</div>
+            <div class="han font-bold">전 구역 (A~F)</div>
+          </div>
+        </div>
+        <div class="mt-4 barcode" aria-hidden="true"></div>
+        <div class="mt-3 flex items-center justify-between text-[10px] text-[color:var(--bark-1)]">
+          <span>※ 본 입장권은 가상 시뮬레이션입니다.</span>
+          <button id="downloadTicket" class="han text-xs font-bold bg-[color:var(--leaf-1)] text-white px-3 py-1.5 rounded-lg hover:opacity-90">
+            입장권 저장
+          </button>
+        </div>
+      </div>
+      <!-- 절취선 부분 -->
+      <div class="stub p-5 md:p-6 bg-[#fbeec9]/60 flex flex-col items-center justify-center">
+        <div class="text-[10px] text-[color:var(--bark-1)] font-bold">STUB</div>
+        <div class="han text-lg font-black mt-1">No. <span id="stubNo">A-1284</span></div>
+        <svg viewBox="0 0 60 60" class="w-16 h-16 mt-2">
+          <rect x="4" y="4" width="52" height="52" rx="6" fill="#fff" stroke="#6b4a2b" stroke-width="2"/>
+          <path d="M12,12 h8 v8 h-8 z M40,12 h8 v8 h-8 z M12,40 h8 v8 h-8 z M28,28 h6 v6 h-6 z M40,36 h8 v4 h-8 z M40,44 h4 v4 h-4 z M28,40 h6 v4 h-6 z" fill="#2a2418"/>
+        </svg>
+        <div class="han text-[10px] mt-2 text-center text-[color:var(--ink-soft)]">스캔하여<br>구역 입장</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 구역 지도 -->
+  <section>
+    <h2 class="han text-xl font-extrabold mb-3 flex items-center gap-2">
+      <span class="inline-block w-2 h-5 bg-[color:var(--bark-1)] rounded"></span>
+      구역 지도
+      <span class="ml-2 text-xs font-normal text-[color:var(--ink-soft)]">핀을 누르면 해당 구역 동물이 강조됩니다.</span>
+    </h2>
+    <div class="map relative" style="aspect-ratio: 16/8;">
+      <svg viewBox="0 0 800 400" class="w-full h-full block" aria-hidden="true">
+        <!-- 산책로 -->
+        <path d="M40,340 C200,260 220,140 380,180 C520,210 560,80 740,120"
+              fill="none" stroke="#d8c08a" stroke-width="22" stroke-linecap="round" opacity=".85"/>
+        <path d="M40,340 C200,260 220,140 380,180 C520,210 560,80 740,120"
+              fill="none" stroke="#fbf7ea" stroke-width="2" stroke-dasharray="6 8"/>
+        <!-- 호수 (수족관) -->
+        <ellipse cx="430" cy="280" rx="86" ry="44" fill="#a8d2c8" opacity=".85"/>
+        <ellipse cx="430" cy="280" rx="86" ry="44" fill="none" stroke="#5b9b8a" stroke-width="1.5"/>
+        <!-- 정글 (자속) -->
+        <g opacity=".9">
+          <circle cx="200" cy="110" r="42" fill="#3f8b4d"/>
+          <circle cx="170" cy="135" r="30" fill="#2e6a3a"/>
+          <circle cx="230" cy="130" r="28" fill="#5fa766"/>
+        </g>
+        <!-- 사파리 풀밭 -->
+        <ellipse cx="120" cy="280" rx="80" ry="40" fill="#cfe3a6" opacity=".75"/>
+        <!-- 동산 -->
+        <path d="M560,250 Q620,180 700,250 Z" fill="#c9a877" opacity=".85"/>
+        <path d="M560,250 Q620,180 700,250 Z" fill="none" stroke="#8a6a44" stroke-width="1.5"/>
+        <!-- 농장 (안전) -->
+        <rect x="260" y="270" width="120" height="80" rx="6" fill="#f4e7c2" stroke="#b78a45" stroke-width="1.5"/>
+        <line x1="260" y1="290" x2="380" y2="290" stroke="#b78a45" stroke-width="1.5"/>
+        <line x1="260" y1="320" x2="380" y2="320" stroke="#b78a45" stroke-width="1.5"/>
+        <!-- 가든 (합격) -->
+        <g>
+          <circle cx="700" cy="320" r="34" fill="#e0c6e4" opacity=".7"/>
+          <circle cx="680" cy="335" r="22" fill="#f0d2d6" opacity=".8"/>
+          <circle cx="720" cy="335" r="24" fill="#e8d7a0" opacity=".75"/>
+        </g>
+        <!-- 라벨 -->
+        <g font-family="Noto Sans KR,Inter" font-size="11" fill="#2a2418" opacity=".75">
+          <text x="120" y="245">전기 사파리</text>
+          <text x="160" y="170">자속 정글</text>
+          <text x="380" y="335">회로 수족관</text>
+          <text x="565" y="240">변압기 동산</text>
+          <text x="270" y="265">안전 농장</text>
+          <text x="660" y="300">합격 가든</text>
+        </g>
+      </svg>
+      <!-- 핀들 -->
+      <div class="pin" data-zone="A" style="left:15%;top:75%;">
+        <div class="dot">A</div><div class="tail"></div>
+      </div>
+      <div class="pin" data-zone="B" style="left:25%;top:33%;">
+        <div class="dot">B</div><div class="tail"></div>
+      </div>
+      <div class="pin water" data-zone="C" style="left:54%;top:78%;">
+        <div class="dot">C</div><div class="tail"></div>
+      </div>
+      <div class="pin bark" data-zone="D" style="left:79%;top:65%;">
+        <div class="dot">D</div><div class="tail"></div>
+      </div>
+      <div class="pin bark" data-zone="E" style="left:40%;top:78%;">
+        <div class="dot">E</div><div class="tail"></div>
+      </div>
+      <div class="pin" data-zone="F" style="left:88%;top:85%;">
+        <div class="dot">F</div><div class="tail"></div>
+      </div>
+    </div>
+    <!-- 구역 범례 -->
+    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+      <div class="card p-3"><div class="font-bold han">A · 전기 사파리</div><div class="text-[color:var(--ink-soft)] han">옴·전압·전류</div></div>
+      <div class="card p-3"><div class="font-bold han">B · 자속 정글</div><div class="text-[color:var(--ink-soft)] han">패러데이·자석</div></div>
+      <div class="card p-3"><div class="font-bold han">C · 회로 수족관</div><div class="text-[color:var(--ink-soft)] han">KCL·KVL</div></div>
+      <div class="card p-3"><div class="font-bold han">D · 변압기 동산</div><div class="text-[color:var(--ink-soft)] han">권수비·변압</div></div>
+      <div class="card p-3"><div class="font-bold han">E · 안전 농장</div><div class="text-[color:var(--ink-soft)] han">절연·접지</div></div>
+      <div class="card p-3"><div class="font-bold han">F · 합격 가든</div><div class="text-[color:var(--ink-soft)] han">CBT·플립카드</div></div>
+    </div>
+    <div class="mt-3">
+      <button id="resetZone" class="text-xs han font-bold bg-white border border-[color:var(--line)] px-3 py-1.5 rounded-lg hover:bg-[color:var(--cream)]">
+        구역 필터 해제
+      </button>
+    </div>
+  </section>
+
+  <!-- 동물 카드 그리드 -->
+  <section>
+    <div class="flex items-end justify-between mb-3">
+      <h2 class="han text-xl font-extrabold flex items-center gap-2">
+        <span class="inline-block w-2 h-5 bg-[color:var(--accent)] rounded"></span>
+        오늘의 가상 동물 <span class="text-sm font-medium text-[color:var(--ink-soft)]">14종</span>
+      </h2>
+      <div class="text-xs text-[color:var(--ink-soft)] han">카드를 누르면 상세 안내가 열립니다</div>
+    </div>
+    <div id="animalGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </section>
+
+  <!-- 사육사 일정 -->
+  <section>
+    <h2 class="han text-xl font-extrabold mb-3 flex items-center gap-2">
+      <span class="inline-block w-2 h-5 bg-[color:var(--leaf-2)] rounded"></span>
+      오늘의 사육사 일정
+    </h2>
+    <div class="card p-2 scroll-x">
+      <table class="w-full text-sm min-w-[640px]">
+        <thead>
+          <tr class="text-left text-[color:var(--ink-soft)] han text-xs">
+            <th class="px-3 py-2 border-b border-[color:var(--line)]">시간</th>
+            <th class="px-3 py-2 border-b border-[color:var(--line)]">구역</th>
+            <th class="px-3 py-2 border-b border-[color:var(--line)]">프로그램</th>
+            <th class="px-3 py-2 border-b border-[color:var(--line)]">학습 포인트</th>
+          </tr>
+        </thead>
+        <tbody class="han">
+          <tr><td class="px-3 py-2">10:00</td><td class="px-3 py-2">A 사파리</td><td class="px-3 py-2 font-bold">옴라이언 먹이주기</td><td class="px-3 py-2 text-[color:var(--ink-soft)]">V = I × R 직관 체험</td></tr>
+          <tr><td class="px-3 py-2">11:00</td><td class="px-3 py-2">C 수족관</td><td class="px-3 py-2 font-bold">KCL돌고래 공연</td><td class="px-3 py-2 text-[color:var(--ink-soft)]">노드 전류의 합 = 0</td></tr>
+          <tr><td class="px-3 py-2">12:30</td><td class="px-3 py-2">D 동산</td><td class="px-3 py-2 font-bold">변압기곰 체험</td><td class="px-3 py-2 text-[color:var(--ink-soft)]">권수비 N1:N2 만지기</td></tr>
+          <tr><td class="px-3 py-2">14:00</td><td class="px-3 py-2">B 정글</td><td class="px-3 py-2 font-bold">패러데이 자속쇼</td><td class="px-3 py-2 text-[color:var(--ink-soft)]">유도기전력 실연</td></tr>
+          <tr><td class="px-3 py-2">15:30</td><td class="px-3 py-2">E 농장</td><td class="px-3 py-2 font-bold">절연양·접지소 산책</td><td class="px-3 py-2 text-[color:var(--ink-soft)]">대지 접속의 의미</td></tr>
+          <tr><td class="px-3 py-2">16:30</td><td class="px-3 py-2">F 가든</td><td class="px-3 py-2 font-bold">합격공작 깃털 펼치기</td><td class="px-3 py-2 text-[color:var(--ink-soft)]">하루 5문항 루틴 안내</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 굿즈 -->
+  <section>
+    <h2 class="han text-xl font-extrabold mb-3 flex items-center gap-2">
+      <span class="inline-block w-2 h-5 bg-[color:var(--accent-2)] rounded"></span>
+      기념품샵 (가상)
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <!-- 인형 1 -->
+      <div class="card p-3">
+        <div class="aspect-square rounded-xl flex items-center justify-center" style="background:#fdebcf;">
+          <svg viewBox="0 0 100 100" class="w-3/4 h-3/4">
+            <circle cx="50" cy="55" r="28" fill="#e8b25f"/>
+            <circle cx="50" cy="55" r="34" fill="#e8b25f" opacity=".4"/>
+            <circle cx="40" cy="52" r="3" fill="#2a2418"/>
+            <circle cx="60" cy="52" r="3" fill="#2a2418"/>
+            <path d="M44,64 Q50,70 56,64" stroke="#2a2418" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <circle cx="35" cy="68" r="3" fill="#d98686" opacity=".7"/>
+            <circle cx="65" cy="68" r="3" fill="#d98686" opacity=".7"/>
+          </svg>
+        </div>
+        <div class="mt-2 han text-sm font-bold">옴라이언 인형</div>
+        <div class="text-[11px] text-[color:var(--ink-soft)] han">₩18,900 · 가상</div>
+      </div>
+      <!-- 인형 2 -->
+      <div class="card p-3">
+        <div class="aspect-square rounded-xl flex items-center justify-center" style="background:#e2f0d8;">
+          <svg viewBox="0 0 100 100" class="w-3/4 h-3/4">
+            <ellipse cx="50" cy="60" rx="28" ry="24" fill="#9ec4a8"/>
+            <ellipse cx="34" cy="50" rx="10" ry="14" fill="#9ec4a8"/>
+            <ellipse cx="66" cy="50" rx="10" ry="14" fill="#9ec4a8"/>
+            <path d="M50,84 Q40,92 32,84" stroke="#7fa68a" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="42" cy="56" r="2.5" fill="#2a2418"/>
+            <circle cx="58" cy="56" r="2.5" fill="#2a2418"/>
+          </svg>
+        </div>
+        <div class="mt-2 han text-sm font-bold">전압코끼리 인형</div>
+        <div class="text-[11px] text-[color:var(--ink-soft)] han">₩22,500 · 가상</div>
+      </div>
+      <!-- 열쇠고리 -->
+      <div class="card p-3">
+        <div class="aspect-square rounded-xl flex items-center justify-center" style="background:#dbeee8;">
+          <svg viewBox="0 0 100 100" class="w-2/3 h-2/3">
+            <circle cx="55" cy="55" r="22" fill="#9ec4d8"/>
+            <circle cx="55" cy="55" r="22" fill="none" stroke="#4a7a8a" stroke-width="2"/>
+            <path d="M48,55 Q55,48 62,55 T70,55" stroke="#fff" stroke-width="2" fill="none"/>
+            <circle cx="20" cy="20" r="6" fill="none" stroke="#8a6a44" stroke-width="3"/>
+            <line x1="25" y1="25" x2="40" y2="40" stroke="#8a6a44" stroke-width="3"/>
+          </svg>
+        </div>
+        <div class="mt-2 han text-sm font-bold">KCL돌고래 키링</div>
+        <div class="text-[11px] text-[color:var(--ink-soft)] han">₩6,500 · 가상</div>
+      </div>
+      <!-- 뱃지 -->
+      <div class="card p-3">
+        <div class="aspect-square rounded-xl flex items-center justify-center" style="background:#f3e6d4;">
+          <svg viewBox="0 0 100 100" class="w-2/3 h-2/3">
+            <circle cx="50" cy="50" r="32" fill="#fff" stroke="#8a6a44" stroke-width="3"/>
+            <path d="M50,28 L56,46 L74,46 L60,56 L66,74 L50,62 L34,74 L40,56 L26,46 L44,46 Z" fill="#d97746"/>
+          </svg>
+        </div>
+        <div class="mt-2 han text-sm font-bold">합격공작 뱃지</div>
+        <div class="text-[11px] text-[color:var(--ink-soft)] han">₩3,900 · 가상</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 푸터 -->
+  <footer class="pt-4 pb-10">
+    <div class="divider mb-4"></div>
+    <div class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between text-xs text-[color:var(--ink-soft)] han">
+      <div>© SPARK ZOO · 스파크 동물원 — 가상 동물원 시뮬레이션</div>
+      <div>본 페이지의 모든 동물·구역·일정은 학습 목적의 가상 콘텐츠입니다.</div>
+    </div>
+  </footer>
+</main>
+
+<!-- 모달 -->
+<div id="modal" class="backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal fadeUp" id="modalBox">
+    <div class="p-5 md:p-6">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="modalZonePill" class="pill">A</span>
+            <span id="modalSpeciesPill" class="tag">종</span>
+          </div>
+          <h3 id="modalTitle" class="han text-2xl font-black mt-1.5">동물</h3>
+          <div id="modalSubtitle" class="han text-sm text-[color:var(--ink-soft)] mt-0.5">한 줄 소개</div>
+        </div>
+        <button id="modalClose" class="ml-2 w-9 h-9 rounded-full bg-white border border-[color:var(--line)] hover:bg-[color:var(--cream)] flex items-center justify-center" aria-label="닫기">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" stroke="#2a2418" stroke-width="2" fill="none" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>
+        </button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-5 mt-4">
+        <div class="card p-4 flex items-center justify-center" style="min-height:240px;background:linear-gradient(180deg,#fff 0%, var(--cream) 100%);">
+          <div id="modalSvg" class="w-full max-w-[260px]"></div>
+        </div>
+        <div class="space-y-3 text-sm han">
+          <div>
+            <div class="text-[11px] font-bold text-[color:var(--bark-1)] uppercase tracking-wider">서식지</div>
+            <div id="modalHabitat" class="font-semibold">—</div>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold text-[color:var(--bark-1)] uppercase tracking-wider">먹이</div>
+            <div id="modalDiet" class="font-semibold">—</div>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold text-[color:var(--bark-1)] uppercase tracking-wider">특징</div>
+            <div id="modalTraits" class="text-[color:var(--ink-soft)]">—</div>
+          </div>
+          <div class="card p-3" style="background:#eef6e8;border-color:#cfe3c2;">
+            <div class="text-[11px] font-bold text-[color:var(--leaf-1)] uppercase tracking-wider">학습 포인트</div>
+            <div id="modalLearn" class="font-semibold text-[color:var(--leaf-1)]">—</div>
+          </div>
+          <div>
+            <div class="text-[11px] font-bold text-[color:var(--bark-1)] uppercase tracking-wider">먹이주기 시간</div>
+            <div id="modalFeed" class="font-semibold">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-5 flex items-center justify-between">
+        <button id="modalLike" class="like-btn px-3 py-1.5 text-sm han font-bold flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>
+          <span id="modalLikeText">좋아요</span>
+        </button>
+        <div class="text-[11px] text-[color:var(--ink-soft)] han">가상 동물 · 학습 콘텐츠</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast">알림</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---- 유틸 ----
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function $(s,r){return (r||document).querySelector(s);}
+  function $all(s,r){return Array.from((r||document).querySelectorAll(s));}
+
+  // ---- 동물 SVG 정의 (간단한 일러스트) ----
+  var svgs = {
+    lion: '<svg viewBox="0 0 200 200" class="w-full h-auto"><circle cx="100" cy="110" r="58" fill="#e8b25f" opacity=".5"/><circle cx="100" cy="110" r="44" fill="#f0c66a"/><circle cx="84" cy="106" r="4" fill="#2a2418"/><circle cx="116" cy="106" r="4" fill="#2a2418"/><path d="M88,122 Q100,134 112,122" stroke="#2a2418" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="74" cy="124" r="4" fill="#d98686" opacity=".7"/><circle cx="126" cy="124" r="4" fill="#d98686" opacity=".7"/><ellipse cx="100" cy="116" rx="6" ry="4" fill="#7a4a26"/><path d="M88,90 L82,80 M100,84 L100,72 M112,90 L118,80" stroke="#7a4a26" stroke-width="3" stroke-linecap="round" fill="none"/></svg>',
+    elephant: '<svg viewBox="0 0 200 200" class="w-full h-auto"><ellipse cx="100" cy="120" rx="62" ry="44" fill="#a9b3a3"/><ellipse cx="62" cy="100" rx="22" ry="28" fill="#a9b3a3"/><ellipse cx="138" cy="100" rx="22" ry="28" fill="#a9b3a3"/><path d="M100,156 Q88,176 80,160" stroke="#7d8678" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="84" cy="112" r="3.5" fill="#2a2418"/><circle cx="116" cy="112" r="3.5" fill="#2a2418"/><rect x="86" y="130" width="6" height="14" rx="2" fill="#fff"/><rect x="108" y="130" width="6" height="14" rx="2" fill="#fff"/></svg>',
+    cheetah: '<svg viewBox="0 0 200 200" class="w-full h-auto"><ellipse cx="100" cy="120" rx="64" ry="36" fill="#f0c66a"/><circle cx="62" cy="92" r="22" fill="#f0c66a"/><g fill="#7a4a26"><circle cx="88" cy="124" r="3"/><circle cx="110" cy="130" r="2.5"/><circle cx="130" cy="118" r="3"/><circle cx="150" cy="124" r="2.5"/><circle cx="70" cy="120" r="2.5"/><circle cx="80" cy="108" r="2"/><circle cx="120" cy="108" r="2"/></g><circle cx="56" cy="88" r="3" fill="#2a2418"/><circle cx="68" cy="88" r="3" fill="#2a2418"/><path d="M58,98 Q62,102 68,98" stroke="#2a2418" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M160,128 Q190,120 180,108" stroke="#7a4a26" stroke-width="6" fill="none" stroke-linecap="round"/></svg>',
+    dolphin: '<svg viewBox="0 0 200 200" class="w-full h-auto"><path d="M30,120 Q70,70 130,90 Q170,100 180,130 Q140,140 100,138 Q60,134 30,120 Z" fill="#7fb2c2"/><path d="M150,86 Q160,70 170,84 Z" fill="#7fb2c2"/><path d="M170,124 Q186,118 188,134 L172,130 Z" fill="#7fb2c2"/><circle cx="148" cy="112" r="3" fill="#2a2418"/><path d="M156,124 Q164,128 170,124" stroke="#2a2418" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M40,130 Q50,140 64,134" stroke="#5a8b9c" stroke-width="2" fill="none"/></svg>',
+    seahorse: '<svg viewBox="0 0 200 200" class="w-full h-auto"><path d="M100,30 Q130,50 124,90 Q120,120 90,130 Q70,138 80,160 Q90,176 110,170" stroke="#d98ea3" stroke-width="22" fill="none" stroke-linecap="round"/><path d="M120,42 Q132,38 138,50" stroke="#d98ea3" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="116" cy="52" r="3" fill="#2a2418"/><path d="M70,110 L60,100 M76,124 L66,120 M84,140 L74,140" stroke="#b76b85" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+    bear: '<svg viewBox="0 0 200 200" class="w-full h-auto"><circle cx="100" cy="108" r="52" fill="#8a6a44"/><circle cx="64" cy="78" r="16" fill="#8a6a44"/><circle cx="136" cy="78" r="16" fill="#8a6a44"/><circle cx="64" cy="78" r="8" fill="#c9a877"/><circle cx="136" cy="78" r="8" fill="#c9a877"/><circle cx="86" cy="104" r="4" fill="#2a2418"/><circle cx="114" cy="104" r="4" fill="#2a2418"/><ellipse cx="100" cy="122" rx="18" ry="14" fill="#c9a877"/><ellipse cx="100" cy="120" rx="6" ry="4" fill="#2a2418"/><path d="M92,128 Q100,134 108,128" stroke="#2a2418" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+    fox: '<svg viewBox="0 0 200 200" class="w-full h-auto"><polygon points="100,40 70,90 130,90" fill="#d97746"/><circle cx="100" cy="110" r="44" fill="#d97746"/><polygon points="74,70 60,46 80,76" fill="#d97746"/><polygon points="126,70 140,46 120,76" fill="#d97746"/><polygon points="74,70 64,52 78,72" fill="#fbf7ea"/><polygon points="126,70 136,52 122,72" fill="#fbf7ea"/><ellipse cx="100" cy="124" rx="22" ry="16" fill="#fbf7ea"/><circle cx="86" cy="108" r="4" fill="#2a2418"/><circle cx="114" cy="108" r="4" fill="#2a2418"/><ellipse cx="100" cy="120" rx="5" ry="3.5" fill="#2a2418"/><path d="M92,128 Q100,132 108,128" stroke="#2a2418" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+    tiger: '<svg viewBox="0 0 200 200" class="w-full h-auto"><circle cx="100" cy="110" r="50" fill="#e89a4a"/><circle cx="100" cy="110" r="40" fill="#f4b86a"/><g stroke="#2a2418" stroke-width="3" stroke-linecap="round" fill="none"><path d="M64,80 Q70,90 64,100"/><path d="M136,80 Q130,90 136,100"/><path d="M100,72 L100,82"/><path d="M82,144 L78,154 M118,144 L122,154"/></g><circle cx="86" cy="106" r="3.5" fill="#2a2418"/><circle cx="114" cy="106" r="3.5" fill="#2a2418"/><ellipse cx="100" cy="120" rx="6" ry="4" fill="#2a2418"/><path d="M90,130 Q100,138 110,130" stroke="#2a2418" stroke-width="2.5" fill="none" stroke-linecap="round"/><polygon points="64,72 56,58 76,68" fill="#e89a4a"/><polygon points="136,72 144,58 124,68" fill="#e89a4a"/></svg>',
+    owl: '<svg viewBox="0 0 200 200" class="w-full h-auto"><ellipse cx="100" cy="116" rx="52" ry="58" fill="#8a6a44"/><ellipse cx="100" cy="116" rx="40" ry="46" fill="#c9a877"/><circle cx="80" cy="100" r="14" fill="#fff"/><circle cx="120" cy="100" r="14" fill="#fff"/><circle cx="80" cy="102" r="6" fill="#2a2418"/><circle cx="120" cy="102" r="6" fill="#2a2418"/><circle cx="82" cy="100" r="1.5" fill="#fff"/><circle cx="122" cy="100" r="1.5" fill="#fff"/><polygon points="100,118 92,128 108,128" fill="#e8b25f"/><polygon points="64,68 80,80 70,84" fill="#8a6a44"/><polygon points="136,68 120,80 130,84" fill="#8a6a44"/></svg>',
+    parrot: '<svg viewBox="0 0 200 200" class="w-full h-auto"><ellipse cx="100" cy="118" rx="40" ry="50" fill="#3f8b4d"/><ellipse cx="78" cy="118" rx="14" ry="24" fill="#d97746"/><circle cx="116" cy="86" r="22" fill="#e8b25f"/><circle cx="120" cy="84" r="3" fill="#2a2418"/><path d="M126,92 Q138,96 132,108 L122,100 Z" fill="#a03a28"/><path d="M88,168 L92,180 M108,168 L104,180" stroke="#a03a28" stroke-width="3" stroke-linecap="round"/></svg>',
+    sheep: '<svg viewBox="0 0 200 200" class="w-full h-auto"><circle cx="60" cy="110" r="16" fill="#fbf7ea"/><circle cx="80" cy="92" r="20" fill="#fbf7ea"/><circle cx="110" cy="86" r="22" fill="#fbf7ea"/><circle cx="140" cy="92" r="20" fill="#fbf7ea"/><circle cx="148" cy="116" r="16" fill="#fbf7ea"/><circle cx="130" cy="124" r="20" fill="#fbf7ea"/><circle cx="98" cy="128" r="22" fill="#fbf7ea"/><circle cx="70" cy="124" r="18" fill="#fbf7ea"/><circle cx="100" cy="118" r="20" fill="#3a3024"/><circle cx="92" cy="116" r="2.5" fill="#fff"/><circle cx="108" cy="116" r="2.5" fill="#fff"/><ellipse cx="100" cy="126" rx="4" ry="2.5" fill="#fff"/></svg>',
+    cow: '<svg viewBox="0 0 200 200" class="w-full h-auto"><ellipse cx="100" cy="122" rx="58" ry="40" fill="#fbf7ea"/><ellipse cx="68" cy="98" rx="14" ry="10" fill="#2a2418"/><ellipse cx="132" cy="130" rx="18" ry="12" fill="#2a2418"/><ellipse cx="100" cy="150" rx="14" ry="8" fill="#2a2418"/><circle cx="62" cy="92" r="22" fill="#fbf7ea"/><circle cx="56" cy="88" r="3" fill="#2a2418"/><circle cx="68" cy="88" r="3" fill="#2a2418"/><ellipse cx="62" cy="100" rx="6" ry="3" fill="#d98686"/><polygon points="46,72 38,60 54,68" fill="#fbf7ea"/><polygon points="78,72 86,60 70,68" fill="#fbf7ea"/></svg>',
+    peacock: '<svg viewBox="0 0 200 200" class="w-full h-auto"><g><path d="M100,120 Q40,80 30,40 Q40,90 100,120 Z" fill="#3f8b4d" opacity=".9"/><path d="M100,120 Q60,60 70,28 Q72,80 100,120 Z" fill="#2e6a3a"/><path d="M100,120 Q100,50 100,18 Q104,80 100,120 Z" fill="#5fa766"/><path d="M100,120 Q140,60 130,28 Q128,80 100,120 Z" fill="#2e6a3a"/><path d="M100,120 Q160,80 170,40 Q160,90 100,120 Z" fill="#3f8b4d" opacity=".9"/><circle cx="40" cy="44" r="6" fill="#d97746"/><circle cx="70" cy="32" r="6" fill="#e8b25f"/><circle cx="100" cy="22" r="6" fill="#d97746"/><circle cx="130" cy="32" r="6" fill="#e8b25f"/><circle cx="160" cy="44" r="6" fill="#d97746"/></g><ellipse cx="100" cy="140" rx="18" ry="24" fill="#2d6b8a"/><circle cx="100" cy="120" r="10" fill="#2d6b8a"/><circle cx="96" cy="118" r="2" fill="#fff"/><polygon points="100,128 96,134 104,134" fill="#e8b25f"/></svg>',
+    horse: '<svg viewBox="0 0 200 200" class="w-full h-auto"><ellipse cx="100" cy="124" rx="54" ry="34" fill="#a96b3a"/><ellipse cx="148" cy="92" rx="22" ry="28" fill="#a96b3a"/><polygon points="142,68 148,52 154,68" fill="#a96b3a"/><polygon points="154,68 160,52 166,68" fill="#a96b3a"/><circle cx="148" cy="94" r="3" fill="#2a2418"/><ellipse cx="154" cy="106" rx="3" ry="2" fill="#2a2418"/><path d="M58,100 Q40,90 36,110 Q44,118 60,116 Z" fill="#7a4a26"/><path d="M120,158 L116,180 M86,158 L82,180" stroke="#7a4a26" stroke-width="4" stroke-linecap="round"/></svg>',
+  };
+
+  // ---- 동물 데이터 ----
+  var animals = [
+    { id:'om-lion', name:'옴라이언', species:'전기과 사자속',
+      zone:'A', zoneName:'전기 사파리', habitat:'A구역 사파리 풀밭',
+      tagline:'전류의 왕 — V = I × R 를 통치한다',
+      diet:'생대구·전압 비스킷', traits:'갈기를 흔들 때마다 저항이 변한다는 전설.',
+      learn:'옴의 법칙: V = IR — 전압·전류·저항의 관계',
+      feed:'10:00 · 14:30', svg:'lion', signature:true },
+
+    { id:'voltage-elephant', name:'전압코끼리', species:'대지전위목',
+      zone:'A', zoneName:'전기 사파리', habitat:'A구역 큰 나무 아래',
+      tagline:'거대한 전압의 상징',
+      diet:'고압 사과·잎사귀', traits:'코를 들면 전위차가 솟아오른다.',
+      learn:'전압(전위차)의 개념 · 직렬 전압 분배',
+      feed:'11:20', svg:'elephant' },
+
+    { id:'current-cheetah', name:'전류치타',  species:'고속전류속',
+      zone:'A', zoneName:'전기 사파리', habitat:'A구역 평원',
+      tagline:'가장 빠른 전류',
+      diet:'에너지 토끼·전자 사료', traits:'전류 밀도가 높을수록 빠르다.',
+      learn:'전류 I = Q/t · 전류 방향과 전자 흐름',
+      feed:'13:30', svg:'cheetah' },
+
+    { id:'kcl-dolphin', name:'키르히호프돌고래', species:'노드분석상목',
+      zone:'C', zoneName:'회로 수족관', habitat:'C구역 메인 수조',
+      tagline:'영리한 노드 분석가',
+      diet:'노드 새우·전하 플랑크톤', traits:'어떤 노드든 들어온 전류 = 나간 전류.',
+      learn:'KCL(전류 법칙): ΣI_in = ΣI_out',
+      feed:'11:00 공연', svg:'dolphin' },
+
+    { id:'kvl-seahorse', name:'KVL해마', species:'폐회로목',
+      zone:'C', zoneName:'회로 수족관', habitat:'C구역 산호 구역',
+      tagline:'폐회로의 균형자',
+      diet:'전압 새우', traits:'한 루프를 한 바퀴 돌면 합이 0.',
+      learn:'KVL(전압 법칙): ΣV = 0',
+      feed:'12:00', svg:'seahorse' },
+
+    { id:'tr-bear', name:'변압기곰', species:'권수비웅과',
+      zone:'D', zoneName:'변압기 동산', habitat:'D구역 언덕',
+      tagline:'권수비를 자유자재로',
+      diet:'코일 꿀·철심 빵', traits:'팔을 한 번 휘두를 때마다 N1:N2가 바뀐다.',
+      learn:'변압비 V1/V2 = N1/N2 · 이상 변압기',
+      feed:'12:30 체험', svg:'bear' },
+
+    { id:'ratio-fox', name:'권수비여우', species:'트랜스교활속',
+      zone:'D', zoneName:'변압기 동산', habitat:'D구역 언덕 굴',
+      tagline:'비율을 가지고 노는 영리한 여우',
+      diet:'권수 비스킷', traits:'1차·2차 권선을 한눈에 분별.',
+      learn:'권수비와 전류비 I1/I2 = N2/N1',
+      feed:'15:00', svg:'fox' },
+
+    { id:'faraday-elephant', name:'패러데이코끼리', species:'자속거목과',
+      zone:'B', zoneName:'자속 정글', habitat:'B구역 정글 깊은 곳',
+      tagline:'자속의 거인',
+      diet:'자기력선 풀잎', traits:'걸음마다 코일에 유도전류가 흐른다.',
+      learn:'유도기전력 e = −N(dΦ/dt) · 패러데이 법칙',
+      feed:'14:00 자속쇼', svg:'elephant' },
+
+    { id:'magnet-monkey', name:'자석원숭이', species:'자력영장목',
+      zone:'B', zoneName:'자속 정글', habitat:'B구역 정글 나무 위',
+      tagline:'N극·S극을 양손에',
+      diet:'철광석 바나나', traits:'양손이 항상 서로 반대 극을 가리킨다.',
+      learn:'자기장의 방향 · 오른손 법칙',
+      feed:'10:40', svg:'fox' },
+
+    { id:'tesla-tiger', name:'테슬라호랑이', species:'코일사냥과',
+      zone:'B', zoneName:'자속 정글', habitat:'B구역 정글 능선',
+      tagline:'코일의 사냥꾼',
+      diet:'고주파 사료', traits:'포효할 때마다 코일에서 스파크가 튄다.',
+      learn:'자속밀도 B[T] · 솔레노이드 자기장',
+      feed:'15:50', svg:'tiger' },
+
+    { id:'maxwell-owl', name:'맥스웰부엉이', species:'야간관측목',
+      zone:'B', zoneName:'자속 정글', habitat:'B구역 정글 고목',
+      tagline:'야간 관측자',
+      diet:'방정식 곤충', traits:'네 개의 방정식을 항상 외우고 있다.',
+      learn:'전자기파의 존재 · 빛은 전자기파',
+      feed:'18:00 (야간)', svg:'owl' },
+
+    { id:'rlc-parrot', name:'RLC앵무', species:'공진명금속',
+      zone:'C', zoneName:'회로 수족관', habitat:'C구역 가지 위',
+      tagline:'공진의 노래',
+      diet:'주파수 씨앗', traits:'특정 주파수에서만 노래한다.',
+      learn:'직렬 RLC 공진주파수 f₀ = 1/(2π√LC)',
+      feed:'16:15', svg:'parrot' },
+
+    { id:'insulation-sheep', name:'절연양', species:'안전양목',
+      zone:'E', zoneName:'안전 농장', habitat:'E구역 양 우리',
+      tagline:'안전한 양털 절연체',
+      diet:'안전 풀·고무 사료', traits:'양털은 전류가 거의 흐르지 않는 절연체.',
+      learn:'절연저항 · 누설전류 방지',
+      feed:'15:30 산책', svg:'sheep' },
+
+    { id:'ground-cow', name:'접지소', species:'대지연결과',
+      zone:'E', zoneName:'안전 농장', habitat:'E구역 외양간 옆',
+      tagline:'대지에 연결된 큰 친구',
+      diet:'대지 사료', traits:'발굽이 항상 대지와 연결되어 있다.',
+      learn:'접지의 목적 · 보호 접지·계통 접지',
+      feed:'15:30 산책', svg:'cow' },
+
+    { id:'pass-peacock', name:'합격공작', species:'합격명문과',
+      zone:'F', zoneName:'합격 가든', habitat:'F구역 정원 중앙',
+      tagline:'화려한 합격의 깃털',
+      diet:'기출 사료·플립카드', traits:'꼬리 깃을 펼치면 합격증이 보인다.',
+      learn:'CBT 학습 루틴 · 매일 5문항',
+      feed:'16:30', svg:'peacock', signature:true },
+
+    { id:'flip-parrot', name:'플립카드앵무', species:'반복학습조',
+      zone:'F', zoneName:'합격 가든', habitat:'F구역 학습실',
+      tagline:'외울 때까지 따라 외운다',
+      diet:'카드 씨앗', traits:'한 번 본 카드는 모두 복창.',
+      learn:'간격 반복(Spaced Repetition)',
+      feed:'17:00', svg:'parrot' },
+  ];
+
+  // ---- 좋아요 상태 (메모리) ----
+  var likes = {};
+
+  // ---- 그리드 렌더 ----
+  var grid = $('#animalGrid');
+  function zonePillClass(z){
+    if(z==='A') return 'pill';
+    if(z==='B') return 'pill';
+    if(z==='C') return 'pill pill-water';
+    if(z==='D') return 'pill pill-bark';
+    if(z==='E') return 'pill pill-warn';
+    if(z==='F') return 'pill pill-pink';
+    return 'pill';
+  }
+  function buildCard(a){
+    var card = document.createElement('div');
+    card.className = 'animal relative';
+    card.setAttribute('data-id', a.id);
+    card.setAttribute('data-zone', a.zone);
+    card.setAttribute('tabindex','0');
+    card.setAttribute('role','button');
+    card.setAttribute('aria-label', a.name + ' 상세 보기');
+    var sigBadge = a.signature ? '<span class="badge">대표 동물</span>' : '';
+    card.innerHTML =
+      '<div class="relative" style="background:linear-gradient(180deg,#fff 0%, var(--cream) 100%);">'+
+        sigBadge +
+        '<div class="p-3 flex items-center justify-center" style="height:160px;">'+ svgs[a.svg] +'</div>'+
+      '</div>'+
+      '<div class="p-3 border-t border-[color:var(--line)]">'+
+        '<div class="flex items-center justify-between gap-2">'+
+          '<div class="flex items-center gap-1.5 flex-wrap">'+
+            '<span class="'+ zonePillClass(a.zone) +'">'+ esc(a.zone +' · '+ a.zoneName) +'</span>'+
+          '</div>'+
+          '<button class="like-btn px-2 py-1 text-xs flex items-center gap-1" data-like="'+ esc(a.id) +'" aria-label="좋아요 토글">'+
+            '<svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>'+
+            '<span data-likecount="'+ esc(a.id) +'">0</span>'+
+          '</button>'+
+        '</div>'+
+        '<div class="han mt-2 font-extrabold text-base">'+ esc(a.name) +'</div>'+
+        '<div class="han text-xs text-[color:var(--ink-soft)] mt-0.5">'+ esc(a.tagline) +'</div>'+
+        '<div class="mt-2 flex items-center gap-1.5 flex-wrap">'+
+          '<span class="tag">'+ esc(a.species) +'</span>'+
+          '<span class="tag">먹이주기 '+ esc(a.feed) +'</span>'+
+        '</div>'+
+      '</div>';
+    return card;
+  }
+  animals.forEach(function(a){ grid.appendChild(buildCard(a)); });
+
+  // ---- 카드 클릭 → 모달 ----
+  var modal = $('#modal');
+  var modalBox = $('#modalBox');
+  var currentAnimalId = null;
+
+  function openModal(id){
+    var a = animals.find(function(x){return x.id===id;});
+    if(!a) return;
+    currentAnimalId = id;
+    $('#modalTitle').textContent = a.name;
+    $('#modalSubtitle').textContent = a.tagline;
+    var zp = $('#modalZonePill');
+    zp.className = zonePillClass(a.zone);
+    zp.textContent = a.zone + ' · ' + a.zoneName;
+    $('#modalSpeciesPill').textContent = a.species;
+    $('#modalHabitat').textContent = a.habitat;
+    $('#modalDiet').textContent = a.diet;
+    $('#modalTraits').textContent = a.traits;
+    $('#modalLearn').textContent = a.learn;
+    $('#modalFeed').textContent = a.feed;
+    $('#modalSvg').innerHTML = svgs[a.svg];
+    updateModalLikeUI();
+    modal.classList.add('on');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    modal.classList.remove('on');
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    currentAnimalId = null;
+  }
+  modal.addEventListener('click', function(e){
+    if(e.target === modal) closeModal();
+  });
+  $('#modalClose').addEventListener('click', closeModal);
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && modal.classList.contains('on')) closeModal();
+  });
+
+  grid.addEventListener('click', function(e){
+    var likeBtn = e.target.closest('[data-like]');
+    if(likeBtn){
+      e.stopPropagation();
+      toggleLike(likeBtn.getAttribute('data-like'));
+      return;
+    }
+    var card = e.target.closest('.animal');
+    if(card){
+      openModal(card.getAttribute('data-id'));
+    }
+  });
+  grid.addEventListener('keydown', function(e){
+    if(e.key==='Enter' || e.key===' '){
+      var card = e.target.closest('.animal');
+      if(card){
+        e.preventDefault();
+        openModal(card.getAttribute('data-id'));
+      }
+    }
+  });
+
+  // ---- 좋아요 ----
+  function updateLikeCountUI(id){
+    var n = likes[id] ? 1 : 0;
+    $all('[data-likecount="'+ cssEscape(id) +'"]').forEach(function(el){
+      el.textContent = String(n);
+    });
+    $all('[data-like="'+ cssEscape(id) +'"]').forEach(function(btn){
+      btn.classList.toggle('on', !!likes[id]);
+    });
+  }
+  function cssEscape(s){
+    // 데이터 id는 영문/하이픈만 사용하므로 안전
+    return String(s).replace(/"/g,'\\"');
+  }
+  function toggleLike(id){
+    likes[id] = !likes[id];
+    updateLikeCountUI(id);
+    if(currentAnimalId === id) updateModalLikeUI();
+    showToast(likes[id] ? '♥ 좋아요!' : '♡ 좋아요 해제');
+  }
+  function updateModalLikeUI(){
+    var btn = $('#modalLike');
+    var on = !!likes[currentAnimalId];
+    btn.classList.toggle('on', on);
+    $('#modalLikeText').textContent = on ? '좋아요 됨' : '좋아요';
+  }
+  $('#modalLike').addEventListener('click', function(){
+    if(currentAnimalId) toggleLike(currentAnimalId);
+  });
+
+  // ---- 구역 필터 (지도 핀) ----
+  var activeZone = null;
+  function applyZoneFilter(zone){
+    activeZone = zone;
+    $all('.pin').forEach(function(p){
+      p.classList.toggle('active', p.getAttribute('data-zone') === zone);
+    });
+    $all('#animalGrid .animal').forEach(function(card){
+      var match = card.getAttribute('data-zone') === zone;
+      card.classList.toggle('hl', !!zone && match);
+      card.classList.toggle('dim', !!zone && !match);
+    });
+  }
+  function clearZoneFilter(){
+    activeZone = null;
+    $all('.pin').forEach(function(p){p.classList.remove('active');});
+    $all('#animalGrid .animal').forEach(function(card){
+      card.classList.remove('hl');
+      card.classList.remove('dim');
+    });
+  }
+  $all('.pin').forEach(function(p){
+    p.addEventListener('click', function(){
+      var z = p.getAttribute('data-zone');
+      if(activeZone === z){ clearZoneFilter(); showToast('구역 필터 해제'); }
+      else { applyZoneFilter(z); showToast(z + ' 구역 동물 강조'); }
+    });
+  });
+  $('#resetZone').addEventListener('click', function(){
+    clearZoneFilter();
+    showToast('전체 동물 보기');
+  });
+
+  // ---- 입장권 ----
+  function pad(n,w){var s=String(n);while(s.length<w)s='0'+s;return s;}
+  function fmtDate(d){
+    return d.getFullYear()+'-'+pad(d.getMonth()+1,2)+'-'+pad(d.getDate(),2);
+  }
+  function fmtTime(d){
+    return pad(d.getHours(),2)+':'+pad(d.getMinutes(),2);
+  }
+  (function initTicket(){
+    var now = new Date();
+    $('#ticketDate').textContent = fmtDate(now);
+    $('#ticketTime').textContent = fmtTime(now);
+    // 가상 번호
+    var seed = (now.getDate()*317 + now.getHours()*23 + now.getMinutes()) % 9000 + 1000;
+    $('#ticketNo').textContent = pad(seed, 6);
+    $('#stubNo').textContent = 'A-' + pad(seed % 9000 + 1000, 4);
+  })();
+  $('#downloadTicket').addEventListener('click', function(){
+    showToast('입장권이 저장되었습니다 (가상)');
+  });
+
+  // ---- 토스트 ----
+  var toastEl = $('#toast');
+  var toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('on'); }, 1600);
+  }
+
+  // ---- 방문객 수 자연스럽게 증가 ----
+  (function tickVisitors(){
+    var el = $('#visitorCount');
+    var n = parseInt(el.textContent.replace(/,/g,''),10) || 1284;
+    setInterval(function(){
+      n += Math.floor(Math.random()*3);
+      el.textContent = n.toLocaleString('en-US');
+    }, 4000);
+  })();
+
+})();
+</script>
+</body>
+</html>

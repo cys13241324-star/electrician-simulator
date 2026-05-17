@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>열동 과부하 계전기(EOCR) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 114, 182, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(251, 146, 60, 0.14), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 16% 26%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 66% 72%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 82% 24%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 34% 82%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 74% 44%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 48% 58%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 86%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 12% 62%, rgba(255,255,255,0.4), transparent);
+    background-size: 640px 640px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,146,60,0.45), rgba(244,114,182,0.40), rgba(168,139,250,0.45));
+    box-shadow: 0 30px 100px -20px rgba(251, 146, 60, 0.28), 0 0 40px rgba(244, 114, 182, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 680px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fb923c; box-shadow: 0 0 12px #fb923c;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fb923c; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(251,146,60,0.4), rgba(244,114,182,0.4), rgba(168,139,250,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fdba74, #f9a8d4, #c4b5fd);
+    box-shadow: 0 0 22px rgba(253, 186, 116, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-load { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-ir   { background: linear-gradient(135deg, rgba(251,146,60,0.22), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.55); color: #fed7aa; }
+.chip-class{ background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.55); color: #fbcfe8; }
+.chip-mode { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 24px rgba(251, 146, 60, 0.45);
+}
+.live-pill.warm {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, rgba(251,191,36,0.14), rgba(15,23,42,0.85));
+}
+.live-pill.trip {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fdba74, #f9a8d4, #c4b5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(251, 146, 60, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(251,146,60,0.16), rgba(168,85,247,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fed7aa; }
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.3);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(139,92,246,0.25));
+    border-color: rgba(168, 139, 250, 0.85);
+    color: #ede9fe;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.45);
+}
+.class-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(244, 114, 182, 0.28);
+    color: #fbcfe8;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.class-btn.active {
+    background: linear-gradient(135deg, rgba(244,114,182,0.32), rgba(236,72,153,0.25));
+    border-color: rgba(244, 114, 182, 0.85);
+    color: #fdf2f8;
+    box-shadow: 0 0 18px rgba(244, 114, 182, 0.45);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(251,146,60,0.18), rgba(244,114,182,0.18));
+    border: 1px solid rgba(251,146,60,0.45);
+    color: #fed7aa;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(251,146,60,0.32), rgba(244,114,182,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(251,146,60,0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.stage-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.stage-card.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(15,23,42,0.75));
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.32);
+    transform: translateY(-2px);
+}
+.stage-card.trip {
+    background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(15,23,42,0.75));
+    border-color: rgba(244, 63, 94, 0.75);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.4);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-orange-300">
+            <span class="pulse-dot"></span>
+            THERMAL OVERLOAD RELAY · EOCR · I²t · IEC 60947-4-1 CLASS
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-200 via-pink-200 to-violet-200 bg-clip-text text-transparent">
+            열동 과부하 계전기(EOCR) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            전류가 <span class="text-orange-300 font-semibold">정격 I<sub>r</sub></span> 를 초과하면 즉시 트립이 아니라
+            <span class="text-pink-300 font-semibold">I²t 가 누적</span> 되어 일정 시간 후 동작합니다.
+            <span class="text-violet-300 font-semibold">Class 10/20/30</span> 은 7.2·I<sub>r</sub> 에서 트립까지 걸리는 한계 시간입니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-m">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">전류 배율 I / I<sub>r</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="mDisp" class="live-num">1.00</span> <span class="text-xs opacity-60 font-normal">배</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-h">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">누적 열량 (I²t 등가)</p>
+            <p class="mt-1 text-lg font-bold"><span id="hDisp" class="live-num">0</span> <span class="text-xs opacity-60 font-normal">%</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-t">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">트립까지 t</p>
+            <p class="mt-1 text-lg font-bold"><span id="tDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">s</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-state">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">접점 상태</p>
+            <p class="mt-1 text-lg font-bold" id="stateDisp"><span class="text-emerald-300">● 정상</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚡ TRIP — 열동 과부하 계전기 동작 (95-96 접점 OPEN, 97-98 접점 CLOSE)
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">전원 → EOCR(열동·전자) → MOTOR · I &gt; I<sub>r</sub> 시 I²t 누적 → 트립</span>
+                    <div class="flex gap-2">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상 0.9·Iᵣ</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="overload">과부하 1.5·Iᵣ</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="lock">구속 6·Iᵣ</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 동작 시퀀스 단계 표시 -->
+            <div class="glass rounded-2xl p-5" id="stageCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🌡</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-pink-200 bg-clip-text text-transparent">EOCR 동작 시퀀스</span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[11px]" id="stageList">
+                    <div class="stage-card rounded-lg p-3" data-stage="sense">
+                        <p class="font-bold text-sky-300">① 전류 통과</p>
+                        <p class="text-slate-400 mt-0.5">바이메탈(열동) 또는 CT(전자식)가 부하 전류를 검출</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="heat">
+                        <p class="font-bold text-amber-300">② I²t 누적</p>
+                        <p class="text-slate-400 mt-0.5">전류²·시간 에 비례한 열량이 등가적으로 쌓임</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="bend">
+                        <p class="font-bold text-orange-300">③ 바이메탈 휨</p>
+                        <p class="text-slate-400 mt-0.5">두 금속의 열팽창 차이로 휘어져 트립 레버 압박</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="trip">
+                        <p class="font-bold text-rose-300">④ 접점 동작</p>
+                        <p class="text-slate-400 mt-0.5">95-96 OPEN → MC 코일 차단 → 모터 정지</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-pink-200 bg-clip-text text-transparent">동작 시간 공식 (Time-Current)</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$M = \frac{I}{I_r}, \qquad \text{트립 if } M \ge 1.05 \text{ 누적}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$t_{op} = \frac{K_{class}}{M^2 - 1} \quad (M > 1)$$
+                </div>
+                <div class="math-container mt-2">
+                    $$K_{10} \approx 360,\ K_{20} \approx 720,\ K_{30} \approx 1080$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">
+                    Class 10/20/30 은 IEC 60947-4-1 에서 <strong>7.2·I<sub>r</sub></strong> 의 일정 전류가 흐를 때 트립까지 걸리는 한계 시간(s) 이며,
+                    일반 모터 보호는 Class 10, 고관성 부하(펌프/팬)는 Class 20, 매우 큰 관성은 Class 30 을 사용합니다.
+                </p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-orange-200">변수 조절</h2>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 I (배율)</span><span id="loadVal" class="font-mono text-base">1.00</span></label>
+                <input type="range" id="load" min="0.5" max="10" step="0.05" value="1.00" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">× I<sub>r</sub> · 0.5 ~ 10 배</p>
+            </div>
+
+            <div class="chip-ir chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>정격 I<sub>r</sub></span><span id="irVal" class="font-mono text-base">10</span></label>
+                <input type="range" id="ir" min="2" max="60" step="1" value="10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A · 정격(셋팅) 전류</p>
+            </div>
+
+            <div class="chip-class chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">트립 등급 (IEC 60947-4-1)</p>
+                <div class="grid grid-cols-3 gap-1.5 mt-2">
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-class="10">Class 10</button>
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-class="20">Class 20</button>
+                    <button class="class-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-class="30">Class 30</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">7.2·I<sub>r</sub> 에서 트립까지 한계 시간(s)</p>
+            </div>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">계전기 타입</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-mode="thermal">열동형</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="electronic">전자식</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">바이메탈 vs 디지털 디스플레이</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">정상</span> · I ≤ 1.05·I<sub>r</sub> → 열량 평형</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">과부하</span> · 1.05 &lt; M ≤ 2 → 천천히 가열</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-orange-300">구속</span> · M ≈ 6 (LRC) → 빠르게 트립</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">트립</span> · 누적 100% → 95-96 OPEN</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const CIRCUIT_H = 400;
+const CURVE_H = 280;
+const TOTAL_H = CIRCUIT_H + CURVE_H;
+
+const state = {
+    Mload: 1.00,     // I / Ir
+    Ir: 10,          // A
+    klass: 10,       // 10 | 20 | 30
+    mode: 'thermal', // 'thermal' | 'electronic'
+    heat: 0,         // 누적 열량 0..1 (1 이면 트립)
+    rotor: 0,        // 모터 회전각
+    rotorSpeed: 0,   // 현재 회전 속도
+    tripped: false,
+    tripFrame: null,
+    t: 0
+};
+
+// 클래스 K값: t_op = K / (M^2 - 1) 가 7.2배에서 거의 해당 클래스 초가 되도록
+// (7.2^2 - 1) = 50.84, 따라서 K_10 ≈ 360 → 7.08s (Class 10 ≈ 4..10s 범위에 부합)
+const CLASS_K = { 10: 360, 20: 720, 30: 1080 };
+
+// 컴포넌트 위치
+let comp = {};
+let mainPath = [], mainSegs = [], mainLen = 0, mainParts = [];
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildCircuit();
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function buildPath(points) {
+    const segs = [];
+    let len = 0;
+    for (let k = 0; k < points.length - 1; k++) {
+        const a = points[k], b = points[k+1];
+        const sl = Math.hypot(b.x - a.x, b.y - a.y);
+        segs.push({ a, b, len: sl, start: len });
+        len += sl;
+    }
+    return { segs, len };
+}
+
+function buildCircuit() {
+    const W = canvas.width;
+    const top = 90;
+    const bot = CIRCUIT_H - 80;
+    const startX = 60;
+    const mcX    = W * 0.26;
+    const eocrX  = W * 0.50;
+    const motorX = W - 90;
+
+    const yLine = (top + bot) / 2 - 30;
+    const yRtn  = (top + bot) / 2 + 70;
+
+    mainPath = [
+        { x: startX + 24, y: yLine },
+        { x: mcX,         y: yLine },
+        { x: eocrX,       y: yLine },
+        { x: motorX - 32, y: yLine },
+        { x: motorX - 32, y: yRtn },
+        { x: startX + 24, y: yRtn }
+    ];
+    ({ segs: mainSegs, len: mainLen } = buildPath(mainPath));
+
+    comp = { startX, mcX, eocrX, motorX, yLine, yRtn, top, bot, W };
+}
+
+function pointAt(progress, segs, len) {
+    if (len <= 0) return segs[0].a;
+    let p = ((progress % len) + len) % len;
+    for (const s of segs) {
+        if (p <= s.start + s.len) {
+            const lp = (p - s.start) / s.len;
+            return { x: s.a.x + (s.b.x - s.a.x) * lp, y: s.a.y + (s.b.y - s.a.y) * lp };
+        }
+    }
+    return segs[0].a;
+}
+
+function seedParticles() {
+    mainParts = [];
+    for (let i = 0; i < 22; i++) {
+        mainParts.push({ progress: (i / 22) * mainLen, size: 1.3 + Math.random() * 0.8, jit: Math.random() * 0.3 - 0.15 });
+    }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 시간-전류 특성 ============
+function tripTimeFor(M, klass) {
+    if (M <= 1.0) return Infinity;
+    if (M >= 12) return 0.1; // 매우 큰 전류는 거의 즉시 (보호 한계)
+    const K = CLASS_K[klass] || CLASS_K[10];
+    const denom = M * M - 1;
+    if (denom <= 1e-6) return 7200;
+    return Math.max(0.05, Math.min(7200, K / denom));
+}
+
+// ============ 계산 ============
+function computeState() {
+    state.Mload = +$('load').value;
+    state.Ir    = +$('ir').value;
+
+    const M = state.Mload;
+    const dt = 1/60; // sec per frame
+    const tOp = tripTimeFor(M, state.klass);
+
+    if (!state.tripped) {
+        // 누적 열량: dH/dt = M^2 - 1 정규화. 트립 임계는 K/3600?
+        // 더 간단히: rate = 1/tOp (트립까지 걸리는 시간의 역수)
+        // 다만 시뮬에서 시간 가속을 적용 (실제 너무 길어서)
+        const TIME_ACCEL = 8; // 8배 가속
+        if (M > 1.05) {
+            if (isFinite(tOp) && tOp > 0) {
+                state.heat += (dt * TIME_ACCEL) / tOp;
+            }
+            if (state.heat >= 1) {
+                state.heat = 1;
+                state.tripped = true;
+                state.tripFrame = state.t;
+                triggerTripEffects();
+            }
+        } else if (M >= 1.0) {
+            // 정격 근처 — 매우 천천히 가열
+            state.heat += dt * 0.002;
+            if (state.heat > 0.4) state.heat = 0.4; // 평형
+        } else {
+            // 정상 — 냉각
+            state.heat = Math.max(0, state.heat - dt * 0.06);
+        }
+    }
+
+    // 모터 회전 속도 (트립 시 감속)
+    const targetSpeed = state.tripped ? 0 : Math.max(0, 1 - 0.15 * Math.max(0, M - 5)) * (M > 0.1 ? 1 : 0);
+    state.rotorSpeed += (targetSpeed - state.rotorSpeed) * 0.06;
+    state.rotor += state.rotorSpeed * 0.18;
+}
+
+function updateDisplays() {
+    $('loadVal').textContent = state.Mload.toFixed(2);
+    $('irVal').textContent = state.Ir.toFixed(0);
+
+    const M = state.Mload;
+    const tOp = tripTimeFor(M, state.klass);
+
+    $('mDisp').textContent = (state.tripped ? 0 : M).toFixed(2);
+    $('hDisp').textContent = (state.heat * 100).toFixed(0);
+    $('tDisp').textContent = state.tripped ? '0' :
+        (!isFinite(tOp) ? '∞' :
+        (tOp >= 3600 ? '> 1h' :
+        (tOp >= 60 ? (tOp / 60).toFixed(1) + ' 분' :
+        tOp.toFixed(tOp < 1 ? 2 : 1))));
+
+    // pill 상태 색
+    const pillState = $('pill-state');
+    const pillH = $('pill-h');
+    const pillT = $('pill-t');
+    pillState.classList.remove('trip','warm');
+    pillH.classList.remove('trip','warm');
+    pillT.classList.remove('trip','warm');
+
+    const stateEl = $('stateDisp');
+    if (state.tripped) {
+        stateEl.innerHTML = '<span class="text-rose-300">⚡ TRIP · OPEN</span>';
+        pillState.classList.add('trip');
+        pillH.classList.add('trip');
+        pillT.classList.add('trip');
+    } else if (M > 1.05 || state.heat > 0.3) {
+        stateEl.innerHTML = '<span class="text-amber-300">▲ 가열 중</span>';
+        pillState.classList.add('warm');
+        pillH.classList.add('warm');
+        pillT.classList.add('warm');
+    } else {
+        stateEl.innerHTML = '<span class="text-emerald-300">● 정상</span>';
+    }
+
+    // 알람 배너
+    $('alarmBanner').classList.toggle('hidden', !state.tripped);
+
+    // 동작 시퀀스 단계 하이라이트
+    const stages = document.querySelectorAll('#stageList .stage-card');
+    stages.forEach(el => el.classList.remove('active','trip'));
+    if (state.tripped) {
+        stages.forEach(el => el.classList.add('trip'));
+    } else if (M > 1.05) {
+        stages[0].classList.add('active');
+        stages[1].classList.add('active');
+        if (state.heat > 0.5) stages[2].classList.add('active');
+    } else if (M > 0.1) {
+        stages[0].classList.add('active');
+    }
+}
+
+// ============ 회로 배경 ============
+function drawCircuitBg() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, CIRCUIT_H);
+    grad.addColorStop(0, '#0a0e1e');
+    grad.addColorStop(1, '#070a18');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, CIRCUIT_H);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CIRCUIT_H); ctx.stroke();
+    }
+    for (let i = 0; i < CIRCUIT_H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+    }
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 186, 116, 0.65)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ MOTOR PROTECTION · SOURCE → MC → EOCR → MOTOR', 12, 10);
+    ctx.restore();
+}
+
+function strokePath(points, color, glow, lw, dash) {
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let k = 0; k < points.length; k++) {
+        const p = points[k];
+        if (k === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawMainLine() {
+    const baseColor = state.tripped ? 'rgba(148, 163, 184, 0.32)' :
+        (state.Mload > 1.05 ? 'rgba(253, 186, 116, 0.85)' : 'rgba(186, 230, 253, 0.85)');
+    const glow = state.tripped ? 0 : 10;
+    strokePath(mainPath, baseColor, glow, 3);
+}
+
+function drawSource() {
+    const x = comp.startX, yL = comp.yLine, yR = comp.yRtn;
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(125, 211, 252, 0.55)';
+    const g = ctx.createLinearGradient(x - 22, yL, x + 22, yR);
+    g.addColorStop(0, '#0c4a6e');
+    g.addColorStop(0.5, '#0369a1');
+    g.addColorStop(1, '#082f49');
+    ctx.fillStyle = g;
+    roundRect(ctx, x - 22, yL - 18, 44, (yR - yL) + 36, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#bae6fd';
+    ctx.fillText('3φ AC', x, (yL + yR) / 2 - 7);
+    ctx.fillText('380 V', x, (yL + yR) / 2 + 10);
+    ctx.restore();
+}
+
+// MC (마그네틱 컨택터)
+function drawMC() {
+    const x = comp.mcX, y = comp.yLine;
+    const w = 60, h = 50;
+    const bx = x - w/2, by = y - h/2;
+
+    ctx.save();
+    ctx.shadowBlur = state.tripped ? 6 : 10;
+    ctx.shadowColor = state.tripped ? 'rgba(148, 163, 184, 0.3)' : 'rgba(110, 231, 183, 0.45)';
+    const g = ctx.createLinearGradient(bx, by, bx + w, by + h);
+    g.addColorStop(0, '#1e293b');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = state.tripped ? 'rgba(148, 163, 184, 0.5)' : 'rgba(110, 231, 183, 0.7)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+
+    // 컨택트 표시
+    drawSwitch(x, y, state.tripped, false);
+
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.tripped ? '#94a3b8' : '#6ee7b7';
+    ctx.fillText('MC', x, by - 8);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.tripped ? '#f43f5e' : '#34d399';
+    ctx.fillText(state.tripped ? 'OPEN' : 'CLOSE', x, by + h + 12);
+    ctx.restore();
+}
+
+function drawSwitch(cx, cy, opened, isCircuitBreaker) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.9)';
+    ctx.beginPath(); ctx.arc(cx - 14, cy, 2.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 14, cy, 2.8, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = opened ? 'rgba(244, 63, 94, 0.95)' : 'rgba(110, 231, 183, 0.95)';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = opened ? 12 : 6;
+    ctx.shadowColor = opened ? 'rgba(244,63,94,0.8)' : 'rgba(110,231,183,0.6)';
+    ctx.beginPath();
+    if (opened) {
+        ctx.moveTo(cx - 14, cy);
+        ctx.lineTo(cx + 10, cy - 12);
+    } else {
+        ctx.moveTo(cx - 14, cy);
+        ctx.lineTo(cx + 14, cy);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+// EOCR 본체 (열동/전자식)
+function drawEOCR() {
+    const x = comp.eocrX, y = comp.yLine;
+    const w = 130, h = 130;
+    const bx = x - w/2, by = y - 30;
+
+    // 본체 박스
+    ctx.save();
+    const trippedColor = 'rgba(244, 63, 94, 0.7)';
+    const warmColor = 'rgba(251, 146, 60, 0.65)';
+    const idleColor = 'rgba(168, 139, 250, 0.5)';
+    const glowCol = state.tripped ? trippedColor : (state.Mload > 1.05 ? warmColor : idleColor);
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = glowCol;
+    const g = ctx.createLinearGradient(bx, by, bx + w, by + h);
+    g.addColorStop(0, '#1f2937');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = state.tripped ? 'rgba(244,63,94,0.9)' :
+        (state.Mload > 1.05 ? 'rgba(251,146,60,0.85)' : 'rgba(168,139,250,0.75)');
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.tripped ? '#fda4af' : (state.Mload > 1.05 ? '#fed7aa' : '#c4b5fd');
+    ctx.fillText('EOCR · 49/51', x, by + 12);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.65)';
+    ctx.fillText(`${state.mode === 'thermal' ? '열동형' : '전자식'} · Class ${state.klass}`, x, by + 24);
+    ctx.restore();
+
+    // 모드별 시각화
+    if (state.mode === 'thermal') {
+        drawBimetal(x, by + 56);
+    } else {
+        drawDigitalDisplay(x, by + 56, w - 24);
+    }
+
+    // 누적 열량 게이지
+    const gx = bx + 12, gy = by + h - 16, gw = w - 24, gh = 6;
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, gx, gy, gw, gh, 3);
+    ctx.fill();
+    const heatColor = state.tripped ? '#f43f5e' :
+        (state.heat > 0.7 ? '#fb923c' : (state.heat > 0.3 ? '#fbbf24' : '#34d399'));
+    ctx.fillStyle = heatColor;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = heatColor;
+    roundRect(ctx, gx, gy, gw * state.heat, gh, 3);
+    ctx.fill();
+    ctx.restore();
+
+    // LED
+    const ledColor = state.tripped ? '#f43f5e' :
+        (state.Mload > 1.05 ? '#fb923c' : '#34d399');
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = ledColor;
+    ctx.fillStyle = ledColor;
+    ctx.beginPath();
+    ctx.arc(bx + 14, by + 14, 4 + Math.sin(state.t * 0.15) * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 보조 접점 표시 (95-96, 97-98)
+    drawAuxContacts(x, by + h + 16);
+}
+
+function drawBimetal(cx, cy) {
+    // 두 금속 띠 + 가열에 따라 휨
+    const w = 70, h = 36;
+    const bx = cx - w/2, by = cy - h/2;
+
+    ctx.save();
+    // 배경 프레임
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    roundRect(ctx, bx - 4, by - 2, w + 8, h + 4, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // 두 금속 띠 (위: 팽창 큰 금속, 아래: 팽창 작은 금속)
+    // 가열 시 위로 휨 (트립 레버 압박)
+    const bend = state.heat * 14; // px
+    const heatColor = `rgba(${255 - 50 * (1 - state.heat)}, ${180 - 100 * state.heat}, ${100 - 80 * state.heat}, 1)`;
+
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = state.heat * 8;
+    ctx.shadowColor = heatColor;
+    // 위쪽 금속 (붉어짐)
+    ctx.strokeStyle = state.heat > 0.05 ? heatColor : '#fbbf24';
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, cy - 4);
+    ctx.quadraticCurveTo(cx, cy - 4 - bend, bx + w - 4, cy - 4);
+    ctx.stroke();
+    // 아래쪽 금속
+    ctx.strokeStyle = '#7dd3fc';
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, cy + 4);
+    ctx.quadraticCurveTo(cx, cy + 4 - bend * 0.4, bx + w - 4, cy + 4);
+    ctx.stroke();
+    ctx.restore();
+
+    // 트립 레버 (휨이 클 때 위로 살짝 들림)
+    ctx.save();
+    ctx.strokeStyle = state.tripped ? 'rgba(244, 63, 94, 0.95)' : 'rgba(229, 231, 235, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    const leverY = cy - 16 - bend * 0.7;
+    ctx.beginPath();
+    ctx.moveTo(cx - 2, cy - 6);
+    ctx.lineTo(cx - 2, leverY);
+    ctx.lineTo(cx + 8, leverY - 3);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = '8px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText('바이메탈', cx, cy + 22);
+    ctx.restore();
+}
+
+function drawDigitalDisplay(cx, cy, w) {
+    const h = 36;
+    const bx = cx - w/2, by = cy - h/2;
+    ctx.save();
+    // LCD 배경
+    const g = ctx.createLinearGradient(bx, by, bx, by + h);
+    g.addColorStop(0, '#0c1024');
+    g.addColorStop(1, '#04060f');
+    ctx.fillStyle = g;
+    roundRect(ctx, bx, by, w, h, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // 디지털 값
+    ctx.save();
+    ctx.font = 'bold 14px "Courier New", monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const lcdColor = state.tripped ? '#f43f5e' :
+        (state.Mload > 1.05 ? '#fb923c' : '#22d3ee');
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = lcdColor;
+    ctx.fillStyle = lcdColor;
+    const Idisp = (state.tripped ? 0 : state.Mload * state.Ir).toFixed(1);
+    ctx.fillText(`I=${Idisp}A`, bx + 6, by + 11);
+    ctx.font = 'bold 10px "Courier New", monospace';
+    const tOp = tripTimeFor(state.Mload, state.klass);
+    const tStr = state.tripped ? 'TRIP' :
+        (!isFinite(tOp) ? '--' :
+        (tOp >= 60 ? (tOp/60).toFixed(1) + 'm' : tOp.toFixed(1) + 's'));
+    ctx.fillText(`t=${tStr}`, bx + 6, by + 26);
+    ctx.restore();
+}
+
+function drawAuxContacts(cx, cy) {
+    // 95-96 NC (트립 시 OPEN), 97-98 NO (트립 시 CLOSE)
+    ctx.save();
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+
+    // 95-96
+    const x1 = cx - 36;
+    ctx.fillStyle = state.tripped ? '#f43f5e' : '#94a3b8';
+    ctx.fillText('95-96 (NC)', x1, cy);
+    drawMiniSwitch(x1, cy + 10, state.tripped); // NC: 정상 닫힘 → 트립 시 열림
+
+    // 97-98
+    const x2 = cx + 36;
+    ctx.fillStyle = state.tripped ? '#34d399' : '#94a3b8';
+    ctx.fillText('97-98 (NO)', x2, cy);
+    drawMiniSwitch(x2, cy + 10, !state.tripped); // NO: 정상 열림 → 트립 시 닫힘
+    ctx.restore();
+}
+
+function drawMiniSwitch(cx, cy, opened) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.85)';
+    ctx.beginPath(); ctx.arc(cx - 8, cy, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 8, cy, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = opened ? 'rgba(244, 63, 94, 0.9)' : 'rgba(110, 231, 183, 0.9)';
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (opened) {
+        ctx.moveTo(cx - 8, cy);
+        ctx.lineTo(cx + 6, cy - 6);
+    } else {
+        ctx.moveTo(cx - 8, cy);
+        ctx.lineTo(cx + 8, cy);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 전동기
+function drawMotor() {
+    const x = comp.motorX, yL = comp.yLine, yR = comp.yRtn;
+    const cx = x, cy = (yL + yR) / 2;
+    const r = 36;
+
+    // 외곽 케이스
+    ctx.save();
+    ctx.shadowBlur = state.tripped ? 6 : 14;
+    ctx.shadowColor = state.tripped ? 'rgba(148,163,184,0.4)' : 'rgba(125, 211, 252, 0.5)';
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, r + 6);
+    g.addColorStop(0, state.tripped ? '#1e293b' : '#0c4a6e');
+    g.addColorStop(1, state.tripped ? '#0f172a' : '#064e63');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r + 6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = state.tripped ? 'rgba(148,163,184,0.5)' : 'rgba(125, 211, 252, 0.75)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.restore();
+
+    // 내부 회전자
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(state.rotor);
+    // 회전자 코일 (3개 막대)
+    const barColor = state.tripped ? 'rgba(148,163,184,0.5)' :
+        (state.Mload > 5 ? 'rgba(253, 164, 175, 0.9)' : 'rgba(186, 230, 253, 0.95)');
+    ctx.shadowBlur = state.tripped ? 0 : 6;
+    ctx.shadowColor = barColor;
+    ctx.fillStyle = barColor;
+    for (let i = 0; i < 3; i++) {
+        ctx.save();
+        ctx.rotate((i * Math.PI * 2) / 3);
+        ctx.fillRect(-3, -r + 8, 6, r * 2 - 16);
+        ctx.restore();
+    }
+    // 중앙 축
+    ctx.fillStyle = state.tripped ? '#475569' : '#cbd5e1';
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 상태 LED
+    const ledColor = state.tripped ? '#f43f5e' :
+        (state.Mload > 5 ? '#fb923c' : '#34d399');
+    ctx.save();
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = ledColor;
+    ctx.fillStyle = ledColor;
+    ctx.beginPath();
+    ctx.arc(cx + r - 4, cy - r + 4, 3.5 + Math.sin(state.t * 0.2) * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = state.tripped ? '#94a3b8' : '#bae6fd';
+    ctx.fillText('M', cx, cy);
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillText('3φ MOTOR', cx, cy + r + 18);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = state.tripped ? '#f43f5e' :
+        (state.Mload > 5 ? '#fb923c' : 'rgba(186, 230, 253, 0.75)');
+    const Idisp = (state.tripped ? 0 : state.Mload * state.Ir).toFixed(1);
+    ctx.fillText(state.tripped ? '정지 ⚡' : `${Idisp} A`, cx, cy + r + 32);
+    ctx.restore();
+}
+
+function drawFlow() {
+    if (state.tripped) return;
+    if (mainLen <= 0) return;
+    const M = state.Mload;
+    if (M < 0.1) return;
+    const speedBase = 1.5 + Math.min(8, M * 1.2);
+    const color = M >= 1.05 ? 'rgba(253, 186, 116, 0.95)' :
+        (M >= 1 ? 'rgba(253, 230, 138, 0.95)' : 'rgba(186, 230, 253, 0.95)');
+    const glow = M >= 1.05 ? 14 : 10;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of mainParts) {
+        p.progress = (p.progress + speedBase) % mainLen;
+        const pt = pointAt(p.progress, mainSegs, mainLen);
+        ctx.fillStyle = color;
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = color;
+        ctx.beginPath();
+        ctx.arc(pt.x + p.jit, pt.y + p.jit, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawArrowAt(x, y, ang, color, glow) {
+    if (state.tripped) return;
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(ang);
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(7, 0); ctx.lineTo(-5, -4.5); ctx.lineTo(-5, 4.5); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawArrows() {
+    if (state.Mload < 0.1) return;
+    const M = state.Mload;
+    const color = M >= 1.05 ? 'rgba(253, 186, 116, 0.95)' : 'rgba(186, 230, 253, 0.95)';
+    drawArrowAt((comp.startX + comp.mcX) / 2, comp.yLine, 0, color, 8);
+    drawArrowAt((comp.eocrX + comp.motorX) / 2, comp.yLine, 0, color, 8);
+    drawArrowAt((comp.startX + comp.motorX) / 2, comp.yRtn, Math.PI, color, 8);
+}
+
+// ============ 시간-전류 곡선 ============
+function drawCurveChart() {
+    const W = canvas.width;
+    const top0 = CIRCUIT_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + CURVE_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, CURVE_H);
+
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(251, 146, 60, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(251, 146, 60, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ TIME-CURRENT CURVE · 가로 M = I/I_r (log) · 세로 t (log, s)', 12, top0 + 10);
+    ctx.restore();
+
+    const padL = 60, padR = 24, padT = 38, padB = 36;
+    const x0 = padL, y0 = top0 + padT;
+    const plotW = W - padL - padR;
+    const plotH = CURVE_H - padT - padB;
+
+    // 로그축: M = 1 ~ 12, t = 0.1 ~ 7200 (2h)
+    const Mmin = 1, Mmax = 12;
+    const tmin = 0.1, tmax = 7200;
+    const logM = m => (Math.log10(m) - Math.log10(Mmin)) / (Math.log10(Mmax) - Math.log10(Mmin));
+    const logT = t => (Math.log10(t) - Math.log10(tmin)) / (Math.log10(tmax) - Math.log10(tmin));
+    const xOf = m => x0 + logM(m) * plotW;
+    const yOf = t => y0 + plotH - logT(t) * plotH;
+
+    // 그리드 (M)
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const Mticks = [1, 1.2, 1.5, 2, 3, 5, 7.2, 10, 12];
+    Mticks.forEach(m => {
+        const xx = xOf(m);
+        ctx.strokeStyle = m === 7.2 ? 'rgba(251, 146, 60, 0.25)' : 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath(); ctx.moveTo(xx, y0); ctx.lineTo(xx, y0 + plotH); ctx.stroke();
+        ctx.fillStyle = m === 7.2 ? '#fed7aa' : 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText(`${m}×`, xx, y0 + plotH + 4);
+    });
+    // 7.2× 표기
+    ctx.fillStyle = 'rgba(251, 146, 60, 0.8)';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillText('(LRC)', xOf(7.2), y0 + plotH + 18);
+
+    // 그리드 (t)
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.font = '9px ui-monospace, monospace';
+    const Tticks = [0.1, 1, 10, 60, 600, 3600];
+    const Tlabels = ['0.1s', '1s', '10s', '1m', '10m', '1h'];
+    Tticks.forEach((tv, i) => {
+        const yy = yOf(tv);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x0 + plotW, yy); ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.fillText(Tlabels[i], x0 - 4, yy);
+    });
+    // 축
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 + plotH); ctx.lineTo(x0 + plotW, y0 + plotH);
+    ctx.stroke();
+    ctx.restore();
+
+    function plotCurve(klass, color, glow, dash) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = color;
+        if (dash) ctx.setLineDash(dash);
+        ctx.beginPath();
+        let started = false;
+        for (let i = 0; i <= 200; i++) {
+            const m = Mmin * Math.pow(Mmax / Mmin, i / 200);
+            if (m <= 1.02) continue;
+            const tv = tripTimeFor(m, klass);
+            if (!isFinite(tv) || tv > tmax) continue;
+            const xx = xOf(m);
+            const yy = yOf(Math.max(tmin, tv));
+            if (!started) { ctx.moveTo(xx, yy); started = true; }
+            else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 비활성 곡선 (희미하게)
+    if (state.klass !== 10) plotCurve(10, 'rgba(168, 139, 250, 0.32)', 0, [3,3]);
+    if (state.klass !== 20) plotCurve(20, 'rgba(244, 114, 182, 0.32)', 0, [3,3]);
+    if (state.klass !== 30) plotCurve(30, 'rgba(251, 146, 60, 0.32)', 0, [3,3]);
+
+    // 활성 곡선
+    const activeColor = state.klass === 10 ? '#a78bfa' :
+                        state.klass === 20 ? '#f472b6' : '#fb923c';
+    plotCurve(state.klass, activeColor, 14, null);
+
+    // 현재 동작점
+    const M = state.Mload;
+    if (M > 1.02) {
+        const tOp = tripTimeFor(M, state.klass);
+        if (isFinite(tOp) && tOp <= tmax && M <= Mmax) {
+            const xx = xOf(Math.min(Mmax, M));
+            const yy = yOf(Math.max(tmin, tOp));
+            ctx.save();
+            ctx.strokeStyle = 'rgba(251, 146, 60, 0.5)';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(xx, y0); ctx.lineTo(xx, yy);
+            ctx.moveTo(x0, yy); ctx.lineTo(xx, yy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = state.tripped ? '#f43f5e' : '#fb923c';
+            ctx.fillStyle = state.tripped ? '#f43f5e' : '#fb923c';
+            ctx.beginPath();
+            ctx.arc(xx, yy, 6 + Math.sin(state.t * 0.2) * 1.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = 'bold 11px ui-monospace, monospace';
+            ctx.fillStyle = '#fed7aa';
+            ctx.textAlign = 'left';
+            const tStr = tOp >= 60 ? (tOp/60).toFixed(1) + ' min' : tOp.toFixed(tOp < 1 ? 2 : 1) + ' s';
+            const lbl = `(M=${M.toFixed(2)}×, t=${tStr})`;
+            ctx.fillText(lbl, Math.min(xx + 10, x0 + plotW - 170), yy - 8);
+            ctx.restore();
+        }
+    } else {
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(110, 231, 183, 0.85)';
+        ctx.textAlign = 'left';
+        ctx.fillText(`M=${M.toFixed(2)} ≤ 1.05 → 정상 (트립 안됨)`, x0 + 8, y0 + 14);
+        ctx.restore();
+    }
+
+    // 범례
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    const lx = x0 + plotW - 150, ly = y0 + 8;
+    const legend = [
+        { c: '#a78bfa', t: 'Class 10', k: 10 },
+        { c: '#f472b6', t: 'Class 20', k: 20 },
+        { c: '#fb923c', t: 'Class 30', k: 30 }
+    ];
+    legend.forEach((l, i) => {
+        const yy = ly + i * 14;
+        ctx.fillStyle = l.c;
+        ctx.shadowBlur = state.klass === l.k ? 8 : 0;
+        ctx.shadowColor = l.c;
+        ctx.fillRect(lx, yy, 14, 3);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = state.klass === l.k ? '#fff' : 'rgba(203, 213, 225, 0.75)';
+        ctx.fillText(l.t, lx + 20, yy + 3);
+    });
+    ctx.restore();
+}
+
+// ============ TRIP 효과 ============
+function triggerTripEffects() {
+    if (!window.gsap) return;
+    gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244, 63, 94, 0.7)' },
+        { boxShadow: '0 0 80px 6px rgba(244, 63, 94, 0)', duration: 0.9 });
+    gsap.fromTo('#pill-state',
+        { scale: 1.12 },
+        { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+    gsap.fromTo('#pill-h',
+        { scale: 1.10 },
+        { scale: 1, duration: 0.45, ease: 'back.out(1.7)' });
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    computeState();
+    updateDisplays();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCircuitBg();
+    drawMainLine();
+    drawSource();
+    drawMC();
+    drawEOCR();
+    drawMotor();
+    drawFlow();
+    drawArrows();
+    drawCurveChart();
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+['load','ir'].forEach(id => {
+    const map = { load: 'pill-m', ir: 'pill-m' };
+    $(id).addEventListener('input', () => {
+        flashPanel(map[id]);
+    });
+});
+
+document.querySelectorAll('.class-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.class-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.klass = +b.dataset.class;
+        resetTrip();
+        flashPanel('pill-t');
+    });
+});
+
+document.querySelectorAll('.mode-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.mode = b.dataset.mode;
+        flashPanel('pill-state');
+    });
+});
+
+function resetTrip() {
+    state.tripped = false;
+    state.tripFrame = null;
+    state.heat = 0;
+    $('alarmBanner').classList.add('hidden');
+}
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        resetTrip();
+        const targets = { normal: 0.9, overload: 1.5, lock: 6.0, reset: 0.9 };
+        const target = targets[mode] ?? 1.0;
+        if (window.gsap) {
+            gsap.to($('load'), { value: target, duration: 0.6, ease: 'power3.out',
+                onUpdate: () => { $('loadVal').textContent = (+$('load').value).toFixed(2); } });
+        } else {
+            $('load').value = target;
+            $('loadVal').textContent = target.toFixed(2);
+        }
+        flashPanel('pill-m');
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeState();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#stageCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

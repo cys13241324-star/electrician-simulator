@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>절연 저항 시험 (Megger) 시뮬레이터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(34, 197, 94, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(99,102,241,0.45), rgba(251,191,36,0.45));
+    box-shadow: 0 30px 100px -20px rgba(34, 197, 94, 0.28), 0 0 40px rgba(99, 102, 241, 0.18);
+}
+canvas#meter {
+    display: block;
+    width: 100%;
+    height: 540px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #22d3ee; box-shadow: 0 0 12px #22d3ee;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #22d3ee; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
+}
+.chip-volt { background: linear-gradient(135deg, rgba(251,191,36,0.22), rgba(251,191,36,0.06)); border: 1px solid rgba(251,191,36,0.5); color: #fcd34d; }
+.chip-ohm { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border: 1px solid rgba(34,197,94,0.5); color: #86efac; }
+.chip-kec { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border: 1px solid rgba(99,102,241,0.5); color: #c7d2fe; }
+.chip-judge-ok { background: linear-gradient(135deg, rgba(16,185,129,0.28), rgba(16,185,129,0.06)); border: 1px solid rgba(16,185,129,0.6); color: #6ee7b7; }
+.chip-judge-ng { background: linear-gradient(135deg, rgba(244,63,94,0.30), rgba(244,63,94,0.08)); border: 1px solid rgba(244,63,94,0.7); color: #fda4af; box-shadow: 0 0 22px rgba(244,63,94,0.35); }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #6ee7b7, #93c5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.kec-card {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(34,197,94,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(99,102,241,0.35);
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(99,102,241,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(34,197,94,0.32);
+}
+.danger-card {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(244,63,94,0.4);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.volt-btn {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 180ms;
+}
+.volt-btn:hover { background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.4); }
+.volt-btn.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.35), rgba(244,114,182,0.18));
+    color: white;
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
+}
+.target-btn {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 180ms;
+}
+.target-btn:hover { background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.4); }
+.target-btn.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(34,197,94,0.18));
+    color: white;
+    border-color: rgba(99, 102, 241, 0.7);
+    box-shadow: 0 0 18px rgba(99, 102, 241, 0.45);
+}
+.state-btn {
+    background: rgba(148, 163, 184, 0.06);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 180ms;
+}
+.state-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.45); }
+.state-btn.active {
+    background: linear-gradient(135deg, rgba(34,197,94,0.35), rgba(16,185,129,0.18));
+    color: white;
+    border-color: rgba(34, 197, 94, 0.7);
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.45);
+}
+.state-btn.ng.active {
+    background: linear-gradient(135deg, rgba(244,63,94,0.35), rgba(251,113,133,0.20));
+    border-color: rgba(244, 63, 94, 0.75);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.5);
+}
+.state-btn.warn.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.32), rgba(245,158,11,0.20));
+    border-color: rgba(251, 191, 36, 0.75);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
+}
+.measure-btn {
+    background: linear-gradient(135deg, rgba(34,197,94,0.32), rgba(16,185,129,0.18));
+    border: 1px solid rgba(34, 197, 94, 0.65);
+    color: #d1fae5;
+    cursor: pointer;
+    transition: all 200ms;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+.measure-btn:hover {
+    background: linear-gradient(135deg, rgba(34,197,94,0.48), rgba(16,185,129,0.28));
+    box-shadow: 0 0 22px rgba(34,197,94,0.55);
+    transform: translateY(-1px);
+}
+.measure-btn:active { transform: translateY(0); }
+.measure-btn.measuring {
+    background: linear-gradient(135deg, rgba(251,191,36,0.42), rgba(245,158,11,0.26));
+    border-color: rgba(251,191,36,0.8);
+    color: #fef3c7;
+    animation: pulseBtn 0.8s ease-in-out infinite alternate;
+}
+@keyframes pulseBtn { 0% { box-shadow: 0 0 14px rgba(251,191,36,0.45); } 100% { box-shadow: 0 0 28px rgba(251,191,36,0.85); } }
+.kec-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.kec-row.highlight {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(15,23,42,0.7));
+    border-color: rgba(99,102,241,0.65);
+    box-shadow: 0 0 16px rgba(99,102,241,0.35);
+    transform: translateX(2px);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-cyan-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · INSULATION RESISTANCE TEST · MEGGER
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-200 via-indigo-200 to-amber-200 bg-clip-text text-transparent">
+            절연 저항 시험 (Megger) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            메거(절연 저항계)로 전선·기기의 <span class="text-emerald-300 font-semibold">절연 상태</span>를 점검합니다.
+            측정 전압을 선택하고 <span class="text-amber-300 font-semibold">PRESS·TEST</span> 버튼을 눌러 측정.
+            결과를 <span class="text-indigo-300 font-semibold">KEC 기준</span>과 비교해 합격/불합격 판정.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="chip-volt live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">측정 전압</p>
+            <p class="mt-1 text-2xl font-bold"><span id="voltDisp" class="live-num">500</span> <span class="text-xs opacity-60 font-normal">V</span></p>
+        </div>
+        <div class="chip-ohm live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">절연 저항</p>
+            <p class="mt-1 text-2xl font-bold"><span id="ohmDisp" class="live-num">--</span> <span class="text-xs opacity-60 font-normal" id="ohmUnit">MΩ</span></p>
+        </div>
+        <div class="chip-kec live-pill rounded-xl p-3">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">KEC 기준치</p>
+            <p class="mt-1 text-2xl font-bold"><span id="kecDisp" class="live-num">1.0</span> <span class="text-xs opacity-60 font-normal">MΩ↑</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="judgeChip">
+            <p class="text-[10px] tracking-widest font-bold opacity-80">판정</p>
+            <p class="mt-1 text-2xl font-bold" id="judgeDisp"><span class="text-slate-400">대기</span></p>
+        </div>
+    </div>
+
+    <!-- 불합격 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ 불합격 — 절연 저항이 KEC 기준치 미만입니다. 절연 보수 또는 교체 필요.
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <!-- 메거 캔버스 -->
+        <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <span class="text-xs font-semibold text-slate-400 tracking-wide">MEGGER · LCD · LINE/EARTH 단자 · PRESS·TEST 버튼</span>
+                <span id="statusTag" class="text-[11px] font-bold text-slate-400 tracking-widest">READY</span>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="meter"></canvas>
+            </div>
+
+            <div class="formula-card rounded-xl p-4 mt-4">
+                <p class="text-[10px] uppercase tracking-widest text-emerald-300 mb-2 font-bold">측정 원리 · DC 고전압 인가 → 누설 전류 측정</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <p class="font-mono">$R_{ins} = \dfrac{V_{test}}{I_{leak}}\ [\Omega]$</p>
+                    <p class="font-mono">$R_{ins} \ge R_{KEC} \Rightarrow$ 합격</p>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-2">메거 내부에서 DC 고전압(250·500·1000·2500V)을 인가 → 절연체를 통해 흐르는 미세 누설 전류로부터 저항을 계산해 MΩ 단위로 LCD에 표시.</p>
+            </div>
+
+            <div class="kec-card rounded-xl p-4 mt-3">
+                <p class="text-[10px] uppercase tracking-widest text-indigo-300 mb-2 font-bold">KEC 저압 전로 절연 저항 기준 (2021년 개정)</p>
+                <div class="space-y-2 text-xs" id="kecTable">
+                    <div class="kec-row rounded-md px-3 py-2 flex justify-between items-center" data-band="A">
+                        <span><span class="font-bold text-slate-200">SELV / PELV</span> · 비접지 안전 회로</span>
+                        <span class="font-mono text-emerald-300">측정 전압 250 V · <span class="font-bold">0.5 MΩ ↑</span></span>
+                    </div>
+                    <div class="kec-row rounded-md px-3 py-2 flex justify-between items-center" data-band="B">
+                        <span><span class="font-bold text-slate-200">FELV / 500V 이하</span> · 일반 저압 회로</span>
+                        <span class="font-mono text-emerald-300">측정 전압 500 V · <span class="font-bold">1.0 MΩ ↑</span></span>
+                    </div>
+                    <div class="kec-row rounded-md px-3 py-2 flex justify-between items-center" data-band="C">
+                        <span><span class="font-bold text-slate-200">500 V 초과</span> · 산업용 고압 저항 부하</span>
+                        <span class="font-mono text-emerald-300">측정 전압 1000 V · <span class="font-bold">1.0 MΩ ↑</span></span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-3 leading-relaxed">
+                    ※ <span class="text-amber-300 font-semibold">2500V</span>는 변압기·전동기 등 고압 기기 출하·정기 점검용 (제조사 기준 적용).
+                    측정 전 반드시 <span class="text-rose-300 font-semibold">전원 차단·잔류 전하 방전</span> 후 시행.
+                </p>
+            </div>
+
+            <div id="dangerCard" class="danger-card rounded-xl p-4 mt-3 hidden">
+                <p class="text-[10px] uppercase tracking-widest text-rose-300 mb-2 font-bold">⚠ 절연 불량 — 조치</p>
+                <p id="dangerMsg" class="text-xs text-rose-100"></p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-5 h-fit" id="controlPanel">
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-amber-200">측정 전압 DC</h2>
+                <p class="text-[11px] text-slate-500 mt-1">전로 정격에 맞게 선택</p>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <button class="volt-btn rounded-lg py-2 text-xs font-bold" data-volt="250">250 V</button>
+                    <button class="volt-btn rounded-lg py-2 text-xs font-bold" data-volt="500">500 V</button>
+                    <button class="volt-btn rounded-lg py-2 text-xs font-bold" data-volt="1000">1000 V</button>
+                    <button class="volt-btn rounded-lg py-2 text-xs font-bold" data-volt="2500">2500 V</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-indigo-200">측정 대상</h2>
+                <p class="text-[11px] text-slate-500 mt-1">LINE — EARTH 단자에 연결</p>
+                <div class="mt-3 grid grid-cols-1 gap-2">
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="wire">① 전선 (옥내 배선)</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="motor">② 전동기 권선 ↔ 외함</button>
+                    <button class="target-btn rounded-lg py-2 text-xs font-bold" data-target="transformer">③ 변압기 권선 ↔ 외함</button>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="font-bold text-sm tracking-wider text-emerald-200">절연 상태</h2>
+                <p class="text-[11px] text-slate-500 mt-1">현장에서 만나는 절연 상태 시나리오</p>
+                <div class="mt-3 grid grid-cols-1 gap-2">
+                    <button class="state-btn rounded-lg py-2 text-xs font-bold" data-state="good">양호 (신규/관리 양호)</button>
+                    <button class="state-btn warn rounded-lg py-2 text-xs font-bold" data-state="aged">노후 (수분·먼지·열화)</button>
+                    <button class="state-btn ng rounded-lg py-2 text-xs font-bold" data-state="bad">불량 (절연 파괴 직전)</button>
+                </div>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div>
+                <button id="measureBtn" class="measure-btn w-full rounded-xl py-3 text-sm">
+                    ▶ PRESS · TEST (측정 시작)
+                </button>
+                <p class="text-[10px] text-slate-500 mt-2 text-center">버튼을 누르면 메거 핸들이 돌아가며 약 3초간 측정합니다</p>
+            </div>
+
+            <div class="kec-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">합격</span> · R<sub>측정</sub> ≥ R<sub>KEC</sub></p>
+            </div>
+            <div class="kec-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">불합격</span> · R<sub>측정</sub> &lt; R<sub>KEC</sub> → 절연 보수</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('meter');
+const ctx = canvas.getContext('2d');
+const $ = id => document.getElementById(id);
+
+// === 상태 ===
+let voltage = 500;            // 250 / 500 / 1000 / 2500
+let target = 'wire';          // wire / motor / transformer
+let insulState = 'good';      // good / aged / bad
+let isMeasuring = false;
+let measureStartT = 0;
+let measureDur = 180;         // frames (~3s @60fps)
+let lastResult = null;        // { ohmMΩ, pass, kec, msg }
+let handleAngle = 0;
+let needleAngle = -Math.PI / 2; // 시작 위치 (왼쪽)
+let needleTargetAngle = -Math.PI / 2;
+
+const state = { t: 0, particles: [] };
+
+// === 절연 저항 데이터베이스 ===
+// 측정 전압이 높을수록 더 정확한 측정이 가능 (단, 같은 절연체라도 약간 다른 값)
+// 결과 단위: MΩ
+function baseOhm(tgt, st) {
+    // 양호: 매우 큰 저항, 노후: 중간, 불량: 매우 낮음
+    const map = {
+        wire:        { good: 850,  aged: 1.8,  bad: 0.18 },
+        motor:       { good: 420,  aged: 1.2,  bad: 0.08 },
+        transformer: { good: 1500, aged: 3.2,  bad: 0.45 }
+    };
+    return map[tgt][st];
+}
+
+// 측정 전압에 따른 보정 (메거는 V↑ 일수록 더 미세한 누설을 잡아내 R이 살짝 낮게 나오는 경향)
+function voltCorrection(v) {
+    if (v === 250) return 1.10;
+    if (v === 500) return 1.00;
+    if (v === 1000) return 0.92;
+    if (v === 2500) return 0.80;
+    return 1.0;
+}
+
+// KEC 기준치 (측정 전압 기준)
+function kecThreshold(v) {
+    if (v === 250) return 0.5;
+    // 500·1000·2500 모두 1.0 MΩ 기준 적용
+    return 1.0;
+}
+
+function computeResult() {
+    const base = baseOhm(target, insulState);
+    const v = base * voltCorrection(voltage);
+    // 약간의 측정 노이즈
+    const noisy = v * (0.97 + Math.random() * 0.06);
+    const kec = kecThreshold(voltage);
+    const pass = noisy >= kec;
+    let msg = '';
+    if (!pass) {
+        if (insulState === 'bad') {
+            msg = '절연 파괴 직전 상태. 즉시 사용 중단 후 권선 재제작·교체. 통전 시 감전·화재·기기 소손 위험.';
+        } else {
+            msg = '수분·먼지·열화로 인한 절연 저하. 건조·청소 후 재측정, 미회복 시 절연 재시공·교체.';
+        }
+    }
+    return { ohm: noisy, pass, kec, msg };
+}
+
+// === 캔버스 ===
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 540;
+    seedParticles();
+}
+window.addEventListener('resize', resize);
+
+function seedParticles() {
+    state.particles = [];
+    for (let i = 0; i < 24; i++) {
+        state.particles.push({
+            progress: Math.random(),
+            speed: 0.004 + Math.random() * 0.006,
+            ofs: Math.random() * 4 - 2
+        });
+    }
+}
+
+function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+}
+
+// === 메거 본체 ===
+function drawMeggerBody(x, y, w, h) {
+    ctx.save();
+    ctx.shadowBlur = 30;
+    ctx.shadowColor = 'rgba(99, 102, 241, 0.25)';
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, '#1e293b');
+    grad.addColorStop(0.04, '#0f172a');
+    grad.addColorStop(0.92, '#1a2236');
+    grad.addColorStop(1, '#0a0f1f');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y, w, h, 22);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 상단 컬러바
+    ctx.save();
+    const top = ctx.createLinearGradient(x, y, x + w, y);
+    top.addColorStop(0, 'rgba(34,197,94,0.55)');
+    top.addColorStop(0.5, 'rgba(99,102,241,0.55)');
+    top.addColorStop(1, 'rgba(251,191,36,0.55)');
+    ctx.fillStyle = top;
+    roundRect(ctx, x + 12, y + 12, w - 24, 4, 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 브랜드
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.5)';
+    ctx.textAlign = 'left';
+    ctx.fillText('MEGGER · IR-2500', x + 18, y + 36);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.6)';
+    ctx.fillText('INSULATION TESTER', x + w - 18, y + 36);
+    ctx.restore();
+}
+
+// === LCD (디지털 + 아날로그 게이지 결합) ===
+function drawLCD(x, y, w, h) {
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(110, 231, 183, 0.35)';
+    const g = ctx.createLinearGradient(x, y, x, y + h);
+    g.addColorStop(0, '#0c1f12');
+    g.addColorStop(1, '#061309');
+    ctx.fillStyle = g;
+    roundRect(ctx, x, y, w, h, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 상단 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#86efac';
+    ctx.textAlign = 'left';
+    ctx.fillText(`INSULATION  ·  ${voltage} V DC`, x + 12, y + 18);
+    if (isMeasuring) {
+        ctx.fillStyle = '#fde68a';
+        ctx.textAlign = 'right';
+        const blink = Math.floor(state.t / 12) % 2 === 0;
+        if (blink) ctx.fillText('● TEST', x + w - 12, y + 18);
+    } else if (lastResult) {
+        ctx.fillStyle = lastResult.pass ? '#6ee7b7' : '#fda4af';
+        ctx.textAlign = 'right';
+        ctx.fillText(lastResult.pass ? '◎ PASS' : '✕ FAIL', x + w - 12, y + 18);
+    }
+    ctx.restore();
+
+    // 디지털 숫자
+    let displayText = '----';
+    let unit = 'MΩ';
+    if (lastResult && !isMeasuring) {
+        const r = lastResult.ohm;
+        if (r >= 1000) { displayText = (r / 1000).toFixed(2); unit = 'GΩ'; }
+        else if (r >= 100) displayText = r.toFixed(0);
+        else if (r >= 10) displayText = r.toFixed(1);
+        else displayText = r.toFixed(2);
+    } else if (isMeasuring) {
+        // 측정 중 카운트업 효과
+        const prog = (state.t - measureStartT) / measureDur;
+        const target = computeResult().ohm;
+        const cur = Math.max(0.001, target * Math.min(1, prog) * (0.7 + Math.random() * 0.3));
+        if (cur >= 1000) { displayText = (cur / 1000).toFixed(2); unit = 'GΩ'; }
+        else if (cur >= 100) displayText = cur.toFixed(0);
+        else if (cur >= 10) displayText = cur.toFixed(1);
+        else displayText = cur.toFixed(2);
+    }
+
+    // 흐릿한 888.8
+    ctx.save();
+    ctx.font = 'bold 44px ui-monospace, "Courier New", monospace';
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.07)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('888.8', x + w - 70, y + h / 2 + 6);
+    ctx.restore();
+
+    // 실제 측정값
+    ctx.save();
+    ctx.font = 'bold 44px ui-monospace, "Courier New", monospace';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(110, 231, 183, 0.75)';
+    ctx.fillStyle = '#bef264';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(displayText, x + w - 70, y + h / 2 + 6);
+    ctx.restore();
+
+    // 단위
+    ctx.save();
+    ctx.font = 'bold 18px ui-monospace, monospace';
+    ctx.fillStyle = '#86efac';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(unit, x + w - 14, y + h / 2 + 8);
+    ctx.restore();
+}
+
+// === 아날로그 게이지 (LCD 아래) ===
+function drawGauge(cx, cy, r) {
+    // 반원 게이지 (왼쪽 0, 오른쪽 ∞)
+    ctx.save();
+    // 배경 호
+    ctx.lineWidth = 8;
+    const startA = Math.PI; // 180도
+    const endA = 0;          // 0도
+    // 컬러 존: 빨강(0~K), 노랑(K~10K), 초록(10K~∞)
+    const kec = kecThreshold(voltage);
+    // 게이지 값 매핑: log scale (0.01 MΩ ~ 10000 MΩ)
+    function val2Angle(v) {
+        const lv = Math.log10(Math.max(0.01, Math.min(10000, v)));
+        // -2..4 (6 decades)
+        const t = (lv + 2) / 6;
+        return Math.PI - t * Math.PI;
+    }
+    const kecAng = val2Angle(kec);
+    const tenKecAng = val2Angle(kec * 10);
+    // 빨강 (0 ~ KEC)
+    ctx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, Math.PI, kecAng, true);
+    ctx.stroke();
+    // 노랑 (KEC ~ 10*KEC)
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, kecAng, tenKecAng, true);
+    ctx.stroke();
+    // 초록 (10*KEC ~ ∞)
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.55)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, tenKecAng, 0, true);
+    ctx.stroke();
+
+    // 눈금
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    const ticks = [0.01, 0.1, 1, 10, 100, 1000];
+    ticks.forEach(v => {
+        const ang = val2Angle(v);
+        const x1 = cx + Math.cos(ang) * (r - 6);
+        const y1 = cy + Math.sin(ang) * (r - 6);
+        const x2 = cx + Math.cos(ang) * (r + 6);
+        const y2 = cy + Math.sin(ang) * (r + 6);
+        ctx.strokeStyle = 'rgba(203, 213, 225, 0.65)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.stroke();
+        // 라벨
+        const lx = cx + Math.cos(ang) * (r + 18);
+        const ly = cy + Math.sin(ang) * (r + 18);
+        ctx.fillText(v < 1 ? v.toString() : v.toString(), lx, ly + 3);
+    });
+    // ∞
+    ctx.fillStyle = '#86efac';
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillText('∞', cx + r + 18, cy + 3);
+    // 0
+    ctx.fillStyle = '#fda4af';
+    ctx.fillText('0', cx - r - 18, cy + 3);
+
+    // KEC 기준선
+    ctx.save();
+    ctx.strokeStyle = '#c4b5fd';
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#a78bfa';
+    const kx1 = cx + Math.cos(kecAng) * (r - 12);
+    const ky1 = cy + Math.sin(kecAng) * (r - 12);
+    const kx2 = cx + Math.cos(kecAng) * (r + 14);
+    const ky2 = cy + Math.sin(kecAng) * (r + 14);
+    ctx.beginPath();
+    ctx.moveTo(kx1, ky1); ctx.lineTo(kx2, ky2);
+    ctx.stroke();
+    ctx.fillStyle = '#c4b5fd';
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillText(`KEC ${kec}`, kx2 + 4, ky2 - 6);
+    ctx.restore();
+
+    // 바늘
+    let ang;
+    if (lastResult && !isMeasuring) ang = val2Angle(lastResult.ohm);
+    else if (isMeasuring) {
+        // 측정 중 바늘 움직임
+        const prog = (state.t - measureStartT) / measureDur;
+        const finalAng = val2Angle(computeResult().ohm);
+        ang = Math.PI + (finalAng - Math.PI) * Math.min(1, prog * 1.2) + (Math.random() - 0.5) * 0.05;
+    } else ang = Math.PI; // 0 위치
+
+    needleTargetAngle = ang;
+    needleAngle += (needleTargetAngle - needleAngle) * 0.15;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(needleAngle);
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#fda4af';
+    ctx.strokeStyle = '#fef2f2';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(r - 8, 0);
+    ctx.stroke();
+    // 화살촉
+    ctx.fillStyle = '#fca5a5';
+    ctx.beginPath();
+    ctx.moveTo(r - 8, 0);
+    ctx.lineTo(r - 16, -4);
+    ctx.lineTo(r - 16, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 중앙 캡
+    ctx.save();
+    const cg = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 8);
+    cg.addColorStop(0, '#cbd5e1');
+    cg.addColorStop(1, '#1e293b');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.restore();
+}
+
+// === 단자 (LINE, EARTH, GUARD) ===
+function drawJacks(cx, cy) {
+    const xs = [-70, 0, 70];
+    const labels = ['LINE', 'EARTH', 'GUARD'];
+    const ringColors = ['#fda4af', '#86efac', '#fde68a'];
+    xs.forEach((x, idx) => {
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = ringColors[idx];
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(cx + x, cy, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = ringColors[idx];
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#0a0a0a';
+        ctx.beginPath();
+        ctx.arc(cx + x, cy, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = ringColors[idx];
+        ctx.textAlign = 'center';
+        ctx.fillText(labels[idx], cx + x, cy + 28);
+        ctx.restore();
+    });
+}
+
+// === 핸들 (오른쪽 측면) ===
+function drawHandle(cx, cy, r) {
+    ctx.save();
+    // 외곽
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = isMeasuring ? '#fbbf24' : 'rgba(148, 163, 184, 0.4)';
+    const g = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, r);
+    g.addColorStop(0, '#475569');
+    g.addColorStop(0.7, '#1e293b');
+    g.addColorStop(1, '#0f172a');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = isMeasuring ? 'rgba(251, 191, 36, 0.7)' : 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 핸들 (회전)
+    if (isMeasuring) handleAngle += 0.32;
+    else handleAngle *= 0.96;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(handleAngle);
+    // 손잡이 막대
+    const hg = ctx.createLinearGradient(-r + 4, 0, r - 4, 0);
+    hg.addColorStop(0, '#fcd34d');
+    hg.addColorStop(0.5, '#fbbf24');
+    hg.addColorStop(1, '#b45309');
+    ctx.fillStyle = hg;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = isMeasuring ? '#fbbf24' : 'rgba(0,0,0,0)';
+    roundRect(ctx, -r + 6, -5, r * 2 - 12, 10, 5);
+    ctx.fill();
+    // 끝 손잡이 (구)
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath();
+    ctx.arc(r - 10, 0, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 중앙 캡
+    ctx.save();
+    const cg = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, 8);
+    cg.addColorStop(0, '#cbd5e1');
+    cg.addColorStop(1, '#0f172a');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('HAND-CRANK', cx, cy + r + 14);
+    ctx.restore();
+}
+
+// === 측정 대상 (전선/모터/변압기) ===
+function drawTarget(x, y, w, h) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, x, y, w, h, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'left';
+    const tlabel = { wire: 'TEST OBJECT · WIRE', motor: 'TEST OBJECT · MOTOR', transformer: 'TEST OBJECT · TRANSFORMER' }[target];
+    ctx.fillText(tlabel, x + 8, y - 6);
+    ctx.restore();
+
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+
+    if (target === 'wire') drawWire(cx, cy, w, h);
+    else if (target === 'motor') drawMotor(cx, cy, w, h);
+    else drawTransformer(cx, cy, w, h);
+
+    // 누설 시각화 (불량/노후)
+    drawInsulationField(x, y, w, h);
+}
+
+function drawWire(cx, cy, w, h) {
+    // 전선 (좌-우 가로)
+    const wireY = cy;
+    const wireW = w - 80;
+    ctx.save();
+    // 외피 (절연체)
+    const ig = ctx.createLinearGradient(0, wireY - 22, 0, wireY + 22);
+    if (insulState === 'good') {
+        ig.addColorStop(0, 'rgba(34, 197, 94, 0.4)');
+        ig.addColorStop(1, 'rgba(34, 197, 94, 0.15)');
+    } else if (insulState === 'aged') {
+        ig.addColorStop(0, 'rgba(251, 191, 36, 0.4)');
+        ig.addColorStop(1, 'rgba(251, 191, 36, 0.15)');
+    } else {
+        ig.addColorStop(0, 'rgba(244, 63, 94, 0.5)');
+        ig.addColorStop(1, 'rgba(244, 63, 94, 0.2)');
+    }
+    ctx.fillStyle = ig;
+    roundRect(ctx, cx - wireW/2, wireY - 18, wireW, 36, 18);
+    ctx.fill();
+    ctx.strokeStyle = insulState === 'good' ? 'rgba(110, 231, 183, 0.7)' :
+                       insulState === 'aged' ? 'rgba(253, 224, 71, 0.7)' :
+                       'rgba(253, 164, 175, 0.8)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 도체 (내부)
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#fcd34d';
+    const cg = ctx.createLinearGradient(0, wireY - 8, 0, wireY + 8);
+    cg.addColorStop(0, '#fef3c7');
+    cg.addColorStop(1, '#b45309');
+    ctx.fillStyle = cg;
+    roundRect(ctx, cx - wireW/2 + 8, wireY - 6, wireW - 16, 12, 6);
+    ctx.fill();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.textAlign = 'left';
+    ctx.fillText('도체(Cu)', cx - wireW/2 + 4, wireY - 24);
+    ctx.fillText('절연체', cx - wireW/2 + 4, wireY + 32);
+    ctx.restore();
+
+    // 대지/접지 표시
+    drawGround(cx, cy + h * 0.32, 80);
+}
+
+function drawMotor(cx, cy, w, h) {
+    // 외함 (사각)
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.4)';
+    const eg = ctx.createLinearGradient(cx - 80, cy - 60, cx + 80, cy + 60);
+    eg.addColorStop(0, '#475569');
+    eg.addColorStop(1, '#1e293b');
+    ctx.fillStyle = eg;
+    roundRect(ctx, cx - 80, cy - 50, 160, 100, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 권선 (원)
+    ctx.save();
+    const wg = ctx.createRadialGradient(cx - 6, cy - 6, 4, cx, cy, 38);
+    if (insulState === 'good') {
+        wg.addColorStop(0, 'rgba(110, 231, 183, 0.7)');
+        wg.addColorStop(1, 'rgba(15, 23, 42, 0.7)');
+    } else if (insulState === 'aged') {
+        wg.addColorStop(0, 'rgba(253, 224, 71, 0.7)');
+        wg.addColorStop(1, 'rgba(15, 23, 42, 0.7)');
+    } else {
+        wg.addColorStop(0, 'rgba(253, 164, 175, 0.8)');
+        wg.addColorStop(1, 'rgba(15, 23, 42, 0.7)');
+    }
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = insulState === 'good' ? '#10b981' : insulState === 'aged' ? '#fbbf24' : '#f43f5e';
+    ctx.fillStyle = wg;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 36, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // 권선 라인 (3개)
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.7)';
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 26 - i * 6, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    // 축
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 단자 (U V W)
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center';
+    ['U', 'V', 'W'].forEach((l, i) => {
+        const tx = cx - 30 + i * 30;
+        const ty = cy - 60;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText(l, tx, ty - 8);
+    });
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.textAlign = 'left';
+    ctx.fillText('외함(Frame)', cx + 30, cy + 70);
+    ctx.fillText('권선(Winding)', cx - 80, cy - 64);
+    ctx.restore();
+
+    // 접지
+    drawGround(cx, cy + 80, 80);
+    ctx.save();
+    ctx.strokeStyle = '#86efac';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 50); ctx.lineTo(cx, cy + 70);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawTransformer(cx, cy, w, h) {
+    // 외함
+    ctx.save();
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.4)';
+    const eg = ctx.createLinearGradient(cx - 90, cy - 60, cx + 90, cy + 60);
+    eg.addColorStop(0, '#475569');
+    eg.addColorStop(1, '#1e293b');
+    ctx.fillStyle = eg;
+    roundRect(ctx, cx - 90, cy - 55, 180, 110, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // 철심
+    ctx.save();
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.4;
+    roundRect(ctx, cx - 18, cy - 36, 36, 72, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 1차/2차 권선 (양쪽)
+    const winColor = insulState === 'good' ? '#86efac' : insulState === 'aged' ? '#fde68a' : '#fda4af';
+    const winShadow = insulState === 'good' ? '#10b981' : insulState === 'aged' ? '#fbbf24' : '#f43f5e';
+    [-50, 50].forEach(dx => {
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = winShadow;
+        ctx.strokeStyle = winColor;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+            ctx.beginPath();
+            ctx.arc(cx + dx, cy - 24 + i * 10, 14, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        ctx.restore();
+    });
+
+    // 단자
+    ctx.save();
+    ctx.fillStyle = '#fcd34d';
+    [-50, 50].forEach(dx => {
+        [-1, 1].forEach(sgn => {
+            ctx.beginPath();
+            ctx.arc(cx + dx, cy + sgn * 50, 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    });
+    ctx.font = 'bold 8px ui-monospace, monospace';
+    ctx.fillStyle = '#fde68a';
+    ctx.textAlign = 'center';
+    ctx.fillText('1차', cx - 50, cy - 64);
+    ctx.fillText('2차', cx + 50, cy - 64);
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.textAlign = 'center';
+    ctx.fillText('철심(Core)', cx, cy + 78);
+    ctx.restore();
+
+    // 접지
+    drawGround(cx, cy + 90, 80);
+    ctx.save();
+    ctx.strokeStyle = '#86efac';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 55); ctx.lineTo(cx, cy + 80);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawGround(cx, cy, w) {
+    ctx.save();
+    ctx.strokeStyle = '#86efac';
+    ctx.lineWidth = 1.6;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#10b981';
+    for (let i = 0; i < 3; i++) {
+        const l = w - i * 16;
+        ctx.beginPath();
+        ctx.moveTo(cx - l/2, cy + i * 5);
+        ctx.lineTo(cx + l/2, cy + i * 5);
+        ctx.stroke();
+    }
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.textAlign = 'center';
+    ctx.fillText('GROUND', cx, cy + 30);
+    ctx.restore();
+}
+
+// === 절연 누설 시각화 ===
+function drawInsulationField(x, y, w, h) {
+    if (!isMeasuring) return;
+    // 양호: 거의 없음, 노후: 가끔, 불량: 많은 누설 입자
+    const intensity = { good: 0.1, aged: 0.5, bad: 1.0 }[insulState];
+    if (intensity < 0.05) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of state.particles) {
+        p.progress += p.speed * intensity;
+        if (p.progress > 1) p.progress = 0;
+        // 좌측 (LINE 측)에서 우측 GROUND 측으로
+        const px = x + 30 + (w - 60) * p.progress;
+        const py = y + h / 2 + Math.sin(p.progress * Math.PI * 3 + p.ofs) * 30;
+        const a = Math.min(1, intensity) * (1 - Math.abs(p.progress - 0.5) * 2 * 0.5);
+        ctx.fillStyle = insulState === 'bad'
+            ? `rgba(253, 164, 175, ${a})`
+            : `rgba(253, 224, 71, ${a * 0.8})`;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = insulState === 'bad' ? '#f43f5e' : '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// === 프로브 (메거 → 대상) ===
+function drawProbes(megX, megY, tgtX, tgtY) {
+    // 빨강 (LINE), 초록 (EARTH)
+    [['#dc2626', '#fda4af', -70, -40],
+     ['#10b981', '#6ee7b7', 0, 40]].forEach(([col, ring, jx, ty]) => {
+        ctx.save();
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = col;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const sx = megX + jx;
+        const sy = megY;
+        const ex = tgtX;
+        const ey = tgtY + ty;
+        ctx.moveTo(sx, sy);
+        const c1x = sx + (ex - sx) * 0.3;
+        const c1y = sy + 40;
+        const c2x = sx + (ex - sx) * 0.7;
+        const c2y = ey - 20;
+        ctx.bezierCurveTo(c1x, c1y, c2x, c2y, ex, ey);
+        ctx.stroke();
+        // 팁
+        ctx.fillStyle = ring;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+// === 메인 그리기 ===
+function drawFrame() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 좌측 메거
+    const bodyW = Math.min(W * 0.5, 360);
+    const bodyX = 16;
+    const bodyY = 16;
+    const bodyH = H - 32;
+    drawMeggerBody(bodyX, bodyY, bodyW, bodyH);
+
+    // LCD
+    const lcdW = bodyW - 40, lcdH = 80;
+    const lcdX = bodyX + 20, lcdY = bodyY + 50;
+    drawLCD(lcdX, lcdY, lcdW, lcdH);
+
+    // 게이지
+    const gaugeCX = bodyX + bodyW / 2;
+    const gaugeCY = bodyY + 220;
+    drawGauge(gaugeCX, gaugeCY, 80);
+
+    // 핸들 (LCD 아래 우측)
+    const handleCX = bodyX + bodyW - 60;
+    const handleCY = bodyY + bodyH - 130;
+    drawHandle(handleCX, handleCY, 32);
+
+    // 측정 전압 라벨 (좌측)
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.85)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`TEST V: ${voltage} V DC`, bodyX + 20, bodyY + bodyH - 110);
+    ctx.restore();
+
+    // 단자
+    drawJacks(bodyX + bodyW / 2 - 30, bodyY + bodyH - 60);
+
+    // 우측 측정 대상 영역
+    const tgtX = bodyX + bodyW + 24;
+    const tgtY = bodyY + 30;
+    const tgtW = W - tgtX - 16;
+    const tgtH = bodyH - 60;
+    if (tgtW > 100) {
+        drawTarget(tgtX, tgtY, tgtW, tgtH);
+        // 프로브
+        drawProbes(bodyX + bodyW / 2 - 30, bodyY + bodyH - 50, tgtX + 30, tgtY + tgtH / 2);
+    }
+
+    // 측정 중 글로우
+    if (isMeasuring) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(251, 191, 36, ${0.5 + Math.sin(state.t * 0.2) * 0.3})`;
+        ctx.lineWidth = 2;
+        roundRect(ctx, bodyX - 1, bodyY - 1, bodyW + 2, bodyH + 2, 23);
+        ctx.stroke();
+        ctx.restore();
+    }
+    // 불합격 글로우
+    if (lastResult && !lastResult.pass && !isMeasuring) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(244, 63, 94, ${0.4 + Math.sin(state.t * 0.15) * 0.3})`;
+        ctx.lineWidth = 2;
+        roundRect(ctx, bodyX - 1, bodyY - 1, bodyW + 2, bodyH + 2, 23);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+// === 라이브 패널 ===
+function updateLive() {
+    $('voltDisp').textContent = voltage.toString();
+    $('kecDisp').textContent = kecThreshold(voltage).toFixed(1);
+
+    const ohmEl = $('ohmDisp');
+    const unitEl = $('ohmUnit');
+    const judgeEl = $('judgeDisp');
+    const judgeChip = $('judgeChip');
+    const banner = $('alarmBanner');
+    const dc = $('dangerCard');
+    const statusTag = $('statusTag');
+
+    judgeChip.classList.remove('chip-judge-ok', 'chip-judge-ng');
+
+    if (isMeasuring) {
+        ohmEl.textContent = '...';
+        unitEl.textContent = 'MΩ';
+        judgeEl.innerHTML = '<span class="text-amber-300">측정 중</span>';
+        statusTag.textContent = 'MEASURING...';
+        statusTag.classList.remove('text-slate-400', 'text-emerald-300', 'text-rose-300');
+        statusTag.classList.add('text-amber-300');
+        banner.classList.add('hidden');
+        dc.classList.add('hidden');
+    } else if (lastResult) {
+        let v = lastResult.ohm;
+        let u = 'MΩ';
+        if (v >= 1000) { v = v / 1000; u = 'GΩ'; }
+        ohmEl.textContent = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+        unitEl.textContent = u;
+        if (lastResult.pass) {
+            judgeEl.innerHTML = '<span class="text-emerald-300">◎ 합격</span>';
+            judgeChip.classList.add('chip-judge-ok');
+            statusTag.textContent = 'PASS';
+            statusTag.classList.remove('text-slate-400', 'text-amber-300', 'text-rose-300');
+            statusTag.classList.add('text-emerald-300');
+            banner.classList.add('hidden');
+            dc.classList.add('hidden');
+        } else {
+            judgeEl.innerHTML = '<span class="text-rose-300">✕ 불합격</span>';
+            judgeChip.classList.add('chip-judge-ng');
+            statusTag.textContent = 'FAIL';
+            statusTag.classList.remove('text-slate-400', 'text-amber-300', 'text-emerald-300');
+            statusTag.classList.add('text-rose-300');
+            banner.classList.remove('hidden');
+            dc.classList.remove('hidden');
+            $('dangerMsg').textContent = lastResult.msg;
+        }
+    } else {
+        ohmEl.textContent = '--';
+        unitEl.textContent = 'MΩ';
+        judgeEl.innerHTML = '<span class="text-slate-400">대기</span>';
+        statusTag.textContent = 'READY';
+        statusTag.classList.remove('text-amber-300', 'text-emerald-300', 'text-rose-300');
+        statusTag.classList.add('text-slate-400');
+        banner.classList.add('hidden');
+        dc.classList.add('hidden');
+    }
+
+    // KEC 표 하이라이트
+    document.querySelectorAll('#kecTable .kec-row').forEach(el => {
+        const b = el.dataset.band;
+        const match = (b === 'A' && voltage === 250) ||
+                      (b === 'B' && voltage === 500) ||
+                      (b === 'C' && (voltage === 1000 || voltage === 2500));
+        el.classList.toggle('highlight', match);
+    });
+}
+
+// === 측정 시작 ===
+function startMeasure() {
+    if (isMeasuring) return;
+    isMeasuring = true;
+    measureStartT = state.t;
+    lastResult = null;
+    $('measureBtn').classList.add('measuring');
+    $('measureBtn').textContent = '● 측정 중...';
+    updateLive();
+    if (window.gsap) {
+        gsap.fromTo('#canvasCard',
+            { boxShadow: '0 0 0 0 rgba(251, 191, 36, 0.6)' },
+            { boxShadow: '0 0 60px 6px rgba(251, 191, 36, 0)', duration: 1.2 });
+    }
+}
+
+function finishMeasure() {
+    isMeasuring = false;
+    lastResult = computeResult();
+    $('measureBtn').classList.remove('measuring');
+    $('measureBtn').textContent = '▶ PRESS · TEST (다시 측정)';
+    updateLive();
+    if (window.gsap) {
+        const col = lastResult.pass ? 'rgba(34, 197, 94, 0.6)' : 'rgba(244, 63, 94, 0.65)';
+        gsap.fromTo('#canvasCard',
+            { boxShadow: `0 0 0 0 ${col}` },
+            { boxShadow: `0 0 70px 8px ${col.replace('0.6', '0').replace('0.65', '0')}`, duration: 1.0 });
+        gsap.fromTo('#livePanel > *',
+            { scale: 1 }, { scale: 1.04, duration: 0.18, yoyo: true, repeat: 1, stagger: 0.05 });
+    }
+}
+
+// === UI ===
+function updateUI() {
+    document.querySelectorAll('.volt-btn').forEach(b => {
+        b.classList.toggle('active', +b.dataset.volt === voltage);
+    });
+    document.querySelectorAll('.target-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.target === target);
+    });
+    document.querySelectorAll('.state-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.state === insulState);
+    });
+    // 조건 바꾸면 결과 무효화
+    if (!isMeasuring) {
+        lastResult = null;
+    }
+    updateLive();
+}
+
+document.querySelectorAll('.volt-btn').forEach(b => {
+    b.addEventListener('click', () => { voltage = +b.dataset.volt; updateUI(); });
+});
+document.querySelectorAll('.target-btn').forEach(b => {
+    b.addEventListener('click', () => { target = b.dataset.target; updateUI(); });
+});
+document.querySelectorAll('.state-btn').forEach(b => {
+    b.addEventListener('click', () => { insulState = b.dataset.state; updateUI(); });
+});
+$('measureBtn').addEventListener('click', startMeasure);
+
+function animate() {
+    state.t++;
+    if (isMeasuring && state.t - measureStartT >= measureDur) {
+        finishMeasure();
+    }
+    drawFrame();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    // 초기 상태
+    voltage = 500;
+    target = 'wire';
+    insulState = 'good';
+    resize();
+    updateUI();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

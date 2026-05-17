@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기파장 88.5 · 전기기능사 FM 라디오</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #0a0705;
+    --bg-1: #14100b;
+    --bg-2: #1c1612;
+    --bg-3: #2a2018;
+    --line: #3a2c20;
+    --line-2: #51402f;
+    --amber: #f5a623;
+    --amber-2: #ffb748;
+    --amber-3: #d68813;
+    --orange: #ff7a18;
+    --red: #e93b3b;
+    --red-2: #ff4d4d;
+    --cream: #f5e6c8;
+    --cream-2: #d9c49a;
+    --txt-0: #f7ecd2;
+    --txt-1: #c9b790;
+    --txt-2: #8a7656;
+    --txt-3: #5a4c38;
+  }
+  * { font-family: 'Inter', 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+  html, body {
+    background: var(--bg-0);
+    color: var(--txt-0);
+    overflow-x: hidden;
+  }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(245,166,35,0.10), transparent 45%),
+      radial-gradient(circle at 85% 30%, rgba(233,59,59,0.08), transparent 50%),
+      radial-gradient(circle at 50% 95%, rgba(255,122,24,0.06), transparent 55%),
+      linear-gradient(180deg, #0a0705 0%, #14100b 50%, #0a0705 100%);
+  }
+  .mono { font-family: 'DM Mono', 'Inter', monospace; letter-spacing: 0.02em; }
+  .display { font-family: 'Bebas Neue', 'Inter', sans-serif; letter-spacing: 0.04em; }
+  .grain::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.95 0 0 0 0 0.75 0 0 0 0 0.4 0 0 0 0.13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.35; mix-blend-mode: overlay;
+  }
+  .glow-amber { box-shadow: 0 0 24px rgba(245,166,35,0.25), inset 0 1px 0 rgba(255,255,255,0.04); }
+  .glow-red { box-shadow: 0 0 30px rgba(233,59,59,0.6), 0 0 60px rgba(233,59,59,0.25), inset 0 0 6px rgba(255,255,255,0.2); }
+  .vu-panel {
+    background: linear-gradient(180deg, #1f1812 0%, #14100b 100%);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -1px 0 rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.4);
+  }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-1); }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--amber-3); }
+
+  /* ON AIR blink */
+  @keyframes onair-pulse {
+    0%, 60% { opacity: 1; box-shadow: 0 0 30px rgba(233,59,59,0.7), 0 0 60px rgba(233,59,59,0.3); }
+    70%, 100% { opacity: 0.55; box-shadow: 0 0 12px rgba(233,59,59,0.3); }
+  }
+  .onair-blink { animation: onair-pulse 1.6s ease-in-out infinite; }
+
+  @keyframes blink-led {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.2; }
+  }
+  .led-blink { animation: blink-led 1s steps(1, end) infinite; }
+
+  /* Dial */
+  .dial-knob { cursor: grab; transition: filter 0.15s; }
+  .dial-knob:active { cursor: grabbing; }
+  .dial-knob:hover { filter: brightness(1.15); }
+
+  /* VU meter needle */
+  @keyframes vu-bounce {
+    0%   { transform: rotate(var(--from, -45deg)); }
+    25%  { transform: rotate(var(--to, 35deg)); }
+    50%  { transform: rotate(-10deg); }
+    75%  { transform: rotate(25deg); }
+    100% { transform: rotate(var(--from, -45deg)); }
+  }
+  .vu-needle { transform-origin: 50% 90%; animation: vu-bounce 1.4s ease-in-out infinite; }
+  .vu-needle.slow { animation-duration: 2.1s; }
+
+  /* equalizer bars */
+  @keyframes eq {
+    0%, 100% { height: 14%; }
+    50% { height: 92%; }
+  }
+  .eq-bar { animation: eq 0.9s ease-in-out infinite; }
+
+  /* Cassette tape spin */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin-slow { animation: spin 4s linear infinite; }
+  .spin-med  { animation: spin 2.6s linear infinite; }
+
+  /* marquee */
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .marquee-track { animation: marquee 38s linear infinite; }
+
+  /* card shimmer */
+  .card-warm {
+    background: linear-gradient(180deg, rgba(42,32,24,0.85) 0%, rgba(20,16,11,0.85) 100%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    backdrop-filter: blur(6px);
+  }
+  .card-warm:hover { border-color: var(--line-2); }
+
+  /* knob ring */
+  .knob-ring {
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), transparent 45%),
+      radial-gradient(circle, #2a2018 0%, #14100b 70%);
+    border: 1px solid var(--line-2);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(255,255,255,0.04), 0 4px 14px rgba(0,0,0,0.45);
+  }
+
+  /* slider styled like volume slider */
+  input[type=range].vol {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: linear-gradient(90deg, var(--amber) 0%, var(--amber) var(--val,50%), #2a2018 var(--val,50%), #2a2018 100%);
+    border-radius: 3px;
+    outline: none;
+    border: 1px solid var(--line);
+  }
+  input[type=range].vol::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffd47a, #d68813 60%, #6a4a1a);
+    border: 1px solid #2a2018;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+    cursor: pointer;
+  }
+  input[type=range].vol::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffd47a, #d68813 60%, #6a4a1a);
+    border: 1px solid #2a2018; cursor: pointer;
+  }
+
+  .tape-hole {
+    background: radial-gradient(circle, #0a0705 0%, #2a2018 60%, #51402f 100%);
+  }
+
+  /* Letter (사연) expand */
+  .letter-body { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, margin 0.3s ease; }
+  .letter.open .letter-body { max-height: 360px; margin-top: 14px; }
+  .letter .chev { transition: transform 0.3s; }
+  .letter.open .chev { transform: rotate(180deg); }
+
+  /* tick marks */
+  .tick { background: var(--txt-2); }
+  .tick.major { background: var(--amber); }
+
+  /* Chat scroll */
+  .chat-scroll { max-height: 360px; overflow-y: auto; }
+
+  /* responsive cap */
+  .container-radio { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
+
+  /* button warm */
+  .btn-warm {
+    background: linear-gradient(180deg, #2a2018 0%, #14100b 100%);
+    border: 1px solid var(--line-2);
+    color: var(--txt-0);
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .btn-warm:hover { background: linear-gradient(180deg, #3a2c20 0%, #1c1612 100%); border-color: var(--amber-3); color: var(--amber-2); }
+
+  .badge-amber {
+    background: rgba(245,166,35,0.12);
+    color: var(--amber-2);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-red {
+    background: rgba(233,59,59,0.12);
+    color: var(--red-2);
+    border: 1px solid rgba(233,59,59,0.35);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  /* divider with text */
+  .divider-warm {
+    display: flex; align-items: center; gap: 14px;
+    color: var(--txt-2); font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+  }
+  .divider-warm::before, .divider-warm::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-2), transparent);
+  }
+
+  /* small dot */
+  .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+  /* Console buttons */
+  .console-btn {
+    background: radial-gradient(circle at 30% 30%, #3a2c20, #1c1612 70%);
+    border: 1px solid var(--line-2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  /* Frequency LCD */
+  .lcd {
+    background: linear-gradient(180deg, #1a1410 0%, #0e0a07 100%);
+    border: 1px solid #51402f;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), inset 0 0 30px rgba(245,166,35,0.05);
+    border-radius: 10px;
+  }
+
+  /* Header pattern */
+  .stripes {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(245,166,35,0.06) 0,
+      rgba(245,166,35,0.06) 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+</style>
+</head>
+<body class="grain">
+
+<!-- ============== TOP BAR ============== -->
+<header class="border-b border-[color:var(--line)] bg-[#0e0a07]/80 backdrop-blur-md sticky top-0 z-50">
+  <div class="container-radio flex items-center justify-between py-3">
+    <div class="flex items-center gap-3">
+      <!-- Logo SVG -->
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="16" stroke="#f5a623" stroke-width="1.2"/>
+        <circle cx="18" cy="18" r="11" stroke="#f5a623" stroke-width="0.8" opacity="0.6"/>
+        <path d="M18 5 L18 31 M5 18 L31 18" stroke="#f5a623" stroke-width="0.6" opacity="0.4"/>
+        <circle cx="18" cy="18" r="3" fill="#e93b3b"/>
+        <path d="M12 9 L24 27" stroke="#f5a623" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="display text-2xl leading-none text-[color:var(--amber-2)]">전기파장 88.5</div>
+        <div class="mono text-[10px] text-[color:var(--txt-2)] uppercase tracking-widest">FM ELEC · since 2026</div>
+      </div>
+    </div>
+
+    <nav class="hidden md:flex items-center gap-7 text-sm text-[color:var(--txt-1)]">
+      <a class="hover:text-[color:var(--amber-2)] transition" href="#now">ON AIR</a>
+      <a class="hover:text-[color:var(--amber-2)] transition" href="#schedule">편성표</a>
+      <a class="hover:text-[color:var(--amber-2)] transition" href="#letters">사연</a>
+      <a class="hover:text-[color:var(--amber-2)] transition" href="#cue">큐시트</a>
+      <a class="hover:text-[color:var(--amber-2)] transition" href="#board">게시판</a>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex items-center gap-2 mono text-xs text-[color:var(--txt-1)]">
+        <span class="dot bg-[color:var(--amber)] led-blink"></span>
+        <span id="clockTop">--:--:--</span>
+      </div>
+      <button class="btn-warm px-3 py-1.5 text-xs mono uppercase tracking-wider">전화 02-880-XXXX</button>
+    </div>
+  </div>
+</header>
+
+<main class="container-radio py-8 space-y-10">
+
+  <!-- ============== STUDIO HERO ============== -->
+  <section id="now" class="grid lg:grid-cols-[1.2fr_1fr] gap-6 items-stretch">
+
+    <!-- STUDIO ILLUSTRATION -->
+    <div class="vu-panel rounded-2xl p-6 relative overflow-hidden">
+      <!-- subtle stripes -->
+      <div class="absolute inset-0 stripes opacity-50 pointer-events-none"></div>
+
+      <!-- ON AIR sign -->
+      <div class="absolute top-5 right-5 z-10">
+        <div class="onair-blink bg-gradient-to-b from-[#ff4d4d] to-[#a02020] text-white px-4 py-2 rounded-md border border-red-900 shadow-2xl">
+          <div class="display text-2xl tracking-widest leading-none">ON AIR</div>
+        </div>
+      </div>
+
+      <div class="relative grid grid-cols-12 gap-3 items-end mt-2 mb-4">
+        <!-- HEADPHONES -->
+        <div class="col-span-3 flex justify-center">
+          <svg viewBox="0 0 120 140" class="w-24 h-28">
+            <defs>
+              <linearGradient id="hpC" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#3a2c20"/>
+                <stop offset="1" stop-color="#14100b"/>
+              </linearGradient>
+              <linearGradient id="hpPad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#5a4c38"/>
+                <stop offset="1" stop-color="#2a2018"/>
+              </linearGradient>
+            </defs>
+            <!-- arc -->
+            <path d="M15 70 Q15 18 60 18 Q105 18 105 70" fill="none" stroke="url(#hpC)" stroke-width="8" stroke-linecap="round"/>
+            <path d="M18 70 Q18 22 60 22 Q102 22 102 70" fill="none" stroke="#f5a623" stroke-width="1" opacity="0.4"/>
+            <!-- left cup -->
+            <rect x="6" y="62" width="26" height="40" rx="10" fill="url(#hpC)" stroke="#51402f"/>
+            <ellipse cx="19" cy="82" rx="9" ry="14" fill="url(#hpPad)"/>
+            <circle cx="19" cy="82" r="3" fill="#f5a623" opacity="0.7"/>
+            <!-- right cup -->
+            <rect x="88" y="62" width="26" height="40" rx="10" fill="url(#hpC)" stroke="#51402f"/>
+            <ellipse cx="101" cy="82" rx="9" ry="14" fill="url(#hpPad)"/>
+            <circle cx="101" cy="82" r="3" fill="#f5a623" opacity="0.7"/>
+            <!-- cable -->
+            <path d="M19 100 Q15 120 30 130" stroke="#3a2c20" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+
+        <!-- MICROPHONE -->
+        <div class="col-span-6 flex justify-center">
+          <svg viewBox="0 0 200 240" class="w-44 h-52">
+            <defs>
+              <linearGradient id="micBody" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#5a4c38"/>
+                <stop offset="0.5" stop-color="#2a2018"/>
+                <stop offset="1" stop-color="#0a0705"/>
+              </linearGradient>
+              <linearGradient id="micMesh" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#3a2c20"/>
+                <stop offset="0.5" stop-color="#5a4c38"/>
+                <stop offset="1" stop-color="#1c1612"/>
+              </linearGradient>
+              <radialGradient id="micShine" cx="35%" cy="25%">
+                <stop offset="0" stop-color="#ffd47a" stop-opacity="0.5"/>
+                <stop offset="1" stop-color="transparent"/>
+              </radialGradient>
+              <pattern id="meshPat" width="6" height="6" patternUnits="userSpaceOnUse">
+                <circle cx="3" cy="3" r="1.2" fill="#14100b"/>
+              </pattern>
+            </defs>
+            <!-- arm/holder top -->
+            <path d="M40 30 Q40 20 60 20 L140 20 Q160 20 160 30 L150 50 L50 50 Z" fill="#1c1612" stroke="#51402f"/>
+            <!-- elastic suspension -->
+            <ellipse cx="100" cy="120" rx="80" ry="6" fill="none" stroke="#51402f" stroke-width="1"/>
+            <!-- mic head (capsule) -->
+            <rect x="55" y="55" width="90" height="120" rx="20" fill="url(#micBody)" stroke="#51402f" stroke-width="1.5"/>
+            <rect x="62" y="62" width="76" height="105" rx="14" fill="url(#micMesh)"/>
+            <rect x="62" y="62" width="76" height="105" rx="14" fill="url(#meshPat)" opacity="0.55"/>
+            <rect x="62" y="62" width="76" height="105" rx="14" fill="url(#micShine)"/>
+            <!-- band -->
+            <rect x="55" y="110" width="90" height="6" fill="#0a0705" opacity="0.5"/>
+            <text x="100" y="135" text-anchor="middle" font-family="DM Mono" font-size="9" fill="#f5a623" opacity="0.6">88.5 FM</text>
+            <!-- stand -->
+            <rect x="92" y="175" width="16" height="40" rx="3" fill="#3a2c20" stroke="#51402f"/>
+            <rect x="70" y="215" width="60" height="10" rx="3" fill="#2a2018" stroke="#51402f"/>
+            <!-- small LED -->
+            <circle cx="100" cy="82" r="3" fill="#e93b3b" class="onair-blink"/>
+          </svg>
+        </div>
+
+        <!-- VU METERS -->
+        <div class="col-span-3 flex flex-col gap-2">
+          <div class="vu-panel rounded-lg p-2">
+            <svg viewBox="0 0 120 80" class="w-full">
+              <defs>
+                <linearGradient id="vuBg" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#f5e6c8"/>
+                  <stop offset="1" stop-color="#d9c49a"/>
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="116" height="76" rx="4" fill="url(#vuBg)" stroke="#51402f"/>
+              <!-- arc -->
+              <path d="M15 70 A 45 45 0 0 1 105 70" fill="none" stroke="#3a2c20" stroke-width="0.6"/>
+              <path d="M75 25 A 45 45 0 0 1 105 70" fill="none" stroke="#e93b3b" stroke-width="2"/>
+              <!-- ticks -->
+              <g stroke="#2a2018" stroke-width="0.8">
+                <line x1="15" y1="70" x2="18" y2="63"/>
+                <line x1="30" y1="50" x2="33" y2="55"/>
+                <line x1="60" y1="25" x2="60" y2="32"/>
+                <line x1="90" y1="50" x2="87" y2="55"/>
+                <line x1="105" y1="70" x2="102" y2="63"/>
+              </g>
+              <text x="60" y="50" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#2a2018">VU · L</text>
+              <!-- needle -->
+              <g class="vu-needle" style="--from:-45deg; --to:30deg; transform-origin:60px 70px;">
+                <line x1="60" y1="70" x2="60" y2="22" stroke="#e93b3b" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="60" cy="70" r="3" fill="#2a2018"/>
+              </g>
+            </svg>
+          </div>
+          <div class="vu-panel rounded-lg p-2">
+            <svg viewBox="0 0 120 80" class="w-full">
+              <rect x="2" y="2" width="116" height="76" rx="4" fill="url(#vuBg)" stroke="#51402f"/>
+              <path d="M15 70 A 45 45 0 0 1 105 70" fill="none" stroke="#3a2c20" stroke-width="0.6"/>
+              <path d="M75 25 A 45 45 0 0 1 105 70" fill="none" stroke="#e93b3b" stroke-width="2"/>
+              <text x="60" y="50" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#2a2018">VU · R</text>
+              <g class="vu-needle slow" style="--from:-40deg; --to:25deg; transform-origin:60px 70px;">
+                <line x1="60" y1="70" x2="60" y2="22" stroke="#e93b3b" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="60" cy="70" r="3" fill="#2a2018"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONSOLE STRIP -->
+      <div class="vu-panel rounded-xl p-4 mt-3">
+        <div class="flex items-center justify-between mb-3">
+          <span class="mono text-[10px] text-[color:var(--txt-2)] uppercase tracking-widest">CONSOLE · CH 1-8</span>
+          <span class="mono text-[10px] text-[color:var(--amber-2)]">LIVE MIX</span>
+        </div>
+        <div class="grid grid-cols-8 gap-2">
+          <!-- 8 fader strips -->
+          <div data-fader></div><div data-fader></div><div data-fader></div><div data-fader></div>
+          <div data-fader></div><div data-fader></div><div data-fader></div><div data-fader></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOW PLAYING + DIAL -->
+    <div class="vu-panel rounded-2xl p-6 flex flex-col gap-5 relative">
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="mono text-[10px] text-[color:var(--amber-2)] uppercase tracking-widest">NOW BROADCASTING</div>
+          <h1 class="display text-4xl mt-1 text-[color:var(--cream)]">전기야 굿모닝</h1>
+          <div class="text-sm text-[color:var(--txt-1)] mt-1">DJ <span class="text-[color:var(--amber-2)]">옴장군</span> · 매일 06:00–08:00</div>
+        </div>
+        <div class="badge-red">LIVE</div>
+      </div>
+
+      <!-- FREQUENCY LCD -->
+      <div class="lcd p-5 text-center relative">
+        <div class="mono text-[10px] text-[color:var(--amber-3)] uppercase tracking-widest mb-2">FREQUENCY · MHz</div>
+        <div class="display text-6xl text-[color:var(--amber)]" style="text-shadow: 0 0 24px rgba(245,166,35,0.5);">
+          <span id="freqInt">88</span><span class="text-[color:var(--amber-2)]">.</span><span id="freqDec">5</span>
+        </div>
+        <div class="mono text-xs text-[color:var(--txt-2)] mt-2">STEREO · RDS · 김포송신소 5kW</div>
+        <!-- band tick row -->
+        <div class="flex justify-between mt-4 px-1">
+          <span class="mono text-[9px] text-[color:var(--txt-2)]">87.5</span>
+          <span class="mono text-[9px] text-[color:var(--txt-2)]">90</span>
+          <span class="mono text-[9px] text-[color:var(--amber-2)]">●</span>
+          <span class="mono text-[9px] text-[color:var(--txt-2)]">95</span>
+          <span class="mono text-[9px] text-[color:var(--txt-2)]">108</span>
+        </div>
+      </div>
+
+      <!-- DIAL KNOB -->
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <svg id="dialSvg" viewBox="0 0 140 140" width="120" height="120" class="dial-knob select-none">
+            <defs>
+              <radialGradient id="knobG" cx="35%" cy="30%">
+                <stop offset="0" stop-color="#5a4c38"/>
+                <stop offset="0.5" stop-color="#2a2018"/>
+                <stop offset="1" stop-color="#0a0705"/>
+              </radialGradient>
+              <radialGradient id="knobInner" cx="50%" cy="50%">
+                <stop offset="0" stop-color="#3a2c20"/>
+                <stop offset="1" stop-color="#14100b"/>
+              </radialGradient>
+            </defs>
+            <!-- outer ticks (band) -->
+            <g id="dialTicks"></g>
+            <!-- knob -->
+            <circle cx="70" cy="70" r="52" fill="url(#knobG)" stroke="#51402f" stroke-width="1.2"/>
+            <circle cx="70" cy="70" r="44" fill="url(#knobInner)" stroke="#3a2c20"/>
+            <!-- center logo -->
+            <circle cx="70" cy="70" r="6" fill="#f5a623"/>
+            <!-- pointer (rotates) -->
+            <g id="dialPointer">
+              <line x1="70" y1="70" x2="70" y2="24" stroke="#f5a623" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="70" cy="24" r="3" fill="#ffb748"/>
+            </g>
+          </svg>
+        </div>
+        <div class="flex-1 text-xs text-[color:var(--txt-1)] leading-relaxed">
+          <div class="mono text-[10px] text-[color:var(--amber-2)] uppercase tracking-widest mb-1">TUNER KNOB</div>
+          <p>회전하여 주파수를 맞추세요. <span class="text-[color:var(--amber-2)]">87.5–108 MHz</span> 대역. 드래그 또는 휠로 조작 가능합니다.</p>
+        </div>
+      </div>
+
+      <!-- Volume -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2 mono text-[10px] text-[color:var(--txt-1)] uppercase tracking-widest">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 10v4h4l5 4V6L7 10H3z" fill="#f5a623"/><path d="M16 8a5 5 0 010 8M19 5a9 9 0 010 14" stroke="#f5a623" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            VOLUME
+          </div>
+          <span id="volLabel" class="mono text-xs text-[color:var(--amber-2)]">60</span>
+        </div>
+        <input id="vol" type="range" min="0" max="100" value="60" class="vol w-full" style="--val:60%">
+      </div>
+
+      <!-- Console buttons -->
+      <div class="grid grid-cols-4 gap-2 mt-1">
+        <button class="console-btn rounded-lg py-2 text-[10px] mono uppercase tracking-widest text-[color:var(--txt-1)] hover:text-[color:var(--amber-2)]">PLAY</button>
+        <button class="console-btn rounded-lg py-2 text-[10px] mono uppercase tracking-widest text-[color:var(--txt-1)] hover:text-[color:var(--amber-2)]">PAUSE</button>
+        <button class="console-btn rounded-lg py-2 text-[10px] mono uppercase tracking-widest text-[color:var(--txt-1)] hover:text-[color:var(--amber-2)]">REC</button>
+        <button class="console-btn rounded-lg py-2 text-[10px] mono uppercase tracking-widest text-[color:var(--txt-1)] hover:text-[color:var(--amber-2)]">MUTE</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== MARQUEE (DJ MENT) ============== -->
+  <section class="vu-panel rounded-xl py-3 overflow-hidden relative">
+    <div class="absolute left-0 top-0 bottom-0 px-4 flex items-center bg-gradient-to-r from-[#14100b] via-[#14100b] to-transparent z-10">
+      <span class="display text-lg text-[color:var(--amber-2)] tracking-widest">DJ MENT</span>
+    </div>
+    <div class="flex whitespace-nowrap marquee-track pl-32">
+      <span class="mono text-sm text-[color:var(--txt-1)] mr-12">"여러분 좋은 아침입니다, DJ 옴장군입니다. 오늘은 직류회로의 키르히호프 법칙을 풀어드립니다."</span>
+      <span class="text-[color:var(--amber-3)] mr-12">◆</span>
+      <span class="mono text-sm text-[color:var(--txt-1)] mr-12">"부산에서 보내주신 사연 잘 받아봤습니다. 합격 진심으로 축하드려요."</span>
+      <span class="text-[color:var(--amber-3)] mr-12">◆</span>
+      <span class="mono text-sm text-[color:var(--txt-1)] mr-12">"신청곡은 #88500으로 문자 주세요. 다음 곡은 청취자 신청곡 '60Hz 발라드'입니다."</span>
+      <span class="text-[color:var(--amber-3)] mr-12">◆</span>
+      <span class="mono text-sm text-[color:var(--txt-1)] mr-12">"여러분 좋은 아침입니다, DJ 옴장군입니다. 오늘은 직류회로의 키르히호프 법칙을 풀어드립니다."</span>
+      <span class="text-[color:var(--amber-3)] mr-12">◆</span>
+      <span class="mono text-sm text-[color:var(--txt-1)] mr-12">"부산에서 보내주신 사연 잘 받아봤습니다. 합격 진심으로 축하드려요."</span>
+      <span class="text-[color:var(--amber-3)] mr-12">◆</span>
+      <span class="mono text-sm text-[color:var(--txt-1)] mr-12">"신청곡은 #88500으로 문자 주세요. 다음 곡은 청취자 신청곡 '60Hz 발라드'입니다."</span>
+      <span class="text-[color:var(--amber-3)] mr-12">◆</span>
+    </div>
+  </section>
+
+  <!-- ============== SCHEDULE ============== -->
+  <section id="schedule" class="space-y-4">
+    <div class="divider-warm"><span class="mono">오늘의 편성표 · DAILY SCHEDULE</span></div>
+
+    <div class="grid lg:grid-cols-2 gap-3" id="scheduleGrid"></div>
+  </section>
+
+  <!-- ============== CUE SHEET (음악 큐) ============== -->
+  <section id="cue" class="space-y-4">
+    <div class="divider-warm"><span class="mono">음악 큐 시트 · CUE SHEET</span></div>
+
+    <div class="grid lg:grid-cols-3 gap-4">
+
+      <!-- PREVIOUS -->
+      <div class="card-warm p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="badge-amber" style="background:rgba(138,118,86,0.12); color:var(--txt-1); border-color:var(--line-2);">PREV · 이전 곡</span>
+        </div>
+        <div class="flex items-start gap-3">
+          <!-- cassette tape -->
+          <svg viewBox="0 0 80 60" class="w-20 h-16 flex-shrink-0">
+            <rect x="2" y="2" width="76" height="56" rx="6" fill="#2a2018" stroke="#51402f"/>
+            <rect x="6" y="22" width="68" height="20" rx="2" fill="#14100b"/>
+            <circle cx="22" cy="32" r="6" fill="#1c1612" stroke="#51402f" class="spin-slow" style="transform-origin:22px 32px"/>
+            <circle cx="58" cy="32" r="6" fill="#1c1612" stroke="#51402f" class="spin-slow" style="transform-origin:58px 32px"/>
+            <text x="40" y="14" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#f5a623">SIDE A</text>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-[color:var(--cream)] truncate">옴의 법칙 블루스</div>
+            <div class="text-xs text-[color:var(--txt-2)] truncate">DJ 옴장군 feat. 저항밴드</div>
+            <div class="mono text-[10px] text-[color:var(--txt-2)] mt-2">06:48 · 3분 12초</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOW -->
+      <div class="card-warm p-5 relative" style="border-color: var(--amber-3); box-shadow: 0 0 30px rgba(245,166,35,0.12);">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="badge-red">NOW · 재생 중</span>
+          <div class="flex items-end gap-[2px] h-4 ml-auto">
+            <span class="eq-bar w-[3px] bg-[color:var(--amber-2)]" style="animation-delay:0s"></span>
+            <span class="eq-bar w-[3px] bg-[color:var(--amber-2)]" style="animation-delay:0.15s"></span>
+            <span class="eq-bar w-[3px] bg-[color:var(--amber-2)]" style="animation-delay:0.3s"></span>
+            <span class="eq-bar w-[3px] bg-[color:var(--amber-2)]" style="animation-delay:0.1s"></span>
+            <span class="eq-bar w-[3px] bg-[color:var(--amber-2)]" style="animation-delay:0.25s"></span>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <svg viewBox="0 0 80 60" class="w-20 h-16 flex-shrink-0">
+            <rect x="2" y="2" width="76" height="56" rx="6" fill="#3a2c20" stroke="#f5a623"/>
+            <rect x="6" y="22" width="68" height="20" rx="2" fill="#14100b"/>
+            <circle cx="22" cy="32" r="6" fill="#1c1612" stroke="#f5a623" class="spin-med" style="transform-origin:22px 32px"/>
+            <circle cx="58" cy="32" r="6" fill="#1c1612" stroke="#f5a623" class="spin-med" style="transform-origin:58px 32px"/>
+            <text x="40" y="14" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#f5a623">88.5 FM</text>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-[color:var(--amber-2)] truncate">60Hz 발라드</div>
+            <div class="text-xs text-[color:var(--txt-1)] truncate">교류 4중주단 · 신청곡</div>
+            <div class="mono text-[10px] text-[color:var(--amber-3)] mt-2">07:02 · 진행 1:14 / 4:08</div>
+            <div class="h-1 bg-[#2a2018] rounded-full mt-2 overflow-hidden">
+              <div class="h-full bg-[color:var(--amber)] w-[30%]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEXT -->
+      <div class="card-warm p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="badge-amber">NEXT · 다음 곡</span>
+        </div>
+        <div class="flex items-start gap-3">
+          <svg viewBox="0 0 80 60" class="w-20 h-16 flex-shrink-0">
+            <rect x="2" y="2" width="76" height="56" rx="6" fill="#2a2018" stroke="#51402f"/>
+            <rect x="6" y="22" width="68" height="20" rx="2" fill="#14100b"/>
+            <circle cx="22" cy="32" r="6" fill="#1c1612" stroke="#51402f"/>
+            <circle cx="58" cy="32" r="6" fill="#1c1612" stroke="#51402f"/>
+            <text x="40" y="14" text-anchor="middle" font-family="DM Mono" font-size="6" fill="#f5a623">CUED</text>
+          </svg>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-[color:var(--cream)] truncate">3상 교류 왈츠</div>
+            <div class="text-xs text-[color:var(--txt-2)] truncate">델타Y 트리오</div>
+            <div class="mono text-[10px] text-[color:var(--txt-2)] mt-2">07:06 · 4분 22초</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== LISTENER LETTERS ============== -->
+  <section id="letters" class="space-y-4">
+    <div class="divider-warm"><span class="mono">청취자 사연 · LISTENERS' LETTERS</span></div>
+    <div class="grid lg:grid-cols-2 gap-4" id="lettersGrid"></div>
+  </section>
+
+  <!-- ============== BOARD (실시간 댓글) ============== -->
+  <section id="board" class="space-y-4">
+    <div class="divider-warm"><span class="mono">청취자 게시판 · LIVE CHAT</span></div>
+
+    <div class="grid lg:grid-cols-[1.6fr_1fr] gap-4">
+      <div class="vu-panel rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="dot bg-[color:var(--red)] led-blink"></span>
+            <span class="mono text-xs text-[color:var(--amber-2)] uppercase tracking-widest">실시간 메시지 #88500</span>
+          </div>
+          <span class="mono text-[10px] text-[color:var(--txt-2)]">접속 <span id="liveCount">1,247</span>명</span>
+        </div>
+        <div id="chatScroll" class="chat-scroll space-y-3 pr-2"></div>
+
+        <!-- Input -->
+        <div class="mt-4 flex gap-2 border-t border-[color:var(--line)] pt-4">
+          <input id="chatInput" type="text" placeholder="문자를 보내보세요. (#88500)" class="flex-1 bg-[#14100b] border border-[color:var(--line-2)] rounded-lg px-4 py-2 text-sm text-[color:var(--txt-0)] placeholder:text-[color:var(--txt-3)] focus:border-[color:var(--amber)] outline-none mono">
+          <button id="chatSend" class="btn-warm px-5 py-2 text-xs mono uppercase tracking-wider">전송</button>
+        </div>
+      </div>
+
+      <!-- Top sponsors / ID card -->
+      <div class="space-y-4">
+        <div class="vu-panel rounded-xl p-5">
+          <div class="mono text-[10px] text-[color:var(--amber-2)] uppercase tracking-widest mb-3">방송국 ID</div>
+          <div class="display text-3xl text-[color:var(--cream)] leading-tight">전기파장<br/>EIGHTY EIGHT FIVE</div>
+          <div class="mono text-[11px] text-[color:var(--txt-1)] mt-3 leading-relaxed">
+            HLKE 88.5 MHz<br/>
+            출력 5kW · 김포송신소<br/>
+            ⓒ 2026 ElecFM Broadcasting
+          </div>
+        </div>
+        <div class="vu-panel rounded-xl p-5">
+          <div class="mono text-[10px] text-[color:var(--amber-2)] uppercase tracking-widest mb-3">제작진 CREDIT</div>
+          <div class="text-xs text-[color:var(--txt-1)] space-y-1.5 mono">
+            <div class="flex justify-between"><span class="text-[color:var(--txt-2)]">진행</span><span>DJ 옴장군</span></div>
+            <div class="flex justify-between"><span class="text-[color:var(--txt-2)]">연출</span><span>김피디</span></div>
+            <div class="flex justify-between"><span class="text-[color:var(--txt-2)]">엔지니어</span><span>최기사</span></div>
+            <div class="flex justify-between"><span class="text-[color:var(--txt-2)]">작가</span><span>이작가</span></div>
+            <div class="flex justify-between"><span class="text-[color:var(--txt-2)]">선곡</span><span>박DJ</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="pt-8 pb-12 mt-6 border-t border-[color:var(--line)]">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[color:var(--txt-2)] mono">
+      <div>전기파장 88.5 FM · 전기기능사 학습 라디오</div>
+      <div class="flex items-center gap-2">
+        <span class="dot bg-[color:var(--amber)] led-blink"></span>
+        ON AIR 24/7 · 신청·사연 #88500
+      </div>
+      <div>© 2026 ElecFM · 본 방송은 학습 콘텐츠입니다</div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+/* ============== CLOCK ============== */
+const clk = document.getElementById('clockTop');
+function tick() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  clk.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+tick(); setInterval(tick, 1000);
+
+/* ============== VOLUME ============== */
+const vol = document.getElementById('vol');
+const volLabel = document.getElementById('volLabel');
+vol.addEventListener('input', () => {
+  volLabel.textContent = vol.value;
+  vol.style.setProperty('--val', vol.value + '%');
+});
+
+/* ============== DIAL TICKS ============== */
+(function makeTicks() {
+  const g = document.getElementById('dialTicks');
+  const cx = 70, cy = 70, rOut = 65, rIn = 60;
+  for (let i = 0; i < 60; i++) {
+    const ang = (i / 60) * 2 * Math.PI - Math.PI / 2;
+    const major = i % 5 === 0;
+    const x1 = cx + Math.cos(ang) * rOut;
+    const y1 = cy + Math.sin(ang) * rOut;
+    const x2 = cx + Math.cos(ang) * (major ? rIn - 2 : rIn + 1);
+    const y2 = cy + Math.sin(ang) * (major ? rIn - 2 : rIn + 1);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', major ? '#f5a623' : '#5a4c38');
+    line.setAttribute('stroke-width', major ? 1.4 : 0.8);
+    g.appendChild(line);
+  }
+})();
+
+/* ============== DIAL DRAG -> FREQUENCY ============== */
+const dialSvg = document.getElementById('dialSvg');
+const pointer = document.getElementById('dialPointer');
+const fInt = document.getElementById('freqInt');
+const fDec = document.getElementById('freqDec');
+let dialAngle = 22; // starts at 88.5 area
+let dragging = false; let lastA = null;
+const FREQ_MIN = 87.5, FREQ_MAX = 108.0;
+
+function setFreqFromAngle(a) {
+  // map 0..360 to FREQ_MIN..FREQ_MAX
+  const norm = ((a % 360) + 360) % 360;
+  const f = FREQ_MIN + (norm / 360) * (FREQ_MAX - FREQ_MIN);
+  const fs = f.toFixed(1).split('.');
+  fInt.textContent = fs[0];
+  fDec.textContent = fs[1];
+}
+function setAngle(a) {
+  dialAngle = a;
+  pointer.setAttribute('transform', `rotate(${a} 70 70)`);
+  setFreqFromAngle(a);
+}
+setAngle(dialAngle);
+setFreqFromAngle(22); // initial display computed
+
+function pt(e) {
+  const r = dialSvg.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left - r.width/2;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top - r.height/2;
+  return Math.atan2(y, x) * 180 / Math.PI + 90;
+}
+dialSvg.addEventListener('mousedown', e => { dragging = true; lastA = pt(e); });
+dialSvg.addEventListener('touchstart', e => { dragging = true; lastA = pt(e); });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const a = pt(e); const d = a - lastA;
+  setAngle(dialAngle + d); lastA = a;
+});
+window.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  const a = pt(e); const d = a - lastA;
+  setAngle(dialAngle + d); lastA = a;
+});
+window.addEventListener('mouseup', () => dragging = false);
+window.addEventListener('touchend', () => dragging = false);
+dialSvg.addEventListener('wheel', e => {
+  e.preventDefault();
+  setAngle(dialAngle + Math.sign(e.deltaY) * 4);
+}, { passive: false });
+
+/* set initial freq to 88.5 */
+(function tuneToInitial() {
+  // 88.5 -> ((88.5-87.5)/20.5)*360 = ~17.56
+  const targetA = ((88.5 - FREQ_MIN) / (FREQ_MAX - FREQ_MIN)) * 360;
+  setAngle(targetA);
+})();
+
+/* ============== FADERS (random heights, animated) ============== */
+const faderRoot = document.querySelectorAll('[data-fader]');
+faderRoot.forEach((node, i) => {
+  const lvl = 30 + Math.floor(Math.random() * 55);
+  node.innerHTML = `
+    <div class="flex flex-col items-center gap-1">
+      <div class="mono text-[8px] text-[color:var(--txt-2)]">CH${i+1}</div>
+      <div class="relative w-full h-24 bg-[#0e0a07] rounded border border-[color:var(--line)] overflow-hidden">
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[color:var(--amber-3)] via-[color:var(--amber)] to-[color:var(--amber-2)] transition-all"
+             style="height:${lvl}%"></div>
+        <div class="absolute left-0 right-0 h-[2px] bg-[color:var(--cream)] shadow" style="bottom:calc(${lvl}% - 1px)"></div>
+      </div>
+      <div class="w-3 h-3 rounded-full ${Math.random() > 0.4 ? 'bg-[color:var(--amber)]' : 'bg-[#3a2c20]'} led-blink"></div>
+    </div>`;
+  // animate periodically
+  setInterval(() => {
+    const bar = node.querySelector('.absolute.bottom-0');
+    const tick = node.querySelector('.absolute.left-0.right-0');
+    const newLvl = 25 + Math.floor(Math.random() * 65);
+    if (bar) bar.style.height = newLvl + '%';
+    if (tick) tick.style.bottom = `calc(${newLvl}% - 1px)`;
+  }, 1100 + Math.random()*900);
+});
+
+/* ============== SCHEDULE ============== */
+const schedule = [
+  { t: '05:00', n: '새벽의 송전선', dj: 'DJ 변전소', tag: '뉴에이지', live: false },
+  { t: '06:00', n: '전기야 굿모닝', dj: 'DJ 옴장군', tag: '시사·생활전기', live: true },
+  { t: '08:00', n: '출근길 회로교실', dj: '강형 교수', tag: '직류회로', live: false },
+  { t: '10:00', n: '오전의 임피던스', dj: 'DJ 코일', tag: '교류회로', live: false },
+  { t: '12:00', n: '점심특선 — 합격 사연', dj: '이작가', tag: '리얼토크', live: false },
+  { t: '14:00', n: '오후의 발전기', dj: '박DJ', tag: '전기기기', live: false },
+  { t: '16:00', n: '귀가길 회로점검', dj: 'DJ 옴장군', tag: '문제풀이', live: false },
+  { t: '18:00', n: '저녁의 송전탑', dj: '김피디', tag: '뉴스·시사', live: false },
+  { t: '20:00', n: '심야 전기상담실', dj: '최기사', tag: '실기·실무', live: false },
+  { t: '22:00', n: '잠들기 전 한 문제', dj: 'AI 보조진행', tag: '기출 1문제', live: false },
+];
+const schedGrid = document.getElementById('scheduleGrid');
+schedule.forEach(s => {
+  const live = s.live ? `<span class="badge-red">ON AIR</span>` : '';
+  schedGrid.innerHTML += `
+    <div class="card-warm p-4 flex items-center gap-4 ${s.live ? 'ring-1 ring-[color:var(--amber)]' : ''}">
+      <div class="display text-3xl text-[color:var(--amber-2)] w-20 flex-shrink-0">${s.t}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="font-semibold text-[color:var(--cream)]">${s.n}</span>
+          ${live}
+        </div>
+        <div class="text-xs text-[color:var(--txt-1)] mono">${s.dj} · <span class="text-[color:var(--amber-3)]">${s.tag}</span></div>
+      </div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="flex-shrink-0 opacity-60">
+        <path d="M9 6l8 6-8 6V6z" fill="#f5a623"/>
+      </svg>
+    </div>`;
+});
+
+/* ============== LETTERS ============== */
+const letters = [
+  {
+    name: '김전공', loc: '경기 안산',
+    head: '40대 가장의 새 출발, 합격 인증합니다!',
+    teaser: '"늦은 나이에 시작했는데 이 라디오 듣고 6개월 만에…"',
+    body: `옴장군 안녕하세요. 40대 가장 김전공입니다. 회사 그만두고 자격증 도전한다고 했을 때 가족들 표정이 잊혀지지 않네요. 출근길 차에서 이 라디오 들으면서 키르히호프 법칙을 처음 이해했어요. 어제 합격 통보 받고 아내가 우는 모습을 봤습니다. 라디오에 사연 보내는 것도 처음이지만, 누군가에게 용기가 됐으면 합니다. DJ님 감사합니다.`,
+    badge: '합격수기'
+  },
+  {
+    name: '이코일', loc: '부산 동래',
+    head: '실기 자동제어 너무 헷갈려요...',
+    teaser: '"필기는 한번에 붙었는데 실기에서 자꾸 미끄러져요…"',
+    body: `안녕하세요 부산에서 듣고 있는 이코일입니다. 필기는 한번에 합격했는데 실기 자동제어 부분만 들어가면 머리가 하얘져요. 회로도 보면 PNP NPN이 뒤죽박죽 되고요. 혹시 청취자 분들 중에 자동제어 실기 코너 좀 더 자주 해달라고 부탁드려도 될까요? DJ님 다음 주에 자동제어 특집 부탁드려요 ㅠㅠ`,
+    badge: '질문'
+  },
+  {
+    name: '박저항', loc: '대구 수성',
+    head: '아들과 함께 듣는 라디오, 효도라디오 됐어요',
+    teaser: '"중3 아들이 같이 듣더니 옴의 법칙을 외워버렸지 뭐예요…"',
+    body: `안녕하세요. 50대 박저항입니다. 차 안에서 라디오 틀어놓고 다녔는데, 어느 날부터 중3 아들이 옆에서 같이 듣더라구요. 그러더니 옴의 법칙을 술술 외우네요. "V는 IR이잖아 아빠." 라고 하는데 어찌나 신기하던지요. 가족이 함께 공부하는 라디오, 정말 고맙습니다. 사연 채택되면 아들이랑 라디오 박물관 견학 가기로 했어요.`,
+    badge: '훈훈사연'
+  },
+  {
+    name: '최임피', loc: '인천 부평',
+    head: '야간 근무자에게 새벽 5시 방송은 단비입니다',
+    teaser: '"새벽 5시 '송전선' 방송이 퇴근길 위로가 됩니다…"',
+    body: `안녕하세요. 야간 경비 일을 하면서 자격증 준비 중인 최임피라고 합니다. 야간 근무 마치고 새벽에 퇴근하는 길이 그렇게 적막한데, 5시에 시작하는 '새벽의 송전선' 잔잔한 음악과 한두 문제 풀이가 진짜 위로가 됩니다. 새벽 시간대 청취자 별로 없을 거라는 거 알지만, 저처럼 듣는 사람 분명 있을 거예요. 폐지하지 말아주세요!`,
+    badge: '신청'
+  },
+  {
+    name: '윤커패', loc: '서울 노원',
+    head: '신청곡 부탁드려요 — 콘덴서 응원가',
+    teaser: '"실기 시험 D-3, 응원곡 부탁드립니다…"',
+    body: `DJ 옴장군님! 실기 시험 3일 남은 윤커패입니다. 마지막 점검하면서 들을 응원곡 신청합니다. '콘덴서 응원가'나 '60Hz 발라드' 부탁드려요. 떨려서 손이 자꾸 굳는데 라디오 들으면서 마음 가다듬고 있어요. 다음 주에 합격 사연으로 다시 글 올릴게요. 화이팅!`,
+    badge: '신청곡'
+  },
+  {
+    name: '한권선', loc: '광주 북구',
+    head: '시뮬레이터 너무 좋아요',
+    teaser: '"이 방송국에서 만든 회로 시뮬레이터 진짜 명작…"',
+    body: `광주에서 인사드립니다. 한권선입니다. 라디오에서 소개해주신 회로 시뮬레이터 정말 명작이에요. 직류회로 분압법칙 부분이 머리로는 알겠는데 손으로 안 따라가서 답답했었는데, 시뮬레이터로 값 바꿔보면서 직접 보니까 진짜 한방에 이해됐어요. 라디오 + 시뮬레이터 + 기출문제 조합이 최강입니다. 감사합니다!`,
+    badge: '학습후기'
+  },
+];
+const lettersGrid = document.getElementById('lettersGrid');
+letters.forEach((l, i) => {
+  const el = document.createElement('div');
+  el.className = 'letter card-warm p-5 cursor-pointer';
+  el.innerHTML = `
+    <div class="flex items-start gap-4">
+      <!-- envelope SVG -->
+      <svg viewBox="0 0 60 60" class="w-14 h-14 flex-shrink-0">
+        <defs>
+          <linearGradient id="env${i}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#d9c49a"/>
+            <stop offset="1" stop-color="#8a7656"/>
+          </linearGradient>
+        </defs>
+        <rect x="6" y="14" width="48" height="36" rx="2" fill="url(#env${i})" stroke="#3a2c20"/>
+        <path d="M6 14 L30 34 L54 14" stroke="#3a2c20" stroke-width="1.4" fill="none"/>
+        <text x="48" y="45" font-family="DM Mono" font-size="6" fill="#3a2c20" opacity="0.6">No.${String(i+1).padStart(2,'0')}</text>
+      </svg>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+          <span class="badge-amber">${l.badge}</span>
+          <span class="mono text-[10px] text-[color:var(--txt-2)]">${l.loc}</span>
+        </div>
+        <h3 class="font-bold text-[color:var(--cream)] text-base leading-tight mb-1">${l.head}</h3>
+        <div class="text-xs text-[color:var(--txt-1)] italic leading-relaxed">${l.teaser}</div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-[color:var(--line)]">
+          <span class="mono text-[11px] text-[color:var(--amber-3)]">— ${l.name}님</span>
+          <svg class="chev w-4 h-4 text-[color:var(--txt-2)]" viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="letter-body">
+          <div class="bg-[#0e0a07] rounded-lg p-4 text-sm text-[color:var(--txt-0)] leading-relaxed border border-[color:var(--line)]">
+            ${l.body}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  el.addEventListener('click', () => el.classList.toggle('open'));
+  lettersGrid.appendChild(el);
+});
+
+/* ============== LIVE CHAT (simulated) ============== */
+const chatScroll = document.getElementById('chatScroll');
+const seedChat = [
+  { who: '010-XXXX-1234', t: '06:58', msg: '굿모닝~ 오늘도 잘 부탁드립니다!', tone: 'amber' },
+  { who: '010-XXXX-5678', t: '06:59', msg: '키르히호프 진짜 어려워요 ㅠㅠ', tone: 'cream' },
+  { who: '010-XXXX-9012', t: '07:00', msg: '신청곡 60Hz 발라드 부탁드립니다', tone: 'amber' },
+  { who: '010-XXXX-3344', t: '07:01', msg: '오늘 시험 보러 가는 길 ! 화이팅', tone: 'red' },
+  { who: '010-XXXX-7788', t: '07:02', msg: '아 DJ님 목소리 듣고 깨요', tone: 'cream' },
+  { who: '010-XXXX-2211', t: '07:03', msg: '저는 노원에서 듣고있어요 ㅎㅎ', tone: 'amber' },
+];
+function renderChat(c) {
+  const colorMap = {
+    amber: 'text-[color:var(--amber-2)]',
+    cream: 'text-[color:var(--cream)]',
+    red: 'text-[color:var(--red-2)]',
+  };
+  const node = document.createElement('div');
+  node.className = 'flex items-start gap-3';
+  node.innerHTML = `
+    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[color:var(--amber-3)] to-[color:var(--bg-3)] flex items-center justify-center mono text-[10px] text-[color:var(--cream)] border border-[color:var(--line-2)]">
+      ${c.who.slice(-4)}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-0.5">
+        <span class="mono text-[11px] ${colorMap[c.tone] || 'text-[color:var(--txt-1)]'}">${c.who}</span>
+        <span class="mono text-[10px] text-[color:var(--txt-3)]">${c.t}</span>
+      </div>
+      <div class="text-sm text-[color:var(--txt-0)]">${c.msg}</div>
+    </div>`;
+  chatScroll.appendChild(node);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+seedChat.forEach(renderChat);
+
+/* simulated incoming */
+const incoming = [
+  '저는 광주!', '오늘 라디오 좋네요', '시뮬레이터 후기 보고 깜놀',
+  '실기 일주일 남았어요', 'DJ님 사랑해요', '회로 그림 보내주세요!',
+  '음악 너무 신남', '집중 잘 되는 BGM이에요'
+];
+let chatLive = 1247;
+const liveCountEl = document.getElementById('liveCount');
+setInterval(() => {
+  const numTail = Math.floor(1000 + Math.random()*9000);
+  const t = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const msg = incoming[Math.floor(Math.random()*incoming.length)];
+  const tones = ['amber','cream','red'];
+  renderChat({
+    who: `010-XXXX-${numTail}`,
+    t: `${pad(t.getHours())}:${pad(t.getMinutes())}`,
+    msg, tone: tones[Math.floor(Math.random()*tones.length)]
+  });
+  chatLive += Math.floor(Math.random()*7) - 2;
+  liveCountEl.textContent = chatLive.toLocaleString();
+}, 4200);
+
+/* user input */
+const ci = document.getElementById('chatInput');
+const cs = document.getElementById('chatSend');
+function sendMine() {
+  const v = ci.value.trim();
+  if (!v) return;
+  const t = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  renderChat({ who: '010-XXXX-나야나', t: `${pad(t.getHours())}:${pad(t.getMinutes())}`, msg: v, tone: 'amber' });
+  ci.value = '';
+}
+cs.addEventListener('click', sendMine);
+ci.addEventListener('keydown', e => { if (e.key === 'Enter') sendMine(); });
+
+</script>
+</body>
+</html>

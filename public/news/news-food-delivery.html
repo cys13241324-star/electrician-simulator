@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>전기기능사 합격 메뉴판 — SPARK EATS 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root {
+    --se-yellow: #ffd400;
+    --se-yellow-deep: #f5a623;
+    --se-orange: #ff6a13;
+    --se-orange-deep: #e85a0c;
+    --se-red: #ff3d3d;
+    --se-bg: #fffbe8;
+    --se-bg-2: #fff4c2;
+    --se-card: #ffffff;
+    --se-ink: #1a1a1a;
+    --se-muted: #6b6b6b;
+    --se-line: #eee5cc;
+    --se-tag: #fff2cc;
+    --se-good: #2bb673;
+  }
+  html, body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(circle at 15% 10%, #ffe98a 0%, transparent 38%),
+      radial-gradient(circle at 90% 90%, #ffb86a 0%, transparent 40%),
+      linear-gradient(180deg, #fff7d6 0%, #ffe6a8 100%);
+    color: var(--se-ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* 데스크탑 외곽 — 식탁 느낌 */
+  .desk-stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 28px 16px 60px;
+    position: relative;
+  }
+  .desk-stage::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 70% 20%, rgba(255,106,19,0.10), transparent 50%),
+      radial-gradient(circle at 20% 70%, rgba(255,212,0,0.18), transparent 55%);
+    pointer-events:none;
+  }
+  /* 폰 프레임 (앱 느낌) */
+  .phone-frame {
+    width: 100%;
+    max-width: 440px;
+    background: #111;
+    border-radius: 44px;
+    padding: 10px;
+    box-shadow:
+      0 30px 80px rgba(120,60,0,0.25),
+      0 0 0 2px rgba(255,255,255,0.04),
+      inset 0 0 0 1px rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 1;
+  }
+  .phone-screen {
+    width: 100%;
+    border-radius: 34px;
+    overflow: hidden;
+    background: var(--se-bg);
+    position: relative;
+    min-height: 900px;
+  }
+  /* 노치 */
+  .notch {
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 28px;
+    background: #000;
+    border-radius: 0 0 18px 18px;
+    z-index: 50;
+  }
+  /* 상태바 */
+  .statusbar {
+    position: relative;
+    z-index: 5;
+    padding: 12px 22px 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #111;
+  }
+  .statusbar .right-icons { display:flex; gap:6px; align-items:center; }
+
+  /* 앱 헤더 (위치 + 로고) */
+  .app-header {
+    padding: 6px 18px 12px;
+    background: linear-gradient(180deg, #ffe98a 0%, var(--se-bg) 100%);
+  }
+  .brand-row { display:flex; align-items:center; justify-content:space-between; }
+  .brand-logo {
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand-logo .mark{
+    width:34px; height:34px; border-radius:10px;
+    background: linear-gradient(135deg, var(--se-yellow) 0%, var(--se-orange) 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 4px 12px rgba(255,106,19,0.35);
+  }
+  .brand-logo .name{ font-weight:900; font-size:18px; letter-spacing:-0.02em; }
+  .brand-logo .name em{ color:var(--se-orange); font-style:normal; }
+  .icon-btn{
+    width:36px; height:36px; border-radius:50%;
+    background:#fff; display:inline-flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+    border:1px solid rgba(0,0,0,0.04);
+    position:relative;
+  }
+  .icon-btn .dot{
+    position:absolute; top:6px; right:6px; width:8px; height:8px; border-radius:50%;
+    background:var(--se-red); box-shadow:0 0 0 2px #fff;
+  }
+  .loc-row{
+    margin-top:8px;
+    display:flex; align-items:center; gap:6px;
+    font-weight:800; font-size:15px;
+  }
+  .loc-row .pin{ color:var(--se-orange); }
+  .loc-row .chev{ color:#666; }
+  .loc-row .badge{
+    margin-left:6px;
+    padding:2px 8px; border-radius:999px;
+    background:#fff; color:var(--se-orange);
+    font-size:11px; font-weight:800;
+    border:1px solid #ffd9b0;
+  }
+
+  /* 검색바 */
+  .search-bar{
+    margin:10px 18px 0;
+    background:#fff;
+    border-radius:14px;
+    padding:11px 14px;
+    display:flex; align-items:center; gap:10px;
+    border:1px solid var(--se-line);
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+  .search-bar input{
+    flex:1; border:0; outline:0; background:transparent;
+    font-size:14px; color:#222;
+  }
+  .search-bar input::placeholder{ color:#a09887; }
+
+  /* GNB */
+  .gnb{
+    margin:12px 18px 0;
+    display:flex; gap:6px;
+    background:#fff;
+    padding:6px;
+    border-radius:14px;
+    border:1px solid var(--se-line);
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  }
+  .gnb button{
+    flex:1; padding:8px 0; font-size:13px; font-weight:700;
+    border-radius:10px; color:#666;
+  }
+  .gnb button.on{
+    background: linear-gradient(135deg, var(--se-yellow), var(--se-orange));
+    color:#fff;
+    box-shadow:0 4px 10px rgba(255,106,19,0.3);
+  }
+
+  /* 배너 */
+  .promo-banner{
+    margin:12px 18px 0;
+    border-radius:18px;
+    padding:16px 18px;
+    background:
+      linear-gradient(135deg, #ff8a3d 0%, #ff5a1f 60%, #ffb700 100%);
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 10px 24px rgba(255,90,31,0.3);
+  }
+  .promo-banner h3{ font-size:18px; font-weight:900; line-height:1.2; letter-spacing:-0.02em; }
+  .promo-banner p{ font-size:12px; opacity:0.95; margin-top:4px; }
+  .promo-banner .deco{
+    position:absolute; right:-10px; top:-10px;
+    width:120px; height:120px; opacity:0.22;
+  }
+  .promo-banner .price-chip{
+    display:inline-block; margin-top:10px;
+    background:#fff; color:var(--se-orange);
+    padding:6px 12px; border-radius:999px;
+    font-weight:900; font-size:12px;
+  }
+
+  /* 카테고리 */
+  .cat-section{ margin:18px 18px 0; }
+  .section-title{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .section-title h2{ font-size:16px; font-weight:900; letter-spacing:-0.02em;}
+  .section-title .more{ font-size:12px; color:var(--se-orange); font-weight:700;}
+  .cat-grid{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:10px 6px;
+  }
+  .cat-item{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:10px 4px;
+    border-radius:14px;
+    background:#fff;
+    border:1px solid var(--se-line);
+    cursor:pointer;
+    transition: transform .15s, box-shadow .15s, border-color .15s;
+  }
+  .cat-item:hover{ transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,0.06); }
+  .cat-item.active{
+    border-color:var(--se-orange);
+    background:linear-gradient(180deg, #fff6dd, #fff);
+    box-shadow:0 6px 14px rgba(255,106,19,0.18);
+  }
+  .cat-item .ic{
+    width:42px; height:42px; border-radius:12px;
+    background: linear-gradient(135deg, #fff4c2, #ffe48a);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px;
+  }
+  .cat-item .lb{ font-size:11.5px; font-weight:700; text-align:center; line-height:1.15;}
+
+  /* 음식점 카드 */
+  .rest-list{ margin:16px 18px 0; display:flex; flex-direction:column; gap:14px; }
+  .rest-card{
+    background:#fff; border-radius:18px;
+    border:1px solid var(--se-line);
+    overflow:hidden;
+    box-shadow:0 4px 12px rgba(0,0,0,0.04);
+    cursor:pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .rest-card:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,0.08); }
+  .rest-thumb{
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, #fff4c2, #ffd97a);
+    position:relative;
+    overflow:hidden;
+  }
+  .rest-thumb svg{ width:100%; height:100%; display:block; }
+  .badge-floating{
+    position:absolute; top:10px; left:10px;
+    display:flex; gap:6px; flex-wrap:wrap;
+  }
+  .badge{
+    padding:4px 9px; border-radius:999px;
+    background:#fff; color:#333;
+    font-size:11px; font-weight:800;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  }
+  .badge.discount{ background:var(--se-red); color:#fff; }
+  .badge.new{ background:var(--se-orange); color:#fff; }
+  .badge.hot{ background:#111; color:var(--se-yellow); }
+  .heart-btn{
+    position:absolute; top:10px; right:10px;
+    width:34px; height:34px; border-radius:50%;
+    background:rgba(255,255,255,0.92);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+    border:0;
+  }
+  .heart-btn.on{ color:var(--se-red); }
+  .heart-btn:not(.on){ color:#999; }
+
+  .rest-info{ padding:12px 14px 14px; }
+  .rest-info .top{ display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .rest-info h3{ font-size:16px; font-weight:900; letter-spacing:-0.02em; }
+  .rest-info .rate{
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:13px; font-weight:800;
+  }
+  .rest-info .rate .star{ color:#ffb800;}
+  .rest-meta{
+    margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;
+    font-size:12px; color:var(--se-muted);
+  }
+  .rest-meta .dot{ color:#ccc; }
+  .rest-tags{ margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+  .rest-tags .tg{
+    font-size:11px; font-weight:700;
+    padding:3px 8px; border-radius:6px;
+    background:var(--se-tag); color:#a37300;
+  }
+
+  /* 장바구니 플로팅 버튼 */
+  .cart-fab{
+    position:absolute; bottom:80px; right:14px;
+    z-index:30;
+    background: linear-gradient(135deg, var(--se-orange), var(--se-red));
+    color:#fff;
+    border-radius:999px;
+    padding:12px 16px;
+    display:flex; align-items:center; gap:8px;
+    font-weight:900; font-size:13px;
+    box-shadow:0 10px 22px rgba(255,90,31,0.4);
+    cursor:pointer;
+    transition: transform .2s;
+  }
+  .cart-fab:hover{ transform:scale(1.04); }
+  .cart-fab .count{
+    background:#fff; color:var(--se-orange);
+    border-radius:999px;
+    width:22px; height:22px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:12px;
+  }
+  .cart-fab.hidden{ display:none; }
+
+  /* 하단 탭바 */
+  .tab-bar{
+    position:sticky; bottom:0;
+    background:#fff;
+    border-top:1px solid var(--se-line);
+    display:grid; grid-template-columns: repeat(5,1fr);
+    padding:8px 0 14px;
+    z-index:20;
+  }
+  .tab-bar button{
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:10.5px; font-weight:700; color:#999;
+  }
+  .tab-bar button.on{ color:var(--se-orange); }
+  .tab-bar svg{ width:22px; height:22px; }
+
+  /* 모달 공통 */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.5);
+    display:none; align-items:flex-end; justify-content:center;
+    z-index:100;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop.on{ display:flex; }
+  .modal-sheet{
+    background:#fff; width:100%; max-width:440px;
+    border-radius:24px 24px 0 0;
+    max-height:88vh; overflow:hidden;
+    display:flex; flex-direction:column;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp{ from{ transform:translateY(40px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+  .modal-head{
+    padding:14px 18px 10px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--se-line);
+    position:sticky; top:0; background:#fff; z-index:2;
+  }
+  .modal-head h2{ font-weight:900; font-size:17px; letter-spacing:-0.02em;}
+  .modal-close{
+    width:32px; height:32px; border-radius:50%;
+    background:#f4eeda; display:flex; align-items:center; justify-content:center;
+    color:#666; font-weight:900;
+  }
+  .modal-body{
+    overflow:auto; padding:0 0 24px;
+    flex:1;
+  }
+  /* 모달 - 음식점 메뉴 */
+  .menu-hero{
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, #fff4c2, #ffd97a);
+    position:relative;
+    overflow:hidden;
+  }
+  .menu-hero svg{ width:100%; height:100%; }
+  .menu-rest-info{
+    padding:14px 18px 6px;
+  }
+  .menu-rest-info h3{ font-size:20px; font-weight:900; letter-spacing:-0.02em;}
+  .menu-rest-info p.sub{ font-size:12.5px; color:var(--se-muted); margin-top:2px; }
+  .menu-rest-info .stats{
+    display:flex; gap:10px; margin-top:8px; font-size:13px; flex-wrap:wrap;
+  }
+  .menu-rest-info .stats > span{ display:inline-flex; align-items:center; gap:3px; }
+  .menu-list{ padding:8px 0; }
+  .menu-item{
+    padding:14px 18px;
+    display:flex; gap:12px;
+    border-bottom:1px solid var(--se-line);
+    cursor:pointer;
+    transition: background .12s;
+  }
+  .menu-item:hover{ background:#fffbe8; }
+  .menu-item .thumb{
+    width:84px; height:84px; border-radius:12px;
+    background: linear-gradient(135deg, #fff4c2, #ffd97a);
+    flex-shrink:0; overflow:hidden;
+  }
+  .menu-item .thumb svg{ width:100%; height:100%; }
+  .menu-item .info{ flex:1; min-width:0; }
+  .menu-item .info .title{ font-weight:800; font-size:14.5px; }
+  .menu-item .info .desc{
+    font-size:12px; color:var(--se-muted); margin-top:3px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .menu-item .info .price-row{
+    margin-top:6px; display:flex; align-items:center; gap:8px;
+  }
+  .menu-item .info .orig{
+    text-decoration:line-through; color:#bbb; font-size:12px;
+  }
+  .menu-item .info .price{ font-weight:900; font-size:14px; }
+  .menu-item .info .save{
+    background:var(--se-red); color:#fff; padding:2px 6px;
+    border-radius:6px; font-size:11px; font-weight:800;
+  }
+
+  /* 메뉴 상세 */
+  .detail-hero{ aspect-ratio: 16/10; background:linear-gradient(135deg,#fff4c2,#ffd97a); position:relative;}
+  .detail-hero svg{ width:100%; height:100%; }
+  .detail-body{ padding:14px 18px 80px; }
+  .detail-body h3{ font-size:20px; font-weight:900; letter-spacing:-0.02em; }
+  .detail-body .desc{ font-size:13px; color:#444; margin-top:6px; line-height:1.5;}
+  .opt-group{ margin-top:18px; }
+  .opt-group .head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:8px;
+  }
+  .opt-group .head h4{ font-weight:900; font-size:14px;}
+  .opt-group .head .req{
+    background:var(--se-orange); color:#fff;
+    padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:800;
+  }
+  .opt-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid #f5edd5;
+    cursor:pointer;
+  }
+  .opt-row label{ display:flex; gap:9px; align-items:center; cursor:pointer; flex:1; font-size:13.5px; }
+  .opt-row .radio{
+    width:18px; height:18px; border-radius:50%;
+    border:2px solid #d0c8b0;
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .opt-row.on .radio{ border-color:var(--se-orange); }
+  .opt-row.on .radio::after{
+    content:""; width:9px; height:9px; border-radius:50%; background:var(--se-orange);
+  }
+  .opt-row .check{
+    width:18px; height:18px; border-radius:5px;
+    border:2px solid #d0c8b0;
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .opt-row.on .check{
+    background:var(--se-orange); border-color:var(--se-orange); color:#fff;
+  }
+  .opt-row .pr{ font-size:13px; color:#666; font-weight:700; }
+  .qty-row{
+    margin-top:18px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0; border-top:1px solid var(--se-line);
+  }
+  .qty-row h4{ font-weight:800; font-size:14px;}
+  .qty-ctrl{ display:flex; align-items:center; gap:14px; }
+  .qty-ctrl button{
+    width:32px; height:32px; border-radius:50%;
+    background:#fff4c2; color:#333; font-weight:900;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .qty-ctrl button:hover{ background:var(--se-yellow); }
+  .qty-ctrl .num{ font-weight:900; font-size:16px; min-width:18px; text-align:center; }
+  .detail-cta{
+    position:sticky; bottom:0;
+    margin:14px -18px -80px;
+    padding:14px 18px 18px;
+    background:#fff;
+    border-top:1px solid var(--se-line);
+  }
+  .detail-cta button{
+    width:100%; padding:14px;
+    background:linear-gradient(135deg, var(--se-orange), var(--se-red));
+    color:#fff; border-radius:14px;
+    font-weight:900; font-size:15px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 8px 16px rgba(255,90,31,0.3);
+  }
+
+  /* 장바구니 모달 */
+  .cart-sheet{
+    background:#fff; width:100%; max-width:440px;
+    border-radius:24px 24px 0 0;
+    max-height:88vh; overflow:hidden;
+    display:flex; flex-direction:column;
+    animation: slideUp .25s ease;
+  }
+  .cart-body{ flex:1; overflow:auto; padding:8px 0;}
+  .cart-empty{
+    padding:60px 24px; text-align:center;
+    color:var(--se-muted);
+  }
+  .cart-empty .emo{ font-size:48px; margin-bottom:10px;}
+  .cart-item{
+    padding:12px 18px;
+    display:flex; gap:12px; align-items:flex-start;
+    border-bottom:1px solid var(--se-line);
+  }
+  .cart-item .thumb{
+    width:60px; height:60px; border-radius:10px;
+    background:linear-gradient(135deg,#fff4c2,#ffd97a);
+    flex-shrink:0; overflow:hidden;
+  }
+  .cart-item .thumb svg{ width:100%; height:100%; }
+  .cart-item .info{ flex:1; min-width:0;}
+  .cart-item .info .nm{ font-weight:800; font-size:14px;}
+  .cart-item .info .op{ font-size:11.5px; color:var(--se-muted); margin-top:2px; line-height:1.4;}
+  .cart-item .info .row2{
+    display:flex; justify-content:space-between; align-items:center; margin-top:8px;
+  }
+  .cart-item .info .pr{ font-weight:900; font-size:14px;}
+  .cart-item .info .qctl{ display:flex; gap:8px; align-items:center;}
+  .cart-item .info .qctl button{
+    width:26px; height:26px; border-radius:50%;
+    background:#fff4c2; font-weight:900; font-size:13px;
+  }
+  .cart-item .info .qctl span{ font-weight:800; font-size:13px;}
+  .cart-rm{
+    align-self:flex-start; color:#bbb; font-size:18px; line-height:1;
+  }
+  .cart-summary{
+    border-top:1px solid var(--se-line);
+    padding:14px 18px;
+    background:#fffbe8;
+  }
+  .cart-summary .row{
+    display:flex; justify-content:space-between;
+    font-size:13px; padding:3px 0; color:#444;
+  }
+  .cart-summary .row.total{
+    margin-top:8px; padding-top:10px;
+    border-top:1px dashed #d8cfb0;
+    font-weight:900; font-size:16px; color:#111;
+  }
+  .cart-summary .row.total .v{ color:var(--se-orange); }
+  .cart-cta{
+    padding:12px 18px 18px;
+    background:#fff;
+    border-top:1px solid var(--se-line);
+  }
+  .cart-cta button{
+    width:100%; padding:14px;
+    background:linear-gradient(135deg, var(--se-orange), var(--se-red));
+    color:#fff; border-radius:14px;
+    font-weight:900; font-size:15px;
+    box-shadow:0 8px 16px rgba(255,90,31,0.3);
+  }
+
+  /* 결제 모달 */
+  .pay-sheet{
+    background:#fff; max-width:440px; width:100%;
+    border-radius:20px; padding:20px;
+    margin:auto;
+    animation: slideUp .25s ease;
+  }
+  .modal-backdrop.center{ align-items:center; padding:0 20px;}
+  .pay-row{
+    display:flex; justify-content:space-between; padding:8px 0;
+    font-size:13.5px;
+  }
+  .pay-row.tot{ font-weight:900; font-size:16px; padding-top:12px; margin-top:6px; border-top:1px dashed #d8cfb0; }
+  .pay-method{
+    margin-top:16px;
+    display:grid; grid-template-columns: repeat(3,1fr); gap:6px;
+  }
+  .pay-method button{
+    padding:10px 4px; border-radius:10px;
+    background:#fffbe8; border:1.5px solid var(--se-line);
+    font-size:12px; font-weight:700;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .pay-method button.on{
+    background:#fff6dd; border-color:var(--se-orange); color:var(--se-orange);
+  }
+
+  /* 주문 추적 */
+  .track-sheet{
+    background:#fff; max-width:440px; width:100%;
+    border-radius:24px 24px 0 0;
+    padding:22px 22px 26px;
+    animation: slideUp .25s ease;
+  }
+  .track-title{ font-weight:900; font-size:18px; text-align:center; }
+  .track-sub{ text-align:center; color:var(--se-muted); font-size:12.5px; margin-top:4px;}
+  .track-flow{
+    margin-top:20px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:relative;
+  }
+  .track-flow::before{
+    content:""; position:absolute; left:8%; right:8%; top:18px;
+    height:3px; background:#f0e6c5; border-radius:2px;
+  }
+  .track-flow .step{
+    position:relative; z-index:1;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    width:25%;
+  }
+  .track-flow .step .ic{
+    width:38px; height:38px; border-radius:50%;
+    background:#f0e6c5; color:#aaa;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:900;
+    transition: background .3s, color .3s, transform .3s;
+  }
+  .track-flow .step.done .ic{
+    background:var(--se-orange); color:#fff;
+  }
+  .track-flow .step.active .ic{
+    background:var(--se-yellow); color:#111;
+    animation: bounce 1.2s infinite;
+    transform: scale(1.1);
+  }
+  @keyframes bounce{
+    0%,100%{ transform: scale(1.1);}
+    50%{ transform: scale(1.2);}
+  }
+  .track-flow .step .lb{ font-size:11px; font-weight:800; color:#666; text-align:center;}
+  .track-flow .step.active .lb, .track-flow .step.done .lb{ color:#111; }
+  .track-detail{
+    margin-top:18px;
+    background:#fffbe8; border:1px solid var(--se-line);
+    border-radius:14px; padding:12px 14px;
+    font-size:12.5px; color:#444;
+  }
+  .track-detail b{ color:var(--se-orange); }
+  .track-cta{
+    margin-top:14px;
+    display:flex; gap:8px;
+  }
+  .track-cta button{
+    flex:1; padding:11px; border-radius:12px;
+    font-weight:800; font-size:13px;
+  }
+  .track-cta .primary{ background:linear-gradient(135deg, var(--se-orange), var(--se-red)); color:#fff;}
+  .track-cta .ghost{ background:#fff4c2; color:#7a5b00;}
+
+  /* 토스트 */
+  .toast{
+    position:fixed; left:50%; bottom:90px; transform:translateX(-50%);
+    background:#111; color:#fff;
+    padding:10px 18px; border-radius:999px;
+    font-size:13px; font-weight:700;
+    z-index:200;
+    opacity:0; pointer-events:none;
+    transition: opacity .2s, transform .2s;
+  }
+  .toast.on{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+  /* 푸터 */
+  .se-footer{
+    margin:30px 18px 18px;
+    text-align:center;
+    font-size:11px; color:#a09887;
+    line-height:1.6;
+  }
+
+  /* 가독성 (작은 폰) */
+  @media (max-width: 380px){
+    .cat-grid{ grid-template-columns: repeat(4, 1fr);}
+    .rest-info h3{ font-size:15px;}
+  }
+</style>
+</head>
+<body>
+<div class="desk-stage">
+  <div class="phone-frame">
+    <div class="phone-screen" id="screen">
+      <div class="notch"></div>
+
+      <!-- 상태바 -->
+      <div class="statusbar">
+        <span>9:41</span>
+        <div class="right-icons">
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 7l2 2 2-2M5 5l2 2 2-2M9 3l2 2 2-2" stroke="#111" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><rect x="0.5" y="0.5" width="11" height="9" rx="2" stroke="#111"/><rect x="2" y="2" width="8" height="6" rx="1" fill="#111"/><rect x="12" y="3" width="1.5" height="4" rx="0.5" fill="#111"/></svg>
+        </div>
+      </div>
+
+      <!-- 앱 헤더 -->
+      <div class="app-header">
+        <div class="brand-row">
+          <div class="brand-logo">
+            <div class="mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#fff"/>
+              </svg>
+            </div>
+            <div>
+              <div class="name">스파크 <em>잇츠</em></div>
+              <div style="font-size:9.5px; color:#999; font-weight:700; letter-spacing:0.06em;">SPARK·EATS</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="icon-btn" aria-label="알림">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 004 0"/></svg>
+              <span class="dot"></span>
+            </button>
+            <button class="icon-btn" aria-label="찜">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="loc-row">
+          <span class="pin">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </span>
+          <span>전기구 옴동</span>
+          <span class="chev">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+          <span class="badge">합격 배달가능</span>
+        </div>
+      </div>
+
+      <!-- 검색바 -->
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a09887" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="어떤 합격 메뉴를 찾으세요? — 예) 옴라면" />
+        <span style="font-size:11px; color:var(--se-orange); font-weight:800;">🔥 인기</span>
+      </div>
+
+      <!-- GNB -->
+      <div class="gnb" role="tablist">
+        <button class="on" data-gnb="배달">배달</button>
+        <button data-gnb="포장">포장</button>
+        <button data-gnb="새벽">새벽특강</button>
+        <button data-gnb="합격관">합격관</button>
+      </div>
+
+      <!-- 프로모 배너 -->
+      <div class="promo-banner">
+        <svg class="deco" viewBox="0 0 100 100" fill="#fff"><circle cx="50" cy="50" r="38"/><path d="M50 22 L58 44 L82 44 L62 58 L70 80 L50 66 L30 80 L38 58 L18 44 L42 44 Z"/></svg>
+        <h3>합격 배달 5분 컷!</h3>
+        <p>오늘만 — 옴의법칙 셋트 30% 할인 + 무료 해설 사이드</p>
+        <div class="price-chip">최소주문 0원 · 배달비 무료</div>
+      </div>
+
+      <!-- 카테고리 -->
+      <section class="cat-section">
+        <div class="section-title">
+          <h2>오늘 뭐 드실까요?</h2>
+          <span class="more">전체 ›</span>
+        </div>
+        <div class="cat-grid" id="catGrid">
+          <button class="cat-item active" data-cat="all"><div class="ic">🍽️</div><div class="lb">전체</div></button>
+          <button class="cat-item" data-cat="옴"><div class="ic">🍜</div><div class="lb">옴라면</div></button>
+          <button class="cat-item" data-cat="키"><div class="ic">🍕</div><div class="lb">키르히호프<br>피자</div></button>
+          <button class="cat-item" data-cat="변"><div class="ic">🍔</div><div class="lb">변압기<br>버거</div></button>
+          <button class="cat-item" data-cat="RLC"><div class="ic">🍱</div><div class="lb">RLC<br>도시락</div></button>
+          <button class="cat-item" data-cat="3상"><div class="ic">🍝</div><div class="lb">3상결선<br>파스타</div></button>
+          <button class="cat-item" data-cat="안전"><div class="ic">🥘</div><div class="lb">안전 카레</div></button>
+          <button class="cat-item" data-cat="합격"><div class="ic">🍰</div><div class="lb">합격<br>디저트</div></button>
+        </div>
+      </section>
+
+      <!-- 음식점 리스트 -->
+      <section class="rest-list" id="restList">
+        <!-- JS 렌더 -->
+      </section>
+
+      <!-- 푸터 -->
+      <div class="se-footer">
+        <div style="font-weight:800; color:#666;">스파크 잇츠 — 가상 음식 배달 시뮬레이션</div>
+        <div style="margin-top:4px;">전기기능사 합격을 위한 학습 콘텐츠 메타포 · 실제 결제·배달 발생하지 않음</div>
+        <div style="margin-top:2px;">© 2026 SPARK EATS · 학습용 데모</div>
+      </div>
+
+      <!-- 장바구니 FAB -->
+      <button class="cart-fab hidden" id="cartFab">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2.5 3h2.7l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>
+        <span>장바구니</span>
+        <span class="count" id="cartCount">0</span>
+      </button>
+
+      <!-- 하단 탭바 -->
+      <nav class="tab-bar">
+        <button class="on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          홈
+        </button>
+        <button>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          검색
+        </button>
+        <button>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          주문내역
+        </button>
+        <button>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          찜
+        </button>
+        <button>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 016-6h4a6 6 0 016 6v2"/></svg>
+          My
+        </button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- 음식점 메뉴 모달 -->
+<div class="modal-backdrop" id="restModal" onclick="if(event.target===this) closeRestModal()">
+  <div class="modal-sheet" role="dialog" aria-label="메뉴">
+    <div class="modal-head">
+      <h2 id="restModalTitle">음식점</h2>
+      <button class="modal-close" onclick="closeRestModal()" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body" id="restModalBody"></div>
+  </div>
+</div>
+
+<!-- 메뉴 상세 모달 -->
+<div class="modal-backdrop" id="detailModal" onclick="if(event.target===this) closeDetailModal()">
+  <div class="modal-sheet" role="dialog" aria-label="메뉴 상세">
+    <div class="modal-head">
+      <h2 id="detailModalTitle">메뉴</h2>
+      <button class="modal-close" onclick="closeDetailModal()" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+  </div>
+</div>
+
+<!-- 장바구니 모달 -->
+<div class="modal-backdrop" id="cartModal" onclick="if(event.target===this) closeCartModal()">
+  <div class="cart-sheet" role="dialog" aria-label="장바구니">
+    <div class="modal-head">
+      <h2>장바구니</h2>
+      <button class="modal-close" onclick="closeCartModal()" aria-label="닫기">✕</button>
+    </div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-summary" id="cartSummary" style="display:none;"></div>
+    <div class="cart-cta" id="cartCta" style="display:none;">
+      <button onclick="openPay()" id="payBtn">결제하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 결제 모달 -->
+<div class="modal-backdrop center" id="payModal" onclick="if(event.target===this) closePay()">
+  <div class="pay-sheet" role="dialog" aria-label="결제">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="font-weight:900; font-size:17px;">결제 확인</h2>
+      <button class="modal-close" onclick="closePay()" aria-label="닫기">✕</button>
+    </div>
+    <p style="font-size:12.5px; color:var(--se-muted); margin-top:4px;">가상 결제 — 실제 금액 청구되지 않습니다</p>
+
+    <div style="margin-top:14px; padding:12px 14px; background:#fffbe8; border-radius:12px; border:1px solid var(--se-line);">
+      <div class="pay-row"><span>주문 금액</span><span id="paySub">0원</span></div>
+      <div class="pay-row"><span>배달팁</span><span id="payTip">0원</span></div>
+      <div class="pay-row"><span>할인</span><span id="payDc" style="color:var(--se-red);">-0원</span></div>
+      <div class="pay-row tot"><span>최종 결제</span><span id="payTot" style="color:var(--se-orange);">0원</span></div>
+    </div>
+
+    <div style="margin-top:14px; font-weight:800; font-size:13px;">결제수단</div>
+    <div class="pay-method" id="payMethod">
+      <button class="on" data-pm="card">💳<span>카드</span></button>
+      <button data-pm="point">⚡<span>합격포인트</span></button>
+      <button data-pm="pay">📱<span>잇츠페이</span></button>
+    </div>
+
+    <button onclick="doPay()" style="margin-top:16px; width:100%; padding:14px; background:linear-gradient(135deg, var(--se-orange), var(--se-red)); color:#fff; border-radius:14px; font-weight:900; font-size:15px; box-shadow:0 8px 16px rgba(255,90,31,0.3);">
+      결제하고 배달 받기
+    </button>
+  </div>
+</div>
+
+<!-- 주문 추적 모달 -->
+<div class="modal-backdrop" id="trackModal" onclick="if(event.target===this) closeTrack()">
+  <div class="track-sheet" role="dialog" aria-label="주문 추적">
+    <div class="track-title">🎉 주문 완료!</div>
+    <div class="track-sub" id="trackSub">스파크 잇츠가 합격을 향해 달리고 있어요</div>
+    <div class="track-flow" id="trackFlow">
+      <div class="step active" data-step="0"><div class="ic">📋</div><div class="lb">접수<br>완료</div></div>
+      <div class="step" data-step="1"><div class="ic">🍳</div><div class="lb">조리중</div></div>
+      <div class="step" data-step="2"><div class="ic">🛵</div><div class="lb">배달중</div></div>
+      <div class="step" data-step="3"><div class="ic">🎓</div><div class="lb">합격<br>도착</div></div>
+    </div>
+    <div class="track-detail" id="trackDetail">
+      <b>예상 시간 25분</b> — 라이더 패러데이님이 곧 출발합니다. 실전 학습 메뉴는 식기 전에 풀어보세요!
+    </div>
+    <div class="track-cta">
+      <button class="ghost" onclick="closeTrack()">홈으로</button>
+      <button class="primary" onclick="closeTrack()">학습 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<!-- SVG 정의 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 라면 그릇 (옴라면) -->
+    <symbol id="ill-ramen" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#fff4c2"/>
+      <ellipse cx="100" cy="105" rx="80" ry="8" fill="#000" opacity="0.06"/>
+      <path d="M30 60 Q100 50 170 60 L160 100 Q100 110 40 100 Z" fill="#ff6a13"/>
+      <path d="M30 60 Q100 50 170 60 L165 65 Q100 58 35 65 Z" fill="#ffb86a"/>
+      <ellipse cx="100" cy="60" rx="65" ry="8" fill="#ffd97a"/>
+      <!-- 면 -->
+      <path d="M55 60 Q70 50 85 60 T115 60 T145 60" stroke="#fff5d0" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M60 64 Q80 54 100 64 T140 64" stroke="#ffea9a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- 계란 -->
+      <circle cx="80" cy="58" r="9" fill="#fff"/>
+      <circle cx="80" cy="58" r="5" fill="#ffd400"/>
+      <!-- 파 -->
+      <rect x="110" y="55" width="3" height="6" fill="#7bc043" rx="1"/>
+      <rect x="120" y="57" width="3" height="6" fill="#7bc043" rx="1"/>
+      <rect x="95" y="56" width="3" height="6" fill="#7bc043" rx="1"/>
+      <!-- 김 -->
+      <rect x="55" y="55" width="10" height="7" fill="#222" rx="1"/>
+      <!-- Ω 마크 -->
+      <text x="148" y="45" font-size="22" font-weight="900" fill="#ff3d3d" font-family="serif">Ω</text>
+      <!-- 김(증기) -->
+      <path d="M70 35 Q72 25 70 18 Q68 12 72 6" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path d="M100 32 Q102 22 100 14" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path d="M130 35 Q128 25 130 18 Q132 12 128 6" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    </symbol>
+
+    <!-- 피자 (키르히호프) -->
+    <symbol id="ill-pizza" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#ffd97a"/>
+      <circle cx="100" cy="65" r="50" fill="#f5a623"/>
+      <circle cx="100" cy="65" r="44" fill="#ffd07a"/>
+      <circle cx="100" cy="65" r="40" fill="#e85a0c"/>
+      <circle cx="100" cy="65" r="36" fill="#ffcc88"/>
+      <!-- 페퍼로니 -->
+      <circle cx="85" cy="50" r="6" fill="#b8341a"/>
+      <circle cx="115" cy="55" r="6" fill="#b8341a"/>
+      <circle cx="100" cy="75" r="6" fill="#b8341a"/>
+      <circle cx="80" cy="80" r="6" fill="#b8341a"/>
+      <circle cx="120" cy="80" r="6" fill="#b8341a"/>
+      <!-- 치즈 -->
+      <circle cx="92" cy="62" r="2.5" fill="#fff5d0"/>
+      <circle cx="108" cy="68" r="2.5" fill="#fff5d0"/>
+      <circle cx="95" cy="78" r="2" fill="#fff5d0"/>
+      <!-- 회로 분할선 (조각) -->
+      <line x1="100" y1="25" x2="100" y2="105" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+      <line x1="60" y1="65" x2="140" y2="65" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+      <line x1="68" y1="35" x2="132" y2="95" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+      <line x1="132" y1="35" x2="68" y2="95" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+      <!-- KCL 마크 -->
+      <circle cx="35" cy="35" r="14" fill="#fff" stroke="#222" stroke-width="2"/>
+      <text x="35" y="40" text-anchor="middle" font-size="11" font-weight="900" fill="#222">KCL</text>
+    </symbol>
+
+    <!-- 햄버거 (변압기) -->
+    <symbol id="ill-burger" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#fff4c2"/>
+      <!-- 빵 위 -->
+      <path d="M50 55 Q100 25 150 55 L150 65 L50 65 Z" fill="#d68a3c"/>
+      <circle cx="80" cy="42" r="1.5" fill="#fff"/>
+      <circle cx="100" cy="38" r="1.5" fill="#fff"/>
+      <circle cx="120" cy="42" r="1.5" fill="#fff"/>
+      <!-- 야채 -->
+      <path d="M50 65 Q100 60 150 65 L148 72 Q100 75 52 72 Z" fill="#7bc043"/>
+      <!-- 패티 -->
+      <rect x="50" y="72" width="100" height="12" fill="#5c2a0c" rx="3"/>
+      <!-- 치즈 -->
+      <path d="M50 84 L60 90 L70 84 L80 90 L90 84 L100 90 L110 84 L120 90 L130 84 L140 90 L150 84 Z" fill="#ffd400"/>
+      <!-- 빵 아래 -->
+      <path d="M50 90 Q100 96 150 90 L150 100 Q100 105 50 100 Z" fill="#d68a3c"/>
+      <!-- 변압기 코일 마크 -->
+      <g transform="translate(30 30)">
+        <circle r="3" fill="none" stroke="#222" stroke-width="1.5"/>
+        <circle cx="6" r="3" fill="none" stroke="#222" stroke-width="1.5"/>
+        <circle cx="12" r="3" fill="none" stroke="#222" stroke-width="1.5"/>
+      </g>
+      <text x="20" y="50" font-size="10" font-weight="900" fill="#222">N1:N2</text>
+    </symbol>
+
+    <!-- 도시락 (RLC) -->
+    <symbol id="ill-bento" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#ffd97a"/>
+      <rect x="30" y="40" width="140" height="60" rx="6" fill="#5c2a0c"/>
+      <rect x="36" y="46" width="128" height="48" rx="3" fill="#fff"/>
+      <!-- 칸막이 -->
+      <line x1="100" y1="46" x2="100" y2="94" stroke="#e85a0c" stroke-width="2"/>
+      <line x1="36" y1="70" x2="100" y2="70" stroke="#e85a0c" stroke-width="2"/>
+      <!-- R (저항 - 빨간 반찬) -->
+      <rect x="40" y="50" width="56" height="16" fill="#fff5d0"/>
+      <rect x="44" y="53" width="8" height="10" fill="#ff6a13" rx="1"/>
+      <rect x="56" y="53" width="8" height="10" fill="#ff3d3d" rx="1"/>
+      <rect x="68" y="53" width="8" height="10" fill="#ff6a13" rx="1"/>
+      <text x="68" y="60" font-size="10" font-weight="900" fill="#fff">R</text>
+      <!-- L (인덕터 - 면) -->
+      <rect x="40" y="74" width="56" height="16" fill="#fff5d0"/>
+      <path d="M44 82 Q48 78 52 82 T60 82 T68 82 T76 82 T84 82 T92 82" stroke="#f5a623" stroke-width="2" fill="none"/>
+      <text x="80" y="84" font-size="10" font-weight="900" fill="#222">L</text>
+      <!-- C (커패시터 - 밥) -->
+      <rect x="104" y="50" width="56" height="40" fill="#fff5d0"/>
+      <circle cx="118" cy="62" r="2" fill="#fff"/>
+      <circle cx="125" cy="60" r="2" fill="#fff"/>
+      <circle cx="132" cy="64" r="2" fill="#fff"/>
+      <circle cx="140" cy="62" r="2" fill="#fff"/>
+      <circle cx="148" cy="64" r="2" fill="#fff"/>
+      <circle cx="122" cy="74" r="2" fill="#fff"/>
+      <circle cx="132" cy="80" r="2" fill="#fff"/>
+      <circle cx="145" cy="78" r="2" fill="#fff"/>
+      <text x="150" y="86" font-size="11" font-weight="900" fill="#e85a0c">C</text>
+    </symbol>
+
+    <!-- 파스타 (3상) -->
+    <symbol id="ill-pasta" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#fff4c2"/>
+      <ellipse cx="100" cy="105" rx="75" ry="6" fill="#000" opacity="0.06"/>
+      <!-- 접시 -->
+      <ellipse cx="100" cy="70" rx="75" ry="22" fill="#fff"/>
+      <ellipse cx="100" cy="68" rx="68" ry="18" fill="#ffe4a0"/>
+      <!-- 파스타 면 (3색 - 3상) -->
+      <path d="M50 65 Q70 55 90 65 T130 65 T150 65" stroke="#ff6a13" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M55 70 Q75 60 95 70 T135 70 T155 70" stroke="#ffd400" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M50 75 Q70 65 90 75 T130 75 T150 75" stroke="#2bb673" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- 토마토 -->
+      <circle cx="80" cy="65" r="5" fill="#ff3d3d"/>
+      <circle cx="120" cy="68" r="5" fill="#ff3d3d"/>
+      <circle cx="100" cy="60" r="4" fill="#ff3d3d"/>
+      <!-- 바질 -->
+      <ellipse cx="90" cy="60" rx="3" ry="2" fill="#2bb673"/>
+      <ellipse cx="115" cy="62" rx="3" ry="2" fill="#2bb673"/>
+      <!-- 3상 기호 -->
+      <g transform="translate(165 25)">
+        <circle r="10" fill="#fff" stroke="#222" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-size="10" font-weight="900" fill="#222">3φ</text>
+      </g>
+    </symbol>
+
+    <!-- 카레 (안전) -->
+    <symbol id="ill-curry" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#ffd97a"/>
+      <!-- 접시 -->
+      <ellipse cx="100" cy="70" rx="75" ry="20" fill="#fff"/>
+      <ellipse cx="100" cy="68" rx="68" ry="16" fill="#fff5d0"/>
+      <!-- 카레 -->
+      <path d="M55 65 Q100 56 145 65 L142 78 Q100 84 58 78 Z" fill="#d68a3c"/>
+      <!-- 밥 -->
+      <path d="M55 65 Q70 62 80 65 L80 78 Q65 80 55 78 Z" fill="#fff"/>
+      <!-- 건더기 -->
+      <circle cx="105" cy="68" r="4" fill="#ff6a13"/>
+      <circle cx="120" cy="72" r="3" fill="#7bc043"/>
+      <circle cx="130" cy="68" r="4" fill="#5c2a0c"/>
+      <circle cx="115" cy="74" r="3" fill="#ffd400"/>
+      <!-- 안전 헬멧 -->
+      <g transform="translate(35 30)">
+        <path d="M0 10 Q0 0 10 0 Q20 0 20 10 L20 14 L0 14 Z" fill="#ffd400" stroke="#222" stroke-width="1.5"/>
+        <rect x="-2" y="13" width="24" height="3" fill="#222"/>
+        <circle cx="10" cy="6" r="2" fill="#ff3d3d"/>
+      </g>
+      <!-- 번개 -->
+      <path d="M165 30 L162 40 L168 40 L165 50" stroke="#ffd400" stroke-width="2" fill="none"/>
+    </symbol>
+
+    <!-- 디저트 (합격 케이크) -->
+    <symbol id="ill-cake" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#fff4c2"/>
+      <!-- 케이크 -->
+      <rect x="60" y="50" width="80" height="45" fill="#ffb86a"/>
+      <rect x="60" y="50" width="80" height="8" fill="#fff"/>
+      <path d="M60 58 Q75 64 90 58 Q105 64 120 58 Q135 64 140 58 L140 50 L60 50 Z" fill="#fff"/>
+      <!-- 딸기 -->
+      <path d="M75 42 L80 50 L70 50 Z" fill="#ff3d3d"/>
+      <path d="M105 42 L110 50 L100 50 Z" fill="#ff3d3d"/>
+      <path d="M135 42 L140 50 L130 50 Z" fill="#ff3d3d"/>
+      <!-- 촛불 -->
+      <rect x="98" y="30" width="4" height="14" fill="#ff6a13"/>
+      <path d="M100 22 Q102 26 100 30 Q98 26 100 22" fill="#ffd400"/>
+      <!-- 합격 깃발 -->
+      <line x1="120" y1="30" x2="120" y2="50" stroke="#222" stroke-width="1.5"/>
+      <path d="M120 30 L138 32 L138 40 L120 38 Z" fill="#ff3d3d"/>
+      <text x="123" y="38" font-size="7" font-weight="900" fill="#fff">합격</text>
+      <!-- 받침 접시 -->
+      <ellipse cx="100" cy="100" rx="55" ry="6" fill="#5c2a0c"/>
+    </symbol>
+
+    <!-- 한식 (패러데이) -->
+    <symbol id="ill-korean" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#ffd97a"/>
+      <!-- 큰 그릇 -->
+      <ellipse cx="100" cy="80" rx="70" ry="20" fill="#5c2a0c"/>
+      <ellipse cx="100" cy="76" rx="64" ry="16" fill="#fff"/>
+      <!-- 비빔밥 -->
+      <ellipse cx="100" cy="74" rx="58" ry="12" fill="#fff5d0"/>
+      <!-- 나물 5색 -->
+      <path d="M50 70 Q55 64 65 70 L65 78 Q55 80 50 78 Z" fill="#7bc043"/>
+      <path d="M65 68 Q75 62 85 68 L85 80 Q75 82 65 80 Z" fill="#ffd400"/>
+      <path d="M85 66 Q100 60 115 66 L115 82 Q100 84 85 82 Z" fill="#ff3d3d"/>
+      <path d="M115 68 Q130 62 145 68 L145 80 Q130 82 115 80 Z" fill="#222"/>
+      <path d="M145 70 Q155 64 165 70 L165 78 Q155 80 145 78 Z" fill="#d68a3c"/>
+      <!-- 계란 -->
+      <circle cx="100" cy="72" r="8" fill="#fff"/>
+      <circle cx="100" cy="72" r="4" fill="#ffd400"/>
+      <!-- 자성 기호 -->
+      <g transform="translate(20 25)">
+        <path d="M0 8 L8 0 L8 5 L15 5 L15 11 L8 11 L8 16 Z" fill="#ff3d3d" stroke="#222" stroke-width="1"/>
+      </g>
+    </symbol>
+
+    <!-- 양식 (테슬라) -->
+    <symbol id="ill-western" viewBox="0 0 200 120">
+      <rect width="200" height="120" fill="#fff4c2"/>
+      <!-- 접시 -->
+      <ellipse cx="100" cy="70" rx="75" ry="22" fill="#fff"/>
+      <ellipse cx="100" cy="68" rx="65" ry="17" fill="#ffd97a"/>
+      <!-- 스테이크 -->
+      <ellipse cx="100" cy="68" rx="40" ry="12" fill="#5c2a0c"/>
+      <ellipse cx="100" cy="66" rx="36" ry="9" fill="#7a3a18"/>
+      <!-- 그릴자국 -->
+      <line x1="75" y1="64" x2="125" y2="68" stroke="#222" stroke-width="1.5" opacity="0.5"/>
+      <line x1="78" y1="70" x2="128" y2="74" stroke="#222" stroke-width="1.5" opacity="0.5"/>
+      <!-- 가니쉬 -->
+      <circle cx="65" cy="68" r="4" fill="#7bc043"/>
+      <circle cx="135" cy="68" r="4" fill="#ff3d3d"/>
+      <circle cx="60" cy="72" r="3" fill="#ffd400"/>
+      <!-- 코일/번개 마크 (테슬라) -->
+      <g transform="translate(165 25)">
+        <path d="M0 0 L-4 8 L2 8 L-2 16 L6 6 L0 6 Z" fill="#ffd400" stroke="#222" stroke-width="1"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<script>
+(function(){
+  'use strict';
+
+  // ─── XSS 방어용 escape ─────────────────────────────
+  function esc(s){
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function won(n){
+    return n.toLocaleString('ko-KR') + '원';
+  }
+
+  // ─── 데이터 ─────────────────────────────
+  const RESTAURANTS = [
+    {
+      id:'r1', name:'옴라면 본점', cat:'옴', svg:'ill-ramen',
+      tagline:'옴의 법칙을 후루룩 — 1초 흡수',
+      rate:4.9, reviews:1823, time:'15~20분', minOrder:8000, fee:0,
+      tags:['#옴의법칙','#기초','#합격면'], badges:['hot','discount'],
+      discount:30,
+      menus:[
+        { id:'m1-1', name:'옴라면 셋트 (V=IR)', desc:'전압-전류-저항을 한 그릇에. 합격면 + 풀이 사이드', price:9900, orig:14000, svg:'ill-ramen' },
+        { id:'m1-2', name:'직병렬 칼국수', desc:'직렬+병렬 혼합 회로를 면발로 — 합산 저항 풀이 가이드 포함', price:10500, orig:13000, svg:'ill-ramen' },
+        { id:'m1-3', name:'전력 우동 (P=VI)', desc:'전력 공식 우동 — 따끈한 해설 국물', price:8900, svg:'ill-ramen' }
+      ]
+    },
+    {
+      id:'r2', name:'키르히호프 피자랜드', cat:'키', svg:'ill-pizza',
+      tagline:'KCL·KVL 한 판 정복 — 회로조각 8조각',
+      rate:4.8, reviews:2104, time:'25~30분', minOrder:12000, fee:2000,
+      tags:['#회로해석','#KCL','#KVL'], badges:['new'],
+      discount:0,
+      menus:[
+        { id:'m2-1', name:'KCL 마르게리타', desc:'전류 합=0. 노드법 마스터 마르게리타. 페퍼로니 12조각', price:15900, svg:'ill-pizza' },
+        { id:'m2-2', name:'KVL 페퍼로니', desc:'전압 강하 합=0. 폐회로 한 바퀴 도는 풍미', price:17900, svg:'ill-pizza' },
+        { id:'m2-3', name:'중첩의 원리 콤보', desc:'2개 전원 중첩 — 피자 2판 + 풀이 사이드', price:24900, orig:32000, svg:'ill-pizza' }
+      ]
+    },
+    {
+      id:'r3', name:'변압기 버거 왕국', cat:'변', svg:'ill-burger',
+      tagline:'1차:2차 권선비로 두툼한 패티',
+      rate:4.7, reviews:1456, time:'20~25분', minOrder:9000, fee:1500,
+      tags:['#변압기','#권선비','#실전'], badges:['hot'],
+      discount:15,
+      menus:[
+        { id:'m3-1', name:'변압기 와퍼 (N1:N2)', desc:'1차 코일 빵 + 2차 코일 빵 사이 더블 패티. 권선비 계산 셋트', price:11900, orig:14000, svg:'ill-burger' },
+        { id:'m3-2', name:'단상 치즈버거', desc:'단상 변압기 — 입문자 추천. 단단한 기본기', price:8900, svg:'ill-burger' },
+        { id:'m3-3', name:'3상 Y결선 더블', desc:'3상 변압기 Y결선 — 라인전압 √3배', price:13900, svg:'ill-burger' }
+      ]
+    },
+    {
+      id:'r4', name:'RLC 도시락 명가', cat:'RLC', svg:'ill-bento',
+      tagline:'저항·인덕터·콘덴서를 한 칸씩',
+      rate:4.85, reviews:987, time:'10~15분', minOrder:7000, fee:0,
+      tags:['#교류회로','#임피던스','#공진'], badges:['discount'],
+      discount:25,
+      menus:[
+        { id:'m4-1', name:'RLC 직렬 도시락', desc:'R + jωL + 1/jωC. 직렬 임피던스 한 끼에', price:8900, orig:12000, svg:'ill-bento' },
+        { id:'m4-2', name:'공진 점심 셋트', desc:'XL=XC 공진 주파수 — 1+1 사이드', price:9500, svg:'ill-bento' },
+        { id:'m4-3', name:'역률 개선 도시락', desc:'cosθ 개선 — 진상 콘덴서 반찬 추가', price:10900, svg:'ill-bento' }
+      ]
+    },
+    {
+      id:'r5', name:'3상 파스타 하우스', cat:'3상', svg:'ill-pasta',
+      tagline:'Y결선·Δ결선 두 가지 면발',
+      rate:4.75, reviews:1234, time:'25~35분', minOrder:11000, fee:2500,
+      tags:['#3상','#Y결선','#델타'], badges:['new','hot'],
+      discount:0,
+      menus:[
+        { id:'m5-1', name:'Y결선 크림 파스타', desc:'성형 결선 — 라인전압=√3×상전압. 풍성한 크림', price:13900, svg:'ill-pasta' },
+        { id:'m5-2', name:'Δ결선 토마토 파스타', desc:'삼각 결선 — 라인전류=√3×상전류. 진한 토마토', price:13900, svg:'ill-pasta' },
+        { id:'m5-3', name:'Y-Δ 변환 콤보', desc:'두 결선을 한번에. 등가 변환 풀이 가이드', price:19900, orig:25000, svg:'ill-pasta' }
+      ]
+    },
+    {
+      id:'r6', name:'패러데이 한식당', cat:'안전', svg:'ill-korean',
+      tagline:'전자기 유도 한정식',
+      rate:4.9, reviews:3210, time:'30~40분', minOrder:13000, fee:2000,
+      tags:['#전자기학','#자속','#유도'], badges:['hot'],
+      discount:10,
+      menus:[
+        { id:'m6-1', name:'패러데이 비빔밥', desc:'전자기 유도 5색 나물 — 자속변화율 ε=-dΦ/dt', price:12900, svg:'ill-korean' },
+        { id:'m6-2', name:'렌츠 김치찌개', desc:'유도전류 방향 결정 — 매콤한 풀이', price:9900, svg:'ill-korean' },
+        { id:'m6-3', name:'맥스웰 한정식', desc:'4대 방정식 풀코스 — 마스터 메뉴', price:24900, orig:30000, svg:'ill-korean' }
+      ]
+    },
+    {
+      id:'r7', name:'테슬라 캐주얼 다이닝', cat:'안전', svg:'ill-western',
+      tagline:'고전압 스테이크 — 미디엄 레어',
+      rate:4.7, reviews:876, time:'30~40분', minOrder:15000, fee:3000,
+      tags:['#고전압','#변전','#송배전'], badges:[],
+      discount:0,
+      menus:[
+        { id:'m7-1', name:'고전압 스테이크', desc:'송전 손실 최소화 — 두툼한 154kV 패티', price:24900, svg:'ill-western' },
+        { id:'m7-2', name:'변전소 콤보', desc:'승압·강압 2단 변환 + 보호계전 사이드', price:19900, svg:'ill-western' },
+        { id:'m7-3', name:'배전반 샐러드', desc:'간선/분기 배전 — 신선한 야채로 시원하게', price:11900, svg:'ill-western' }
+      ]
+    },
+    {
+      id:'r8', name:'합격 디저트 카페', cat:'합격', svg:'ill-cake',
+      tagline:'마지막 페이지를 달콤하게',
+      rate:5.0, reviews:512, time:'15~25분', minOrder:6000, fee:0,
+      tags:['#디저트','#마무리','#합격'], badges:['new','discount'],
+      discount:40,
+      menus:[
+        { id:'m8-1', name:'합격 케이크', desc:'시험 D-day 셀프 축하 — 합격 깃발 포함', price:11900, orig:19000, svg:'ill-cake' },
+        { id:'m8-2', name:'오답노트 마카롱', desc:'틀린 문제 한 입에 — 12색 풍미', price:8900, svg:'ill-cake' },
+        { id:'m8-3', name:'D-day 라떼', desc:'시험장 가는 길 — 따뜻한 한 잔', price:5900, svg:'ill-cake' }
+      ]
+    },
+    {
+      id:'r9', name:'옴라면 분점 (스피드)', cat:'옴', svg:'ill-ramen',
+      tagline:'10분 안에 옴 원샷',
+      rate:4.6, reviews:543, time:'8~12분', minOrder:5000, fee:1000,
+      tags:['#스피드','#기초'], badges:['hot'],
+      discount:0,
+      menus:[
+        { id:'m9-1', name:'옴 컵라면', desc:'I=V/R 5초 풀이용 컵라면', price:4900, svg:'ill-ramen' },
+        { id:'m9-2', name:'저항 5색 셋트', desc:'직병렬·전압분배·전류분배 5종 세트', price:9900, svg:'ill-ramen' }
+      ]
+    },
+    {
+      id:'r10', name:'안전 카레 식당', cat:'안전', svg:'ill-curry',
+      tagline:'감전·접지를 매콤하게',
+      rate:4.8, reviews:1100, time:'20~28분', minOrder:9000, fee:1500,
+      tags:['#안전','#접지','#감전'], badges:[],
+      discount:20,
+      menus:[
+        { id:'m10-1', name:'접지 카레 (TT/TN)', desc:'접지 방식 4종 — TT/TN/IT 셋트', price:10900, orig:13500, svg:'ill-curry' },
+        { id:'m10-2', name:'감전방지 비프카레', desc:'누전차단기 + 절연저항 풀이', price:11900, svg:'ill-curry' },
+        { id:'m10-3', name:'KEC 정식', desc:'한국전기설비규정 풀코스', price:15900, svg:'ill-curry' }
+      ]
+    }
+  ];
+
+  // 옵션 (메뉴 공통)
+  const OPTION_GROUPS = [
+    {
+      id:'size', title:'난이도 선택', required:true, type:'radio',
+      options:[
+        { id:'easy', label:'기초 — 개념 익숙해지기', delta:0 },
+        { id:'normal', label:'표준 — 실전 문제 풀이', delta:1000 },
+        { id:'hard', label:'심화 — 기출 변형 마스터', delta:2500 }
+      ]
+    },
+    {
+      id:'side', title:'사이드 추가', required:false, type:'checkbox',
+      options:[
+        { id:'note', label:'오답노트 PDF', delta:1500 },
+        { id:'video', label:'5분 해설 영상', delta:2000 },
+        { id:'audio', label:'오디오북 클립', delta:1000 }
+      ]
+    }
+  ];
+
+  // ─── 상태 ─────────────────────────────
+  const state = {
+    cart: [],
+    currentCat: 'all',
+    currentRest: null,
+    currentMenu: null,
+    detailOptions: { size:'normal', sides:[] },
+    detailQty: 1,
+    payMethod: 'card',
+    trackStep: 0,
+    trackTimer: null
+  };
+
+  // ─── 렌더: 음식점 카드 ─────────────────────────────
+  const restList = document.getElementById('restList');
+  function renderRestaurants(){
+    const filtered = state.currentCat === 'all'
+      ? RESTAURANTS
+      : RESTAURANTS.filter(r => r.cat === state.currentCat);
+
+    if (filtered.length === 0){
+      restList.innerHTML = `
+        <div style="padding:40px 20px; text-align:center; color:#999;">
+          <div style="font-size:36px; margin-bottom:8px;">🍽️</div>
+          <div style="font-weight:800;">이 카테고리 음식점이 아직 없어요</div>
+          <div style="font-size:12px; margin-top:4px;">다른 카테고리를 둘러보세요</div>
+        </div>`;
+      return;
+    }
+
+    restList.innerHTML = filtered.map(r => {
+      const badgesHtml = (r.badges||[]).map(b => {
+        if (b==='discount') return `<span class="badge discount">${r.discount}%↓</span>`;
+        if (b==='new') return `<span class="badge new">NEW</span>`;
+        if (b==='hot') return `<span class="badge hot">🔥 인기</span>`;
+        return '';
+      }).join('');
+      return `
+        <article class="rest-card" data-rid="${esc(r.id)}">
+          <div class="rest-thumb">
+            <svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice"><use href="#${esc(r.svg)}"/></svg>
+            <div class="badge-floating">${badgesHtml}</div>
+            <button class="heart-btn" data-fav="${esc(r.id)}" aria-label="찜">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            </button>
+          </div>
+          <div class="rest-info">
+            <div class="top">
+              <h3>${esc(r.name)}</h3>
+              <span class="rate"><span class="star">★</span> ${r.rate} <span style="font-weight:600; color:#999;">(${r.reviews.toLocaleString()})</span></span>
+            </div>
+            <div style="font-size:12.5px; color:var(--se-muted); margin-top:3px;">${esc(r.tagline)}</div>
+            <div class="rest-meta">
+              <span>🛵 ${esc(r.time)}</span>
+              <span class="dot">·</span>
+              <span>최소 ${won(r.minOrder)}</span>
+              <span class="dot">·</span>
+              <span style="${r.fee===0?'color:var(--se-good); font-weight:800;':''}">배달비 ${r.fee===0?'무료':won(r.fee)}</span>
+            </div>
+            <div class="rest-tags">
+              ${(r.tags||[]).map(t=>`<span class="tg">${esc(t)}</span>`).join('')}
+            </div>
+          </div>
+        </article>`;
+    }).join('');
+
+    // 카드 클릭
+    restList.querySelectorAll('.rest-card').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.closest('.heart-btn')) return;
+        const rid = el.getAttribute('data-rid');
+        openRestModal(rid);
+      });
+    });
+    // 찜
+    restList.querySelectorAll('.heart-btn').forEach(b => {
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        b.classList.toggle('on');
+        toast(b.classList.contains('on') ? '찜 목록에 추가했어요' : '찜 목록에서 제거했어요');
+      });
+    });
+  }
+
+  // ─── 카테고리 ─────────────────────────────
+  document.getElementById('catGrid').addEventListener('click', e => {
+    const btn = e.target.closest('.cat-item');
+    if (!btn) return;
+    document.querySelectorAll('#catGrid .cat-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.currentCat = btn.getAttribute('data-cat');
+    renderRestaurants();
+  });
+
+  // GNB 데모
+  document.querySelector('.gnb').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    document.querySelectorAll('.gnb button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    toast(`${b.dataset.gnb} 탭 — 가상 데모입니다`);
+  });
+
+  // ─── 음식점 메뉴 모달 ─────────────────────────────
+  function openRestModal(rid){
+    const r = RESTAURANTS.find(x => x.id === rid);
+    if (!r) return;
+    state.currentRest = r;
+    document.getElementById('restModalTitle').textContent = r.name;
+    document.getElementById('restModalBody').innerHTML = `
+      <div class="menu-hero">
+        <svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice"><use href="#${esc(r.svg)}"/></svg>
+      </div>
+      <div class="menu-rest-info">
+        <h3>${esc(r.name)}</h3>
+        <p class="sub">${esc(r.tagline)}</p>
+        <div class="stats">
+          <span><span style="color:#ffb800;">★</span> <b>${r.rate}</b> (${r.reviews.toLocaleString()})</span>
+          <span>·</span>
+          <span>🛵 ${esc(r.time)}</span>
+          <span>·</span>
+          <span style="${r.fee===0?'color:var(--se-good); font-weight:800;':''}">배달비 ${r.fee===0?'무료':won(r.fee)}</span>
+        </div>
+        <div style="margin-top:6px; font-size:12px; color:var(--se-muted);">📍 전기구 옴동 · 최소주문 ${won(r.minOrder)}</div>
+      </div>
+      <div style="padding:0 18px;">
+        <div style="padding:10px 12px; background:#fffbe8; border-radius:10px; border:1px dashed #e8d99a; font-size:12px; color:#7a5b00;">
+          💡 <b>학습 팁</b> — ${esc(r.tags.join(' '))} 콘셉트 메뉴를 골라 한 입씩 풀어보세요.
+        </div>
+      </div>
+      <div class="menu-list">
+        ${r.menus.map(m => `
+          <div class="menu-item" data-mid="${esc(m.id)}">
+            <div class="thumb"><svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice"><use href="#${esc(m.svg)}"/></svg></div>
+            <div class="info">
+              <div class="title">${esc(m.name)}</div>
+              <div class="desc">${esc(m.desc)}</div>
+              <div class="price-row">
+                ${m.orig ? `<span class="save">${Math.round((1 - m.price/m.orig)*100)}%</span><span class="orig">${won(m.orig)}</span>` : ''}
+                <span class="price">${won(m.price)}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // 메뉴 클릭
+    document.querySelectorAll('#restModalBody .menu-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const mid = el.getAttribute('data-mid');
+        openDetailModal(mid);
+      });
+    });
+
+    document.getElementById('restModal').classList.add('on');
+  }
+  function closeRestModal(){ document.getElementById('restModal').classList.remove('on'); }
+  window.closeRestModal = closeRestModal;
+
+  // ─── 메뉴 상세 모달 ─────────────────────────────
+  function openDetailModal(mid){
+    if (!state.currentRest) return;
+    const m = state.currentRest.menus.find(x => x.id === mid);
+    if (!m) return;
+    state.currentMenu = m;
+    state.detailOptions = { size:'normal', sides:[] };
+    state.detailQty = 1;
+
+    document.getElementById('detailModalTitle').textContent = m.name;
+    renderDetailBody();
+    document.getElementById('detailModal').classList.add('on');
+  }
+  function renderDetailBody(){
+    const m = state.currentMenu;
+    if (!m) return;
+
+    const optsHtml = OPTION_GROUPS.map(g => {
+      const rows = g.options.map(o => {
+        let selected;
+        if (g.type === 'radio') selected = state.detailOptions[g.id] === o.id;
+        else selected = state.detailOptions.sides.includes(o.id);
+        const inputUi = g.type==='radio' ? '<span class="radio"></span>' : '<span class="check">✓</span>';
+        return `
+          <div class="opt-row ${selected?'on':''}" data-grp="${esc(g.id)}" data-opt="${esc(o.id)}" data-type="${esc(g.type)}">
+            <label>${inputUi}<span>${esc(o.label)}</span></label>
+            <span class="pr">${o.delta > 0 ? '+' + won(o.delta) : '무료'}</span>
+          </div>`;
+      }).join('');
+      return `
+        <div class="opt-group">
+          <div class="head">
+            <h4>${esc(g.title)}</h4>
+            ${g.required ? '<span class="req">필수</span>' : '<span style="font-size:11px; color:#999; font-weight:700;">선택</span>'}
+          </div>
+          ${rows}
+        </div>`;
+    }).join('');
+
+    const totalUnit = calcUnitPrice();
+    document.getElementById('detailModalBody').innerHTML = `
+      <div class="detail-hero"><svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice"><use href="#${esc(m.svg)}"/></svg></div>
+      <div class="detail-body">
+        <h3>${esc(m.name)}</h3>
+        <div style="margin-top:4px;">
+          ${m.orig ? `<span style="text-decoration:line-through; color:#bbb; font-size:13px;">${won(m.orig)}</span> ` : ''}
+          <span style="font-size:18px; font-weight:900; color:var(--se-orange);">${won(m.price)}</span>
+        </div>
+        <p class="desc">${esc(m.desc)}</p>
+
+        ${optsHtml}
+
+        <div class="qty-row">
+          <h4>수량</h4>
+          <div class="qty-ctrl">
+            <button id="qtyMinus" aria-label="감소">−</button>
+            <span class="num" id="qtyNum">${state.detailQty}</span>
+            <button id="qtyPlus" aria-label="증가">+</button>
+          </div>
+        </div>
+
+        <div class="detail-cta">
+          <button id="addToCart">
+            <span>장바구니 담기</span>
+            <span id="addBtnPrice">${won(totalUnit * state.detailQty)}</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // 옵션 클릭
+    document.querySelectorAll('#detailModalBody .opt-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const grp = row.getAttribute('data-grp');
+        const opt = row.getAttribute('data-opt');
+        const type = row.getAttribute('data-type');
+        if (type === 'radio'){
+          state.detailOptions[grp] = opt;
+        } else {
+          const idx = state.detailOptions.sides.indexOf(opt);
+          if (idx >= 0) state.detailOptions.sides.splice(idx,1);
+          else state.detailOptions.sides.push(opt);
+        }
+        renderDetailBody();
+      });
+    });
+    // 수량
+    document.getElementById('qtyPlus').addEventListener('click', () => {
+      if (state.detailQty < 99) state.detailQty++;
+      updateDetailQty();
+    });
+    document.getElementById('qtyMinus').addEventListener('click', () => {
+      if (state.detailQty > 1) state.detailQty--;
+      updateDetailQty();
+    });
+    document.getElementById('addToCart').addEventListener('click', addCurrentToCart);
+  }
+  function calcUnitPrice(){
+    const m = state.currentMenu;
+    if (!m) return 0;
+    let p = m.price;
+    const sizeGrp = OPTION_GROUPS[0];
+    const size = sizeGrp.options.find(o => o.id === state.detailOptions.size);
+    if (size) p += size.delta;
+    const sideGrp = OPTION_GROUPS[1];
+    sideGrp.options.forEach(o => {
+      if (state.detailOptions.sides.includes(o.id)) p += o.delta;
+    });
+    return p;
+  }
+  function updateDetailQty(){
+    document.getElementById('qtyNum').textContent = state.detailQty;
+    document.getElementById('addBtnPrice').textContent = won(calcUnitPrice() * state.detailQty);
+  }
+  function closeDetailModal(){ document.getElementById('detailModal').classList.remove('on'); }
+  window.closeDetailModal = closeDetailModal;
+
+  // ─── 장바구니 ─────────────────────────────
+  function addCurrentToCart(){
+    const m = state.currentMenu;
+    const r = state.currentRest;
+    if (!m || !r) return;
+
+    const sizeOpt = OPTION_GROUPS[0].options.find(o => o.id === state.detailOptions.size);
+    const sideOpts = OPTION_GROUPS[1].options.filter(o => state.detailOptions.sides.includes(o.id));
+    const optLabel = [sizeOpt?.label, ...sideOpts.map(s => s.label)].filter(Boolean).join(' · ');
+
+    const unit = calcUnitPrice();
+    state.cart.push({
+      cartId: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      restId: r.id,
+      restName: r.name,
+      menuId: m.id,
+      name: m.name,
+      svg: m.svg,
+      opt: optLabel,
+      unit: unit,
+      qty: state.detailQty,
+      fee: r.fee
+    });
+
+    updateCartFab();
+    closeDetailModal();
+    closeRestModal();
+    toast(`'${m.name}' 장바구니에 담았어요 🛵`);
+  }
+  function updateCartFab(){
+    const fab = document.getElementById('cartFab');
+    const cnt = state.cart.reduce((s,i)=>s+i.qty,0);
+    document.getElementById('cartCount').textContent = cnt;
+    if (cnt > 0) fab.classList.remove('hidden');
+    else fab.classList.add('hidden');
+  }
+  document.getElementById('cartFab').addEventListener('click', openCart);
+
+  function openCart(){
+    renderCart();
+    document.getElementById('cartModal').classList.add('on');
+  }
+  function closeCartModal(){ document.getElementById('cartModal').classList.remove('on'); }
+  window.closeCartModal = closeCartModal;
+
+  function renderCart(){
+    const body = document.getElementById('cartBody');
+    const sum = document.getElementById('cartSummary');
+    const cta = document.getElementById('cartCta');
+    if (state.cart.length === 0){
+      body.innerHTML = `
+        <div class="cart-empty">
+          <div class="emo">🛒</div>
+          <div style="font-weight:800; color:#666;">장바구니가 비어 있어요</div>
+          <div style="font-size:12.5px; margin-top:4px;">맛있는 합격 메뉴를 담아보세요</div>
+        </div>`;
+      sum.style.display = 'none';
+      cta.style.display = 'none';
+      return;
+    }
+    body.innerHTML = state.cart.map(it => `
+      <div class="cart-item" data-cid="${esc(it.cartId)}">
+        <div class="thumb"><svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice"><use href="#${esc(it.svg)}"/></svg></div>
+        <div class="info">
+          <div class="nm">${esc(it.name)}</div>
+          <div class="op">${esc(it.restName)} · ${esc(it.opt||'기본')}</div>
+          <div class="row2">
+            <div class="qctl">
+              <button data-act="minus" data-cid="${esc(it.cartId)}">−</button>
+              <span>${it.qty}</span>
+              <button data-act="plus" data-cid="${esc(it.cartId)}">+</button>
+            </div>
+            <div class="pr">${won(it.unit * it.qty)}</div>
+          </div>
+        </div>
+        <button class="cart-rm" data-act="remove" data-cid="${esc(it.cartId)}" aria-label="삭제">×</button>
+      </div>
+    `).join('');
+
+    // 합계
+    const totals = calcTotals();
+    sum.innerHTML = `
+      <div class="row"><span>주문 금액</span><span>${won(totals.sub)}</span></div>
+      <div class="row"><span>배달팁</span><span>${totals.fee === 0 ? '무료' : won(totals.fee)}</span></div>
+      <div class="row"><span>합격 할인</span><span style="color:var(--se-red);">-${won(totals.dc)}</span></div>
+      <div class="row total"><span>합계</span><span class="v">${won(totals.tot)}</span></div>
+      ${ totals.sub < totals.minOrder
+         ? `<div style="margin-top:8px; padding:8px 10px; background:#fff; border-radius:8px; font-size:11.5px; color:var(--se-red); font-weight:700;">⚠ 최소주문 ${won(totals.minOrder)} — ${won(totals.minOrder - totals.sub)} 더 담아주세요</div>`
+         : ''
+      }
+    `;
+    sum.style.display = 'block';
+    cta.style.display = 'block';
+
+    // 결제 버튼 활성
+    const pay = document.getElementById('payBtn');
+    if (totals.sub < totals.minOrder){
+      pay.style.opacity = '0.5';
+      pay.style.pointerEvents = 'none';
+    } else {
+      pay.style.opacity = '1';
+      pay.style.pointerEvents = 'auto';
+    }
+
+    // 이벤트
+    body.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', e => {
+        const act = b.getAttribute('data-act');
+        const cid = b.getAttribute('data-cid');
+        const it = state.cart.find(x => x.cartId === cid);
+        if (!it) return;
+        if (act === 'plus') it.qty = Math.min(99, it.qty+1);
+        else if (act === 'minus'){
+          it.qty -= 1;
+          if (it.qty <= 0) state.cart = state.cart.filter(x => x.cartId !== cid);
+        }
+        else if (act === 'remove'){
+          state.cart = state.cart.filter(x => x.cartId !== cid);
+        }
+        updateCartFab();
+        renderCart();
+      });
+    });
+  }
+  function calcTotals(){
+    const sub = state.cart.reduce((s,i)=>s + i.unit * i.qty, 0);
+    // 대표 음식점(첫번째)의 정보로 fee/min 적용 (단순화)
+    const firstR = state.cart[0] ? RESTAURANTS.find(r => r.id === state.cart[0].restId) : null;
+    const fee = firstR ? firstR.fee : 0;
+    const dcRate = firstR ? (firstR.discount || 0) : 0;
+    const dc = Math.round(sub * dcRate / 100);
+    const tot = Math.max(0, sub - dc) + fee;
+    return { sub, fee, dc, tot, minOrder: firstR? firstR.minOrder : 0 };
+  }
+
+  // ─── 결제 ─────────────────────────────
+  function openPay(){
+    const t = calcTotals();
+    document.getElementById('paySub').textContent = won(t.sub);
+    document.getElementById('payTip').textContent = t.fee === 0 ? '무료' : won(t.fee);
+    document.getElementById('payDc').textContent = '-' + won(t.dc);
+    document.getElementById('payTot').textContent = won(t.tot);
+    document.getElementById('payModal').classList.add('on');
+  }
+  function closePay(){ document.getElementById('payModal').classList.remove('on'); }
+  window.openPay = openPay;
+  window.closePay = closePay;
+
+  document.getElementById('payMethod').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    document.querySelectorAll('#payMethod button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    state.payMethod = b.getAttribute('data-pm');
+  });
+
+  function doPay(){
+    closePay();
+    closeCartModal();
+    const t = calcTotals();
+    toast(`💳 ${won(t.tot)} 결제 완료! (가상)`);
+    setTimeout(() => openTrack(), 700);
+  }
+  window.doPay = doPay;
+
+  // ─── 주문 추적 ─────────────────────────────
+  function openTrack(){
+    state.trackStep = 0;
+    document.querySelectorAll('#trackFlow .step').forEach((el,i) => {
+      el.classList.remove('done','active');
+      if (i === 0) el.classList.add('active');
+    });
+    const subEl = document.getElementById('trackSub');
+    const detailEl = document.getElementById('trackDetail');
+    subEl.textContent = '스파크 잇츠가 합격을 향해 달리고 있어요';
+    detailEl.innerHTML = '<b>예상 시간 25분</b> — 가게에서 주문을 확인 중입니다.';
+    document.getElementById('trackModal').classList.add('on');
+
+    if (state.trackTimer) clearInterval(state.trackTimer);
+    const msgs = [
+      '가게에서 주문을 확인하고 있어요.',
+      '주방에서 학습 메뉴를 조리 중이에요. 따끈한 공식이 곧 나옵니다.',
+      '라이더 패러데이님이 픽업했어요. 합격을 향해 달리는 중!',
+      '🎓 도착했어요. 식기 전에 풀어보세요!'
+    ];
+    state.trackTimer = setInterval(() => {
+      const steps = document.querySelectorAll('#trackFlow .step');
+      if (state.trackStep >= steps.length - 1){
+        clearInterval(state.trackTimer);
+        state.trackTimer = null;
+        // 마지막 — 카트 비움
+        state.cart = [];
+        updateCartFab();
+        return;
+      }
+      steps[state.trackStep].classList.remove('active');
+      steps[state.trackStep].classList.add('done');
+      state.trackStep++;
+      steps[state.trackStep].classList.add('active');
+      detailEl.innerHTML = `<b>단계 ${state.trackStep+1}/4</b> — ${esc(msgs[state.trackStep])}`;
+    }, 1800);
+  }
+  function closeTrack(){
+    document.getElementById('trackModal').classList.remove('on');
+    if (state.trackTimer){ clearInterval(state.trackTimer); state.trackTimer = null; }
+  }
+  window.closeTrack = closeTrack;
+
+  // ─── 토스트 ─────────────────────────────
+  let toastTimer = null;
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('on'), 1800);
+  }
+
+  // ─── 검색 (간단 필터) ─────────────────────────────
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter'){
+      const q = e.target.value.trim();
+      if (!q){ renderRestaurants(); return; }
+      const found = RESTAURANTS.filter(r =>
+        r.name.includes(q) || r.tagline.includes(q) ||
+        (r.tags||[]).some(t => t.includes(q)) ||
+        r.menus.some(m => m.name.includes(q))
+      );
+      if (found.length === 0){
+        restList.innerHTML = `
+          <div style="padding:40px 20px; text-align:center; color:#999;">
+            <div style="font-size:36px; margin-bottom:8px;">🔍</div>
+            <div style="font-weight:800;">"${esc(q)}" 검색 결과 없음</div>
+            <div style="font-size:12px; margin-top:4px;">다른 키워드로 시도해보세요</div>
+          </div>`;
+      } else {
+        state.currentCat = 'all';
+        document.querySelectorAll('#catGrid .cat-item').forEach(b => b.classList.remove('active'));
+        document.querySelector('#catGrid .cat-item[data-cat="all"]').classList.add('active');
+        // 직접 렌더
+        restList.innerHTML = '';
+        state.currentCat = '__search__';
+        const tmp = RESTAURANTS.length;
+        // 임시: 검색 결과만 렌더 (단순화 — 그냥 currentCat 우회)
+        const savedAll = RESTAURANTS.slice();
+        // 재사용: render 함수가 RESTAURANTS 직접 참조하므로 임시 변환
+        document.getElementById('catGrid').style.opacity = '0.6';
+        renderSearchResults(found, q);
+      }
+    }
+  });
+  function renderSearchResults(list, q){
+    document.getElementById('catGrid').style.opacity = '1';
+    restList.innerHTML = `
+      <div style="font-size:13px; color:var(--se-muted); padding:0 2px;">
+        "<b style="color:#111;">${esc(q)}</b>" 검색 결과 <b>${list.length}건</b>
+      </div>` + list.map(r => {
+        const badgesHtml = (r.badges||[]).map(b => {
+          if (b==='discount') return `<span class="badge discount">${r.discount}%↓</span>`;
+          if (b==='new') return `<span class="badge new">NEW</span>`;
+          if (b==='hot') return `<span class="badge hot">🔥 인기</span>`;
+          return '';
+        }).join('');
+        return `
+          <article class="rest-card" data-rid="${esc(r.id)}">
+            <div class="rest-thumb">
+              <svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice"><use href="#${esc(r.svg)}"/></svg>
+              <div class="badge-floating">${badgesHtml}</div>
+            </div>
+            <div class="rest-info">
+              <div class="top">
+                <h3>${esc(r.name)}</h3>
+                <span class="rate"><span class="star">★</span> ${r.rate}</span>
+              </div>
+              <div style="font-size:12.5px; color:var(--se-muted); margin-top:3px;">${esc(r.tagline)}</div>
+              <div class="rest-meta">
+                <span>🛵 ${esc(r.time)}</span>
+                <span class="dot">·</span>
+                <span>${r.fee===0?'무료배달':won(r.fee)}</span>
+              </div>
+            </div>
+          </article>`;
+      }).join('');
+    restList.querySelectorAll('.rest-card').forEach(el => {
+      el.addEventListener('click', () => openRestModal(el.getAttribute('data-rid')));
+    });
+  }
+
+  // ─── 초기 ─────────────────────────────
+  renderRestaurants();
+  updateCartFab();
+})();
+</script>
+</body>
+</html>

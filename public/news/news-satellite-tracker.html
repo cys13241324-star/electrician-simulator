@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARK MISSION CONTROL — 스파크 학습 위성 관제</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep:    #000010;
+    --bg-space:   #02021a;
+    --bg-panel:   #050518;
+    --bg-card:    #08082a;
+    --bg-elev:    #0c0c34;
+    --border:     #14336b;
+    --border-dim: #0d1f44;
+    --border-hot: #0fe0c7;
+
+    --grid:       rgba(34,211,238,0.06);
+
+    --fg:         #d3f2ff;
+    --fg-dim:     #6b94b8;
+    --fg-mute:    #3e5775;
+
+    --cyan:       #22d3ee;
+    --cyan-hot:   #67e8f9;
+    --green:      #4ade80;
+    --green-hot:  #86efac;
+    --amber:      #fbbf24;
+    --red:        #ef4444;
+    --magenta:    #c084fc;
+    --orbit:      rgba(34,211,238,0.32);
+    --orbit-soft: rgba(34,211,238,0.14);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background:
+      radial-gradient(ellipse at 20% 0%,  rgba(34,211,238,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(192,132,252,0.05) 0%, transparent 50%),
+      var(--bg-deep) fixed;
+    color: var(--fg);
+    font-family: 'JetBrains Mono', SFMono-Regular, Consolas, Menlo, monospace;
+    font-size: 14px; line-height: 1.55;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .kor { font-family: 'Noto Sans KR', system-ui, sans-serif; }
+  .display { font-family: 'Orbitron', 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
+
+  /* Starfield */
+  .starfield {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 12% 17%, #fff, transparent),
+      radial-gradient(1px 1px at 28% 64%, #c7ecff, transparent),
+      radial-gradient(1px 1px at 41% 28%, #fff, transparent),
+      radial-gradient(1px 1px at 56% 81%, #a6dfff, transparent),
+      radial-gradient(1px 1px at 73% 12%, #fff, transparent),
+      radial-gradient(1px 1px at 84% 52%, #d6f0ff, transparent),
+      radial-gradient(1px 1px at 92% 73%, #fff, transparent),
+      radial-gradient(1px 1px at 7% 88%, #aee0ff, transparent),
+      radial-gradient(2px 2px at 33% 47%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(2px 2px at 67% 36%, rgba(199,236,255,0.7), transparent);
+    background-size: 100% 100%;
+    opacity: 0.7;
+  }
+  .starfield::after {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 22% 32%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 46% 71%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 78% 24%, rgba(255,255,255,0.8), transparent),
+      radial-gradient(1px 1px at 88% 84%, rgba(255,255,255,0.5), transparent);
+    animation: twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* Layout */
+  .wrap { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; padding: 0 20px 56px; }
+
+  /* Panel base */
+  .panel {
+    background: linear-gradient(180deg, rgba(8,8,42,0.92), rgba(5,5,24,0.88));
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    position: relative;
+  }
+  .panel-h {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-dim);
+    background: linear-gradient(90deg, rgba(20,51,107,0.45), rgba(20,51,107,0.12));
+  }
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+    color: var(--cyan-hot); text-transform: uppercase;
+  }
+  .panel-body { padding: 14px; }
+
+  /* Header bar */
+  .mission-header {
+    border: 1px solid var(--border);
+    background:
+      linear-gradient(180deg, rgba(15,224,199,0.04), transparent),
+      linear-gradient(180deg, rgba(8,8,42,0.95), rgba(5,5,24,0.9));
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 18px 0 16px;
+  }
+
+  .stat-block { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px; letter-spacing: 0.22em; color: var(--fg-mute); text-transform: uppercase;
+  }
+  .stat-value {
+    font-family: 'Orbitron', monospace; font-weight: 700;
+    font-size: 18px; color: var(--cyan-hot);
+    text-shadow: 0 0 12px rgba(103,232,249,0.3);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-value.lg { font-size: 24px; }
+  .stat-value.green { color: var(--green-hot); text-shadow: 0 0 12px rgba(74,222,128,0.3); }
+  .stat-value.amber { color: var(--amber); text-shadow: 0 0 12px rgba(251,191,36,0.3); }
+
+  /* LED dot */
+  .led {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; vertical-align: middle;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .led.green { background: var(--green); color: var(--green); animation: blink-led 2s ease-in-out infinite; }
+  .led.amber { background: var(--amber); color: var(--amber); animation: blink-led 1.4s ease-in-out infinite; }
+  .led.red   { background: var(--red);   color: var(--red);   animation: blink-led 0.8s ease-in-out infinite; }
+  .led.cyan  { background: var(--cyan);  color: var(--cyan);  animation: blink-led 2s ease-in-out infinite; }
+  @keyframes blink-led {
+    0%, 60%, 100% { opacity: 1; }
+    70%, 90% { opacity: 0.35; }
+  }
+
+  /* Globe panel */
+  .globe-stage {
+    aspect-ratio: 1 / 1;
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    background:
+      radial-gradient(ellipse at center, rgba(15,30,60,0.4), rgba(2,2,26,0.95) 70%);
+    border: 1px solid var(--border-dim);
+  }
+  .globe-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(0deg,  var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .globe-svg { width: 100%; height: 100%; display: block; }
+
+  .globe-earth { animation: rotate-earth 60s linear infinite; transform-origin: center; }
+  @keyframes rotate-earth { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  .sat-marker { transform-origin: center; }
+  .sat-marker.orbit-1 { animation: orbit-1 18s linear infinite; }
+  .sat-marker.orbit-2 { animation: orbit-2 24s linear infinite; }
+  .sat-marker.orbit-3 { animation: orbit-3 30s linear infinite; }
+  .sat-marker.orbit-4 { animation: orbit-4 22s linear infinite; }
+  .sat-marker.orbit-5 { animation: orbit-5 36s linear infinite; }
+  .sat-marker.orbit-6 { animation: orbit-6 28s linear infinite; }
+
+  @keyframes orbit-1 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes orbit-2 { from { transform: rotate(45deg); } to { transform: rotate(405deg); } }
+  @keyframes orbit-3 { from { transform: rotate(-90deg); } to { transform: rotate(270deg); } }
+  @keyframes orbit-4 { from { transform: rotate(120deg); } to { transform: rotate(480deg); } }
+  @keyframes orbit-5 { from { transform: rotate(200deg); } to { transform: rotate(560deg); } }
+  @keyframes orbit-6 { from { transform: rotate(-30deg); } to { transform: rotate(330deg); } }
+
+  .crosshair {
+    position: absolute; pointer-events: none;
+    border: 1px solid rgba(34,211,238,0.25);
+    border-radius: 50%;
+  }
+  .crosshair.outer { inset: 5%; }
+  .crosshair.inner { inset: 18%; }
+
+  .corner-bracket {
+    position: absolute; width: 22px; height: 22px;
+    border: 2px solid var(--cyan);
+    opacity: 0.55;
+  }
+  .corner-bracket.tl { top: 8px;    left: 8px;    border-right: 0; border-bottom: 0; }
+  .corner-bracket.tr { top: 8px;    right: 8px;   border-left: 0;  border-bottom: 0; }
+  .corner-bracket.bl { bottom: 8px; left: 8px;    border-right: 0; border-top: 0; }
+  .corner-bracket.br { bottom: 8px; right: 8px;   border-left: 0;  border-top: 0; }
+
+  .globe-readout {
+    position: absolute; bottom: 10px; left: 10px; right: 10px;
+    display: flex; justify-content: space-between; gap: 8px;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px; letter-spacing: 0.16em;
+    color: var(--cyan); opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* Sat cards */
+  .sat-card {
+    background: linear-gradient(180deg, rgba(12,12,52,0.85), rgba(8,8,42,0.6));
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .sat-card:hover {
+    border-color: var(--cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(34,211,238,0.12);
+  }
+  .sat-card::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+  }
+  .sat-card.status-standby::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  .sat-card.status-offline::before { background: var(--red);   box-shadow: 0 0 8px var(--red); opacity: 0.6; }
+
+  /* Telemetry bars */
+  .telem-row {
+    display: grid; grid-template-columns: 90px 1fr 60px;
+    align-items: center; gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border-dim);
+  }
+  .telem-row:last-child { border-bottom: 0; }
+  .telem-label {
+    font-family: 'Orbitron', monospace; font-size: 10px;
+    letter-spacing: 0.14em; color: var(--fg-dim);
+  }
+  .telem-bar {
+    height: 8px; background: rgba(20,51,107,0.45);
+    border-radius: 2px; overflow: hidden; position: relative;
+  }
+  .telem-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--cyan), var(--cyan-hot));
+    transition: width 0.6s ease;
+    box-shadow: 0 0 8px rgba(34,211,238,0.4);
+  }
+  .telem-bar-fill.green { background: linear-gradient(90deg, var(--green), var(--green-hot)); box-shadow: 0 0 8px rgba(74,222,128,0.4); }
+  .telem-bar-fill.amber { background: linear-gradient(90deg, #f59e0b, var(--amber)); box-shadow: 0 0 8px rgba(251,191,36,0.4); }
+  .telem-value {
+    font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700;
+    text-align: right; color: var(--cyan-hot); font-variant-numeric: tabular-nums;
+  }
+
+  /* Log */
+  .log-stream {
+    height: 240px; overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 1.6;
+    padding: 10px 12px;
+    background: rgba(2,2,26,0.5);
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .log-stream::-webkit-scrollbar { width: 6px; }
+  .log-stream::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .log-line { color: var(--fg-dim); display: flex; gap: 8px; }
+  .log-time { color: var(--fg-mute); flex-shrink: 0; }
+  .log-tag { flex-shrink: 0; font-weight: 700; }
+  .log-tag.rx { color: var(--cyan); }
+  .log-tag.tx { color: var(--magenta); }
+  .log-tag.ok { color: var(--green); }
+  .log-tag.warn { color: var(--amber); }
+  .log-tag.err { color: var(--red); }
+  .log-msg { color: var(--fg); }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+    padding: 8px 14px;
+    background: rgba(34,211,238,0.08);
+    border: 1px solid var(--cyan);
+    color: var(--cyan-hot);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-radius: 3px;
+  }
+  .btn:hover {
+    background: rgba(34,211,238,0.18);
+    box-shadow: 0 0 14px rgba(34,211,238,0.3);
+  }
+  .btn.green { border-color: var(--green); color: var(--green-hot); background: rgba(74,222,128,0.08); }
+  .btn.green:hover { background: rgba(74,222,128,0.18); box-shadow: 0 0 14px rgba(74,222,128,0.3); }
+  .btn.amber { border-color: var(--amber); color: var(--amber); background: rgba(251,191,36,0.08); }
+  .btn.amber:hover { background: rgba(251,191,36,0.18); box-shadow: 0 0 14px rgba(251,191,36,0.3); }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,16,0.85);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: linear-gradient(180deg, rgba(12,12,52,0.97), rgba(5,5,24,0.97));
+    border: 1px solid var(--cyan);
+    border-radius: 8px;
+    max-width: 720px; width: 100%;
+    max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 0 60px rgba(34,211,238,0.2);
+  }
+  .modal-h {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(90deg, rgba(20,51,107,0.5), transparent);
+  }
+  .modal-close {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--fg-dim); width: 28px; height: 28px;
+    cursor: pointer; border-radius: 3px;
+    font-family: 'Orbitron', monospace;
+  }
+  .modal-close:hover { color: var(--red); border-color: var(--red); }
+  .modal-body { padding: 18px; }
+
+  /* Members */
+  .crew-card {
+    display: flex; gap: 10px; align-items: center;
+    padding: 10px; border: 1px solid var(--border-dim); border-radius: 4px;
+    background: rgba(8,8,42,0.4);
+  }
+  .crew-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--magenta));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace; font-weight: 700; font-size: 12px;
+    color: var(--bg-deep);
+    flex-shrink: 0;
+  }
+
+  /* Countdown digit */
+  .countdown-digit {
+    display: inline-block;
+    background: rgba(2,2,26,0.7);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    font-family: 'Orbitron', monospace;
+    font-size: 22px; font-weight: 800;
+    color: var(--green-hot);
+    text-shadow: 0 0 10px rgba(74,222,128,0.4);
+    border-radius: 4px;
+    min-width: 38px; text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-sep { color: var(--fg-mute); margin: 0 4px; font-family: 'Orbitron', monospace; font-size: 18px; }
+
+  /* Scanning line */
+  .scanline {
+    position: absolute; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.5;
+    animation: scan 4s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes scan {
+    0%   { top: 0%; opacity: 0; }
+    10%  { opacity: 0.5; }
+    90%  { opacity: 0.5; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px; letter-spacing: 0.12em;
+    border: 1px solid;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .badge.active   { border-color: var(--green); color: var(--green-hot); }
+  .badge.standby  { border-color: var(--amber); color: var(--amber); }
+  .badge.offline  { border-color: var(--red);   color: var(--red); }
+  .badge.cyan     { border-color: var(--cyan);  color: var(--cyan-hot); }
+
+  /* Logo / brand */
+  .logo {
+    width: 44px; height: 44px;
+    border: 2px solid var(--cyan);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: 0 0 14px rgba(34,211,238,0.3);
+  }
+  .logo::after {
+    content: ""; position: absolute; inset: -6px;
+    border: 1px solid rgba(34,211,238,0.3);
+    border-radius: 50%;
+    animation: pulse-ring 3s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { transform: scale(0.95); opacity: 0.8; }
+    100% { transform: scale(1.5);  opacity: 0; }
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .grid-main { grid-template-columns: 1fr; }
+    .grid-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* small text helpers */
+  .mono-sm { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .label-sm {
+    font-family: 'Orbitron', monospace; font-size: 9px;
+    letter-spacing: 0.18em; color: var(--fg-mute); text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="starfield"></div>
+
+<div class="wrap">
+
+  <!-- Top brand bar -->
+  <div class="flex items-center justify-between pt-5 pb-3">
+    <div class="flex items-center gap-3">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#22d3ee" stroke-width="1.5"/>
+          <ellipse cx="12" cy="12" rx="4" ry="10" stroke="#22d3ee" stroke-width="1.5" opacity="0.6"/>
+          <circle cx="12" cy="12" r="2.2" fill="#67e8f9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="display text-cyan-300 text-lg font-bold" style="color:var(--cyan-hot)">SPARK MISSION CONTROL</div>
+        <div class="label-sm">스파크 학습 위성 관제 · 전기기능사 소식지</div>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-3">
+      <span class="badge cyan"><span class="led cyan"></span> CONNECTED</span>
+      <span class="badge active"><span class="led green"></span> GROUND STATION ONLINE</span>
+    </div>
+  </div>
+
+  <!-- Mission Header -->
+  <div class="mission-header">
+    <div class="grid grid-stats grid-cols-6 gap-5">
+      <div class="stat-block">
+        <div class="stat-label">Mission Time</div>
+        <div class="stat-value lg" id="missionTime">T+128:14:07:42</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">UTC</div>
+        <div class="stat-value" id="utcClock">--:--:--</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Active Sats</div>
+        <div class="stat-value green">06 / 06</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Next Pass</div>
+        <div class="stat-value amber" id="nextPassMini">00:04:32</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Uplink</div>
+        <div class="stat-value">
+          <span class="led green"></span>
+          <span class="ml-1.5">NOMINAL</span>
+        </div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-label">Downlink</div>
+        <div class="stat-value">
+          <span class="led green"></span>
+          <span class="ml-1.5">-78 dBm</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="grid grid-main grid-cols-12 gap-4">
+
+    <!-- LEFT: Globe -->
+    <div class="col-span-12 lg:col-span-7">
+      <div class="panel">
+        <div class="panel-h">
+          <div class="flex items-center gap-3">
+            <span class="led cyan"></span>
+            <div class="panel-title">Earth Track Visualization</div>
+          </div>
+          <div class="label-sm">PROJECTION · ORTHO · LIVE</div>
+        </div>
+        <div class="panel-body">
+          <div class="globe-stage">
+            <div class="globe-grid"></div>
+            <div class="crosshair outer"></div>
+            <div class="crosshair inner"></div>
+            <div class="corner-bracket tl"></div>
+            <div class="corner-bracket tr"></div>
+            <div class="corner-bracket bl"></div>
+            <div class="corner-bracket br"></div>
+            <div class="scanline"></div>
+
+            <svg viewBox="-250 -250 500 500" class="globe-svg" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <radialGradient id="earthGrad" cx="38%" cy="38%" r="62%">
+                  <stop offset="0%"   stop-color="#1d4373"/>
+                  <stop offset="55%"  stop-color="#0f2952"/>
+                  <stop offset="100%" stop-color="#04102b"/>
+                </radialGradient>
+                <radialGradient id="atmoGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="80%" stop-color="rgba(34,211,238,0)"/>
+                  <stop offset="95%" stop-color="rgba(34,211,238,0.35)"/>
+                  <stop offset="100%" stop-color="rgba(34,211,238,0)"/>
+                </radialGradient>
+                <linearGradient id="satGrad" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#67e8f9"/>
+                  <stop offset="100%" stop-color="#22d3ee"/>
+                </linearGradient>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- Atmosphere glow -->
+              <circle cx="0" cy="0" r="200" fill="url(#atmoGrad)"/>
+
+              <!-- Earth -->
+              <g class="globe-earth">
+                <circle cx="0" cy="0" r="160" fill="url(#earthGrad)" stroke="#22d3ee" stroke-width="0.6" stroke-opacity="0.5"/>
+                <!-- Latitude/Longitude grid -->
+                <g stroke="#22d3ee" stroke-width="0.35" stroke-opacity="0.28" fill="none">
+                  <ellipse cx="0" cy="0" rx="160" ry="40"/>
+                  <ellipse cx="0" cy="0" rx="160" ry="80"/>
+                  <ellipse cx="0" cy="0" rx="160" ry="120"/>
+                  <ellipse cx="0" cy="0" rx="40"  ry="160"/>
+                  <ellipse cx="0" cy="0" rx="80"  ry="160"/>
+                  <ellipse cx="0" cy="0" rx="120" ry="160"/>
+                </g>
+                <!-- Continents (abstract) -->
+                <g fill="#1f6b58" fill-opacity="0.7" stroke="#4ade80" stroke-width="0.5" stroke-opacity="0.6">
+                  <path d="M -90 -80 Q -60 -110 -30 -90 Q -10 -70 -20 -40 Q -50 -30 -70 -50 Z"/>
+                  <path d="M 20 -60 Q 70 -90 110 -50 Q 130 -10 90 20 Q 50 30 30 -10 Z"/>
+                  <path d="M -120 30 Q -90 20 -70 50 Q -80 90 -110 80 Q -130 60 -120 30 Z"/>
+                  <path d="M 40 60 Q 90 50 120 90 Q 100 130 60 120 Q 30 100 40 60 Z"/>
+                  <path d="M -20 90 Q 0 80 20 110 Q 10 140 -10 130 Z"/>
+                </g>
+                <!-- Day/night terminator hint -->
+                <path d="M 0 -160 A 160 160 0 0 1 0 160 A 90 160 0 0 0 0 -160 Z" fill="rgba(0,0,16,0.45)"/>
+              </g>
+
+              <!-- Orbits -->
+              <g fill="none" stroke="#22d3ee" stroke-opacity="0.32" stroke-width="0.8">
+                <ellipse cx="0" cy="0" rx="180" ry="180"/>
+                <ellipse cx="0" cy="0" rx="200" ry="200" stroke-dasharray="3 4"/>
+                <ellipse cx="0" cy="0" rx="220" ry="100" transform="rotate(25)"/>
+                <ellipse cx="0" cy="0" rx="230" ry="230" stroke-dasharray="1 6"/>
+              </g>
+
+              <!-- Satellites -->
+              <g class="sat-marker orbit-1">
+                <g transform="translate(180,0)" filter="url(#glow)">
+                  <circle r="4" fill="url(#satGrad)"/>
+                  <rect x="-7" y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <rect x="4"  y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <text x="9" y="-6" font-family="Orbitron" font-size="9" fill="#67e8f9">OHM-1</text>
+                </g>
+              </g>
+              <g class="sat-marker orbit-2">
+                <g transform="translate(0,-200)" filter="url(#glow)">
+                  <circle r="4" fill="url(#satGrad)"/>
+                  <rect x="-7" y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <rect x="4"  y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <text x="9" y="-6" font-family="Orbitron" font-size="9" fill="#67e8f9">FARADAY-2</text>
+                </g>
+              </g>
+              <g class="sat-marker orbit-3">
+                <g transform="translate(-220,90) rotate(25)" filter="url(#glow)">
+                  <circle r="4" fill="url(#satGrad)"/>
+                  <rect x="-7" y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <rect x="4"  y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <text x="9" y="-6" font-family="Orbitron" font-size="9" fill="#67e8f9">KIRCHHOFF-3</text>
+                </g>
+              </g>
+              <g class="sat-marker orbit-4">
+                <g transform="translate(170,80)" filter="url(#glow)">
+                  <circle r="4" fill="url(#satGrad)"/>
+                  <rect x="-7" y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <rect x="4"  y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <text x="9" y="-6" font-family="Orbitron" font-size="9" fill="#67e8f9">TESLA-4</text>
+                </g>
+              </g>
+              <g class="sat-marker orbit-5">
+                <g transform="translate(-180,-60)" filter="url(#glow)">
+                  <circle r="4" fill="url(#satGrad)"/>
+                  <rect x="-7" y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <rect x="4"  y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <text x="9" y="-6" font-family="Orbitron" font-size="9" fill="#67e8f9">MAXWELL-5</text>
+                </g>
+              </g>
+              <g class="sat-marker orbit-6">
+                <g transform="translate(0,210)" filter="url(#glow)">
+                  <circle r="4" fill="url(#satGrad)"/>
+                  <rect x="-7" y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <rect x="4"  y="-1" width="3" height="2" fill="#22d3ee"/>
+                  <text x="9" y="-6" font-family="Orbitron" font-size="9" fill="#67e8f9">RLC-6</text>
+                </g>
+              </g>
+
+              <!-- Ground station marker -->
+              <g transform="translate(40,-40)">
+                <circle r="3" fill="#fbbf24"/>
+                <circle r="6" fill="none" stroke="#fbbf24" stroke-width="0.6" opacity="0.6">
+                  <animate attributeName="r" from="3" to="10" dur="2s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" from="0.7" to="0" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <text x="8" y="3" font-family="Orbitron" font-size="8" fill="#fbbf24">GS-01</text>
+              </g>
+            </svg>
+
+            <div class="globe-readout">
+              <span>LAT 37.5642°N</span>
+              <span>LON 127.0282°E</span>
+              <span>ALT 0 m</span>
+              <span id="globeStatus">TRACKING 06</span>
+            </div>
+          </div>
+
+          <!-- Live Telemetry of selected satellite -->
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="border border-[var(--border-dim)] rounded p-3" style="background:rgba(2,2,26,0.45)">
+              <div class="flex items-center justify-between mb-2">
+                <div class="label-sm">Selected · <span id="selSatName" style="color:var(--cyan-hot)">OHM-1</span></div>
+                <span class="badge active"><span class="led green"></span> LOCKED</span>
+              </div>
+              <div class="telem-row">
+                <div class="telem-label">Voltage</div>
+                <div class="telem-bar"><div class="telem-bar-fill" id="telVolt" style="width:78%"></div></div>
+                <div class="telem-value" id="telVoltVal">28.4 V</div>
+              </div>
+              <div class="telem-row">
+                <div class="telem-label">Current</div>
+                <div class="telem-bar"><div class="telem-bar-fill green" id="telCurr" style="width:62%"></div></div>
+                <div class="telem-value" id="telCurrVal">3.10 A</div>
+              </div>
+              <div class="telem-row">
+                <div class="telem-label">Temp</div>
+                <div class="telem-bar"><div class="telem-bar-fill amber" id="telTemp" style="width:45%"></div></div>
+                <div class="telem-value" id="telTempVal">+22°C</div>
+              </div>
+              <div class="telem-row">
+                <div class="telem-label">CPU</div>
+                <div class="telem-bar"><div class="telem-bar-fill" id="telCpu" style="width:34%"></div></div>
+                <div class="telem-value" id="telCpuVal">34%</div>
+              </div>
+              <div class="telem-row">
+                <div class="telem-label">Memory</div>
+                <div class="telem-bar"><div class="telem-bar-fill green" id="telMem" style="width:58%"></div></div>
+                <div class="telem-value" id="telMemVal">58%</div>
+              </div>
+              <div class="telem-row">
+                <div class="telem-label">Signal</div>
+                <div class="telem-bar"><div class="telem-bar-fill" id="telSig" style="width:81%"></div></div>
+                <div class="telem-value" id="telSigVal">-78 dBm</div>
+              </div>
+            </div>
+
+            <!-- Next pass countdown -->
+            <div class="border border-[var(--border-dim)] rounded p-3 flex flex-col" style="background:rgba(2,2,26,0.45)">
+              <div class="flex items-center justify-between mb-3">
+                <div class="label-sm">Next Pass · <span style="color:var(--amber)">OHM-1</span></div>
+                <span class="badge standby"><span class="led amber"></span> APPROACHING</span>
+              </div>
+              <div class="flex items-center justify-center gap-1 my-3" id="countdownBox">
+                <div class="countdown-digit" id="cdH">00</div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-digit" id="cdM">04</div>
+                <span class="countdown-sep">:</span>
+                <div class="countdown-digit" id="cdS">32</div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-center mt-2">
+                <div>
+                  <div class="label-sm mb-1">AOS Azimuth</div>
+                  <div class="display text-base font-bold" style="color:var(--cyan-hot)">142.6°</div>
+                </div>
+                <div>
+                  <div class="label-sm mb-1">Max Elevation</div>
+                  <div class="display text-base font-bold" style="color:var(--cyan-hot)">68.2°</div>
+                </div>
+                <div>
+                  <div class="label-sm mb-1">Pass Duration</div>
+                  <div class="display text-base font-bold" style="color:var(--green-hot)">9m 24s</div>
+                </div>
+                <div>
+                  <div class="label-sm mb-1">LOS Azimuth</div>
+                  <div class="display text-base font-bold" style="color:var(--cyan-hot)">318.1°</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4 justify-center">
+                <button class="btn green" onclick="sendCommand('PING')">PING</button>
+                <button class="btn" onclick="sendCommand('RECONFIG')">RECONFIG</button>
+                <button class="btn amber" onclick="sendCommand('SAFE MODE')">SAFE MODE</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Comms log + crew -->
+    <div class="col-span-12 lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Comms log -->
+      <div class="panel">
+        <div class="panel-h">
+          <div class="flex items-center gap-3">
+            <span class="led green"></span>
+            <div class="panel-title">Comms Stream · Live</div>
+          </div>
+          <div class="label-sm">CH-7 · 437.500 MHz</div>
+        </div>
+        <div class="log-stream" id="logStream"></div>
+      </div>
+
+      <!-- Mission Crew -->
+      <div class="panel">
+        <div class="panel-h">
+          <div class="flex items-center gap-3">
+            <span class="led cyan"></span>
+            <div class="panel-title">Mission Control Crew</div>
+          </div>
+          <div class="label-sm">ON CONSOLE · 04</div>
+        </div>
+        <div class="panel-body">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="crew-card">
+              <div class="crew-avatar">FD</div>
+              <div>
+                <div class="kor text-sm font-bold" style="color:var(--cyan-hot)">김지운 · 비행 디렉터</div>
+                <div class="mono-sm" style="color:var(--fg-dim)">FLIGHT · CONSOLE-01</div>
+              </div>
+            </div>
+            <div class="crew-card">
+              <div class="crew-avatar" style="background:linear-gradient(135deg,#4ade80,#22d3ee)">CC</div>
+              <div>
+                <div class="kor text-sm font-bold" style="color:var(--green-hot)">박서연 · 통신 책임</div>
+                <div class="mono-sm" style="color:var(--fg-dim)">CAPCOM · CONSOLE-02</div>
+              </div>
+            </div>
+            <div class="crew-card">
+              <div class="crew-avatar" style="background:linear-gradient(135deg,#fbbf24,#fb923c)">EE</div>
+              <div>
+                <div class="kor text-sm font-bold" style="color:var(--amber)">이태호 · 전력 계통</div>
+                <div class="mono-sm" style="color:var(--fg-dim)">EECOM · CONSOLE-03</div>
+              </div>
+            </div>
+            <div class="crew-card">
+              <div class="crew-avatar" style="background:linear-gradient(135deg,#c084fc,#67e8f9)">PL</div>
+              <div>
+                <div class="kor text-sm font-bold" style="color:var(--magenta)">정해린 · 페이로드</div>
+                <div class="mono-sm" style="color:var(--fg-dim)">PAYLOAD · CONSOLE-04</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini stats -->
+      <div class="panel">
+        <div class="panel-h">
+          <div class="panel-title">Constellation Health</div>
+          <div class="label-sm">SUMMARY</div>
+        </div>
+        <div class="panel-body grid grid-cols-3 gap-3">
+          <div>
+            <div class="label-sm mb-1">Total Sats</div>
+            <div class="display text-2xl font-bold" style="color:var(--cyan-hot)">06</div>
+          </div>
+          <div>
+            <div class="label-sm mb-1">Nominal</div>
+            <div class="display text-2xl font-bold" style="color:var(--green-hot)">05</div>
+          </div>
+          <div>
+            <div class="label-sm mb-1">Standby</div>
+            <div class="display text-2xl font-bold" style="color:var(--amber)">01</div>
+          </div>
+          <div>
+            <div class="label-sm mb-1">Orbits</div>
+            <div class="display text-lg font-bold" style="color:var(--cyan-hot)">LEO · MEO · GEO</div>
+          </div>
+          <div>
+            <div class="label-sm mb-1">Uptime</div>
+            <div class="display text-2xl font-bold" style="color:var(--green-hot)">99.8%</div>
+          </div>
+          <div>
+            <div class="label-sm mb-1">Data Today</div>
+            <div class="display text-2xl font-bold" style="color:var(--cyan-hot)">12.4 GB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Satellite Fleet -->
+  <div class="panel mt-4">
+    <div class="panel-h">
+      <div class="flex items-center gap-3">
+        <span class="led cyan"></span>
+        <div class="panel-title">Satellite Fleet · 06 Units</div>
+      </div>
+      <div class="label-sm">CLICK A SAT FOR FULL DOSSIER</div>
+    </div>
+    <div class="panel-body">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="satGrid"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="mt-8 pt-4 border-t border-[var(--border-dim)]">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="label-sm">
+        SPARK MISSION CONTROL · v 2.6.1 · DATA CLASSIFICATION: <span style="color:var(--green-hot)">PUBLIC</span>
+      </div>
+      <div class="kor text-xs" style="color:var(--fg-mute)">
+        본 콘텐츠는 전기기능사 학습용 가상 위성 시뮬레이션입니다. 실재하는 위성·우주기관과 무관합니다.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-h">
+      <div class="flex items-center gap-3">
+        <span class="led green"></span>
+        <div class="display text-base font-bold" id="modalTitle" style="color:var(--cyan-hot)">OHM-1 · DOSSIER</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ========== Data ========== */
+const satellites = [
+  {
+    id: 'OHM-1', name: '옴의 법칙 학습 위성',
+    orbit: 'LEO', altitude: '600 km', speed: '7.56 km/s',
+    inclination: '51.6°', period: '96 min',
+    status: 'active', launch: '2025-08-14', mission: 'V=IR 측정 · 전압/전류 데이터 수집',
+    summary: '저궤도에서 옴의 법칙 학습 데이터를 실시간 송출. 전압·전류·저항의 관계를 시각화한 패킷을 매 패스마다 다운링크.',
+    payload: '전압계 ×2, 전류 프로브 ×3, 가변 저항 모듈',
+    transponder: 'UHF 437.500 MHz · 9.6 kbps GMSK',
+    nextWindow: '00:04:32', sig: -78
+  },
+  {
+    id: 'FARADAY-2', name: '자속 측정 위성',
+    orbit: 'GEO', altitude: '35,786 km', speed: '3.07 km/s',
+    inclination: '0.1°', period: '24 h',
+    status: 'active', launch: '2025-05-02', mission: '자기장 ·자속 변화율 관측',
+    summary: '정지궤도에서 지구 자기권의 자속 변화를 상시 모니터. 패러데이 법칙 학습용 dΦ/dt 그래프 생성.',
+    payload: '플럭스게이트 자력계, 코일 어레이',
+    transponder: 'S-band 2.250 GHz · 256 kbps',
+    nextWindow: '02:18:05', sig: -91
+  },
+  {
+    id: 'KIRCHHOFF-3', name: '노드 분석 위성',
+    orbit: 'MEO', altitude: '8,200 km', speed: '5.41 km/s',
+    inclination: '63.4°', period: '4 h 32 m',
+    status: 'active', launch: '2025-11-21', mission: '회로망 노드 분석 데모',
+    summary: 'KCL/KVL 시연용 다중 노드 회로 보드 탑재. 학습자가 입력한 회로를 궤도에서 해석하여 결과 회신.',
+    payload: 'FPGA 회로 시뮬레이터, 12채널 ADC',
+    transponder: 'X-band · 1 Mbps',
+    nextWindow: '00:42:11', sig: -84
+  },
+  {
+    id: 'TESLA-4', name: '코일 통신 위성',
+    orbit: 'LEO', altitude: '520 km', speed: '7.61 km/s',
+    inclination: '97.6°', period: '94 min',
+    status: 'standby', launch: '2026-01-08', mission: '무선 전력 전송 실험',
+    summary: '태양동기궤도에서 코일 결합 기반 무선 전력 전송 실험. 현재 배터리 보호 모드로 일시 대기 중.',
+    payload: '공진 코일 ×2, RF 증폭기, 임피던스 정합망',
+    transponder: 'UHF 435.200 MHz · 4.8 kbps',
+    nextWindow: '01:07:48', sig: -88
+  },
+  {
+    id: 'MAXWELL-5', name: '전자기 관측 위성',
+    orbit: 'LEO', altitude: '710 km', speed: '7.49 km/s',
+    inclination: '98.2°', period: '99 min',
+    status: 'active', launch: '2025-09-30', mission: '전자기파 스펙트럼 매핑',
+    summary: '맥스웰 방정식 학습용 전자기 스펙트럼 관측. ELF~UHF 대역 전파환경을 매 궤도마다 매핑.',
+    payload: '광대역 안테나, 스펙트럼 분석기, 편파 측정기',
+    transponder: 'VHF 145.825 MHz · 1.2 kbps APRS',
+    nextWindow: '00:23:54', sig: -82
+  },
+  {
+    id: 'RLC-6', name: '공진 실험 위성',
+    orbit: 'LEO', altitude: '560 km', speed: '7.59 km/s',
+    inclination: '52.0°', period: '95 min',
+    status: 'active', launch: '2026-02-19', mission: 'RLC 공진 회로 실시간 실험',
+    summary: '가변 L·C·R 모듈로 공진 주파수를 학습자 요청에 따라 변경. 주파수 응답 곡선을 다운링크.',
+    payload: '가변 인덕터 뱅크, 가변 커패시터 뱅크, 함수발생기',
+    transponder: 'UHF 437.800 MHz · 9.6 kbps GMSK',
+    nextWindow: '00:11:22', sig: -76
+  }
+];
+
+/* ========== Utils ========== */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function pad(n, w=2){ return String(n).padStart(w,'0'); }
+function rand(min,max){ return Math.random()*(max-min)+min; }
+
+/* ========== Satellite SVG icons ========== */
+function satSvg(id){
+  const seed = id.charCodeAt(0) + id.length;
+  const color = '#67e8f9';
+  return `
+    <svg viewBox="0 0 80 60" width="80" height="60" aria-hidden="true">
+      <!-- solar panels -->
+      <rect x="2"  y="22" width="22" height="14" fill="#0b3a5a" stroke="${color}" stroke-width="0.8"/>
+      <rect x="56" y="22" width="22" height="14" fill="#0b3a5a" stroke="${color}" stroke-width="0.8"/>
+      <line x1="6"  y1="22" x2="6"  y2="36" stroke="${color}" stroke-width="0.5" opacity="0.5"/>
+      <line x1="12" y1="22" x2="12" y2="36" stroke="${color}" stroke-width="0.5" opacity="0.5"/>
+      <line x1="18" y1="22" x2="18" y2="36" stroke="${color}" stroke-width="0.5" opacity="0.5"/>
+      <line x1="62" y1="22" x2="62" y2="36" stroke="${color}" stroke-width="0.5" opacity="0.5"/>
+      <line x1="68" y1="22" x2="68" y2="36" stroke="${color}" stroke-width="0.5" opacity="0.5"/>
+      <line x1="74" y1="22" x2="74" y2="36" stroke="${color}" stroke-width="0.5" opacity="0.5"/>
+      <!-- body -->
+      <rect x="26" y="18" width="28" height="22" fill="#143057" stroke="${color}" stroke-width="1"/>
+      <rect x="30" y="22" width="20" height="6" fill="#1d4f88" stroke="${color}" stroke-width="0.5"/>
+      <circle cx="40" cy="34" r="2.5" fill="${color}"/>
+      <!-- antenna -->
+      <line x1="40" y1="18" x2="40" y2="6" stroke="${color}" stroke-width="1"/>
+      <circle cx="40" cy="5" r="2" fill="none" stroke="${color}" stroke-width="0.8"/>
+      <!-- arrays connector -->
+      <line x1="24" y1="29" x2="26" y2="29" stroke="${color}" stroke-width="0.8"/>
+      <line x1="54" y1="29" x2="56" y2="29" stroke="${color}" stroke-width="0.8"/>
+      <!-- signal arc -->
+      <path d="M 40 5 Q 50 -4 60 2" fill="none" stroke="${color}" stroke-width="0.6" opacity="0.6"/>
+      <path d="M 40 5 Q 30 -4 20 2" fill="none" stroke="${color}" stroke-width="0.6" opacity="0.6"/>
+      <!-- id text -->
+      <text x="40" y="55" font-family="Orbitron" font-size="7" fill="${color}" text-anchor="middle" letter-spacing="1">${escapeHtml(id)}</text>
+    </svg>
+  `;
+}
+
+/* ========== Render satellite cards ========== */
+function renderSats(){
+  const grid = document.getElementById('satGrid');
+  grid.innerHTML = satellites.map((s, i) => {
+    const badgeClass = s.status === 'active' ? 'active' : s.status === 'standby' ? 'standby' : 'offline';
+    const statusLabel = s.status === 'active' ? 'NOMINAL' : s.status === 'standby' ? 'STANDBY' : 'OFFLINE';
+    return `
+      <div class="sat-card status-${escapeHtml(s.status)}" data-index="${i}" tabindex="0" role="button" aria-label="${escapeHtml(s.id)} ${escapeHtml(s.name)}">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="display text-base font-bold" style="color:var(--cyan-hot)">${escapeHtml(s.id)}</div>
+            <div class="kor mono-sm" style="color:var(--fg-dim)">${escapeHtml(s.name)}</div>
+          </div>
+          <span class="badge ${badgeClass}"><span class="led ${s.status==='active'?'green':s.status==='standby'?'amber':'red'}"></span> ${statusLabel}</span>
+        </div>
+        <div class="flex items-center gap-3 mt-1">
+          <div class="flex-shrink-0">${satSvg(s.id)}</div>
+          <div class="flex-1 grid grid-cols-2 gap-x-2 gap-y-1">
+            <div class="label-sm">Orbit</div>
+            <div class="mono-sm text-right" style="color:var(--cyan-hot)">${escapeHtml(s.orbit)}</div>
+            <div class="label-sm">Alt</div>
+            <div class="mono-sm text-right" style="color:var(--cyan-hot)">${escapeHtml(s.altitude)}</div>
+            <div class="label-sm">Vel</div>
+            <div class="mono-sm text-right" style="color:var(--cyan-hot)">${escapeHtml(s.speed)}</div>
+            <div class="label-sm">Next</div>
+            <div class="mono-sm text-right" style="color:var(--amber)">${escapeHtml(s.nextWindow)}</div>
+          </div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-dashed border-[var(--border-dim)] kor text-xs" style="color:var(--fg-dim)">
+          ${escapeHtml(s.mission)}
+        </div>
+      </div>
+    `;
+  }).join('');
+  grid.querySelectorAll('.sat-card').forEach(card => {
+    card.addEventListener('click', () => openModal(+card.dataset.index));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(+card.dataset.index); }
+    });
+  });
+}
+
+/* ========== Modal ========== */
+function openModal(i){
+  const s = satellites[i];
+  if (!s) return;
+  document.getElementById('modalTitle').textContent = `${s.id} · DOSSIER`;
+  const statusLabel = s.status === 'active' ? 'NOMINAL' : s.status === 'standby' ? 'STANDBY' : 'OFFLINE';
+  const badgeClass = s.status === 'active' ? 'active' : s.status === 'standby' ? 'standby' : 'offline';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="flex items-start gap-4 mb-4">
+      <div class="flex-shrink-0">${satSvg(s.id)}</div>
+      <div class="flex-1">
+        <div class="kor text-sm mb-1" style="color:var(--fg-dim)">미션명</div>
+        <div class="kor font-bold mb-2" style="color:var(--cyan-hot)">${escapeHtml(s.name)}</div>
+        <span class="badge ${badgeClass}"><span class="led ${s.status==='active'?'green':s.status==='standby'?'amber':'red'}"></span> ${statusLabel}</span>
+      </div>
+    </div>
+    <div class="kor text-sm mb-4 leading-relaxed" style="color:var(--fg)">${escapeHtml(s.summary)}</div>
+
+    <div class="label-sm mb-2" style="color:var(--cyan)">// ORBITAL ELEMENTS</div>
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <div class="border border-[var(--border-dim)] rounded p-2"><div class="label-sm mb-1">Class</div><div class="mono-sm" style="color:var(--cyan-hot)">${escapeHtml(s.orbit)}</div></div>
+      <div class="border border-[var(--border-dim)] rounded p-2"><div class="label-sm mb-1">Altitude</div><div class="mono-sm" style="color:var(--cyan-hot)">${escapeHtml(s.altitude)}</div></div>
+      <div class="border border-[var(--border-dim)] rounded p-2"><div class="label-sm mb-1">Velocity</div><div class="mono-sm" style="color:var(--cyan-hot)">${escapeHtml(s.speed)}</div></div>
+      <div class="border border-[var(--border-dim)] rounded p-2"><div class="label-sm mb-1">Inclination</div><div class="mono-sm" style="color:var(--cyan-hot)">${escapeHtml(s.inclination)}</div></div>
+      <div class="border border-[var(--border-dim)] rounded p-2"><div class="label-sm mb-1">Period</div><div class="mono-sm" style="color:var(--cyan-hot)">${escapeHtml(s.period)}</div></div>
+      <div class="border border-[var(--border-dim)] rounded p-2"><div class="label-sm mb-1">Launch</div><div class="mono-sm" style="color:var(--cyan-hot)">${escapeHtml(s.launch)}</div></div>
+    </div>
+
+    <div class="label-sm mb-2" style="color:var(--cyan)">// PAYLOAD</div>
+    <div class="border border-[var(--border-dim)] rounded p-3 mb-4 kor text-sm" style="color:var(--fg);background:rgba(2,2,26,0.4)">
+      ${escapeHtml(s.payload)}
+    </div>
+
+    <div class="label-sm mb-2" style="color:var(--cyan)">// TRANSPONDER</div>
+    <div class="border border-[var(--border-dim)] rounded p-3 mb-4 mono-sm" style="color:var(--green-hot);background:rgba(2,2,26,0.4)">
+      ${escapeHtml(s.transponder)}
+    </div>
+
+    <div class="label-sm mb-2" style="color:var(--cyan)">// NEXT PASS</div>
+    <div class="border border-[var(--border-dim)] rounded p-3 grid grid-cols-3 gap-3" style="background:rgba(2,2,26,0.4)">
+      <div><div class="label-sm mb-1">Window</div><div class="display font-bold" style="color:var(--amber)">${escapeHtml(s.nextWindow)}</div></div>
+      <div><div class="label-sm mb-1">Signal</div><div class="display font-bold" style="color:var(--cyan-hot)">${s.sig} dBm</div></div>
+      <div><div class="label-sm mb-1">Tracking</div><div class="display font-bold" style="color:var(--green-hot)">AVAILABLE</div></div>
+    </div>
+
+    <div class="flex gap-2 mt-5 justify-center">
+      <button class="btn green" onclick="sendCommand('TRACK ${escapeHtml(s.id)}')">TRACK</button>
+      <button class="btn" onclick="sendCommand('UPLINK ${escapeHtml(s.id)}')">UPLINK</button>
+      <button class="btn amber" onclick="sendCommand('SCHEDULE ${escapeHtml(s.id)}')">SCHEDULE</button>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ========== Clocks ========== */
+const MISSION_START = Date.now() - (128*86400 + 14*3600 + 7*60 + 42)*1000; // arbitrary
+function tickClocks(){
+  const now = new Date();
+  document.getElementById('utcClock').textContent =
+    `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())} Z`;
+
+  const elapsed = Math.floor((Date.now() - MISSION_START) / 1000);
+  const d = Math.floor(elapsed / 86400);
+  const h = Math.floor((elapsed % 86400) / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  document.getElementById('missionTime').textContent =
+    `T+${pad(d,3)}:${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+/* ========== Next pass countdown ========== */
+let nextPassSec = 4*60 + 32;
+function tickCountdown(){
+  if (nextPassSec <= 0) {
+    nextPassSec = 60*60 + Math.floor(Math.random()*30*60);
+    addLog('rx', 'OHM-1', 'AOS · pass started · elevation 5°');
+  }
+  const h = Math.floor(nextPassSec / 3600);
+  const m = Math.floor((nextPassSec % 3600) / 60);
+  const s = nextPassSec % 60;
+  document.getElementById('cdH').textContent = pad(h);
+  document.getElementById('cdM').textContent = pad(m);
+  document.getElementById('cdS').textContent = pad(s);
+  document.getElementById('nextPassMini').textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  nextPassSec--;
+}
+
+/* ========== Telemetry ========== */
+const telemState = { volt: 28.4, curr: 3.10, temp: 22, cpu: 34, mem: 58, sig: -78 };
+function updateTelemetry(){
+  telemState.volt = Math.max(24, Math.min(30, telemState.volt + rand(-0.3, 0.3)));
+  telemState.curr = Math.max(1.5, Math.min(4.5, telemState.curr + rand(-0.2, 0.2)));
+  telemState.temp = Math.max(-10, Math.min(45, telemState.temp + rand(-1, 1)));
+  telemState.cpu  = Math.max(15, Math.min(85, telemState.cpu + rand(-4, 4)));
+  telemState.mem  = Math.max(30, Math.min(90, telemState.mem + rand(-2, 2)));
+  telemState.sig  = Math.max(-100, Math.min(-65, telemState.sig + rand(-3, 3)));
+
+  const v = telemState.volt;
+  const i = telemState.curr;
+  const t = telemState.temp;
+  const c = telemState.cpu;
+  const mm = telemState.mem;
+  const sg = telemState.sig;
+
+  document.getElementById('telVolt').style.width   = ((v - 20) / 12 * 100).toFixed(1) + '%';
+  document.getElementById('telVoltVal').textContent = v.toFixed(1) + ' V';
+  document.getElementById('telCurr').style.width   = (i / 5 * 100).toFixed(1) + '%';
+  document.getElementById('telCurrVal').textContent = i.toFixed(2) + ' A';
+  document.getElementById('telTemp').style.width   = ((t + 20) / 70 * 100).toFixed(1) + '%';
+  document.getElementById('telTempVal').textContent = (t>=0?'+':'') + t.toFixed(0) + '°C';
+  document.getElementById('telCpu').style.width    = c.toFixed(1) + '%';
+  document.getElementById('telCpuVal').textContent = c.toFixed(0) + '%';
+  document.getElementById('telMem').style.width    = mm.toFixed(1) + '%';
+  document.getElementById('telMemVal').textContent = mm.toFixed(0) + '%';
+  document.getElementById('telSig').style.width    = ((sg + 110) / 50 * 100).toFixed(1) + '%';
+  document.getElementById('telSigVal').textContent = sg.toFixed(0) + ' dBm';
+}
+
+/* ========== Comms log ========== */
+const logSamples = [
+  { tag:'rx',   sat:'OHM-1',       msg:'TLM packet · V=28.4V I=3.10A R=9.16Ω' },
+  { tag:'ok',   sat:'GS-01',       msg:'AOS confirmed · elevation 12°' },
+  { tag:'rx',   sat:'FARADAY-2',   msg:'flux ΔΦ = 4.2e-4 Wb/s · sample 0xC1' },
+  { tag:'tx',   sat:'KIRCHHOFF-3', msg:'cmd UPLINK · payload solver/v2.6' },
+  { tag:'rx',   sat:'MAXWELL-5',   msg:'spectrum sweep complete · 1.2 MB' },
+  { tag:'ok',   sat:'RLC-6',       msg:'resonance fixed at 1.59 kHz · Q=42' },
+  { tag:'warn', sat:'TESLA-4',     msg:'battery 38% · entering safe mode soon' },
+  { tag:'rx',   sat:'OHM-1',       msg:'thermal report · panel +24°C bus +19°C' },
+  { tag:'ok',   sat:'GS-01',       msg:'doppler corrected · +2.41 kHz' },
+  { tag:'rx',   sat:'KIRCHHOFF-3', msg:'KCL node solver result · 4 unknowns OK' },
+  { tag:'tx',   sat:'MAXWELL-5',   msg:'cmd CALIBRATE · antenna polarization' },
+  { tag:'rx',   sat:'FARADAY-2',   msg:'magnetometer reading · 24.6 nT' },
+  { tag:'ok',   sat:'OHM-1',       msg:'beacon · CW 437.500 MHz · -76 dBm' },
+  { tag:'rx',   sat:'RLC-6',       msg:'sweep 100Hz–10kHz · peak 1.59kHz' },
+  { tag:'warn', sat:'GS-01',       msg:'wind 14 m/s · antenna position holding' }
+];
+function addLog(tag, sat, msg){
+  const stream = document.getElementById('logStream');
+  const now = new Date();
+  const time = `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}Z`;
+  const tagText = ({rx:'RX',tx:'TX',ok:'OK',warn:'WARN',err:'ERR'})[tag] || tag.toUpperCase();
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.innerHTML = `<span class="log-time">[${escapeHtml(time)}]</span>` +
+                  `<span class="log-tag ${escapeHtml(tag)}">${escapeHtml(tagText)}</span>` +
+                  `<span style="color:var(--cyan-hot)">${escapeHtml(sat)}</span>` +
+                  `<span class="log-msg">›</span>` +
+                  `<span class="log-msg">${escapeHtml(msg)}</span>`;
+  stream.appendChild(div);
+  // cap
+  while (stream.children.length > 80) stream.removeChild(stream.firstChild);
+  stream.scrollTop = stream.scrollHeight;
+}
+function autoLog(){
+  const item = logSamples[Math.floor(Math.random()*logSamples.length)];
+  addLog(item.tag, item.sat, item.msg);
+}
+
+function sendCommand(cmd){
+  addLog('tx', 'GS-01', `CMD ${cmd} · seq ${Math.floor(Math.random()*9000)+1000}`);
+  setTimeout(() => {
+    addLog('ok', 'GS-01', `ACK ${cmd} · RTT ${(rand(0.8,1.6)).toFixed(2)}s`);
+  }, 600 + Math.random()*800);
+}
+
+/* ========== Init ========== */
+function init(){
+  renderSats();
+  tickClocks();
+  setInterval(tickClocks, 1000);
+  tickCountdown();
+  setInterval(tickCountdown, 1000);
+  updateTelemetry();
+  setInterval(updateTelemetry, 1500);
+
+  // seed log
+  const seed = [
+    ['ok','GS-01','ground station boot complete · v2.6.1'],
+    ['rx','OHM-1','beacon detected · 437.500 MHz'],
+    ['ok','OHM-1','lock acquired · -78 dBm'],
+    ['rx','FARADAY-2','TLM packet · seq 8842'],
+    ['tx','GS-01','schedule uplink · OHM-1 window 00:04:32']
+  ];
+  seed.forEach(s => addLog(s[0], s[1], s[2]));
+  setInterval(autoLog, 2200);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else { init(); }
+</script>
+</body>
+</html>

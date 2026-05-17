@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스파크 매트릭스 자판기 — 전기기능사 소식지</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-2: #0f1424;
+    --panel: #161b30;
+    --metal: #1f2540;
+    --metal-2: #2a3155;
+    --neon-cyan: #4adfff;
+    --neon-pink: #ff4ad6;
+    --neon-lime: #c6ff3a;
+    --neon-amber: #ffb84a;
+    --neon-red: #ff4a6e;
+    --digital: #6cff9c;
+    --line: rgba(255,255,255,0.08);
+    --line-2: rgba(255,255,255,0.16);
+  }
+  html, body { background: var(--bg); }
+  body {
+    font-family: 'Noto Sans KR', system-ui, sans-serif;
+    color: #e7ecff;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(74,223,255,0.08), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(255,74,214,0.06), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .font-digital { font-family: 'Orbitron', sans-serif; letter-spacing: 0.02em; }
+  .font-lcd { font-family: 'VT323', monospace; }
+  .neon-cyan { color: var(--neon-cyan); }
+  .neon-pink { color: var(--neon-pink); }
+  .neon-lime { color: var(--neon-lime); }
+  .neon-amber { color: var(--neon-amber); }
+  .neon-red { color: var(--neon-red); }
+  .text-digital { color: var(--digital); }
+
+  .glow-cyan { text-shadow: 0 0 8px rgba(74,223,255,0.85), 0 0 18px rgba(74,223,255,0.45); }
+  .glow-pink { text-shadow: 0 0 8px rgba(255,74,214,0.85), 0 0 18px rgba(255,74,214,0.45); }
+  .glow-lime { text-shadow: 0 0 8px rgba(198,255,58,0.85), 0 0 18px rgba(198,255,58,0.45); }
+  .glow-digital { text-shadow: 0 0 6px rgba(108,255,156,0.7), 0 0 14px rgba(108,255,156,0.4); }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .metal {
+    background:
+      linear-gradient(180deg, #2a3155 0%, #1a2042 100%);
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 -1px 0 rgba(0,0,0,0.5);
+  }
+  .glass {
+    background: linear-gradient(180deg, rgba(74,223,255,0.04), rgba(74,223,255,0.02));
+    border: 1px solid rgba(74,223,255,0.15);
+    border-radius: 10px;
+  }
+  .display {
+    background: #06140a;
+    border: 1px solid #0e2a18;
+    box-shadow:
+      inset 0 0 0 2px #0a1f12,
+      inset 0 0 24px rgba(108,255,156,0.18),
+      0 0 18px rgba(108,255,156,0.12);
+    border-radius: 8px;
+  }
+  .display-scan::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.18) 3px,
+      rgba(0,0,0,0) 4px
+    );
+    pointer-events: none;
+    border-radius: 8px;
+  }
+
+  .btn-key {
+    background: linear-gradient(180deg, #353c66 0%, #1b2042 100%);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #e7ecff;
+    border-radius: 10px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      inset 0 -2px 0 rgba(0,0,0,0.5),
+      0 2px 0 rgba(0,0,0,0.4);
+    transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.2s ease;
+    user-select: none;
+  }
+  .btn-key:hover { background: linear-gradient(180deg, #444c80 0%, #232a52 100%); }
+  .btn-key:active, .btn-key.pressed {
+    transform: translateY(2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      inset 0 -1px 0 rgba(0,0,0,0.4),
+      0 0 0 rgba(0,0,0,0);
+  }
+  .btn-key.action-cancel { background: linear-gradient(180deg, #6a1b2d 0%, #3a0d1a 100%); }
+  .btn-key.action-pay { background: linear-gradient(180deg, #1e6e3a 0%, #0f3a1f 100%); }
+  .btn-key.action-coin { background: linear-gradient(180deg, #6e561e 0%, #3a2c0f 100%); }
+
+  .slot-cell {
+    background: linear-gradient(180deg, #0e1330 0%, #0a0e22 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .slot-cell .code-tag {
+    position: absolute; top: 6px; left: 6px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    background: rgba(74,223,255,0.14);
+    color: var(--neon-cyan);
+    border: 1px solid rgba(74,223,255,0.25);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+  }
+  .slot-cell .price-tag {
+    position: absolute; bottom: 6px; right: 6px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: var(--neon-amber);
+    background: rgba(255,184,74,0.10);
+    border: 1px solid rgba(255,184,74,0.25);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .slot-cell .stock-tag {
+    position: absolute; bottom: 6px; left: 6px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--neon-lime);
+    background: rgba(198,255,58,0.08);
+    border: 1px solid rgba(198,255,58,0.20);
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+  .slot-cell.sold-out {
+    filter: grayscale(0.6) brightness(0.7);
+  }
+  .slot-cell.sold-out::after {
+    content: "SOLD OUT";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    color: var(--neon-red);
+    background: rgba(0,0,0,0.55);
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 8px rgba(255,74,110,0.7);
+  }
+  .slot-cell.selected {
+    border-color: var(--neon-cyan);
+    box-shadow:
+      0 0 0 2px rgba(74,223,255,0.35),
+      0 0 18px rgba(74,223,255,0.25);
+  }
+  .slot-cell .product-art {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .led-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--neon-lime);
+    box-shadow: 0 0 8px var(--neon-lime);
+    animation: blink 1.4s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .marquee-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    border-top: 1px solid rgba(108,255,156,0.18);
+    border-bottom: 1px solid rgba(108,255,156,0.18);
+    background: #06140a;
+  }
+  .marquee {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 22s linear infinite;
+    color: var(--digital);
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* Falling product animation */
+  .fall-stage {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .fall-item {
+    position: absolute;
+    width: 56px; height: 56px;
+    animation: fall 1.1s cubic-bezier(0.55, 0.05, 0.7, 0.95) forwards;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+  }
+  @keyframes fall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    60%  { transform: translateY(420px) rotate(180deg); opacity: 1; }
+    78%  { transform: translateY(390px) rotate(190deg); }
+    88%  { transform: translateY(420px) rotate(180deg); }
+    100% { transform: translateY(410px) rotate(180deg); opacity: 0.95; }
+  }
+
+  /* Coin drop */
+  .coin-drop {
+    position: absolute;
+    left: 50%;
+    top: -30px;
+    transform: translateX(-50%);
+    animation: coin 0.7s ease-in forwards;
+  }
+  @keyframes coin {
+    0%   { top: -30px; opacity: 1; transform: translateX(-50%) rotate(0deg); }
+    100% { top: 60px;  opacity: 0; transform: translateX(-50%) rotate(360deg); }
+  }
+
+  /* Receipt */
+  .receipt {
+    background: #f6f1e3;
+    color: #1c1810;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 18px 16px;
+    border-radius: 4px;
+    box-shadow:
+      0 12px 24px rgba(0,0,0,0.45),
+      inset 0 0 0 1px rgba(0,0,0,0.06);
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 22px);
+    position: relative;
+  }
+  .receipt::before, .receipt::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; height: 10px;
+    background:
+      radial-gradient(circle at 5px 5px, #0a0e1a 4px, transparent 5px) 0 0/10px 10px;
+  }
+  .receipt::before { top: -10px; }
+  .receipt::after { bottom: -10px; transform: scaleY(-1); }
+
+  .key-hint {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #b8c0e0;
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+  }
+
+  .return-slot-inner {
+    background: #04060c;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: inset 0 6px 12px rgba(0,0,0,0.8);
+    border-radius: 8px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: linear-gradient(180deg, #1b2042 0%, #0f1428 100%);
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 60;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 18px rgba(74,223,255,0.25);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.error { color: var(--neon-red); border-color: var(--neon-red); box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 18px rgba(255,74,110,0.25); }
+
+  details summary { cursor: pointer; }
+  details summary::-webkit-details-marker { display: none; }
+
+  .grid-vent {
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 6px 100%;
+  }
+
+  @media (max-width: 900px) {
+    .machine-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Top Bar -->
+<header class="border-b border-white/5 bg-[#0a0e1a]/80 backdrop-blur sticky top-0 z-50">
+  <div class="max-w-[1200px] mx-auto px-5 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <svg width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="34" height="34" rx="6" fill="#161b30" stroke="#4adfff" stroke-width="1.5"/>
+        <path d="M16 8 L13 22 L19 22 L17 32 L27 18 L21 18 L24 8 Z" fill="#c6ff3a" stroke="#0a0e1a" stroke-width="0.8"/>
+      </svg>
+      <div>
+        <div class="font-digital text-[15px] glow-cyan neon-cyan tracking-wider">SPARK MATRIX</div>
+        <div class="text-[10px] text-slate-400 -mt-0.5 tracking-[0.18em]">전기기능사 소식지 · VOL.07</div>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-4 text-[11px] text-slate-400 font-digital tracking-widest">
+      <span class="flex items-center gap-2"><span class="led-dot"></span>ONLINE</span>
+      <span>UNIT #0427-EX</span>
+      <span class="neon-amber">v2.6.1</span>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1200px] mx-auto px-5 py-8">
+
+  <!-- Hero -->
+  <section class="mb-6 text-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-400/30 bg-cyan-400/5 text-[11px] font-digital tracking-[0.2em] neon-cyan mb-3">
+      <span class="led-dot" style="background:#4adfff;box-shadow:0 0 8px #4adfff;"></span>
+      LEARNING TOKEN DISPENSER
+    </div>
+    <h1 class="font-digital text-3xl md:text-5xl font-black glow-cyan neon-cyan leading-tight">
+      스파크 매트릭스 자판기
+    </h1>
+    <p class="mt-3 text-slate-300 max-w-xl mx-auto text-sm md:text-base">
+      전기 회로의 핵심 원리를 캔디·드링크·미니카드로 받아가세요.
+      <span class="neon-pink glow-pink">학습 토큰</span>으로 결제, 거스름돈은 회수구에서.
+    </p>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee-wrap rounded mb-8">
+    <div class="marquee">
+      ★ TODAY'S SPECIAL — 옴 음료 1+1 / 키르히호프 콜라 한정 24병 / 합격 인형 매진 임박 ★
+      재고 부족 시 회수구로 토큰이 자동 반환됩니다 ★ A1~D4 코드로 제품을 선택하세요 ★
+      AI 코치 쿠폰 신규 입고 ★ 결제 전 잔액과 가격을 확인하세요 ★
+    </div>
+  </div>
+
+  <!-- Machine Layout -->
+  <div class="machine-grid grid grid-cols-[1.4fr_1fr] gap-6">
+
+    <!-- LEFT: Machine Body -->
+    <section class="panel p-5 md:p-7 relative">
+      <!-- Top header strip -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full" style="background:#ff4a6e;box-shadow:0 0 8px #ff4a6e;"></div>
+          <div class="w-2 h-2 rounded-full" style="background:#ffb84a;box-shadow:0 0 8px #ffb84a;"></div>
+          <div class="w-2 h-2 rounded-full led-dot"></div>
+          <span class="ml-2 font-digital text-[11px] tracking-[0.25em] text-slate-400">DISPENSER · MODEL SPK-16</span>
+        </div>
+        <div class="font-digital text-[11px] text-slate-500">SN: SPK-0427-EX</div>
+      </div>
+
+      <!-- LCD Display -->
+      <div class="display relative display-scan p-4 mb-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <div class="font-digital text-[10px] tracking-[0.3em] text-emerald-300/70 mb-1">STATUS</div>
+            <div id="statusMsg" class="font-lcd text-2xl text-digital glow-digital min-h-[34px]">
+              어서오세요. 코드를 입력하세요.
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="font-digital text-[10px] tracking-[0.3em] text-emerald-300/70 mb-1">BAL.</div>
+            <div id="balanceDisplay" class="font-lcd text-3xl text-digital glow-digital">0₸</div>
+          </div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-3 text-[11px] font-digital">
+          <div>
+            <div class="text-emerald-300/60 tracking-widest">CODE</div>
+            <div id="codeDisplay" class="font-lcd text-2xl text-digital glow-digital">--</div>
+          </div>
+          <div>
+            <div class="text-emerald-300/60 tracking-widest">ITEM</div>
+            <div id="itemDisplay" class="font-lcd text-2xl text-digital glow-digital truncate">—</div>
+          </div>
+          <div class="text-right">
+            <div class="text-emerald-300/60 tracking-widest">PRICE</div>
+            <div id="priceDisplay" class="font-lcd text-2xl text-digital glow-digital">0₸</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Glass display & product grid -->
+      <div class="glass p-3 relative overflow-hidden">
+        <!-- Glass reflection -->
+        <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+             style="background: linear-gradient(115deg, rgba(255,255,255,0.10) 0%, transparent 25%, transparent 60%, rgba(255,255,255,0.04) 80%, transparent 100%);"></div>
+
+        <!-- 4 rows of 4 slots -->
+        <div id="productGrid" class="grid grid-cols-4 gap-2.5 relative z-10">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Fall stage for animation -->
+        <div class="fall-stage" id="fallStage" aria-hidden="true"></div>
+      </div>
+
+      <!-- Vent grill -->
+      <div class="metal mt-4 h-5 grid-vent rounded"></div>
+
+      <!-- Return slot (drop area) -->
+      <div class="mt-4 grid grid-cols-[1fr_auto] gap-3 items-center">
+        <div>
+          <div class="font-digital text-[10px] tracking-[0.25em] text-slate-400 mb-1.5">RETURN / 회수구</div>
+          <div class="return-slot-inner h-16 px-3 flex items-center justify-between">
+            <span class="font-lcd text-emerald-300/70 text-sm" id="returnLabel">비어 있음</span>
+            <div class="flex -space-x-2" id="returnItems" aria-live="polite"></div>
+          </div>
+        </div>
+        <button id="collectBtn" class="btn-key px-4 py-3 font-digital text-[11px] tracking-widest neon-cyan">
+          PICK UP
+        </button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT: Controls -->
+    <aside class="space-y-5">
+
+      <!-- Coin slot -->
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-digital text-[11px] tracking-[0.25em] neon-amber">COIN SLOT</div>
+          <div class="font-lcd text-emerald-300/70 text-sm">투입구</div>
+        </div>
+        <div class="metal relative h-20 rounded flex items-center justify-center overflow-hidden">
+          <div class="w-3/4 h-2 rounded-full bg-black/70 border border-white/10 shadow-inner"></div>
+          <div id="coinDropStage" class="absolute inset-0 pointer-events-none"></div>
+        </div>
+        <div class="grid grid-cols-4 gap-2 mt-3">
+          <button data-coin="10"  class="btn-key action-coin py-2 font-digital text-xs">+10₸</button>
+          <button data-coin="50"  class="btn-key action-coin py-2 font-digital text-xs">+50₸</button>
+          <button data-coin="100" class="btn-key action-coin py-2 font-digital text-xs">+100₸</button>
+          <button data-coin="500" class="btn-key action-coin py-2 font-digital text-xs">+500₸</button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+          ※ <span class="neon-amber">₸ (학습 토큰)</span> 은 가상 단위입니다.
+        </p>
+      </div>
+
+      <!-- Keypad -->
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="font-digital text-[11px] tracking-[0.25em] neon-cyan">KEYPAD</div>
+          <div class="font-lcd text-emerald-300/70 text-sm">코드: A1~D4</div>
+        </div>
+
+        <!-- Letter row -->
+        <div class="grid grid-cols-4 gap-2 mb-2">
+          <button data-key="A" class="btn-key py-3 font-digital text-base">A</button>
+          <button data-key="B" class="btn-key py-3 font-digital text-base">B</button>
+          <button data-key="C" class="btn-key py-3 font-digital text-base">C</button>
+          <button data-key="D" class="btn-key py-3 font-digital text-base">D</button>
+        </div>
+
+        <!-- Number rows -->
+        <div class="grid grid-cols-3 gap-2">
+          <button data-key="1" class="btn-key py-3 font-digital text-base">1</button>
+          <button data-key="2" class="btn-key py-3 font-digital text-base">2</button>
+          <button data-key="3" class="btn-key py-3 font-digital text-base">3</button>
+          <button data-key="4" class="btn-key py-3 font-digital text-base">4</button>
+          <button data-key="5" class="btn-key py-3 font-digital text-base">5</button>
+          <button data-key="6" class="btn-key py-3 font-digital text-base">6</button>
+          <button data-key="7" class="btn-key py-3 font-digital text-base">7</button>
+          <button data-key="8" class="btn-key py-3 font-digital text-base">8</button>
+          <button data-key="9" class="btn-key py-3 font-digital text-base">9</button>
+          <button data-key="cancel" class="btn-key action-cancel py-3 font-digital text-sm tracking-wider">CANCEL</button>
+          <button data-key="0" class="btn-key py-3 font-digital text-base">0</button>
+          <button data-key="pay" class="btn-key action-pay py-3 font-digital text-sm tracking-wider">PAY</button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 mt-3 leading-relaxed">
+          <span class="key-hint">A1</span> → 옴 음료 / <span class="key-hint">D4</span> → 특별 한정판<br>
+          키보드 <span class="key-hint">A-D</span>, <span class="key-hint">0-9</span>, <span class="key-hint">Enter</span>=PAY, <span class="key-hint">Esc</span>=CANCEL
+        </p>
+      </div>
+
+      <!-- Receipt toggle -->
+      <div class="panel p-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-digital text-[11px] tracking-[0.25em] neon-pink">RECEIPT</div>
+            <div class="font-lcd text-emerald-300/70 text-sm">영수증 출력</div>
+          </div>
+          <label class="inline-flex items-center cursor-pointer">
+            <input id="receiptToggle" type="checkbox" class="sr-only peer" checked>
+            <span class="w-12 h-6 bg-slate-700/80 border border-white/10 rounded-full relative
+                         peer-checked:bg-emerald-500/70 transition
+                         after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                         after:w-5 after:h-5 after:bg-white after:rounded-full after:transition
+                         peer-checked:after:translate-x-6"></span>
+          </label>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+          꺼두면 결제 후 영수증을 출력하지 않습니다.
+        </p>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- Receipt history -->
+  <section class="mt-10">
+    <div class="flex items-end justify-between mb-3">
+      <div>
+        <h2 class="font-digital text-xl neon-pink glow-pink">PRINTED RECEIPTS</h2>
+        <p class="text-[12px] text-slate-400">최근 거래 내역. 종이는 가상입니다.</p>
+      </div>
+      <button id="clearReceiptsBtn" class="btn-key px-3 py-2 font-digital text-[11px] tracking-widest neon-red">CLEAR</button>
+    </div>
+    <div id="receiptList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Receipts injected -->
+      <div id="noReceiptHint" class="text-slate-500 text-sm">아직 출력된 영수증이 없습니다.</div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="mt-12 panel p-6">
+    <h2 class="font-digital text-lg neon-cyan glow-cyan mb-3">사용 안내</h2>
+    <div class="space-y-2 text-sm text-slate-300">
+      <details class="border-t border-white/5 pt-2">
+        <summary class="flex justify-between items-center"><span>토큰(₸) 은 어디서 얻나요?</span><span class="text-slate-500">+</span></summary>
+        <p class="mt-2 text-slate-400 leading-relaxed">이 자판기는 가상 시뮬레이션입니다. 좌측 상단의 코인 슬롯 버튼으로 자유롭게 토큰을 충전해 보세요. 실제 결제는 발생하지 않습니다.</p>
+      </details>
+      <details class="border-t border-white/5 pt-2">
+        <summary class="flex justify-between items-center"><span>매진된 칸은 어떻게 표시되나요?</span><span class="text-slate-500">+</span></summary>
+        <p class="mt-2 text-slate-400 leading-relaxed">진열칸 위에 <span class="neon-red">SOLD OUT</span> 마크가 표시됩니다. 해당 코드로 결제 시도 시 거부 메시지가 나오고 잔액은 유지됩니다.</p>
+      </details>
+      <details class="border-t border-white/5 pt-2">
+        <summary class="flex justify-between items-center"><span>잔액이 부족하면?</span><span class="text-slate-500">+</span></summary>
+        <p class="mt-2 text-slate-400 leading-relaxed">"INSUFFICIENT" 메시지가 디지털 디스플레이에 떠오릅니다. 더 많은 토큰을 투입한 뒤 PAY를 다시 눌러주세요.</p>
+      </details>
+      <details class="border-t border-white/5 pt-2">
+        <summary class="flex justify-between items-center"><span>회수구에는 무엇이 나오나요?</span><span class="text-slate-500">+</span></summary>
+        <p class="mt-2 text-slate-400 leading-relaxed">제품이 떨어진 후 자동으로 회수구에 보관됩니다. PICK UP 버튼으로 회수할 수 있고, 거스름돈은 별도 메시지로 안내됩니다.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-12 pt-6 border-t border-white/5 text-center text-[12px] text-slate-500">
+    <div class="font-digital tracking-[0.25em] neon-cyan glow-cyan text-[11px] mb-2">SPARK MATRIX DISPENSER</div>
+    <p>가상 자판기 시뮬레이션 · 전기기능사 학습용 데모</p>
+    <p class="mt-1">© 2026 전기기능사 소식지 · No real brands depicted.</p>
+  </footer>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- Product SVG sprites (defs) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <defs>
+    <!-- BOTTLE / CAN base -->
+    <symbol id="art-can" viewBox="0 0 60 80">
+      <rect x="14" y="10" width="32" height="60" rx="6" fill="#1c2548" stroke="#4adfff" stroke-width="1.2"/>
+      <rect x="14" y="22" width="32" height="20" fill="#0a0e1a"/>
+      <rect x="14" y="22" width="32" height="20" fill="url(#g-cyan)" opacity="0.85"/>
+      <rect x="16" y="6" width="28" height="6" rx="2" fill="#2a3155" stroke="#4adfff" stroke-width="1"/>
+      <text x="30" y="36" text-anchor="middle" font-family="Orbitron" font-size="10" font-weight="800" fill="#0a0e1a">Ω</text>
+      <text x="30" y="56" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#c6ff3a">VOLT.UP</text>
+    </symbol>
+    <symbol id="art-bottle" viewBox="0 0 60 80">
+      <path d="M22 6 H38 V18 L42 24 V72 a4 4 0 0 1 -4 4 H22 a4 4 0 0 1 -4 -4 V24 Z" fill="#1c2548" stroke="#ff4ad6" stroke-width="1.2"/>
+      <rect x="20" y="34" width="20" height="22" fill="url(#g-pink)" opacity="0.9"/>
+      <text x="30" y="48" text-anchor="middle" font-family="Orbitron" font-size="7" font-weight="800" fill="#0a0e1a">KIRCH</text>
+    </symbol>
+    <symbol id="art-soda" viewBox="0 0 60 80">
+      <rect x="14" y="10" width="32" height="60" rx="6" fill="#1c2548" stroke="#c6ff3a" stroke-width="1.2"/>
+      <path d="M14 28 Q30 22 46 28 V42 Q30 48 14 42 Z" fill="url(#g-lime)" opacity="0.85"/>
+      <circle cx="20" cy="34" r="1.5" fill="#fff" opacity="0.7"/>
+      <circle cx="26" cy="38" r="1" fill="#fff" opacity="0.7"/>
+      <circle cx="34" cy="33" r="1.2" fill="#fff" opacity="0.7"/>
+      <text x="30" y="62" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#c6ff3a">TRANS</text>
+    </symbol>
+    <symbol id="art-energy" viewBox="0 0 60 80">
+      <rect x="14" y="10" width="32" height="60" rx="6" fill="#1c2548" stroke="#ffb84a" stroke-width="1.2"/>
+      <path d="M30 18 L24 40 H30 L26 60 L38 36 H32 L36 18 Z" fill="#ffb84a"/>
+      <text x="30" y="68" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#ffb84a">RLC</text>
+    </symbol>
+    <!-- Chocolate / biscuit / caramel / candy -->
+    <symbol id="art-choco" viewBox="0 0 60 80">
+      <rect x="10" y="20" width="40" height="48" rx="4" fill="#5b3a1a" stroke="#ffb84a" stroke-width="1.2"/>
+      <g fill="#3a2410">
+        <rect x="14" y="24" width="9" height="9"/>
+        <rect x="25" y="24" width="9" height="9"/>
+        <rect x="36" y="24" width="9" height="9"/>
+        <rect x="14" y="35" width="9" height="9"/>
+        <rect x="25" y="35" width="9" height="9"/>
+        <rect x="36" y="35" width="9" height="9"/>
+        <rect x="14" y="46" width="9" height="9"/>
+        <rect x="25" y="46" width="9" height="9"/>
+        <rect x="36" y="46" width="9" height="9"/>
+      </g>
+      <text x="30" y="14" text-anchor="middle" font-family="Orbitron" font-size="7" fill="#ffb84a">3Φ</text>
+    </symbol>
+    <symbol id="art-biscuit" viewBox="0 0 60 80">
+      <circle cx="30" cy="40" r="22" fill="#c69856" stroke="#4adfff" stroke-width="1.2"/>
+      <g fill="#7a5a30">
+        <circle cx="22" cy="34" r="2"/>
+        <circle cx="36" cy="32" r="1.6"/>
+        <circle cx="30" cy="42" r="2"/>
+        <circle cx="24" cy="48" r="1.5"/>
+        <circle cx="38" cy="46" r="2"/>
+      </g>
+      <text x="30" y="72" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#4adfff">FARAD</text>
+    </symbol>
+    <symbol id="art-caramel" viewBox="0 0 60 80">
+      <rect x="12" y="26" width="36" height="28" rx="3" fill="#d9a14a" stroke="#ff4ad6" stroke-width="1.2"/>
+      <path d="M12 26 L4 22 L4 36 L12 40 Z" fill="#d9a14a" stroke="#ff4ad6" stroke-width="1.2"/>
+      <path d="M48 40 L56 36 L56 50 L48 54 Z" fill="#d9a14a" stroke="#ff4ad6" stroke-width="1.2"/>
+      <text x="30" y="44" text-anchor="middle" font-family="Orbitron" font-size="7" font-weight="800" fill="#0a0e1a">T</text>
+    </symbol>
+    <symbol id="art-candy" viewBox="0 0 60 80">
+      <circle cx="30" cy="40" r="16" fill="#ff4ad6" stroke="#fff" stroke-width="1"/>
+      <path d="M14 40 L4 32 L4 48 Z" fill="#ff4ad6" stroke="#fff"/>
+      <path d="M46 40 L56 32 L56 48 Z" fill="#ff4ad6" stroke="#fff"/>
+      <text x="30" y="44" text-anchor="middle" font-family="Orbitron" font-size="9" font-weight="800" fill="#fff">M</text>
+    </symbol>
+    <!-- Goods -->
+    <symbol id="art-key" viewBox="0 0 60 80">
+      <circle cx="22" cy="40" r="10" fill="none" stroke="#c6ff3a" stroke-width="3"/>
+      <circle cx="22" cy="40" r="3" fill="#0a0e1a" stroke="#c6ff3a" stroke-width="1.4"/>
+      <rect x="30" y="38" width="22" height="4" fill="#c6ff3a"/>
+      <rect x="46" y="34" width="3" height="8" fill="#c6ff3a"/>
+      <rect x="40" y="34" width="3" height="6" fill="#c6ff3a"/>
+    </symbol>
+    <symbol id="art-sticker" viewBox="0 0 60 80">
+      <circle cx="30" cy="40" r="18" fill="#ffb84a"/>
+      <path d="M24 30 L30 42 L36 30 M30 42 V52" stroke="#0a0e1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <text x="30" y="22" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#0a0e1a">FORMULA</text>
+    </symbol>
+    <symbol id="art-doll" viewBox="0 0 60 80">
+      <circle cx="30" cy="22" r="10" fill="#ffd5a3" stroke="#0a0e1a" stroke-width="1"/>
+      <rect x="20" y="30" width="20" height="22" rx="6" fill="#ff4a6e" stroke="#0a0e1a" stroke-width="1"/>
+      <circle cx="26" cy="22" r="1.2" fill="#0a0e1a"/>
+      <circle cx="34" cy="22" r="1.2" fill="#0a0e1a"/>
+      <path d="M26 26 Q30 30 34 26" stroke="#0a0e1a" stroke-width="1" fill="none"/>
+      <text x="30" y="44" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#fff">합격</text>
+      <rect x="18" y="52" width="24" height="3" fill="#4adfff"/>
+    </symbol>
+    <symbol id="art-card" viewBox="0 0 60 80">
+      <rect x="10" y="18" width="40" height="44" rx="4" fill="#1c2548" stroke="#4adfff" stroke-width="1.4"/>
+      <rect x="14" y="22" width="32" height="14" fill="#4adfff" opacity="0.18"/>
+      <text x="30" y="33" text-anchor="middle" font-family="Orbitron" font-size="7" fill="#4adfff">FLIP</text>
+      <line x1="14" y1="44" x2="46" y2="44" stroke="#4adfff" stroke-width="0.6" opacity="0.5"/>
+      <line x1="14" y1="50" x2="46" y2="50" stroke="#4adfff" stroke-width="0.6" opacity="0.5"/>
+      <line x1="14" y1="56" x2="40" y2="56" stroke="#4adfff" stroke-width="0.6" opacity="0.5"/>
+    </symbol>
+    <symbol id="art-token" viewBox="0 0 60 80">
+      <circle cx="30" cy="40" r="20" fill="#ffb84a" stroke="#0a0e1a" stroke-width="2"/>
+      <circle cx="30" cy="40" r="14" fill="none" stroke="#0a0e1a" stroke-width="1"/>
+      <path d="M30 28 L26 42 H30 L28 52 L34 38 H30 L32 28 Z" fill="#0a0e1a"/>
+    </symbol>
+    <symbol id="art-coupon" viewBox="0 0 60 80">
+      <rect x="8" y="24" width="44" height="32" rx="3" fill="#ff4ad6" stroke="#fff" stroke-width="1"/>
+      <line x1="24" y1="24" x2="24" y2="56" stroke="#fff" stroke-dasharray="2,2"/>
+      <text x="16" y="44" text-anchor="middle" font-family="Orbitron" font-size="10" font-weight="800" fill="#fff">AI</text>
+      <text x="38" y="38" text-anchor="middle" font-family="Orbitron" font-size="6" fill="#fff">COACH</text>
+      <text x="38" y="48" text-anchor="middle" font-family="Orbitron" font-size="8" font-weight="800" fill="#fff">100%</text>
+    </symbol>
+    <symbol id="art-box" viewBox="0 0 60 80">
+      <rect x="10" y="24" width="40" height="36" fill="#7a3aff" stroke="#fff" stroke-width="1"/>
+      <rect x="10" y="24" width="40" height="6" fill="#5a22d2"/>
+      <text x="30" y="48" text-anchor="middle" font-family="Orbitron" font-size="14" font-weight="900" fill="#fff">?</text>
+    </symbol>
+    <symbol id="art-special" viewBox="0 0 60 80">
+      <rect x="10" y="18" width="40" height="44" rx="4" fill="url(#g-gold)" stroke="#fff" stroke-width="1"/>
+      <text x="30" y="38" text-anchor="middle" font-family="Orbitron" font-size="9" font-weight="900" fill="#0a0e1a">LIMITED</text>
+      <text x="30" y="50" text-anchor="middle" font-family="Orbitron" font-size="7" fill="#0a0e1a">EDITION</text>
+    </symbol>
+
+    <!-- gradients -->
+    <linearGradient id="g-cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4adfff"/>
+      <stop offset="1" stop-color="#1f6e90"/>
+    </linearGradient>
+    <linearGradient id="g-pink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4ad6"/>
+      <stop offset="1" stop-color="#7a1c66"/>
+    </linearGradient>
+    <linearGradient id="g-lime" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c6ff3a"/>
+      <stop offset="1" stop-color="#4e7a14"/>
+    </linearGradient>
+    <linearGradient id="g-gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe28a"/>
+      <stop offset="0.6" stop-color="#ffb84a"/>
+      <stop offset="1" stop-color="#9a6a16"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---- Data ----
+  const products = [
+    { code:'A1', name:'옴 음료',          price: 80,  stock: 3, art:'art-can',     color:'cyan' },
+    { code:'A2', name:'키르히호프 콜라',  price: 120, stock: 1, art:'art-bottle',  color:'pink' },
+    { code:'A3', name:'변압기 사이다',    price: 90,  stock: 2, art:'art-soda',    color:'lime' },
+    { code:'A4', name:'RLC 에너지 드링크',price: 150, stock: 0, art:'art-energy',  color:'amber' },
+
+    { code:'B1', name:'3상 결선 초콜릿',  price: 60,  stock: 4, art:'art-choco',   color:'amber' },
+    { code:'B2', name:'패러데이 비스킷',  price: 50,  stock: 5, art:'art-biscuit', color:'cyan' },
+    { code:'B3', name:'테슬라 캐러멜',    price: 70,  stock: 2, art:'art-caramel', color:'pink' },
+    { code:'B4', name:'맥스웰 사탕',      price: 40,  stock: 6, art:'art-candy',   color:'pink' },
+
+    { code:'C1', name:'안전 키 체인',     price: 200, stock: 2, art:'art-key',     color:'lime' },
+    { code:'C2', name:'공식 스티커',      price: 30,  stock: 8, art:'art-sticker', color:'amber' },
+    { code:'C3', name:'합격 인형',        price: 480, stock: 1, art:'art-doll',    color:'pink' },
+    { code:'C4', name:'플립카드 미니',    price: 110, stock: 3, art:'art-card',    color:'cyan' },
+
+    { code:'D1', name:'시뮬레이터 토큰',  price: 300, stock: 2, art:'art-token',   color:'amber' },
+    { code:'D2', name:'AI 코치 쿠폰',     price: 350, stock: 2, art:'art-coupon',  color:'pink' },
+    { code:'D3', name:'랜덤 박스',        price: 250, stock: 0, art:'art-box',     color:'cyan' },
+    { code:'D4', name:'특별 한정판',      price: 999, stock: 1, art:'art-special', color:'amber' },
+  ];
+
+  // ---- State ----
+  const state = {
+    balance: 0,
+    codeBuffer: '',
+    selected: null,   // product object
+    returnQueue: [],  // products awaiting pickup
+    change: 0,
+    receipts: [],     // {ts, items:[{code,name,price}], paid, change}
+  };
+
+  // ---- DOM ----
+  const $ = (sel) => document.querySelector(sel);
+  const grid = $('#productGrid');
+  const balanceDisplay = $('#balanceDisplay');
+  const codeDisplay = $('#codeDisplay');
+  const itemDisplay = $('#itemDisplay');
+  const priceDisplay = $('#priceDisplay');
+  const statusMsg = $('#statusMsg');
+  const fallStage = $('#fallStage');
+  const coinDropStage = $('#coinDropStage');
+  const returnLabel = $('#returnLabel');
+  const returnItems = $('#returnItems');
+  const receiptList = $('#receiptList');
+  const noReceiptHint = $('#noReceiptHint');
+  const toast = $('#toast');
+  const receiptToggle = $('#receiptToggle');
+
+  // ---- Utilities ----
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, (ch) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[ch]));
+  }
+  function fmt(n){ return `${n.toLocaleString('ko-KR')}₸`; }
+  function nowStr(){
+    const d = new Date();
+    const p = (x)=>String(x).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+
+  let toastTimer = null;
+  function showToast(msg, type='info'){
+    toast.textContent = msg;
+    toast.className = 'toast show' + (type === 'error' ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  // ---- Render ----
+  function renderGrid(){
+    grid.innerHTML = '';
+    products.forEach(p => {
+      const cell = document.createElement('div');
+      cell.className = 'slot-cell aspect-[3/4]' + (p.stock <= 0 ? ' sold-out' : '');
+      cell.dataset.code = p.code;
+
+      cell.innerHTML = `
+        <div class="code-tag">${escapeHTML(p.code)}</div>
+        <div class="product-art">
+          <svg viewBox="0 0 60 80" width="56" height="74" aria-label="${escapeHTML(p.name)}">
+            <use href="#${escapeHTML(p.art)}"/>
+          </svg>
+        </div>
+        <div class="stock-tag">${p.stock > 0 ? 'x' + p.stock : 'x0'}</div>
+        <div class="price-tag">${fmt(p.price)}</div>
+        <div class="absolute top-1.5 right-1.5 text-[9px] font-digital text-slate-300/80 truncate max-w-[70%] text-right" title="${escapeHTML(p.name)}">${escapeHTML(p.name)}</div>
+      `;
+
+      cell.addEventListener('click', () => {
+        setSelected(p.code, true);
+      });
+
+      grid.appendChild(cell);
+    });
+  }
+
+  function updateDisplays(){
+    balanceDisplay.textContent = fmt(state.balance);
+    codeDisplay.textContent = state.codeBuffer || '--';
+    itemDisplay.textContent = state.selected ? state.selected.name : '—';
+    priceDisplay.textContent = state.selected ? fmt(state.selected.price) : '0₸';
+
+    // Highlight selected cell
+    grid.querySelectorAll('.slot-cell').forEach(el => {
+      el.classList.toggle('selected', state.selected && el.dataset.code === state.selected.code);
+    });
+
+    // Refresh stock tags
+    products.forEach(p => {
+      const cell = grid.querySelector(`[data-code="${p.code}"]`);
+      if (!cell) return;
+      const stockTag = cell.querySelector('.stock-tag');
+      if (stockTag) stockTag.textContent = p.stock > 0 ? 'x' + p.stock : 'x0';
+      cell.classList.toggle('sold-out', p.stock <= 0);
+    });
+  }
+
+  function setStatus(text, kind){
+    statusMsg.textContent = text;
+    statusMsg.classList.remove('neon-red','neon-amber','neon-lime','text-digital','glow-digital');
+    if (kind === 'error') {
+      statusMsg.classList.add('neon-red');
+    } else if (kind === 'warn') {
+      statusMsg.classList.add('neon-amber');
+    } else if (kind === 'ok') {
+      statusMsg.classList.add('neon-lime');
+    } else {
+      statusMsg.classList.add('text-digital','glow-digital');
+    }
+  }
+
+  // ---- Selection ----
+  function setSelected(code, fromClick){
+    const p = products.find(x => x.code === code);
+    if (!p) {
+      state.codeBuffer = code || '';
+      state.selected = null;
+      setStatus('알 수 없는 코드.', 'warn');
+      updateDisplays();
+      return;
+    }
+    state.codeBuffer = code;
+    state.selected = p;
+    if (p.stock <= 0) {
+      setStatus(`${p.name} — SOLD OUT`, 'error');
+    } else {
+      setStatus(`${p.name} 선택 · ${fmt(p.price)}`, 'ok');
+    }
+    if (fromClick) {
+      showToast(`${p.code} · ${p.name}`);
+    }
+    updateDisplays();
+  }
+
+  // ---- Keypad input ----
+  function pressKey(key){
+    if (key === 'cancel'){
+      cancelTx();
+      return;
+    }
+    if (key === 'pay'){
+      attemptPay();
+      return;
+    }
+    // Build code: letter then digit
+    const buf = state.codeBuffer;
+    if (/[A-D]/i.test(key)){
+      // start fresh letter
+      state.codeBuffer = key.toUpperCase();
+      state.selected = null;
+      setStatus('숫자를 입력하세요 (1~4)…');
+      updateDisplays();
+      return;
+    }
+    if (/[0-9]/.test(key)){
+      // need a letter first
+      if (!/^[A-D]$/.test(buf)){
+        setStatus('코드 형식: A~D + 1~4', 'warn');
+        return;
+      }
+      const candidate = buf + key;
+      const p = products.find(x => x.code === candidate);
+      if (!p){
+        setStatus('존재하지 않는 코드.', 'error');
+        state.codeBuffer = candidate;
+        updateDisplays();
+        return;
+      }
+      setSelected(candidate, false);
+    }
+  }
+
+  function cancelTx(){
+    const refund = state.balance;
+    if (refund > 0){
+      state.change += refund;
+      state.balance = 0;
+      addReturnChip({ type:'change', amount: refund });
+      setStatus(`거스름돈 반환 — ${fmt(refund)}`, 'ok');
+      showToast(`거스름돈 ${fmt(refund)} 반환`);
+    } else {
+      setStatus('취소되었습니다.');
+    }
+    state.codeBuffer = '';
+    state.selected = null;
+    updateDisplays();
+  }
+
+  function attemptPay(){
+    if (!state.selected){
+      setStatus('제품을 먼저 선택하세요.', 'warn');
+      return;
+    }
+    const p = state.selected;
+    if (p.stock <= 0){
+      setStatus(`${p.name} — SOLD OUT. 다른 제품을 선택하세요.`, 'error');
+      showToast('SOLD OUT', 'error');
+      return;
+    }
+    if (state.balance < p.price){
+      const need = p.price - state.balance;
+      setStatus(`INSUFFICIENT — ${fmt(need)} 부족`, 'error');
+      showToast(`잔액 부족 (${fmt(need)})`, 'error');
+      return;
+    }
+    // Process
+    state.balance -= p.price;
+    p.stock -= 1;
+
+    // Drop animation
+    dropProduct(p);
+
+    // Add to return queue
+    addReturnChip({ type:'product', product: p });
+
+    // Receipt
+    if (receiptToggle.checked){
+      addReceipt({
+        ts: nowStr(),
+        items: [{ code:p.code, name:p.name, price:p.price }],
+        paid: p.price,
+        balanceAfter: state.balance,
+      });
+    }
+
+    setStatus(`DISPENSED — ${p.name}`, 'ok');
+    showToast(`${p.code} ${p.name} 배출`);
+
+    // After dispense, reset selection but keep balance
+    state.codeBuffer = '';
+    state.selected = null;
+    updateDisplays();
+  }
+
+  // ---- Animations ----
+  function dropProduct(p){
+    // Find cell position relative to fallStage
+    const cell = grid.querySelector(`[data-code="${p.code}"]`);
+    const stageRect = fallStage.getBoundingClientRect();
+    if (!cell) return;
+    const cellRect = cell.getBoundingClientRect();
+    const startX = cellRect.left - stageRect.left + cellRect.width/2 - 28;
+    const startY = cellRect.top - stageRect.top + 10;
+
+    const item = document.createElement('div');
+    item.className = 'fall-item';
+    item.style.left = `${startX}px`;
+    item.style.top = `${startY}px`;
+    item.innerHTML = `
+      <svg viewBox="0 0 60 80" width="56" height="56">
+        <use href="#${p.art}"/>
+      </svg>`;
+    fallStage.appendChild(item);
+    setTimeout(() => { item.remove(); }, 1200);
+  }
+
+  function dropCoin(amount){
+    const el = document.createElement('div');
+    el.className = 'coin-drop';
+    el.innerHTML = `
+      <svg width="22" height="22" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="#ffb84a" stroke="#0a0e1a" stroke-width="1.5"/>
+        <text x="12" y="15" text-anchor="middle" font-family="Orbitron" font-size="7" font-weight="800" fill="#0a0e1a">${amount}</text>
+      </svg>`;
+    coinDropStage.appendChild(el);
+    setTimeout(() => el.remove(), 750);
+  }
+
+  // ---- Return area chips ----
+  function addReturnChip(entry){
+    state.returnQueue.push(entry);
+    refreshReturn();
+  }
+  function refreshReturn(){
+    returnItems.innerHTML = '';
+    if (state.returnQueue.length === 0){
+      returnLabel.textContent = '비어 있음';
+      return;
+    }
+    returnLabel.textContent = `${state.returnQueue.length}개 대기 — PICK UP을 누르세요`;
+    state.returnQueue.slice(-6).forEach(entry => {
+      const chip = document.createElement('div');
+      chip.className = 'w-9 h-9 rounded-full bg-[#0a0e1a] border border-white/15 flex items-center justify-center shadow';
+      if (entry.type === 'product'){
+        chip.innerHTML = `<svg viewBox="0 0 60 80" width="22" height="22"><use href="#${entry.product.art}"/></svg>`;
+        chip.title = `${entry.product.code} · ${entry.product.name}`;
+      } else {
+        chip.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" fill="#ffb84a" stroke="#0a0e1a" stroke-width="1.4"/>
+            <text x="12" y="15" text-anchor="middle" font-family="Orbitron" font-size="6" font-weight="800" fill="#0a0e1a">${entry.amount}</text>
+          </svg>`;
+        chip.title = `거스름돈 ${fmt(entry.amount)}`;
+      }
+      returnItems.appendChild(chip);
+    });
+  }
+  function pickUpReturn(){
+    if (state.returnQueue.length === 0){
+      showToast('회수구가 비어 있습니다');
+      return;
+    }
+    const count = state.returnQueue.length;
+    const products = state.returnQueue.filter(e => e.type==='product').length;
+    const change = state.returnQueue
+      .filter(e => e.type==='change')
+      .reduce((s,e) => s + e.amount, 0);
+    state.returnQueue = [];
+    refreshReturn();
+    let msg = `${count}개 회수 완료`;
+    if (products) msg += ` · 제품 ${products}`;
+    if (change)   msg += ` · 거스름돈 ${fmt(change)}`;
+    showToast(msg);
+    setStatus('회수 완료. 또 이용해 주세요.', 'ok');
+  }
+
+  // ---- Receipts ----
+  function addReceipt(r){
+    state.receipts.unshift(r);
+    renderReceipts();
+  }
+  function renderReceipts(){
+    receiptList.querySelectorAll('.receipt-card').forEach(n => n.remove());
+    if (state.receipts.length === 0){
+      noReceiptHint.style.display = '';
+      return;
+    }
+    noReceiptHint.style.display = 'none';
+    state.receipts.forEach((r) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'receipt-card';
+      const itemsHTML = r.items.map(it =>
+        `<div class="flex justify-between"><span>${escapeHTML(it.code)} ${escapeHTML(it.name)}</span><span>${escapeHTML(fmt(it.price))}</span></div>`
+      ).join('');
+      wrap.innerHTML = `
+        <div class="receipt">
+          <div class="text-center font-bold text-[18px]">SPARK MATRIX</div>
+          <div class="text-center text-[12px] mb-2">UNIT #0427-EX</div>
+          <div class="text-[12px] mb-2">${escapeHTML(r.ts)}</div>
+          <div class="border-t border-dashed border-black/40 my-2"></div>
+          ${itemsHTML}
+          <div class="border-t border-dashed border-black/40 my-2"></div>
+          <div class="flex justify-between"><span>합계</span><span>${escapeHTML(fmt(r.paid))}</span></div>
+          <div class="flex justify-between"><span>잔액</span><span>${escapeHTML(fmt(r.balanceAfter))}</span></div>
+          <div class="text-center mt-2 text-[12px]">감사합니다 — 다시 또 만나요</div>
+          <div class="text-center text-[11px] opacity-70">* 가상 자판기 시뮬레이션 *</div>
+        </div>`;
+      receiptList.appendChild(wrap);
+    });
+  }
+
+  // ---- Event Listeners ----
+  document.querySelectorAll('[data-key]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pressKey(btn.dataset.key);
+    });
+  });
+
+  document.querySelectorAll('[data-coin]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amt = parseInt(btn.dataset.coin, 10);
+      if (!Number.isFinite(amt) || amt <= 0) return;
+      state.balance += amt;
+      dropCoin(amt);
+      setStatus(`+${fmt(amt)} 충전 — 잔액 ${fmt(state.balance)}`, 'ok');
+      showToast(`+${fmt(amt)}`);
+      updateDisplays();
+    });
+  });
+
+  $('#collectBtn').addEventListener('click', pickUpReturn);
+  $('#clearReceiptsBtn').addEventListener('click', () => {
+    state.receipts = [];
+    renderReceipts();
+    showToast('영수증 기록 삭제');
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    const k = e.key;
+    if (/^[a-dA-D]$/.test(k)){
+      pressKey(k.toUpperCase());
+      e.preventDefault();
+    } else if (/^[0-9]$/.test(k)){
+      pressKey(k);
+      e.preventDefault();
+    } else if (k === 'Enter'){
+      pressKey('pay');
+      e.preventDefault();
+    } else if (k === 'Escape'){
+      pressKey('cancel');
+      e.preventDefault();
+    } else if (k === 'Backspace'){
+      // remove last char of code buffer
+      if (state.codeBuffer.length > 0){
+        state.codeBuffer = state.codeBuffer.slice(0, -1);
+        state.selected = null;
+        updateDisplays();
+        e.preventDefault();
+      }
+    }
+  });
+
+  // ---- Init ----
+  renderGrid();
+  updateDisplays();
+  refreshReturn();
+  renderReceipts();
+})();
+</script>
+</body>
+</html>

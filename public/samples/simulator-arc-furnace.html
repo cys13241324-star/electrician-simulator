@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전기 아크로 시뮬레이터 (Electric Arc Furnace · EAF)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(251, 146, 60, 0.18), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 63, 94, 0.14), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 30, 60, 0.55), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 14% 24%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 64% 72%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 84% 16%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 32% 86%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 76% 46%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 48% 58%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 92% 92%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 64%, rgba(255,255,255,0.4), transparent);
+    background-size: 640px 640px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,146,60,0.55), rgba(244,63,94,0.45), rgba(250,204,21,0.45));
+    box-shadow: 0 30px 100px -20px rgba(251, 146, 60, 0.35), 0 0 40px rgba(244, 63, 94, 0.16);
+}
+canvas#mainCanvas {
+    display: block;
+    width: 100%;
+    height: 480px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#viCanvas {
+    display: block;
+    width: 100%;
+    height: 320px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fb923c; box-shadow: 0 0 12px #fb923c;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fb923c; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(251,146,60,0.4), rgba(244,63,94,0.4), rgba(250,204,21,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fdba74, #fda4af, #fde047);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-v { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-i { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fecaca; }
+.chip-g { background: linear-gradient(135deg, rgba(251,146,60,0.20), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.5); color: #fed7aa; }
+.chip-t { background: linear-gradient(135deg, rgba(250,204,21,0.20), rgba(250,204,21,0.06)); border-color: rgba(250,204,21,0.5); color: #fde68a; }
+.chip-cfg { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.55); color: #c4b5fd; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.45);
+    background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(15,23,42,0.85));
+}
+.live-pill.warn {
+    border-color: rgba(251, 191, 36, 0.75);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45);
+    background: linear-gradient(135deg, rgba(251,191,36,0.14), rgba(15,23,42,0.85));
+}
+.live-pill.danger {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fdba74, #fda4af, #fde047);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(251, 146, 60, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(251,146,60,0.16), rgba(244,63,94,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fed7aa; }
+.cfg-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.28);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.cfg-btn.active {
+    background: linear-gradient(135deg, rgba(168,139,250,0.32), rgba(139,92,246,0.25));
+    border-color: rgba(168, 139, 250, 0.85);
+    color: #ede9fe;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.45);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(251,146,60,0.18), rgba(244,63,94,0.18));
+    border: 1px solid rgba(251,146,60,0.45);
+    color: #fed7aa;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(251,146,60,0.32), rgba(244,63,94,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(251,146,60,0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.legend-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
+    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+}
+.stage-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 9999px;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+}
+.stage-bore   { background: rgba(125,211,252,0.18); border: 1px solid rgba(125,211,252,0.55); color: #bae6fd; }
+.stage-melt   { background: rgba(251,146,60,0.20); border: 1px solid rgba(251,146,60,0.6); color: #fed7aa; }
+.stage-refine { background: rgba(168,139,250,0.20); border: 1px solid rgba(168,139,250,0.6); color: #c4b5fd; }
+.stage-idle   { background: rgba(148,163,184,0.15); border: 1px solid rgba(148,163,184,0.4); color: #cbd5e1; }
+.temp-bar {
+    height: 14px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #1e3a8a 0%, #7dd3fc 18%, #fde047 38%, #fb923c 60%, #f43f5e 85%, #fff 100%);
+    position: relative;
+    overflow: visible;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+}
+.temp-marker {
+    position: absolute;
+    top: -6px;
+    width: 4px;
+    height: 26px;
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 0 12px #fff, 0 0 4px rgba(255,255,255,0.6);
+    transform: translateX(-50%);
+    transition: left 220ms ease-out;
+}
+.temp-tick {
+    position: absolute;
+    bottom: -16px;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: #94a3b8;
+    font-family: ui-monospace, monospace;
+    white-space: nowrap;
+}
+.flicker-indicator {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 9999px;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+    transition: background 200ms, box-shadow 200ms;
+}
+.flicker-indicator.warn {
+    background: #fde047;
+    box-shadow: 0 0 12px #fde047;
+}
+.flicker-indicator.danger {
+    background: #f43f5e;
+    box-shadow: 0 0 16px #f43f5e;
+    animation: flickerPulse 0.35s ease-in-out infinite;
+}
+@keyframes flickerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-orange-300">
+            <span class="pulse-dot"></span>
+            ELECTRIC ARC FURNACE · 3-PHASE GRAPHITE ELECTRODE · 1500°C+ MELTING
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-200 via-rose-200 to-yellow-200 bg-clip-text text-transparent">
+            🔥 전기 아크로 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            <span class="text-orange-300 font-semibold">3상 흑연 전극</span>이 강력한 아크를 발생시켜 고철(scrap)을 용융합니다.
+            <span class="text-rose-300 font-semibold">아크 길이(갭)</span> 가 짧으면 전류↑·전압↓ (V−I 음저항 특성),
+            <span class="text-yellow-300 font-semibold">전극 자동제어(전압조절)</span>로 일정한 임피던스를 유지합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-v">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">아크 전압 V<sub>arc</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="vDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">V</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-i">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">아크 전류 I<sub>arc</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="iDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">kA</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-temp">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">용탕 온도 T</p>
+            <p class="mt-1 text-lg font-bold"><span id="tempDisp" class="live-num">—</span> <span class="text-xs opacity-60 font-normal">°C</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-stage">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">운전 단계</p>
+            <p class="mt-1 text-lg font-bold" id="stageDisp"><span class="text-slate-300">대기</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ⚠ FLICKER 한계 초과 · P<sub>st</sub> &gt; 1.0 · 계통 깜박임 발생 · SVC/STATCOM 보상 필요
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+
+            <!-- 메인 캔버스 — 전기로 단면 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="mainCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">EAF CROSS-SECTION · 3 GRAPHITE ELECTRODES · MOLTEN BATH</span>
+                    <div class="flex items-center gap-3 text-[11px]">
+                        <span class="text-rose-300"><span class="legend-dot" style="background:#ef4444;color:#ef4444"></span>R 상</span>
+                        <span class="text-emerald-300"><span class="legend-dot" style="background:#22c55e;color:#22c55e"></span>S 상</span>
+                        <span class="text-sky-300"><span class="legend-dot" style="background:#3b82f6;color:#3b82f6"></span>T 상</span>
+                        <span class="text-orange-300"><span class="legend-dot" style="background:#fb923c;color:#fb923c"></span>아크</span>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="bore">① 점화 (Bore-In)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="melt">② 용융 (Melt)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="refine">③ 정련 (Refine)</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="autoctrl">⚙ 전극 자동제어</button>
+                    <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                </div>
+            </div>
+
+            <!-- V−I 특성 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="viCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">V−I 특성 곡선 · 음(陰)저항 영역 (Negative Resistance)</span>
+                    <span id="opPointBadge" class="stage-badge stage-melt">OPERATING POINT</span>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="viCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- 온도 게이지 -->
+            <div class="glass rounded-2xl p-5" id="tempCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🌡</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">용탕 온도 스케일 (EAF Process Stages)</span>
+                </h3>
+                <div class="mt-5 mb-2 relative">
+                    <div class="temp-bar">
+                        <div class="temp-marker" id="tempMarker" style="left: 0%"></div>
+                        <span class="temp-tick" style="left:0%">25</span>
+                        <span class="temp-tick" style="left:18%">400</span>
+                        <span class="temp-tick" style="left:38%">800</span>
+                        <span class="temp-tick" style="left:60%">1200</span>
+                        <span class="temp-tick" style="left:75%">1450</span>
+                        <span class="temp-tick" style="left:85%">1600</span>
+                        <span class="temp-tick" style="left:100%">1800°C</span>
+                    </div>
+                </div>
+                <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-sky-300">예열</p>
+                        <p class="text-slate-400 mt-1">~ 800°C</p>
+                        <p class="text-slate-500">고체 고철</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-yellow-300">용융 시작</p>
+                        <p class="text-slate-400 mt-1">1200~1450</p>
+                        <p class="text-slate-500">고체↔액체</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-orange-300">완전 용해</p>
+                        <p class="text-slate-400 mt-1">1500~1600</p>
+                        <p class="text-slate-500">스틸 용탕</p>
+                    </div>
+                    <div class="feature-row rounded-md p-2 text-center">
+                        <p class="font-bold text-rose-300">정련 / Tap</p>
+                        <p class="text-slate-400 mt-1">1620~1700</p>
+                        <p class="text-slate-500">출강 준비</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">아크로 핵심 공식</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-rose-200">① 아크 전압 (Ayrton 방정식)</p>
+                        <div class="math-container mt-2">\(V_{arc} = a + b \cdot L_{arc} + \dfrac{c + d \cdot L_{arc}}{I_{arc}}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">a,b,c,d: 상수 · 아크 길이↑ = V↑ · 전류↑ = V↓ (음저항)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-orange-200">② 단순화 V−I 관계</p>
+                        <div class="math-container mt-2">\(V_{arc} \approx V_0 + k \cdot L_{arc}\) (전압↔길이)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">\(V_0\): 음극강하 ~ 40V · k ≈ 10 V/mm (단순화)</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-sky-200">③ 회로 방정식 (1상 등가)</p>
+                        <div class="math-container mt-2">\(V_{tr} = I \cdot Z + V_{arc}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">변압기 2차 전압 = 임피던스 강하 + 아크 전압</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-amber-200">④ 아크 전력 (실효)</p>
+                        <div class="math-container mt-2">\(P_{arc} = 3 \cdot V_{arc} \cdot I_{arc} \cdot \cos\varphi\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">3상 · 일반적으로 cos φ ≈ 0.7~0.85</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-violet-200">⑤ 용해 에너지 (열역학)</p>
+                        <div class="math-container mt-2">\(Q = m \cdot c_p \cdot \Delta T + m \cdot L_f\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">철 비열 ≈ 460 J/kg·K · 융해잠열 ≈ 247 kJ/kg</p>
+                    </div>
+                    <div class="feature-row rounded-lg p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-yellow-200">⑥ 플리커 (P<sub>st</sub>)</p>
+                        <div class="math-container mt-2">\(P_{st} \propto \dfrac{\Delta S_{arc}}{S_{sc}}\)</div>
+                        <p class="text-[10px] text-slate-500 mt-2">아크 변동분 / 계통 단락용량 비 · IEC 61000-4-15</p>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <p class="text-[11px] text-slate-400">
+                    <strong>핵심:</strong> 아크는 <span class="text-orange-300 font-bold">음저항(전류↑ → 전압↓)</span> 특성이라 자체 안정화가 어려워
+                    <span class="text-rose-300 font-bold">변압기·리액터 임피던스</span> 와 <span class="text-yellow-300 font-bold">전극 자동제어</span> 가 필수입니다.
+                    아크 길이(전극 갭)를 일정하게 유지하면 임피던스 정합이 이뤄져 최대 전력 전달과 안정 운전이 가능합니다.
+                </p>
+            </div>
+
+            <!-- 부가 정보 -->
+            <div class="glass rounded-2xl p-5" id="featureCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">⚡</span>
+                    <span class="bg-gradient-to-r from-orange-200 to-rose-200 bg-clip-text text-transparent">EAF 운전 단계 & 계통 영향</span>
+                </h3>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-sky-300">① 점화 (Bore-In)</span> · 전극 하강 → 고철과 접촉 → 아크 점화 · 짧은 아크, 큰 변동</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-orange-300">② 용융 (Melt-Down)</span> · 깊이 보링, 80% 시간 소비 · 최대 전력 · 플리커 최대</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">③ 정련 (Refining)</span> · 평탄 용탕 · 긴 아크 · 안정·저변동 운전 · 슬래그 발포</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">전극 자동제어</span> · 임피던스 측정 → 전극 위치 PID 제어 · ±수 mm 정밀</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-yellow-300">플리커 (Flicker)</span> · IEC P<sub>st</sub>≤1.0 · 조명 깜박임 인지 한계</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">보상 대책</span> · SVC / STATCOM · 단락용량 큰 송전선 연계 (S<sub>sc</sub> ≥ 80·S<sub>EAF</sub>)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-orange-200">변수 조절</h2>
+
+            <div class="chip-cfg chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">운전 단계</p>
+                <div class="grid grid-cols-3 gap-1.5 mt-2">
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[10px] font-bold" data-stage="bore">점화</button>
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[10px] font-bold active" data-stage="melt">용융</button>
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[10px] font-bold" data-stage="refine">정련</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">단계별 아크 거동·플리커 특성이 다름</p>
+            </div>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>변압기 2차 V<sub>tr</sub></span><span id="vtrDisp" class="font-mono text-base">700</span></label>
+                <input type="range" id="vtr" min="300" max="1200" step="10" value="700" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V · EAF 변압기 무부하 2차전압 (탭 단계)</p>
+            </div>
+
+            <div class="chip-g chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>아크 길이 (전극 갭)</span><span id="larcDisp" class="font-mono text-base">30</span></label>
+                <input type="range" id="larc" min="0" max="80" step="1" value="30" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mm · 0=단락 / 30~50=용융 / 70+=긴 아크(정련)</p>
+            </div>
+
+            <div class="chip-cfg chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>계통 임피던스 X</span><span id="xDisp" class="font-mono text-base">8.0</span></label>
+                <input type="range" id="x" min="2" max="20" step="0.1" value="8" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mΩ · 변압기+리액터+케이블 합</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>고철 장입량</span><span id="massDisp" class="font-mono text-base">80</span></label>
+                <input type="range" id="mass" min="30" max="150" step="5" value="80" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">ton · 1회 출강 기준 (중형 EAF 80~120t)</p>
+            </div>
+
+            <div class="chip-cfg chip rounded-lg p-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold tracking-wider">전극 자동제어</span>
+                    <span id="autoCtrlBadge" class="stage-badge stage-idle">OFF</span>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[10px] font-bold active" data-auto="off">수동</button>
+                    <button class="cfg-btn rounded-md px-2 py-1.5 text-[10px] font-bold" data-auto="on">자동(PID)</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">자동: 목표 임피던스에 맞춰 전극 상하 제어</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <!-- 플리커 인디케이터 -->
+            <div class="chip rounded-lg p-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold tracking-wider text-amber-200">플리커 P<sub>st</sub></span>
+                    <span class="flex items-center gap-2">
+                        <span id="flickerInd" class="flicker-indicator"></span>
+                        <span id="pstDisp" class="font-mono text-base text-amber-200">0.0</span>
+                    </span>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">IEC 61000-4-15 · 한계 P<sub>st</sub>=1.0</p>
+            </div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-orange-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">L<sub>arc</sub>=0 → 단락 (V<sub>arc</sub>=0, I 최대)</p>
+                <p class="feature-row rounded-md p-2">긴 아크 → V↑ I↓ → <span class="text-rose-300 font-bold">불안정</span></p>
+                <p class="feature-row rounded-md p-2">용융 단계 → <span class="text-yellow-300 font-bold">플리커 최대</span></p>
+                <p class="feature-row rounded-md p-2">자동제어로 <span class="text-emerald-300 font-bold">P<sub>st</sub> 30~50% 저감</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const mainCv = $('mainCanvas');
+const mctx = mainCv.getContext('2d');
+const viCv = $('viCanvas');
+const vctx = viCv.getContext('2d');
+
+const state = {
+    // 입력
+    Vtr: 700,        // 변압기 2차 무부하 전압 (V)
+    Larc: 30,        // 아크 길이 (mm)
+    X: 8.0,          // 계통 임피던스 (mΩ)
+    mass: 80,        // 고철 장입량 (ton)
+    stage: 'melt',   // 'bore' | 'melt' | 'refine'
+    autoCtrl: false,
+
+    // 계산값
+    Varc: 0,         // V
+    Iarc: 0,         // kA
+    Parc: 0,         // MW
+    cosphi: 0.78,    // 역률
+    Pst: 0,          // 플리커
+    T: 25,           // 용탕 온도 °C
+    meltFrac: 0,     // 용융 진행률 0~1
+
+    // 시뮬용
+    t_sim: 0,
+    sparks: [],
+    flashIntensity: 1,
+    arcNoise: [0, 0, 0],     // 3상별 아크 노이즈
+    electrodeY: [0.45, 0.45, 0.45],  // 전극 정규화 Y 위치 (자동제어 시뮬)
+    viHistory: [],            // V-I 궤적 (operating point trail)
+};
+
+function resize() {
+    mainCv.width = mainCv.parentElement.clientWidth - 2;
+    mainCv.height = 480;
+    viCv.width = viCv.parentElement.clientWidth - 2;
+    viCv.height = 320;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ============ 아크 물리 모델 ============
+function computeArc() {
+    // Ayrton 단순화: V_arc = V0 + k * L (mm)
+    // V0(음극+양극 강하) ≈ 40V, k ≈ 10 V/mm
+    const V0 = 40;
+    const k = 10;
+    const Larc = Math.max(state.Larc, 0);
+    const Varc = V0 + k * Larc;
+
+    // 회로 방정식: V_tr (상전압 환산) = I * Z + V_arc
+    // 단순화: 1상당 페이즈 전압 ≈ V_tr / √3
+    // I = (V_phase - V_arc) / X
+    const Vphase = state.Vtr / Math.sqrt(3);
+    const Z = state.X / 1000; // mΩ → Ω
+    let I = Math.max(0, (Vphase - Varc) / Z); // A
+    // 단락(L=0): V_arc=V0이지만 사실상 V_arc≈0 처리
+    if (Larc < 0.5) {
+        // 거의 단락
+        const Varc_eff = V0 * (Larc / 0.5);
+        I = (Vphase - Varc_eff) / Z;
+    }
+
+    // 단계별 보정 (아크 안정성)
+    let stageMod = 1.0;
+    let cosphi = 0.78;
+    if (state.stage === 'bore') {
+        stageMod = 0.7;    // 짧은 아크 + 변동 큼
+        cosphi = 0.68;
+    } else if (state.stage === 'refine') {
+        stageMod = 1.05;   // 안정
+        cosphi = 0.85;
+    }
+    I *= stageMod;
+    state.cosphi = cosphi;
+
+    state.Varc = Math.max(0, Larc < 0.5 ? V0 * Larc / 0.5 : Varc);
+    state.Iarc = I / 1000; // kA
+
+    // 아크 전력 (3상 합)
+    const P1 = state.Varc * I * cosphi; // W (1상)
+    state.Parc = (3 * P1) / 1e6;        // MW
+
+    // ===== 용해 시뮬레이션 (간단 적분) =====
+    // 철 비열 460 J/kg·K, 융해열 247000 J/kg, 시뮬 시간 가속
+    // dt 가속: 1초 sim = 60초 real
+    const dt = 1/60;
+    const massKg = state.mass * 1000;
+    const eta = 0.55; // 종합 효율 (아크→철)
+    const dE = state.Parc * 1e6 * dt * 120 * eta; // J (가속 ×120)
+
+    // 단계별 진행 모델
+    if (state.stage === 'bore') {
+        // 점화 단계 — 부분 가열
+        state.T += dE / (massKg * 460) * 0.5;
+        if (state.T > 1450) state.T = 1450;
+        state.meltFrac = Math.min(state.meltFrac, 0.15);
+    } else if (state.stage === 'melt') {
+        if (state.T < 1538) { // 융점 도달 전 — 현열
+            state.T += dE / (massKg * 460);
+        } else {
+            // 잠열 흡수
+            state.meltFrac += dE / (massKg * 247000);
+            state.meltFrac = Math.min(1, state.meltFrac);
+            if (state.meltFrac >= 1) state.T += dE / (massKg * 820) * 0.3;
+        }
+    } else if (state.stage === 'refine') {
+        // 정련 — 천천히 승온
+        state.T += dE / (massKg * 820) * 0.4;
+        if (state.T > 1700) state.T = 1700;
+        state.meltFrac = 1;
+    }
+
+    state.T = Math.max(25, Math.min(1800, state.T));
+
+    // ===== 플리커 P_st 계산 (단순화) =====
+    // P_st ∝ ΔS_arc / S_sc * stage_factor
+    // 단계별 변동 계수
+    let flickerFactor = 0.2;
+    if (state.stage === 'bore') flickerFactor = 1.4;
+    else if (state.stage === 'melt') flickerFactor = 1.0;
+    else if (state.stage === 'refine') flickerFactor = 0.25;
+    // 자동제어 시 50% 저감
+    if (state.autoCtrl) flickerFactor *= 0.5;
+    // 아크 길이가 길면 변동 증가
+    flickerFactor *= (0.6 + Larc / 60);
+    // 임피던스가 작으면 변동 큼
+    flickerFactor *= (10 / Math.max(state.X, 2));
+    state.Pst = Math.max(0, flickerFactor * (state.Parc / 50));
+}
+
+// ============ 시뮬레이션 업데이트 ============
+function updateSim() {
+    const dt = 1/60;
+    state.t_sim += dt;
+
+    // 아크 노이즈 (3상 독립)
+    for (let i = 0; i < 3; i++) {
+        let noiseAmp = 0.05;
+        if (state.stage === 'bore') noiseAmp = 0.35;
+        else if (state.stage === 'melt') noiseAmp = 0.18;
+        else noiseAmp = 0.04;
+        if (state.autoCtrl) noiseAmp *= 0.5;
+        state.arcNoise[i] = noiseAmp * (Math.sin(state.t_sim * (8 + i * 2) + i)
+            + 0.5 * Math.sin(state.t_sim * (33 + i * 3) + i * 1.7)
+            + 0.3 * (Math.random() - 0.5) * 2);
+    }
+
+    // 전극 자동제어 — 부드럽게 흔들면서 보정
+    if (state.autoCtrl) {
+        for (let i = 0; i < 3; i++) {
+            const target = 0.42; // 정상 위치
+            state.electrodeY[i] += (target - state.electrodeY[i]) * 0.08;
+            state.electrodeY[i] += (Math.random() - 0.5) * 0.002;
+        }
+    } else {
+        for (let i = 0; i < 3; i++) {
+            state.electrodeY[i] += (0.45 - state.electrodeY[i]) * 0.02;
+            state.electrodeY[i] += (Math.random() - 0.5) * 0.006;
+        }
+    }
+
+    // 플래시 밝기 (전류 비례)
+    state.flashIntensity = Math.min(1, state.Iarc / 60);
+    // 변동
+    const flick = 0.6 + 0.4 * Math.sin(state.t_sim * 25);
+    state.flashIntensity *= flick;
+
+    // 스파크 생성
+    if (state.Iarc > 5) {
+        const sparkRate = Math.min(40, state.Iarc * 0.6);
+        for (let i = 0; i < sparkRate / 6; i++) {
+            if (state.sparks.length < 240) {
+                const W = mainCv.width, H = mainCv.height;
+                const which = Math.floor(Math.random() * 3);
+                const ex = electrodeX(which, W);
+                const ey = (state.electrodeY[which] + 0.10) * H; // 아크점
+                const ang = -Math.PI/2 + (Math.random() - 0.5) * Math.PI * 0.6;
+                const speed = 1 + Math.random() * 4;
+                state.sparks.push({
+                    x: ex, y: ey,
+                    vx: Math.cos(ang) * speed,
+                    vy: Math.sin(ang) * speed,
+                    life: 0,
+                    maxLife: 20 + Math.random() * 40,
+                    color: Math.random() < 0.4 ? '#fde047' :
+                           Math.random() < 0.6 ? '#fb923c' :
+                           Math.random() < 0.6 ? '#fff' : '#f43f5e',
+                    size: 1.0 + Math.random() * 1.8,
+                });
+            }
+        }
+    }
+
+    state.sparks = state.sparks.filter(s => {
+        s.life += 1;
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.16; // gravity
+        s.vx *= 0.99;
+        return s.life < s.maxLife;
+    });
+
+    // V-I 궤적 (operating point trail)
+    state.viHistory.push({ V: state.Varc, I: state.Iarc, t: state.t_sim });
+    if (state.viHistory.length > 120) state.viHistory.shift();
+}
+
+function electrodeX(idx, W) {
+    // 3상 전극 X 위치 (중앙=furance center)
+    const cx = W * 0.50;
+    const dx = W * 0.13;
+    return cx + (idx - 1) * dx;
+}
+
+// ============ 메인 캔버스 — 전기로 단면 ============
+function drawMain() {
+    const W = mainCv.width, H = mainCv.height;
+    mctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = mctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    mctx.fillStyle = bg;
+    mctx.fillRect(0, 0, W, H);
+
+    // 격자
+    mctx.save();
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    mctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { mctx.beginPath(); mctx.moveTo(i, 0); mctx.lineTo(i, H); mctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { mctx.beginPath(); mctx.moveTo(0, i); mctx.lineTo(W, i); mctx.stroke(); }
+    mctx.restore();
+
+    // 헤더 라벨
+    mctx.save();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(253, 186, 116, 0.65)';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    const stageLbl = state.stage === 'bore' ? 'STAGE-① BORE-IN (점화)'
+                   : state.stage === 'melt' ? 'STAGE-② MELT-DOWN (용융)'
+                   : 'STAGE-③ REFINING (정련)';
+    mctx.fillText(`▮ EAF · ${stageLbl} · V_tr=${state.Vtr}V · L_arc=${state.Larc}mm · ${state.autoCtrl ? 'AUTO-PID' : 'MANUAL'}`, 12, 10);
+    mctx.restore();
+
+    // 외벽 (전기로 셸 + 로상)
+    drawFurnaceShell(W, H);
+
+    // 슬래그/용탕/고철 (단계 의존)
+    drawBath(W, H);
+
+    // 3상 전극 + 아크
+    for (let i = 0; i < 3; i++) {
+        drawElectrode(i, W, H);
+    }
+
+    // 스파크
+    drawSparks();
+
+    // 하단 정보
+    drawMainInfoPanel(W, H);
+}
+
+function drawFurnaceShell(W, H) {
+    // 외형: 통/도가니 모양
+    const cx = W / 2;
+    const cy = H * 0.78;
+    const rw = W * 0.42; // 반폭
+    const rh = H * 0.18; // 반높이
+
+    mctx.save();
+
+    // 셸 외부 (강철 외판)
+    const shellGrad = mctx.createLinearGradient(cx - rw, cy - rh, cx + rw, cy + rh * 1.6);
+    shellGrad.addColorStop(0, '#3f3f46');
+    shellGrad.addColorStop(0.5, '#52525b');
+    shellGrad.addColorStop(1, '#27272a');
+    mctx.fillStyle = shellGrad;
+    mctx.shadowBlur = 14;
+    mctx.shadowColor = 'rgba(244, 63, 94, 0.25)';
+
+    // 큰 사다리꼴 (위가 좁고 아래가 넓은 도가니)
+    mctx.beginPath();
+    mctx.moveTo(cx - rw * 0.85, cy - rh);          // 좌상
+    mctx.lineTo(cx + rw * 0.85, cy - rh);          // 우상
+    mctx.lineTo(cx + rw, cy + rh * 0.5);           // 우하
+    // 둥근 바닥
+    mctx.quadraticCurveTo(cx, cy + rh * 1.6, cx - rw, cy + rh * 0.5);
+    mctx.closePath();
+    mctx.fill();
+
+    // 외부 윤곽선
+    mctx.shadowBlur = 0;
+    mctx.strokeStyle = 'rgba(203, 213, 225, 0.45)';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+
+    // 내화벽돌 라이닝 (안쪽 옅은 줄)
+    mctx.strokeStyle = 'rgba(139, 92, 46, 0.7)';
+    mctx.lineWidth = 6;
+    mctx.beginPath();
+    mctx.moveTo(cx - rw * 0.82, cy - rh + 4);
+    mctx.lineTo(cx + rw * 0.82, cy - rh + 4);
+    mctx.lineTo(cx + rw * 0.96, cy + rh * 0.5);
+    mctx.quadraticCurveTo(cx, cy + rh * 1.5, cx - rw * 0.96, cy + rh * 0.5);
+    mctx.closePath();
+    mctx.stroke();
+
+    // 지지 스탠드 (양옆)
+    mctx.fillStyle = '#1f2937';
+    roundRect(mctx, cx - rw - 14, cy + rh * 0.4, 14, rh * 0.8, 2);
+    mctx.fill();
+    roundRect(mctx, cx + rw, cy + rh * 0.4, 14, rh * 0.8, 2);
+    mctx.fill();
+
+    // 출강구 (오른쪽 슬랜티드 노즐)
+    mctx.fillStyle = '#3f3f46';
+    mctx.beginPath();
+    mctx.moveTo(cx + rw * 0.85, cy - rh + 4);
+    mctx.lineTo(cx + rw + 30, cy - rh + 18);
+    mctx.lineTo(cx + rw + 30, cy - rh + 32);
+    mctx.lineTo(cx + rw * 0.85, cy - rh + 22);
+    mctx.closePath();
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(203, 213, 225, 0.5)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+
+    // 라벨
+    mctx.font = '9px ui-monospace, monospace';
+    mctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    mctx.textAlign = 'left';
+    mctx.fillText('REFRACTORY', cx - rw + 12, cy + rh * 0.85);
+    mctx.fillText('TAP HOLE', cx + rw + 4, cy - rh + 42);
+
+    mctx.restore();
+}
+
+function drawBath(W, H) {
+    const cx = W / 2;
+    const cy = H * 0.78;
+    const rw = W * 0.42;
+    const rh = H * 0.18;
+
+    // 내부 클립 영역 (도가니 내부)
+    mctx.save();
+    mctx.beginPath();
+    mctx.moveTo(cx - rw * 0.82, cy - rh + 8);
+    mctx.lineTo(cx + rw * 0.82, cy - rh + 8);
+    mctx.lineTo(cx + rw * 0.94, cy + rh * 0.5);
+    mctx.quadraticCurveTo(cx, cy + rh * 1.45, cx - rw * 0.94, cy + rh * 0.5);
+    mctx.closePath();
+    mctx.clip();
+
+    // 바닥 배경 어둠
+    mctx.fillStyle = '#0a0608';
+    mctx.fillRect(cx - rw, cy - rh, rw * 2, rh * 2.8);
+
+    // 용탕 레벨 (meltFrac에 따라 상승)
+    const meltMax = rh * 1.0;
+    const meltLevel = meltMax * Math.max(0, state.meltFrac);
+    const bathTop = cy + rh * 0.5 - meltLevel;
+
+    // 고철 (위에 산처럼 쌓임, 용융 진행 시 줄어듦)
+    if (state.meltFrac < 1) {
+        const scrapRemaining = 1 - state.meltFrac;
+        mctx.save();
+        // 고철 더미 (랜덤 사각형들)
+        const baseY = bathTop;
+        for (let i = 0; i < 60; i++) {
+            const seed = i * 17.3;
+            const px = cx - rw * 0.8 + Math.sin(seed) * rw * 1.5;
+            const py = baseY - Math.abs(Math.cos(seed * 1.3) * rh * 0.55 * scrapRemaining)
+                       - Math.random() * 2;
+            if (py > cy - rh + 12 && py < bathTop + 4) {
+                const sz = 4 + (Math.sin(seed * 2.1) + 1) * 4;
+                mctx.fillStyle = `rgba(${100 + Math.floor(Math.sin(seed*3)*30)}, ${100 + Math.floor(Math.cos(seed*4)*20)}, ${110}, ${0.7 + Math.random()*0.3})`;
+                mctx.fillRect(px, py, sz, sz * 0.6);
+            }
+        }
+        // 고철 윤곽 (어두운 산 모양)
+        mctx.fillStyle = 'rgba(40, 40, 50, 0.6)';
+        mctx.beginPath();
+        mctx.moveTo(cx - rw * 0.95, bathTop);
+        const steps = 30;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const px = cx - rw * 0.95 + t * rw * 1.9;
+            const py = bathTop - (Math.sin(t * 7) * 6 + Math.cos(t * 11.3) * 4 + 14) * scrapRemaining;
+            mctx.lineTo(px, py);
+        }
+        mctx.lineTo(cx + rw * 0.95, bathTop);
+        mctx.closePath();
+        mctx.fill();
+        mctx.restore();
+    }
+
+    // 용탕 (밝게 빛나는 액체 금속)
+    if (state.meltFrac > 0.02) {
+        const tempT = (state.T - 1000) / 700; // 0~1 normalized
+        const meltColor = state.T < 1450 ? `rgba(180, 60, 30, ${0.9})`
+                        : state.T < 1550 ? `rgba(220, 100, 40, ${0.95})`
+                        : state.T < 1650 ? `rgba(250, 170, 80, ${0.97})`
+                        : `rgba(255, 220, 120, ${0.98})`;
+
+        // 용탕 본체
+        mctx.save();
+        mctx.shadowBlur = 30;
+        mctx.shadowColor = meltColor;
+        mctx.fillStyle = meltColor;
+        mctx.beginPath();
+        mctx.moveTo(cx - rw * 0.94, bathTop);
+        // 표면 파동
+        const waves = 40;
+        for (let i = 0; i <= waves; i++) {
+            const t = i / waves;
+            const px = cx - rw * 0.94 + t * rw * 1.88;
+            const wave = Math.sin(t * 12 + state.t_sim * 2) * 1.4
+                       + Math.sin(t * 28 + state.t_sim * 3.4) * 0.8;
+            mctx.lineTo(px, bathTop + wave);
+        }
+        // 바닥 따라가기
+        mctx.lineTo(cx + rw * 0.94, cy + rh * 0.5);
+        mctx.quadraticCurveTo(cx, cy + rh * 1.45, cx - rw * 0.94, cy + rh * 0.5);
+        mctx.closePath();
+        mctx.fill();
+        mctx.restore();
+
+        // 표면 하이라이트 (반사광)
+        mctx.save();
+        const surfGrad = mctx.createLinearGradient(0, bathTop - 4, 0, bathTop + 12);
+        surfGrad.addColorStop(0, 'rgba(255, 255, 220, 0.5)');
+        surfGrad.addColorStop(1, 'rgba(255, 255, 220, 0)');
+        mctx.fillStyle = surfGrad;
+        mctx.fillRect(cx - rw, bathTop - 4, rw * 2, 16);
+        mctx.restore();
+
+        // 슬래그 (위에 떠 있는 거품/검은 막)
+        if (state.stage === 'refine' || state.meltFrac > 0.7) {
+            mctx.save();
+            mctx.fillStyle = 'rgba(60, 40, 30, 0.7)';
+            mctx.beginPath();
+            mctx.moveTo(cx - rw * 0.92, bathTop - 1);
+            for (let i = 0; i <= 30; i++) {
+                const t = i / 30;
+                const px = cx - rw * 0.92 + t * rw * 1.84;
+                mctx.lineTo(px, bathTop - 3 - Math.sin(t * 14 + state.t_sim * 1.6) * 1.2);
+            }
+            mctx.lineTo(cx + rw * 0.92, bathTop - 1);
+            mctx.closePath();
+            mctx.fill();
+            // 거품
+            for (let i = 0; i < 14; i++) {
+                const px = cx - rw * 0.85 + (i / 14) * rw * 1.7;
+                const py = bathTop - 4 - Math.sin(i * 1.5 + state.t_sim) * 1.5;
+                mctx.fillStyle = `rgba(120, 80, 60, ${0.5 + Math.random() * 0.3})`;
+                mctx.beginPath();
+                mctx.arc(px, py, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
+                mctx.fill();
+            }
+            mctx.restore();
+        }
+    }
+
+    mctx.restore();
+}
+
+function drawElectrode(idx, W, H) {
+    const ex = electrodeX(idx, W);
+    const phaseColors = ['#ef4444', '#22c55e', '#3b82f6']; // R/S/T
+    const pcolor = phaseColors[idx];
+
+    const electrodeWidth = 26;
+    const top = 35;
+    const tipY = state.electrodeY[idx] * H;
+    const arcLen = (state.Larc / 80) * (H * 0.18); // 시각 길이 환산
+
+    mctx.save();
+
+    // 전극 본체 (흑연 — 짙은 회색)
+    const grad = mctx.createLinearGradient(ex - electrodeWidth/2, top, ex + electrodeWidth/2, top);
+    grad.addColorStop(0, '#27272a');
+    grad.addColorStop(0.5, '#52525b');
+    grad.addColorStop(1, '#27272a');
+    mctx.fillStyle = grad;
+    mctx.fillRect(ex - electrodeWidth/2, top, electrodeWidth, tipY - top);
+
+    // 전극 끝 (테이퍼)
+    mctx.beginPath();
+    mctx.moveTo(ex - electrodeWidth/2, tipY);
+    mctx.lineTo(ex + electrodeWidth/2, tipY);
+    mctx.lineTo(ex + electrodeWidth/2 - 4, tipY + 12);
+    mctx.lineTo(ex - electrodeWidth/2 + 4, tipY + 12);
+    mctx.closePath();
+    mctx.fill();
+
+    // 외부 윤곽
+    mctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    mctx.lineWidth = 1;
+    mctx.strokeRect(ex - electrodeWidth/2, top, electrodeWidth, tipY - top);
+
+    // 전극 발광 (끝부분 — 빨갛게)
+    if (state.Iarc > 1) {
+        mctx.save();
+        mctx.shadowBlur = 24;
+        mctx.shadowColor = '#ff6b35';
+        const glowGrad = mctx.createLinearGradient(0, tipY - 50, 0, tipY + 12);
+        glowGrad.addColorStop(0, 'rgba(244, 63, 94, 0)');
+        glowGrad.addColorStop(0.7, 'rgba(251, 146, 60, 0.6)');
+        glowGrad.addColorStop(1, 'rgba(253, 224, 71, 0.95)');
+        mctx.fillStyle = glowGrad;
+        mctx.fillRect(ex - electrodeWidth/2, tipY - 50, electrodeWidth, 62);
+        mctx.restore();
+    }
+
+    // 상부 클램프 (위쪽 회색 박스)
+    mctx.fillStyle = '#1f2937';
+    roundRect(mctx, ex - electrodeWidth/2 - 6, top - 10, electrodeWidth + 12, 14, 2);
+    mctx.fill();
+    mctx.strokeStyle = pcolor;
+    mctx.lineWidth = 1.5;
+    mctx.shadowBlur = 8;
+    mctx.shadowColor = pcolor;
+    mctx.stroke();
+    mctx.shadowBlur = 0;
+
+    // 상 라벨
+    mctx.font = 'bold 11px ui-monospace, monospace';
+    mctx.fillStyle = pcolor;
+    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+    mctx.fillText(['R', 'S', 'T'][idx], ex, top - 3);
+
+    // 케이블 (위쪽)
+    mctx.save();
+    mctx.strokeStyle = pcolor;
+    mctx.lineWidth = 3;
+    mctx.shadowBlur = 6;
+    mctx.shadowColor = pcolor;
+    mctx.beginPath();
+    mctx.moveTo(ex, top - 10);
+    mctx.bezierCurveTo(ex, top - 28, ex + (idx - 1) * 30, top - 36, ex + (idx - 1) * 60, 20);
+    mctx.stroke();
+    mctx.restore();
+
+    mctx.restore();
+
+    // ===== 아크 그리기 =====
+    if (state.Iarc > 0.5 && state.Larc > 0.5) {
+        drawArc(idx, ex, tipY + 12, arcLen, W, H);
+    } else if (state.Larc < 0.5 && state.Iarc > 0.5) {
+        // 단락 — 전극 끝이 융탕에 잠김 (빛만)
+        mctx.save();
+        mctx.shadowBlur = 30;
+        mctx.shadowColor = '#fde047';
+        mctx.fillStyle = 'rgba(253, 224, 71, 0.6)';
+        mctx.beginPath();
+        mctx.arc(ex, tipY + 16, 12, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.restore();
+    }
+}
+
+function drawArc(idx, x, y, length, W, H) {
+    // 아크 = SVG-스타일 번개 빛줄기 + 후광
+    const noise = state.arcNoise[idx];
+    const intensity = 0.4 + 0.6 * state.flashIntensity * (0.7 + 0.3 * Math.sin(state.t_sim * 40 + idx));
+    const arcLen = Math.max(8, length);
+
+    // 후광 (radial)
+    mctx.save();
+    const haloR = 18 + 26 * intensity;
+    const halo = mctx.createRadialGradient(x, y + arcLen * 0.4, 0, x, y + arcLen * 0.4, haloR);
+    halo.addColorStop(0, `rgba(255, 255, 240, ${0.8 * intensity})`);
+    halo.addColorStop(0.25, `rgba(253, 224, 71, ${0.55 * intensity})`);
+    halo.addColorStop(0.55, `rgba(251, 146, 60, ${0.35 * intensity})`);
+    halo.addColorStop(0.85, `rgba(244, 63, 94, ${0.18 * intensity})`);
+    halo.addColorStop(1, 'rgba(168, 85, 247, 0)');
+    mctx.fillStyle = halo;
+    mctx.beginPath();
+    mctx.arc(x, y + arcLen * 0.4, haloR, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.restore();
+
+    // 아크 채널 (지그재그 라인)
+    const segs = 6;
+    for (let layer = 0; layer < 3; layer++) {
+        mctx.save();
+        const layerColor = layer === 0 ? '#fff'
+                         : layer === 1 ? '#fde047'
+                         : '#fb923c';
+        const layerWidth = layer === 0 ? 1.4 : layer === 1 ? 2.6 : 4;
+        const layerAlpha = layer === 0 ? 0.95 : layer === 1 ? 0.6 : 0.32;
+        mctx.strokeStyle = `rgba(255, 240, 200, ${layerAlpha})`;
+        if (layer === 1) mctx.strokeStyle = `rgba(253, 224, 71, ${layerAlpha})`;
+        if (layer === 2) mctx.strokeStyle = `rgba(251, 146, 60, ${layerAlpha})`;
+        mctx.lineWidth = layerWidth;
+        mctx.lineCap = 'round';
+        mctx.shadowBlur = 16 - layer * 4;
+        mctx.shadowColor = layerColor;
+        mctx.beginPath();
+        mctx.moveTo(x, y);
+        for (let s = 1; s <= segs; s++) {
+            const t = s / segs;
+            const py = y + arcLen * t;
+            const px = x + (Math.sin(t * 8 + state.t_sim * 30 + idx + layer) * 3 + noise * 5) * (1 - t * 0.4);
+            mctx.lineTo(px, py);
+        }
+        mctx.stroke();
+        mctx.restore();
+    }
+
+    // 코어 (백색 점)
+    mctx.save();
+    mctx.shadowBlur = 28;
+    mctx.shadowColor = '#fff';
+    mctx.fillStyle = '#fff';
+    mctx.beginPath();
+    mctx.arc(x, y, 3 + 2 * intensity, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.beginPath();
+    mctx.arc(x, y + arcLen, 3.5 + 2 * intensity, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.restore();
+}
+
+function drawSparks() {
+    state.sparks.forEach(s => {
+        const tlife = s.life / s.maxLife;
+        const alpha = 1 - tlife;
+        mctx.save();
+        mctx.shadowBlur = 8;
+        mctx.shadowColor = s.color;
+        mctx.fillStyle = s.color;
+        mctx.globalAlpha = alpha;
+        mctx.beginPath();
+        mctx.arc(s.x, s.y, s.size * (1 - tlife * 0.4), 0, Math.PI * 2);
+        mctx.fill();
+        mctx.restore();
+    });
+}
+
+function drawMainInfoPanel(W, H) {
+    // 좌하단 — 전력/온도
+    mctx.save();
+    const boxW = 250, boxH = 80;
+    const bx = 14, by = H - boxH - 14;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(mctx, bx, by, boxW, boxH, 10);
+    mctx.fill();
+    mctx.strokeStyle = 'rgba(251, 146, 60, 0.4)';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#fed7aa';
+    mctx.fillText('[ ARC POWER ]', bx + 10, by + 8);
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = '#fda4af';
+    mctx.fillText(`V_arc = ${state.Varc.toFixed(0)} V   I_arc = ${state.Iarc.toFixed(2)} kA`, bx + 10, by + 26);
+    mctx.fillStyle = '#fb923c';
+    mctx.fillText(`P_arc = ${state.Parc.toFixed(2)} MW · cos φ = ${state.cosphi.toFixed(2)}`, bx + 10, by + 42);
+    mctx.fillStyle = '#fde68a';
+    mctx.fillText(`Z = ${state.X.toFixed(1)} mΩ · ${state.autoCtrl ? '⚙ AUTO-PID' : 'MANUAL'}`, bx + 10, by + 58);
+    mctx.restore();
+
+    // 우하단 — 용탕 상태
+    mctx.save();
+    const boxW2 = 230, boxH2 = 80;
+    const bx2 = W - boxW2 - 14, by2 = H - boxH2 - 14;
+    mctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    roundRect(mctx, bx2, by2, boxW2, boxH2, 10);
+    mctx.fill();
+    const tColor = state.T < 800 ? '#7dd3fc'
+                  : state.T < 1450 ? '#fde047'
+                  : state.T < 1600 ? '#fb923c' : '#f43f5e';
+    mctx.strokeStyle = tColor + 'cc';
+    mctx.lineWidth = 1.5;
+    mctx.stroke();
+    mctx.font = 'bold 10px ui-monospace, monospace';
+    mctx.textAlign = 'left'; mctx.textBaseline = 'top';
+    mctx.fillStyle = '#c4b5fd';
+    mctx.fillText('[ BATH STATUS ]', bx2 + 10, by2 + 8);
+    mctx.font = 'bold 14px ui-monospace, monospace';
+    mctx.fillStyle = tColor;
+    mctx.fillText(`T = ${Math.round(state.T)} °C`, bx2 + 10, by2 + 28);
+    mctx.font = '10px ui-monospace, monospace';
+    mctx.fillStyle = '#94a3b8';
+    mctx.fillText(`용융 진행 ${(state.meltFrac * 100).toFixed(0)} %`, bx2 + 10, by2 + 50);
+    mctx.fillStyle = '#cbd5e1';
+    mctx.fillText(`장입 ${state.mass} t · P_st = ${state.Pst.toFixed(2)}`, bx2 + 10, by2 + 64);
+    mctx.restore();
+}
+
+// ============ V-I 특성 캔버스 ============
+function drawVI() {
+    const W = viCv.width, H = viCv.height;
+    vctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = vctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    vctx.fillStyle = bg;
+    vctx.fillRect(0, 0, W, H);
+
+    // 축 영역
+    const padL = 60, padR = 30, padT = 30, padB = 50;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    // 축 스케일
+    const Imax = 80;    // kA
+    const Vmax = 1000;  // V
+
+    const xMap = i => padL + (i / Imax) * plotW;
+    const yMap = v => padT + plotH - (v / Vmax) * plotH;
+
+    // 격자
+    vctx.save();
+    vctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    vctx.lineWidth = 1;
+    for (let i = 0; i <= Imax; i += 10) {
+        vctx.beginPath();
+        vctx.moveTo(xMap(i), padT);
+        vctx.lineTo(xMap(i), padT + plotH);
+        vctx.stroke();
+    }
+    for (let v = 0; v <= Vmax; v += 200) {
+        vctx.beginPath();
+        vctx.moveTo(padL, yMap(v));
+        vctx.lineTo(padL + plotW, yMap(v));
+        vctx.stroke();
+    }
+    vctx.restore();
+
+    // 축
+    vctx.save();
+    vctx.strokeStyle = 'rgba(203, 213, 225, 0.5)';
+    vctx.lineWidth = 1.2;
+    vctx.beginPath();
+    vctx.moveTo(padL, padT);
+    vctx.lineTo(padL, padT + plotH);
+    vctx.lineTo(padL + plotW, padT + plotH);
+    vctx.stroke();
+    vctx.restore();
+
+    // 축 라벨
+    vctx.save();
+    vctx.font = 'bold 10px ui-monospace, monospace';
+    vctx.fillStyle = '#fda4af';
+    vctx.textAlign = 'right'; vctx.textBaseline = 'middle';
+    for (let v = 0; v <= Vmax; v += 200) {
+        vctx.fillText(v.toString(), padL - 6, yMap(v));
+    }
+    vctx.fillText('V_arc [V]', padL - 6, padT - 8);
+    vctx.textAlign = 'center'; vctx.textBaseline = 'top';
+    vctx.fillStyle = '#fecaca';
+    for (let i = 0; i <= Imax; i += 20) {
+        vctx.fillText(i.toString(), xMap(i), padT + plotH + 6);
+    }
+    vctx.fillText('I_arc [kA]', padL + plotW, padT + plotH + 22);
+    vctx.restore();
+
+    // 헤더
+    vctx.save();
+    vctx.font = 'bold 10px ui-monospace, monospace';
+    vctx.fillStyle = 'rgba(253, 186, 116, 0.7)';
+    vctx.textAlign = 'left'; vctx.textBaseline = 'top';
+    vctx.fillText('▮ V−I CHARACTERISTIC · 다중 아크 길이 곡선 + 운전 라인 (Load Line)', 12, 8);
+    vctx.restore();
+
+    // ===== 아크 V-I 특성 곡선 (다중 L_arc) =====
+    // V_arc = V0 + k·L (등압선) — 실제 Ayrton은 곡선이지만 단순화
+    const Larcs = [10, 30, 50, 70]; // mm
+    const lcolors = ['#7dd3fc', '#22d3ee', '#fb923c', '#f43f5e'];
+    Larcs.forEach((L, idx) => {
+        const V_L = 40 + 10 * L;
+        // V = V_L (수평선, 아크는 음저항이라 거의 평탄 후 큰 전류에서 살짝 감소)
+        // 더 정밀: Ayrton 곡선 V = V_L + 800/I (Ayrton의 음저항 형태)
+        vctx.save();
+        vctx.strokeStyle = lcolors[idx];
+        vctx.lineWidth = 1.6;
+        vctx.shadowBlur = 6;
+        vctx.shadowColor = lcolors[idx];
+        vctx.setLineDash([4, 3]);
+        vctx.beginPath();
+        let started = false;
+        for (let I = 0.5; I <= Imax; I += 0.5) {
+            const V_arc = V_L + 200 / I; // 음저항 항
+            if (V_arc > Vmax) continue;
+            const px = xMap(I), py = yMap(V_arc);
+            if (!started) { vctx.moveTo(px, py); started = true; }
+            else vctx.lineTo(px, py);
+        }
+        vctx.stroke();
+        vctx.setLineDash([]);
+        // 라벨
+        vctx.font = 'bold 9px ui-monospace, monospace';
+        vctx.fillStyle = lcolors[idx];
+        vctx.textAlign = 'left'; vctx.textBaseline = 'middle';
+        vctx.fillText(`L=${L}mm`, xMap(Imax) - 60, yMap(V_L + 200/Imax) - 8);
+        vctx.restore();
+    });
+
+    // ===== 회로 부하선 (Load Line) =====
+    // V_arc = V_phase - I·Z  ( I in kA → A)
+    const Vphase = state.Vtr / Math.sqrt(3);
+    const Z = state.X / 1000; // Ω
+    vctx.save();
+    vctx.strokeStyle = 'rgba(250, 204, 21, 0.85)';
+    vctx.lineWidth = 1.8;
+    vctx.shadowBlur = 10;
+    vctx.shadowColor = '#fde047';
+    vctx.beginPath();
+    let lstarted = false;
+    for (let I = 0; I <= Imax; I += 1) {
+        const V = Vphase - I * 1000 * Z;
+        if (V < 0 || V > Vmax) continue;
+        const px = xMap(I), py = yMap(V);
+        if (!lstarted) { vctx.moveTo(px, py); lstarted = true; }
+        else vctx.lineTo(px, py);
+    }
+    vctx.stroke();
+    vctx.restore();
+    // 부하선 라벨
+    vctx.save();
+    vctx.font = 'bold 10px ui-monospace, monospace';
+    vctx.fillStyle = '#fde047';
+    vctx.textAlign = 'left'; vctx.textBaseline = 'middle';
+    vctx.fillText(`Load Line: V_φ=${Vphase.toFixed(0)}V · Z=${state.X.toFixed(1)}mΩ`, padL + 8, padT + 16);
+    vctx.restore();
+
+    // ===== V-I 궤적 (operating point trail) =====
+    vctx.save();
+    state.viHistory.forEach((p, i) => {
+        const age = i / state.viHistory.length;
+        const px = xMap(p.I);
+        const py = yMap(p.V);
+        if (px < padL || px > padL + plotW || py < padT || py > padT + plotH) return;
+        vctx.fillStyle = `rgba(251, 146, 60, ${0.08 + age * 0.4})`;
+        vctx.beginPath();
+        vctx.arc(px, py, 1.5 + age * 1.5, 0, Math.PI * 2);
+        vctx.fill();
+    });
+    vctx.restore();
+
+    // ===== 현재 운전점 (큰 별) =====
+    const opx = xMap(state.Iarc);
+    const opy = yMap(state.Varc);
+    if (opx >= padL && opx <= padL + plotW && opy >= padT && opy <= padT + plotH) {
+        vctx.save();
+        const flick = 0.85 + 0.15 * Math.sin(state.t_sim * 8);
+        vctx.shadowBlur = 18 * flick;
+        vctx.shadowColor = '#fff';
+        vctx.fillStyle = '#fff';
+        vctx.beginPath();
+        vctx.arc(opx, opy, 9, 0, Math.PI * 2);
+        vctx.fill();
+        vctx.shadowBlur = 0;
+        vctx.fillStyle = '#fb923c';
+        vctx.beginPath();
+        vctx.arc(opx, opy, 5, 0, Math.PI * 2);
+        vctx.fill();
+
+        // 운전점 라벨
+        vctx.font = 'bold 10px ui-monospace, monospace';
+        vctx.fillStyle = '#fed7aa';
+        vctx.textAlign = 'left'; vctx.textBaseline = 'bottom';
+        const lbl = `( ${state.Iarc.toFixed(1)} kA , ${state.Varc.toFixed(0)} V )`;
+        vctx.fillText(lbl, opx + 12, opy - 8);
+        vctx.restore();
+    }
+
+    // 음저항 영역 음영 (참고)
+    vctx.save();
+    vctx.fillStyle = 'rgba(168, 85, 247, 0.05)';
+    vctx.fillRect(xMap(0.5), padT, xMap(15) - xMap(0.5), plotH);
+    vctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+    vctx.lineWidth = 0.8;
+    vctx.setLineDash([3, 3]);
+    vctx.strokeRect(xMap(0.5), padT, xMap(15) - xMap(0.5), plotH);
+    vctx.setLineDash([]);
+    vctx.font = '9px ui-monospace, monospace';
+    vctx.fillStyle = 'rgba(196, 181, 253, 0.7)';
+    vctx.textAlign = 'left'; vctx.textBaseline = 'top';
+    vctx.fillText('陰저항 영역', xMap(1), padT + 4);
+    vctx.restore();
+}
+
+// ============ UI 업데이트 ============
+function updateUI() {
+    $('vtrDisp').textContent = state.Vtr;
+    $('larcDisp').textContent = state.Larc;
+    $('xDisp').textContent = state.X.toFixed(1);
+    $('massDisp').textContent = state.mass;
+
+    $('vDisp').textContent = Math.round(state.Varc);
+    $('iDisp').textContent = state.Iarc.toFixed(2);
+    $('tempDisp').textContent = Math.round(state.T);
+    $('pstDisp').textContent = state.Pst.toFixed(2);
+
+    const stageNames = { bore: '점화', melt: '용융', refine: '정련' };
+    const stageColors = { bore: 'text-sky-300', melt: 'text-orange-300', refine: 'text-violet-300' };
+    $('stageDisp').innerHTML = `<span class="${stageColors[state.stage]}">${stageNames[state.stage]}</span>`;
+
+    // 자동제어 배지
+    const acb = $('autoCtrlBadge');
+    acb.className = 'stage-badge ' + (state.autoCtrl ? 'stage-refine' : 'stage-idle');
+    acb.textContent = state.autoCtrl ? 'ON · PID' : 'OFF';
+
+    // 운전점 배지 (V-I 카드)
+    const opb = $('opPointBadge');
+    opb.className = 'stage-badge ' + (
+        state.stage === 'bore' ? 'stage-bore' :
+        state.stage === 'melt' ? 'stage-melt' : 'stage-refine'
+    );
+    opb.textContent = `V=${Math.round(state.Varc)}V · I=${state.Iarc.toFixed(1)}kA`;
+
+    // 온도 마커 (0~1800 → 0~100%)
+    const tempPct = Math.min(100, Math.max(0, (state.T - 25) / (1800 - 25) * 100));
+    $('tempMarker').style.left = tempPct + '%';
+
+    // 플리커 인디케이터
+    const fi = $('flickerInd');
+    fi.classList.remove('warn', 'danger');
+    if (state.Pst >= 1.0) fi.classList.add('danger');
+    else if (state.Pst >= 0.5) fi.classList.add('warn');
+
+    // pill 색
+    ['pill-v', 'pill-i', 'pill-temp', 'pill-stage'].forEach(id => $(id).classList.remove('flash', 'warn', 'danger'));
+    if (state.Iarc > 30) $('pill-i').classList.add('flash');
+    if (state.Iarc > 60) $('pill-i').classList.add('warn');
+    if (state.T >= 1500) $('pill-temp').classList.add('flash');
+    if (state.T >= 1650) $('pill-temp').classList.add('warn');
+    if (state.stage === 'melt') $('pill-stage').classList.add('flash');
+
+    // 알람 배너 — 플리커
+    $('alarmBanner').classList.toggle('hidden', state.Pst < 1.0);
+}
+
+// ============ 이벤트 ============
+function bindControls() {
+    ['vtr', 'larc', 'x', 'mass'].forEach(id => {
+        $(id).addEventListener('input', () => {
+            const v = +$(id).value;
+            const map = { vtr: 'Vtr', larc: 'Larc', x: 'X', mass: 'mass' };
+            state[map[id]] = v;
+            // 라벨 즉시
+            if (id === 'x') $('xDisp').textContent = v.toFixed(1);
+            else $(id + 'Disp').textContent = v;
+            flashCard();
+        });
+    });
+
+    document.querySelectorAll('[data-stage]').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('[data-stage]').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            state.stage = b.dataset.stage;
+            // 단계별 추천 값 자동 세팅
+            if (state.stage === 'bore') {
+                state.Larc = 10; $('larc').value = 10; $('larcDisp').textContent = 10;
+            } else if (state.stage === 'melt') {
+                state.Larc = 30; $('larc').value = 30; $('larcDisp').textContent = 30;
+            } else {
+                state.Larc = 55; $('larc').value = 55; $('larcDisp').textContent = 55;
+            }
+            flashCard();
+        });
+    });
+
+    document.querySelectorAll('[data-auto]').forEach(b => {
+        b.addEventListener('click', () => {
+            document.querySelectorAll('[data-auto]').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            state.autoCtrl = b.dataset.auto === 'on';
+            flashCard();
+        });
+    });
+
+    // 프리셋
+    document.querySelectorAll('[data-preset]').forEach(b => {
+        b.addEventListener('click', () => {
+            const p = b.dataset.preset;
+            if (p === 'bore') {
+                state.stage = 'bore';
+                state.Larc = 10; $('larc').value = 10; $('larcDisp').textContent = 10;
+                state.Vtr = 600; $('vtr').value = 600; $('vtrDisp').textContent = 600;
+                state.T = 25; state.meltFrac = 0;
+            } else if (p === 'melt') {
+                state.stage = 'melt';
+                state.Larc = 30; $('larc').value = 30; $('larcDisp').textContent = 30;
+                state.Vtr = 800; $('vtr').value = 800; $('vtrDisp').textContent = 800;
+            } else if (p === 'refine') {
+                state.stage = 'refine';
+                state.Larc = 55; $('larc').value = 55; $('larcDisp').textContent = 55;
+                state.Vtr = 500; $('vtr').value = 500; $('vtrDisp').textContent = 500;
+                state.meltFrac = 1;
+                if (state.T < 1538) state.T = 1600;
+            } else if (p === 'autoctrl') {
+                state.autoCtrl = !state.autoCtrl;
+            } else if (p === 'reset') {
+                state.stage = 'melt';
+                state.Vtr = 700; state.Larc = 30; state.X = 8; state.mass = 80;
+                state.T = 25; state.meltFrac = 0; state.autoCtrl = false;
+                state.viHistory = []; state.sparks = [];
+                $('vtr').value = 700; $('vtrDisp').textContent = 700;
+                $('larc').value = 30; $('larcDisp').textContent = 30;
+                $('x').value = 8;    $('xDisp').textContent = '8.0';
+                $('mass').value = 80; $('massDisp').textContent = 80;
+            }
+            // 토글 상태 동기화
+            document.querySelectorAll('[data-stage]').forEach(x => x.classList.toggle('active', x.dataset.stage === state.stage));
+            document.querySelectorAll('[data-auto]').forEach(x => x.classList.toggle('active', (x.dataset.auto === 'on') === state.autoCtrl));
+            flashCard();
+        });
+    });
+}
+
+function flashCard() {
+    if (window.gsap) {
+        gsap.fromTo('#mainCard',
+            { boxShadow: '0 0 0 0 rgba(251,146,60,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(251,146,60,0)', duration: 0.6 });
+        gsap.fromTo('#viCard',
+            { boxShadow: '0 0 0 0 rgba(244,63,94,0.6)' },
+            { boxShadow: '0 0 60px 4px rgba(244,63,94,0)', duration: 0.6 });
+        gsap.fromTo('#tempMarker',
+            { scale: 1.4 },
+            { scale: 1, duration: 0.5, ease: 'back.out(2)' });
+    }
+}
+
+// ============ 메인 루프 ============
+function animate() {
+    computeArc();
+    updateSim();
+    drawMain();
+    drawVI();
+    updateUI();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    bindControls();
+    computeArc();
+    updateUI();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#mainCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#viCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#tempCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.55, ease: 'power3.out' });
+        gsap.from('#featureCard', { y: 18, opacity: 0, duration: 0.7, delay: 0.65, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

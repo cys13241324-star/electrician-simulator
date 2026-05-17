@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK PRINTING PRESS · 스파크 인쇄소</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Serif+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbfaf6;
+    --paper-2:#f2efe7;
+    --ink:#0f0f10;
+    --ink-2:#33312e;
+    --muted:#7a766e;
+    --line:#e0dccf;
+    --line-2:#cfc9b8;
+    --red:#c8211a;
+    --red-2:#8e120d;
+    --c:#1eb0d8;
+    --m:#e3308b;
+    --y:#f1c40f;
+    --k:#0f0f10;
+  }
+  html,body{background:var(--paper);color:var(--ink);font-family:'Inter','Noto Serif KR',serif;-webkit-font-smoothing:antialiased;}
+  .font-serif{font-family:'Noto Serif KR',serif;}
+  .font-sans{font-family:'Inter',sans-serif;}
+  .tracking-press{letter-spacing:.32em;text-transform:uppercase;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);background:#fff;}
+  .pill.dark{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .pill.red{background:var(--red);color:#fff;border-color:var(--red);}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:500;border:1px solid var(--line);background:#fff;cursor:pointer;transition:all .18s ease;}
+  .chip:hover{border-color:var(--ink);}
+  .chip.is-active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .paper-grid{background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px;}
+  .dots{background-image:radial-gradient(circle,var(--line-2) 1px,transparent 1px);background-size:14px 14px;}
+  .stripes{background-image:repeating-linear-gradient(45deg,var(--paper-2) 0,var(--paper-2) 6px,transparent 6px,transparent 12px);}
+  .red-tape{background:var(--red);color:#fff;}
+  .ink-tape{background:var(--ink);color:#fff;}
+  .book-card{background:#fff;border:1px solid var(--line);transition:all .25s ease;position:relative;cursor:pointer;}
+  .book-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(15,15,16,.08);border-color:var(--ink);}
+  .book-cover{aspect-ratio:3/4;background:var(--paper-2);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;}
+  .book-cover svg{width:88%;height:88%;}
+  .step-card{background:#fff;border:1px solid var(--line);transition:all .2s ease;cursor:pointer;}
+  .step-card:hover{border-color:var(--red);box-shadow:0 8px 20px rgba(200,33,26,.08);}
+  .step-card.is-active{border-color:var(--red);background:#fff7f5;}
+  .step-num{font-family:'Noto Serif KR',serif;font-weight:900;font-size:42px;line-height:1;color:var(--red);}
+  .stat-num{font-feature-settings:'tnum';letter-spacing:-.02em;}
+  .modal-bg{background:rgba(15,15,16,.55);backdrop-filter:blur(3px);}
+  .like-btn{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:999px;background:rgba(255,255,255,.95);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .15s ease;}
+  .like-btn:hover{background:#fff;border-color:var(--red);}
+  .like-btn.is-on{background:var(--red);color:#fff;border-color:var(--red);}
+  .like-btn.is-on::after{content:'';position:absolute;inset:0;border-radius:999px;animation:pop .3s ease;}
+  @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.18);}100%{transform:scale(1);}}
+  .ink-roll{animation:roll 6s linear infinite;transform-origin:center;}
+  @keyframes roll{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+  .paper-feed{animation:feed 4s ease-in-out infinite;}
+  @keyframes feed{0%,100%{transform:translateX(0);}50%{transform:translateX(8px);}}
+  .blink-led{animation:blink 1.6s ease-in-out infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .pulse-dot{animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.85;transform:scale(1);}50%{opacity:1;transform:scale(1.15);}}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;}
+  .seg button{padding:8px 14px;font-size:12px;color:var(--ink-2);background:transparent;border:none;cursor:pointer;font-weight:500;}
+  .seg button.is-active{background:var(--ink);color:#fff;}
+  .num-input{width:100%;border:1px solid var(--line);background:#fff;padding:10px 12px;font-feature-settings:'tnum';font-weight:500;outline:none;transition:border-color .15s ease;}
+  .num-input:focus{border-color:var(--ink);}
+  .label-tag{display:inline-block;background:var(--ink);color:#fff;font-size:10px;letter-spacing:.18em;padding:3px 8px;text-transform:uppercase;}
+  .price{font-feature-settings:'tnum';letter-spacing:-.01em;}
+  .cmyk-c{background:var(--c);}
+  .cmyk-m{background:var(--m);}
+  .cmyk-y{background:var(--y);}
+  .cmyk-k{background:var(--k);}
+  .ink-dot{width:42px;height:42px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;letter-spacing:.05em;}
+  .perf{background-image:radial-gradient(circle,var(--paper) 3px,transparent 3px);background-size:14px 14px;background-position:0 50%;height:14px;background-repeat:repeat-x;}
+  .barcode{background-image:repeating-linear-gradient(90deg,var(--ink) 0,var(--ink) 2px,transparent 2px,transparent 4px,var(--ink) 4px,var(--ink) 5px,transparent 5px,transparent 8px,var(--ink) 8px,var(--ink) 11px,transparent 11px,transparent 13px);height:36px;}
+  .corner-mark{position:absolute;width:14px;height:14px;}
+  .corner-mark::before,.corner-mark::after{content:'';position:absolute;background:var(--ink);}
+  .corner-mark.tl::before{left:0;top:0;width:14px;height:1px;}
+  .corner-mark.tl::after{left:0;top:0;width:1px;height:14px;}
+  .corner-mark.tr{right:0;top:0;}
+  .corner-mark.tr::before{right:0;top:0;width:14px;height:1px;}
+  .corner-mark.tr::after{right:0;top:0;width:1px;height:14px;}
+  .corner-mark.bl{left:0;bottom:0;}
+  .corner-mark.bl::before{left:0;bottom:0;width:14px;height:1px;}
+  .corner-mark.bl::after{left:0;bottom:0;width:1px;height:14px;}
+  .corner-mark.br{right:0;bottom:0;}
+  .corner-mark.br::before{right:0;bottom:0;width:14px;height:1px;}
+  .corner-mark.br::after{right:0;bottom:0;width:1px;height:14px;}
+  .ticker{overflow:hidden;}
+  .ticker-track{display:flex;gap:48px;white-space:nowrap;animation:ticker 38s linear infinite;}
+  @keyframes ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+  details summary{list-style:none;cursor:pointer;}
+  details summary::-webkit-details-marker{display:none;}
+  .arrow-r{display:inline-block;width:10px;height:10px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);}
+  details[open] .arrow-r{transform:rotate(45deg);}
+  .toast{position:fixed;left:50%;bottom:32px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:12px 22px;font-size:13px;letter-spacing:.04em;border-radius:6px;opacity:0;transition:all .25s ease;pointer-events:none;z-index:80;}
+  .toast.is-show{opacity:1;transform:translate(-50%,0);}
+  @media print{.no-print{display:none !important;}}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============ 상단 운영 정보 띠 ============ -->
+<div class="ink-tape no-print">
+  <div class="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between text-[11px] tracking-[.16em] uppercase">
+    <div class="flex items-center gap-4 opacity-90">
+      <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[var(--y)] blink-led"></span>WORKSHOP OPEN</span>
+      <span class="hidden sm:inline opacity-70">MON-FRI 09:00 - 19:00</span>
+      <span class="hidden md:inline opacity-70">SAT 10:00 - 14:00</span>
+    </div>
+    <div class="flex items-center gap-4 opacity-90">
+      <span class="hidden sm:inline">서울 인쇄로 33길 7 · 가상지번</span>
+      <span>견적 ☎ 010-0000-0033</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 헤더 ============ -->
+<header class="border-b border-[var(--line)] bg-[var(--paper)] sticky top-0 z-30 no-print">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+    <a href="#top" class="flex items-center gap-3">
+      <div class="relative w-11 h-11 bg-[var(--red)] text-white flex items-center justify-center font-serif text-xl font-bold">
+        <span>印</span>
+        <span class="absolute -bottom-1 -right-1 w-3 h-3 bg-[var(--ink)]"></span>
+      </div>
+      <div class="leading-tight">
+        <div class="font-bold tracking-tight text-[15px]">SPARK PRINTING PRESS</div>
+        <div class="text-[10px] tracking-press text-[var(--muted)]">스파크 인쇄소 · EST. 2026 · 가상</div>
+      </div>
+    </a>
+    <nav class="hidden lg:flex items-center gap-7 text-sm text-[var(--ink-2)]">
+      <a href="#process" class="hover:text-[var(--ink)]">인쇄 공정</a>
+      <a href="#catalog" class="hover:text-[var(--ink)]">책 카탈로그</a>
+      <a href="#quote" class="hover:text-[var(--ink)]">견적 계산</a>
+      <a href="#ink" class="hover:text-[var(--ink)]">잉크 차트</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <span class="pill"><span class="w-1.5 h-1.5 rounded-full bg-[var(--red)] pulse-dot"></span>오늘 가동률 <strong id="utilLive" class="text-[var(--ink)]">82%</strong></span>
+      <button id="quoteBtn" class="pill red hidden sm:inline-flex">견적 의뢰</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 티커 ============ -->
+<div class="border-b border-[var(--line)] bg-white ticker no-print">
+  <div class="max-w-7xl mx-auto px-6 py-2 text-[11px] tracking-[.18em] uppercase text-[var(--muted)]">
+    <div class="ticker-track">
+      <span>● 본일 인쇄 대수 <strong class="text-[var(--ink)]">1,284,000</strong> 매</span>
+      <span>● 4색 CMYK · 별색 Pantone 286C 대응</span>
+      <span>● <strong class="text-[var(--red)]">신간</strong> 옴의 법칙 입문서 2쇄 입고</span>
+      <span>● CTP 판 출력 최단 4시간</span>
+      <span>● 친환경 콩기름 잉크 사용</span>
+      <span>● 본일 인쇄 대수 <strong class="text-[var(--ink)]">1,284,000</strong> 매</span>
+      <span>● 4색 CMYK · 별색 Pantone 286C 대응</span>
+      <span>● <strong class="text-[var(--red)]">신간</strong> 옴의 법칙 입문서 2쇄 입고</span>
+      <span>● CTP 판 출력 최단 4시간</span>
+      <span>● 친환경 콩기름 잉크 사용</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 메인 비주얼 — 오프셋 인쇄기 ============ -->
+<section id="top" class="border-b border-[var(--line)] bg-[var(--paper)]">
+  <div class="max-w-7xl mx-auto px-6 py-12 lg:py-16 grid lg:grid-cols-12 gap-10 items-center">
+    <div class="lg:col-span-5">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="label-tag">VOL. 07</span>
+        <span class="text-[11px] tracking-press text-[var(--muted)]">May · 2026 · Issue 33</span>
+      </div>
+      <h1 class="font-serif text-[44px] lg:text-[56px] leading-[1.05] font-bold tracking-tight">
+        잉크 한 방울이<br/>
+        <span class="text-[var(--red)]">한 페이지를</span><br/>
+        밝힌다.
+      </h1>
+      <p class="mt-5 text-[var(--ink-2)] leading-relaxed max-w-md">
+        스파크 인쇄소는 전기를 공부하는 사람들을 위해 책을 찍는 가상의 공방입니다.
+        오프셋 인쇄기 4대, CTP 출력기 1대, 무선철 ·  중철 · 양장 제본 라인까지 한 자리에.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-2">
+        <a href="#catalog" class="inline-flex items-center gap-2 bg-[var(--ink)] text-white px-5 py-3 text-sm font-medium hover:bg-[var(--red)] transition-colors">
+          책 카탈로그 보기 <span class="arrow-r"></span>
+        </a>
+        <a href="#quote" class="inline-flex items-center gap-2 border border-[var(--ink)] px-5 py-3 text-sm font-medium hover:bg-[var(--ink)] hover:text-white transition-colors">
+          견적 계산기
+        </a>
+      </div>
+      <div class="mt-10 grid grid-cols-3 gap-5">
+        <div>
+          <div class="font-serif text-3xl font-bold stat-num">04</div>
+          <div class="text-[10px] tracking-press text-[var(--muted)] mt-1">오프셋 기계</div>
+        </div>
+        <div>
+          <div class="font-serif text-3xl font-bold stat-num">128</div>
+          <div class="text-[10px] tracking-press text-[var(--muted)] mt-1">월간 책 종</div>
+        </div>
+        <div>
+          <div class="font-serif text-3xl font-bold stat-num text-[var(--red)]">24h</div>
+          <div class="text-[10px] tracking-press text-[var(--muted)] mt-1">최단 납기</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-7">
+      <div class="relative bg-white border border-[var(--line)] overflow-hidden">
+        <span class="corner-mark tl"></span>
+        <span class="corner-mark tr"></span>
+        <span class="corner-mark bl"></span>
+        <span class="corner-mark br"></span>
+        <div class="absolute top-3 left-4 text-[10px] tracking-press text-[var(--muted)] z-10">SPARK · OFFSET MK-IV</div>
+        <div class="absolute top-3 right-4 flex items-center gap-1.5 text-[10px] tracking-press text-[var(--muted)] z-10">
+          <span class="w-1.5 h-1.5 rounded-full bg-[var(--red)] blink-led"></span>LIVE
+        </div>
+        <div class="aspect-[16/10] bg-[var(--paper-2)] dots flex items-center justify-center p-4">
+          <!-- 오프셋 인쇄기 SVG -->
+          <svg viewBox="0 0 800 500" class="w-full h-full">
+            <!-- 바닥 그림자 -->
+            <ellipse cx="400" cy="470" rx="320" ry="10" fill="#0f0f10" opacity=".08"/>
+            <!-- 좌측 종이 트레이 (입력) -->
+            <g>
+              <rect x="40" y="280" width="120" height="120" fill="#fff" stroke="#0f0f10" stroke-width="2"/>
+              <rect x="50" y="290" width="100" height="6" fill="#f2efe7"/>
+              <rect x="50" y="302" width="100" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <rect x="50" y="314" width="100" height="6" fill="#f2efe7"/>
+              <rect x="50" y="326" width="100" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <rect x="50" y="338" width="100" height="6" fill="#f2efe7"/>
+              <rect x="50" y="350" width="100" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <rect x="50" y="362" width="100" height="6" fill="#f2efe7"/>
+              <rect x="50" y="374" width="100" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <rect x="40" y="400" width="120" height="14" fill="#0f0f10"/>
+              <text x="100" y="430" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#7a766e" letter-spacing="2">PAPER IN</text>
+            </g>
+            <!-- 종이 공급 (애니메이션) -->
+            <g class="paper-feed">
+              <rect x="155" y="320" width="60" height="40" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/>
+              <line x1="165" y1="332" x2="205" y2="332" stroke="#cfc9b8"/>
+              <line x1="165" y1="340" x2="200" y2="340" stroke="#cfc9b8"/>
+              <line x1="165" y1="348" x2="205" y2="348" stroke="#cfc9b8"/>
+            </g>
+            <!-- 메인 인쇄기 본체 -->
+            <rect x="200" y="180" width="450" height="240" fill="#fbfaf6" stroke="#0f0f10" stroke-width="2.5"/>
+            <rect x="200" y="180" width="450" height="32" fill="#0f0f10"/>
+            <text x="425" y="201" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#fff" letter-spacing="4">SPARK OFFSET MK-IV</text>
+            <!-- 4색 잉크 롤러 -->
+            <g>
+              <!-- C -->
+              <g transform="translate(245,260)">
+                <circle r="36" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/>
+                <g class="ink-roll">
+                  <circle r="28" fill="#1eb0d8"/>
+                  <circle cx="0" cy="-18" r="4" fill="#fff" opacity=".6"/>
+                  <circle cx="14" cy="8" r="3" fill="#fff" opacity=".4"/>
+                </g>
+                <text y="58" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#1eb0d8">C</text>
+              </g>
+              <!-- M -->
+              <g transform="translate(345,260)">
+                <circle r="36" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/>
+                <g class="ink-roll" style="animation-duration:5s;">
+                  <circle r="28" fill="#e3308b"/>
+                  <circle cx="-10" cy="-14" r="4" fill="#fff" opacity=".6"/>
+                  <circle cx="12" cy="10" r="3" fill="#fff" opacity=".4"/>
+                </g>
+                <text y="58" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#e3308b">M</text>
+              </g>
+              <!-- Y -->
+              <g transform="translate(445,260)">
+                <circle r="36" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/>
+                <g class="ink-roll" style="animation-duration:7s;">
+                  <circle r="28" fill="#f1c40f"/>
+                  <circle cx="6" cy="-16" r="4" fill="#fff" opacity=".6"/>
+                  <circle cx="-12" cy="12" r="3" fill="#fff" opacity=".4"/>
+                </g>
+                <text y="58" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#c8a40c">Y</text>
+              </g>
+              <!-- K -->
+              <g transform="translate(545,260)">
+                <circle r="36" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/>
+                <g class="ink-roll" style="animation-duration:4.5s;">
+                  <circle r="28" fill="#0f0f10"/>
+                  <circle cx="-8" cy="-12" r="4" fill="#fff" opacity=".4"/>
+                  <circle cx="14" cy="8" r="3" fill="#fff" opacity=".2"/>
+                </g>
+                <text y="58" text-anchor="middle" font-family="Inter" font-size="14" font-weight="700" fill="#0f0f10">K</text>
+              </g>
+            </g>
+            <!-- 잉크 호퍼 라인 -->
+            <g stroke="#0f0f10" stroke-width="1" fill="none">
+              <line x1="245" y1="220" x2="245" y2="226"/>
+              <line x1="345" y1="220" x2="345" y2="226"/>
+              <line x1="445" y1="220" x2="445" y2="226"/>
+              <line x1="545" y1="220" x2="545" y2="226"/>
+            </g>
+            <!-- 조작 패널 -->
+            <rect x="600" y="240" width="36" height="80" fill="#0f0f10"/>
+            <circle cx="618" cy="258" r="4" fill="#c8211a" class="blink-led"/>
+            <circle cx="618" cy="276" r="4" fill="#f1c40f"/>
+            <circle cx="618" cy="294" r="4" fill="#1eb0d8"/>
+            <rect x="608" y="304" width="20" height="10" fill="#fbfaf6"/>
+            <!-- 발 -->
+            <rect x="210" y="420" width="20" height="32" fill="#0f0f10"/>
+            <rect x="620" y="420" width="20" height="32" fill="#0f0f10"/>
+            <!-- 출력 트레이 (우측) -->
+            <g>
+              <rect x="660" y="300" width="100" height="100" fill="#fff" stroke="#0f0f10" stroke-width="2"/>
+              <rect x="668" y="310" width="84" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <rect x="668" y="320" width="84" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <rect x="668" y="330" width="84" height="6" fill="#fff" stroke="#cfc9b8"/>
+              <!-- 인쇄된 페이지 (CMYK 점) -->
+              <circle cx="700" cy="350" r="2" fill="#1eb0d8"/>
+              <circle cx="710" cy="350" r="2" fill="#e3308b"/>
+              <circle cx="720" cy="350" r="2" fill="#f1c40f"/>
+              <circle cx="730" cy="350" r="2" fill="#0f0f10"/>
+              <rect x="660" y="400" width="100" height="14" fill="#c8211a"/>
+              <text x="710" y="430" text-anchor="middle" font-family="Inter" font-size="11" font-weight="600" fill="#7a766e" letter-spacing="2">PRINTED</text>
+            </g>
+            <!-- 종이 진행 라인 -->
+            <path d="M 160 340 L 200 340" stroke="#0f0f10" stroke-width="1" stroke-dasharray="3 3"/>
+            <path d="M 650 340 L 660 340" stroke="#0f0f10" stroke-width="1" stroke-dasharray="3 3"/>
+            <!-- 상단 펜스 -->
+            <line x1="200" y1="180" x2="200" y2="160" stroke="#0f0f10" stroke-width="1.5"/>
+            <line x1="650" y1="180" x2="650" y2="160" stroke="#0f0f10" stroke-width="1.5"/>
+            <line x1="200" y1="160" x2="650" y2="160" stroke="#0f0f10" stroke-width="1.5"/>
+            <!-- 배경 그리드 -->
+            <g opacity=".3">
+              <line x1="0" y1="450" x2="800" y2="450" stroke="#cfc9b8" stroke-dasharray="4 4"/>
+            </g>
+            <!-- 라벨 -->
+            <text x="425" y="450" text-anchor="middle" font-family="Inter" font-size="10" fill="#7a766e" letter-spacing="3">FOUR-COLOR · CMYK · 4,800 SHEETS / HOUR</text>
+          </svg>
+        </div>
+        <div class="grid grid-cols-4 border-t border-[var(--line)] text-center">
+          <div class="py-3 border-r border-[var(--line)]"><div class="text-[10px] tracking-press text-[var(--muted)]">SPEED</div><div class="font-serif font-bold text-lg stat-num">4,800</div></div>
+          <div class="py-3 border-r border-[var(--line)]"><div class="text-[10px] tracking-press text-[var(--muted)]">PLATES</div><div class="font-serif font-bold text-lg stat-num">4</div></div>
+          <div class="py-3 border-r border-[var(--line)]"><div class="text-[10px] tracking-press text-[var(--muted)]">DPI</div><div class="font-serif font-bold text-lg stat-num">2,540</div></div>
+          <div class="py-3"><div class="text-[10px] tracking-press text-[var(--muted)]">YEAR</div><div class="font-serif font-bold text-lg stat-num">2024</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 인쇄 공정 6단계 ============ -->
+<section id="process" class="border-b border-[var(--line)] bg-white">
+  <div class="max-w-7xl mx-auto px-6 py-14">
+    <div class="flex items-end justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="text-[10px] tracking-press text-[var(--muted)] mb-2">PROCESS · 공정 안내</div>
+        <h2 class="font-serif text-3xl lg:text-4xl font-bold">한 권의 책이 만들어지는 6단계</h2>
+        <p class="text-[var(--ink-2)] text-sm mt-2 max-w-xl">디자인 입수부터 배송까지. 각 단계를 클릭하면 자세한 작업 내용을 볼 수 있습니다.</p>
+      </div>
+      <div class="seg">
+        <button class="is-active" data-view-process="grid">그리드</button>
+        <button data-view-process="line">공정선</button>
+      </div>
+    </div>
+
+    <div id="processGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <div id="processDetail" class="mt-6 border border-[var(--line)] bg-[var(--paper)] p-6 hidden">
+      <div class="flex items-start gap-5">
+        <div id="pdNum" class="step-num"></div>
+        <div class="flex-1">
+          <div id="pdTitle" class="font-serif text-xl font-bold"></div>
+          <div id="pdSub" class="text-[var(--muted)] text-sm mt-1"></div>
+          <div id="pdBody" class="mt-4 text-[var(--ink-2)] text-sm leading-relaxed"></div>
+          <div id="pdMeta" class="mt-4 flex flex-wrap gap-2"></div>
+        </div>
+        <button id="pdClose" class="text-[var(--muted)] hover:text-[var(--ink)] text-xl">×</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 책 카탈로그 ============ -->
+<section id="catalog" class="border-b border-[var(--line)] bg-[var(--paper)]">
+  <div class="max-w-7xl mx-auto px-6 py-14">
+    <div class="flex items-end justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="text-[10px] tracking-press text-[var(--muted)] mb-2">CATALOG · 책 카탈로그</div>
+        <h2 class="font-serif text-3xl lg:text-4xl font-bold">스파크 인쇄소가 찍은 책</h2>
+        <p class="text-[var(--ink-2)] text-sm mt-2 max-w-xl">전기를 공부하는 사람들을 위한 가상의 책 8권. 표지를 클릭하면 시안 · 사양 · 가격을 확인할 수 있습니다.</p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-[11px] tracking-press text-[var(--muted)]">FILTER</span>
+        <button class="chip is-active" data-filter="all">전체</button>
+        <button class="chip" data-filter="paperback">무선철</button>
+        <button class="chip" data-filter="saddle">중철</button>
+        <button class="chip" data-filter="hardcover">양장</button>
+        <button class="chip" data-filter="pocket">포켓북</button>
+      </div>
+    </div>
+
+    <div id="bookGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+  </div>
+</section>
+
+<!-- ============ 견적 계산기 ============ -->
+<section id="quote" class="border-b border-[var(--line)] bg-white">
+  <div class="max-w-7xl mx-auto px-6 py-14 grid lg:grid-cols-12 gap-10">
+    <div class="lg:col-span-5">
+      <div class="text-[10px] tracking-press text-[var(--muted)] mb-2">QUOTE · 견적 계산기</div>
+      <h2 class="font-serif text-3xl lg:text-4xl font-bold">즉석 견적</h2>
+      <p class="text-[var(--ink-2)] text-sm mt-2 max-w-md">페이지 수 · 부수 · 제본 방식을 입력하면 견적이 자동으로 나옵니다. 실 인쇄가 아닌 가상 시뮬레이션입니다.</p>
+
+      <div class="mt-7 space-y-5">
+        <div>
+          <label class="text-[11px] tracking-press text-[var(--muted)] block mb-1.5">페이지 수</label>
+          <input id="qPages" type="number" min="8" max="800" value="200" class="num-input"/>
+          <div class="text-[10px] text-[var(--muted)] mt-1">8 ~ 800 페이지</div>
+        </div>
+        <div>
+          <label class="text-[11px] tracking-press text-[var(--muted)] block mb-1.5">부수</label>
+          <input id="qCopies" type="number" min="10" max="10000" value="500" class="num-input"/>
+          <div class="text-[10px] text-[var(--muted)] mt-1">최소 10부 / 최대 10,000부</div>
+        </div>
+        <div>
+          <label class="text-[11px] tracking-press text-[var(--muted)] block mb-1.5">제본 방식</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="chip justify-center has-[input:checked]:bg-[var(--ink)] has-[input:checked]:text-white has-[input:checked]:border-[var(--ink)]"><input type="radio" name="bind" value="paperback" checked class="sr-only"/>무선철 (PUR)</label>
+            <label class="chip justify-center has-[input:checked]:bg-[var(--ink)] has-[input:checked]:text-white has-[input:checked]:border-[var(--ink)]"><input type="radio" name="bind" value="saddle" class="sr-only"/>중철 (스테이플)</label>
+            <label class="chip justify-center has-[input:checked]:bg-[var(--ink)] has-[input:checked]:text-white has-[input:checked]:border-[var(--ink)]"><input type="radio" name="bind" value="hardcover" class="sr-only"/>양장 (하드커버)</label>
+            <label class="chip justify-center has-[input:checked]:bg-[var(--ink)] has-[input:checked]:text-white has-[input:checked]:border-[var(--ink)]"><input type="radio" name="bind" value="pocket" class="sr-only"/>포켓북</label>
+          </div>
+        </div>
+        <div>
+          <label class="text-[11px] tracking-press text-[var(--muted)] block mb-1.5">후가공</label>
+          <div class="flex flex-wrap gap-2">
+            <label class="chip has-[input:checked]:bg-[var(--red)] has-[input:checked]:text-white has-[input:checked]:border-[var(--red)]"><input type="checkbox" data-finish="coating" class="sr-only"/>유광 코팅 (+5%)</label>
+            <label class="chip has-[input:checked]:bg-[var(--red)] has-[input:checked]:text-white has-[input:checked]:border-[var(--red)]"><input type="checkbox" data-finish="foil" class="sr-only"/>박 (+12%)</label>
+            <label class="chip has-[input:checked]:bg-[var(--red)] has-[input:checked]:text-white has-[input:checked]:border-[var(--red)]"><input type="checkbox" data-finish="emboss" class="sr-only"/>형압 (+8%)</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-7">
+      <div class="border border-[var(--line)] bg-[var(--paper)] p-6 lg:p-8 relative">
+        <span class="corner-mark tl"></span><span class="corner-mark tr"></span><span class="corner-mark bl"></span><span class="corner-mark br"></span>
+        <div class="flex items-center justify-between mb-5">
+          <div class="text-[10px] tracking-press text-[var(--muted)]">ESTIMATE · 견적서</div>
+          <div class="text-[10px] tracking-press text-[var(--muted)]">SPARK / Q-<span id="qid"></span></div>
+        </div>
+        <div class="flex items-baseline gap-3 mb-2">
+          <div class="font-serif text-5xl lg:text-6xl font-bold price"><span id="qTotal">7,500,000</span></div>
+          <div class="text-[var(--muted)] text-sm">원 (VAT 포함)</div>
+        </div>
+        <div class="text-[var(--ink-2)] text-sm">권당 단가 <strong class="text-[var(--ink)] price" id="qUnit">15,000</strong>원 · 총 <strong class="price" id="qTotalBooks">500</strong>권</div>
+
+        <div class="mt-7 border-t border-dashed border-[var(--line-2)] pt-5 grid grid-cols-2 gap-y-2 text-sm">
+          <div class="text-[var(--muted)]">용지 (모조 80g)</div><div class="text-right price" id="qPaper">2,400,000</div>
+          <div class="text-[var(--muted)]">인쇄 (4색 CMYK)</div><div class="text-right price" id="qPrint">2,100,000</div>
+          <div class="text-[var(--muted)]">제본 <span id="qBindLabel" class="text-[var(--ink-2)]">무선철</span></div><div class="text-right price" id="qBind">1,500,000</div>
+          <div class="text-[var(--muted)]">CTP 판 출력 (4판)</div><div class="text-right price" id="qPlate">480,000</div>
+          <div class="text-[var(--muted)]">후가공</div><div class="text-right price" id="qFinish">0</div>
+          <div class="text-[var(--muted)]">배송 · 작업비</div><div class="text-right price" id="qShip">300,000</div>
+          <div class="text-[var(--ink)] font-medium pt-2 border-t border-[var(--line)] mt-1">합계 (VAT 10% 포함)</div><div class="text-right pt-2 border-t border-[var(--line)] mt-1 font-medium price" id="qSum">7,500,000</div>
+        </div>
+
+        <div class="mt-7 flex flex-wrap items-center gap-3">
+          <span class="pill dark">예상 납기 <strong id="qLead" class="ml-1">12</strong>일</span>
+          <span class="pill">총 종이 <strong id="qSheets" class="text-[var(--ink)]">50,000</strong>매</span>
+          <span class="pill">잉크 사용량 <strong id="qInk" class="text-[var(--ink)]">3.2</strong>kg</span>
+        </div>
+
+        <div class="mt-7 barcode opacity-90"></div>
+        <div class="mt-2 flex justify-between text-[10px] tracking-press text-[var(--muted)]">
+          <span>SPARK · Q-<span class="qidLine"></span></span>
+          <span>가상 견적 · 실 결제 없음</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 잉크 차트 ============ -->
+<section id="ink" class="border-b border-[var(--line)] bg-[var(--paper)]">
+  <div class="max-w-7xl mx-auto px-6 py-14">
+    <div class="flex items-end justify-between mb-8 flex-wrap gap-4">
+      <div>
+        <div class="text-[10px] tracking-press text-[var(--muted)] mb-2">INK · 잉크 차트</div>
+        <h2 class="font-serif text-3xl lg:text-4xl font-bold">CMYK + Pantone 별색</h2>
+        <p class="text-[var(--ink-2)] text-sm mt-2 max-w-xl">전기 책에 자주 쓰는 색 8종. CMYK 4색 외 특별한 강조색은 별색(Pantone)으로 인쇄합니다.</p>
+      </div>
+      <span class="pill">친환경 콩기름 잉크 · Soy-based</span>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="inkGrid"></div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="border-b border-[var(--line)] bg-white">
+  <div class="max-w-7xl mx-auto px-6 py-14 grid lg:grid-cols-12 gap-10">
+    <div class="lg:col-span-4">
+      <div class="text-[10px] tracking-press text-[var(--muted)] mb-2">FAQ</div>
+      <h2 class="font-serif text-3xl lg:text-4xl font-bold">자주 묻는 질문</h2>
+      <p class="text-[var(--ink-2)] text-sm mt-3 max-w-sm">인쇄 ·  제본 · 납기 · 배송에 관한 가상 인쇄소 안내입니다.</p>
+    </div>
+    <div class="lg:col-span-8 divide-y divide-[var(--line)] border-y border-[var(--line)]">
+      <details class="py-4">
+        <summary class="flex items-center justify-between"><span class="font-medium">최소 부수가 있나요?</span><span class="arrow-r"></span></summary>
+        <p class="mt-3 text-[var(--ink-2)] text-sm">디지털 인쇄로 10부부터, 오프셋 인쇄는 300부부터 가능합니다. 권당 단가는 부수가 늘수록 빠르게 낮아집니다.</p>
+      </details>
+      <details class="py-4">
+        <summary class="flex items-center justify-between"><span class="font-medium">데이터는 어떤 형식으로 보내야 하나요?</span><span class="arrow-r"></span></summary>
+        <p class="mt-3 text-[var(--ink-2)] text-sm">PDF/X-1a 권장. 도련(Bleed) 3mm · 안전 영역 5mm · 모든 폰트 윤곽선화. 별색 사용 시 스와치 이름을 정확히 표기해 주세요.</p>
+      </details>
+      <details class="py-4">
+        <summary class="flex items-center justify-between"><span class="font-medium">납기는 보통 얼마나 걸리나요?</span><span class="arrow-r"></span></summary>
+        <p class="mt-3 text-[var(--ink-2)] text-sm">디지털 인쇄 24~48시간, 오프셋 + 무선철 7~12일, 양장은 14~21일 정도입니다. 후가공이 들어가면 +2~3일 추가됩니다.</p>
+      </details>
+      <details class="py-4">
+        <summary class="flex items-center justify-between"><span class="font-medium">친환경 인쇄가 가능한가요?</span><span class="arrow-r"></span></summary>
+        <p class="mt-3 text-[var(--ink-2)] text-sm">콩기름 기반 식물성 잉크, FSC 인증 재생지, 무코팅 표지를 옵션으로 선택할 수 있습니다.</p>
+      </details>
+      <details class="py-4">
+        <summary class="flex items-center justify-between"><span class="font-medium">교정쇄 (proof)는 받을 수 있나요?</span><span class="arrow-r"></span></summary>
+        <p class="mt-3 text-[var(--ink-2)] text-sm">디지털 프루프는 무상, 본기 프루프(오프셋 기계에서 직접 뽑는 교정쇄)는 별도 견적입니다. 견적서에 표기됩니다.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 푸터 ============ -->
+<footer class="bg-[var(--ink)] text-[#d8d3c4]">
+  <div class="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-12 gap-8">
+    <div class="md:col-span-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-[var(--red)] text-white flex items-center justify-center font-serif text-lg font-bold">印</div>
+        <div>
+          <div class="font-bold text-white tracking-tight">SPARK PRINTING PRESS</div>
+          <div class="text-[10px] tracking-press opacity-60">SINCE 2026 · VIRTUAL WORKSHOP</div>
+        </div>
+      </div>
+      <p class="text-sm opacity-75 max-w-sm leading-relaxed">전기를 공부하는 사람들을 위해 책을 찍는 가상의 인쇄소입니다. 실제 주문 · 결제 · 배송은 이루어지지 않습니다.</p>
+    </div>
+    <div class="md:col-span-3">
+      <div class="text-[10px] tracking-press opacity-60 mb-3">WORKSHOP</div>
+      <ul class="text-sm space-y-1.5 opacity-85">
+        <li>서울 인쇄로 33길 7 (가상지번)</li>
+        <li>견적 ☎ 010-0000-0033</li>
+        <li>MON-FRI 09:00 - 19:00</li>
+        <li>SAT 10:00 - 14:00</li>
+      </ul>
+    </div>
+    <div class="md:col-span-4">
+      <div class="text-[10px] tracking-press opacity-60 mb-3">EQUIPMENT</div>
+      <ul class="text-sm space-y-1.5 opacity-85">
+        <li>오프셋 인쇄기 MK-IV × 4대</li>
+        <li>CTP 판 출력기 × 1대</li>
+        <li>무선철 / 중철 / 양장 라인</li>
+        <li>UV 코팅 · 박 · 형압</li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between text-[11px] opacity-60 tracking-[.12em] uppercase">
+      <span>© 2026 SPARK PRINTING PRESS · 가상 인쇄소 시뮬레이션</span>
+      <span>NO REAL ORDER · NO REAL PAYMENT</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ 책 상세 모달 ============ -->
+<div id="bookModal" class="fixed inset-0 z-50 hidden modal-bg items-center justify-center p-4">
+  <div class="bg-[var(--paper)] max-w-3xl w-full max-h-[92vh] overflow-y-auto border border-[var(--line)] relative">
+    <button id="modalClose" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white border border-[var(--line)] hover:bg-[var(--ink)] hover:text-white transition-colors z-10">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast">담겼습니다</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ============== utils ==============
+  const $ = (s,r)=> (r||document).querySelector(s);
+  const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+  const esc = (s)=> String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const won = (n)=> Number(n).toLocaleString('ko-KR');
+  const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
+  const showToast = (msg)=>{
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('is-show');
+    clearTimeout(t._tm);
+    t._tm = setTimeout(()=> t.classList.remove('is-show'), 1700);
+  };
+
+  // ============== 가동률 라이브 (가짜) ==============
+  (function utilTick(){
+    const el = $('#utilLive'); if(!el) return;
+    let v = 82;
+    setInterval(()=>{
+      v = clamp(v + (Math.random()*4-2), 72, 96);
+      el.textContent = Math.round(v) + '%';
+    }, 2400);
+  })();
+
+  // ============== 견적 ID ==============
+  (function qid(){
+    const id = (Math.floor(Math.random()*9000)+1000).toString();
+    $('#qid').textContent = id;
+    $$('.qidLine').forEach(e=> e.textContent = id);
+  })();
+
+  // ============== 인쇄 공정 6단계 ==============
+  const steps = [
+    {n:'01', title:'디자인 입수', sub:'PDF/X-1a · 도련 3mm', tag:'INTAKE',
+      body:'고객이 보낸 PDF를 검수합니다. 폰트 임베드, 도련, 안전 영역, 별색 스와치, 이미지 해상도(300dpi 이상) 등을 확인하고 문제가 있으면 즉시 회신합니다.',
+      meta:['PDF/X-1a','Bleed 3mm','300dpi','CMYK 변환'],
+      svg:`<svg viewBox="0 0 200 200"><rect x="40" y="30" width="120" height="150" fill="#fff" stroke="#0f0f10" stroke-width="2"/><path d="M140 30 L160 50 L140 50 Z" fill="#f2efe7" stroke="#0f0f10"/><line x1="55" y1="60" x2="145" y2="60" stroke="#cfc9b8" stroke-width="2"/><line x1="55" y1="75" x2="130" y2="75" stroke="#cfc9b8"/><line x1="55" y1="88" x2="135" y2="88" stroke="#cfc9b8"/><rect x="55" y="100" width="90" height="50" fill="#f2efe7" stroke="#cfc9b8"/><circle cx="80" cy="125" r="10" fill="#c8211a"/><text x="100" y="172" font-family="Inter" font-size="10" font-weight="700" fill="#0f0f10">PDF</text></svg>`},
+    {n:'02', title:'판 출력 (CTP)', sub:'알루미늄 4판 · CMYK', tag:'CTP',
+      body:'Computer-to-Plate. 디지털 데이터를 알루미늄 판에 직접 레이저로 굽습니다. 4색 인쇄는 C·M·Y·K 4장의 판이 필요합니다. 별색 한 가지 추가될 때마다 +1판.',
+      meta:['알루미늄 판','레이저 노광','4판/책','2,540 dpi'],
+      svg:`<svg viewBox="0 0 200 200"><rect x="30" y="60" width="50" height="80" fill="#1eb0d8" stroke="#0f0f10" stroke-width="1.5"/><rect x="50" y="80" width="50" height="80" fill="#e3308b" stroke="#0f0f10" stroke-width="1.5"/><rect x="70" y="60" width="50" height="80" fill="#f1c40f" stroke="#0f0f10" stroke-width="1.5"/><rect x="90" y="80" width="50" height="80" fill="#0f0f10" stroke="#0f0f10" stroke-width="1.5"/><line x1="160" y1="30" x2="160" y2="170" stroke="#c8211a" stroke-width="2"/><circle cx="160" cy="100" r="4" fill="#c8211a"/><text x="160" y="20" text-anchor="middle" font-family="Inter" font-size="10" font-weight="700" fill="#0f0f10">CTP</text></svg>`},
+    {n:'03', title:'인쇄', sub:'오프셋 4색 또는 별색', tag:'PRINT',
+      body:'잉크 롤러가 판 위에 잉크를 입히고, 고무 블랑켓을 거쳐 종이에 옮깁니다. 시간당 4,800매. C → M → Y → K 순서로 4번 겹쳐 풀컬러를 만듭니다.',
+      meta:['시간당 4,800매','겹침 정확도 ±0.1mm','콩기름 잉크','별색 옵션'],
+      svg:`<svg viewBox="0 0 200 200"><circle cx="60" cy="100" r="32" fill="#1eb0d8" stroke="#0f0f10" stroke-width="1.5"/><circle cx="100" cy="100" r="32" fill="#e3308b" stroke="#0f0f10" stroke-width="1.5"/><circle cx="140" cy="100" r="32" fill="#f1c40f" stroke="#0f0f10" stroke-width="1.5"/><rect x="30" y="150" width="140" height="20" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/><line x1="40" y1="160" x2="160" y2="160" stroke="#cfc9b8"/></svg>`},
+    {n:'04', title:'후가공', sub:'코팅 · 박 · 형압', tag:'FINISH',
+      body:'유광/무광 코팅으로 표지를 보호하고, 금박·은박으로 제목을 강조하고, 형압으로 입체감을 줍니다. 한 권의 인상은 후가공에서 결정됩니다.',
+      meta:['유광/무광 코팅','금/은박','형압 (엠보싱)','UV 부분 코팅'],
+      svg:`<svg viewBox="0 0 200 200"><rect x="50" y="40" width="100" height="130" fill="#fff" stroke="#0f0f10" stroke-width="2"/><rect x="50" y="40" width="100" height="20" fill="#0f0f10"/><text x="100" y="55" text-anchor="middle" font-family="Noto Serif KR" font-size="11" font-weight="700" fill="#f1c40f">SPARK</text><rect x="62" y="80" width="76" height="40" fill="#f2efe7" stroke="#cfc9b8"/><rect x="70" y="130" width="60" height="6" fill="#c8211a"/><text x="100" y="155" text-anchor="middle" font-family="Inter" font-size="8" fill="#7a766e" letter-spacing="2">GOLD FOIL</text></svg>`},
+    {n:'05', title:'제본', sub:'무선철 · 중철 · 양장', tag:'BIND',
+      body:'무선철(PUR): 책등 접착, 200~600쪽. 중철(스테이플): 64쪽 이하 소책자. 양장(하드커버): 두꺼운 표지를 천이나 종이로 싸서 만드는 고급 제본.',
+      meta:['PUR 무선철','중철 (Saddle)','양장 (Hard)','포켓북 사양'],
+      svg:`<svg viewBox="0 0 200 200"><rect x="40" y="50" width="60" height="100" fill="#c8211a" stroke="#0f0f10" stroke-width="1.5"/><rect x="100" y="50" width="60" height="100" fill="#fff" stroke="#0f0f10" stroke-width="1.5"/><line x1="110" y1="65" x2="150" y2="65" stroke="#cfc9b8"/><line x1="110" y1="75" x2="145" y2="75" stroke="#cfc9b8"/><line x1="110" y1="85" x2="150" y2="85" stroke="#cfc9b8"/><line x1="110" y1="95" x2="140" y2="95" stroke="#cfc9b8"/><rect x="98" y="50" width="4" height="100" fill="#0f0f10"/><circle cx="100" cy="75" r="2" fill="#fff"/><circle cx="100" cy="125" r="2" fill="#fff"/></svg>`},
+    {n:'06', title:'배송', sub:'팔레트 포장 · 전국 출고', tag:'SHIP',
+      body:'책 50권 단위로 종이 박스 포장 후, 팔레트에 적재해 출고합니다. 수도권 1일, 전국 2~3일. 1,000부 이상은 자체 트럭으로 직접 배송합니다.',
+      meta:['50권/박스','팔레트 적재','수도권 1일','전국 2~3일'],
+      svg:`<svg viewBox="0 0 200 200"><rect x="40" y="60" width="120" height="80" fill="#d9c89a" stroke="#0f0f10" stroke-width="1.5"/><line x1="100" y1="60" x2="100" y2="140" stroke="#0f0f10" stroke-width="1.5"/><line x1="40" y1="100" x2="160" y2="100" stroke="#0f0f10" stroke-width="1.5"/><rect x="55" y="145" width="90" height="8" fill="#0f0f10"/><circle cx="65" cy="165" r="10" fill="#0f0f10"/><circle cx="135" cy="165" r="10" fill="#0f0f10"/><circle cx="65" cy="165" r="4" fill="#fbfaf6"/><circle cx="135" cy="165" r="4" fill="#fbfaf6"/><rect x="70" y="75" width="40" height="14" fill="#c8211a"/><text x="90" y="85" text-anchor="middle" font-family="Inter" font-size="7" font-weight="700" fill="#fff">SPARK</text></svg>`}
+  ];
+
+  function renderProcess(){
+    const wrap = $('#processGrid');
+    wrap.innerHTML = steps.map((s,i)=>`
+      <article class="step-card p-5 relative" data-step="${i}">
+        <span class="corner-mark tl"></span><span class="corner-mark tr"></span>
+        <div class="flex items-start gap-4">
+          <div class="step-num">${esc(s.n)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] tracking-press text-[var(--muted)]">${esc(s.tag)}</div>
+            <div class="font-serif text-lg font-bold leading-tight">${esc(s.title)}</div>
+            <div class="text-[var(--muted)] text-xs mt-1">${esc(s.sub)}</div>
+          </div>
+        </div>
+        <div class="mt-4 aspect-[4/3] bg-[var(--paper)] border border-[var(--line)] flex items-center justify-center p-3">${s.svg}</div>
+        <div class="mt-3 text-[11px] text-[var(--ink-2)] flex items-center justify-between">
+          <span>자세히 보기</span><span class="arrow-r"></span>
+        </div>
+      </article>
+    `).join('');
+    $$('#processGrid .step-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        $$('#processGrid .step-card').forEach(c=> c.classList.remove('is-active'));
+        card.classList.add('is-active');
+        const i = +card.dataset.step;
+        const s = steps[i];
+        $('#pdNum').textContent = s.n;
+        $('#pdTitle').textContent = s.title;
+        $('#pdSub').textContent = s.sub;
+        $('#pdBody').textContent = s.body;
+        $('#pdMeta').innerHTML = s.meta.map(m=>`<span class="pill">${esc(m)}</span>`).join('');
+        $('#processDetail').classList.remove('hidden');
+        $('#processDetail').scrollIntoView({behavior:'smooth', block:'center'});
+      });
+    });
+    $('#pdClose').addEventListener('click', ()=>{
+      $('#processDetail').classList.add('hidden');
+      $$('#processGrid .step-card').forEach(c=> c.classList.remove('is-active'));
+    });
+  }
+
+  // ============== 책 카탈로그 ==============
+  const books = [
+    {id:'b1', title:'옴의 법칙 입문서', sub:'V = IR 부터 다시', pages:200, copies:'1쇄 1,500부', bind:'paperback', bindLabel:'무선철', price:15000, lead:10,
+      desc:'V = IR 이라는 한 줄을 한 권에 풀어낸 입문서. 실험 사진 대신 도해와 그래프로 직관적으로 보여줍니다.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#fbfaf6"/><rect x="0" y="0" width="240" height="80" fill="#c8211a"/><text x="20" y="50" font-family="Noto Serif KR" font-size="26" font-weight="900" fill="#fff">옴의 법칙</text><text x="20" y="72" font-family="Inter" font-size="11" letter-spacing="3" fill="#fff" opacity=".85">INTRODUCTION</text><rect x="40" y="120" width="160" height="2" fill="#0f0f10"/><text x="120" y="170" text-anchor="middle" font-family="Noto Serif KR" font-size="72" font-weight="900" fill="#0f0f10">V=IR</text><text x="120" y="220" text-anchor="middle" font-family="Inter" font-size="11" fill="#7a766e" letter-spacing="4">VOLT · AMP · RESIST</text><rect x="20" y="285" width="200" height="2" fill="#0f0f10"/><text x="20" y="305" font-family="Inter" font-size="10" fill="#0f0f10" letter-spacing="2">SPARK · 01</text></svg>`},
+    {id:'b2', title:'키르히호프 워크북', sub:'노드와 루프의 연습', pages:180, copies:'1쇄 1,200부', bind:'paperback', bindLabel:'무선철', price:13800, lead:9,
+      desc:'KCL과 KVL을 손으로 풀어내는 연습 책. 회로 96개, 빈칸 채우기 240문항.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#1eb0d8"/><rect x="20" y="20" width="200" height="280" fill="#fbfaf6"/><text x="120" y="80" text-anchor="middle" font-family="Noto Serif KR" font-size="22" font-weight="800" fill="#0f0f10">키르히호프</text><text x="120" y="105" text-anchor="middle" font-family="Inter" font-size="10" letter-spacing="4" fill="#7a766e">WORKBOOK</text><g stroke="#0f0f10" stroke-width="2" fill="none"><circle cx="80" cy="180" r="18"/><circle cx="160" cy="180" r="18"/><line x1="98" y1="180" x2="142" y2="180"/><line x1="80" y1="198" x2="80" y2="240"/><line x1="160" y1="198" x2="160" y2="240"/><line x1="80" y1="240" x2="160" y2="240"/></g><circle cx="80" cy="180" r="3" fill="#c8211a"/><circle cx="160" cy="180" r="3" fill="#c8211a"/><text x="120" y="290" text-anchor="middle" font-family="Inter" font-size="10" fill="#7a766e" letter-spacing="3">SPARK · 02</text></svg>`},
+    {id:'b3', title:'변압기 도해', sub:'1차와 2차 사이의 일', pages:240, copies:'1쇄 800부', bind:'hardcover', bindLabel:'양장', price:32000, lead:18,
+      desc:'코어 · 권선 · 누설자속 · 임피던스. 변압기 한 대를 200쪽에 걸쳐 잘라 보여줍니다. 양장 하드커버 · 금박 제목.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#0f0f10"/><rect x="20" y="20" width="200" height="280" fill="#0f0f10" stroke="#f1c40f" stroke-width="2"/><text x="120" y="70" text-anchor="middle" font-family="Noto Serif KR" font-size="24" font-weight="900" fill="#f1c40f">변압기 도해</text><text x="120" y="95" text-anchor="middle" font-family="Inter" font-size="9" letter-spacing="6" fill="#f1c40f" opacity=".7">TRANSFORMER</text><g transform="translate(70,140)" stroke="#f1c40f" stroke-width="1.5" fill="none"><rect x="0" y="0" width="100" height="60"/><line x1="20" y1="0" x2="20" y2="60"/><line x1="80" y1="0" x2="80" y2="60"/><circle cx="35" cy="15" r="3"/><circle cx="35" cy="30" r="3"/><circle cx="35" cy="45" r="3"/><circle cx="65" cy="15" r="3"/><circle cx="65" cy="30" r="3"/><circle cx="65" cy="45" r="3"/></g><text x="120" y="240" text-anchor="middle" font-family="Inter" font-size="10" fill="#f1c40f" letter-spacing="3">N1 : N2 = V1 : V2</text><text x="120" y="290" text-anchor="middle" font-family="Inter" font-size="9" fill="#f1c40f" opacity=".6" letter-spacing="3">SPARK · HARDCOVER</text></svg>`},
+    {id:'b4', title:'RLC 핸드북', sub:'주파수가 바뀔 때', pages:128, copies:'1쇄 2,000부', bind:'pocket', bindLabel:'포켓북', price:8800, lead:7,
+      desc:'A6 크기 포켓북. 통근 길에 꺼내 보는 RLC 직렬·병렬·공진 공식 모음.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#f1c40f"/><rect x="30" y="30" width="180" height="260" fill="#fbfaf6"/><text x="120" y="80" text-anchor="middle" font-family="Noto Serif KR" font-size="34" font-weight="900" fill="#0f0f10">RLC</text><text x="120" y="105" text-anchor="middle" font-family="Inter" font-size="10" letter-spacing="6" fill="#7a766e">HANDBOOK</text><path d="M 50 200 Q 90 150, 120 180 T 200 200" stroke="#c8211a" stroke-width="2.5" fill="none"/><circle cx="120" cy="180" r="4" fill="#0f0f10"/><text x="120" y="240" text-anchor="middle" font-family="Inter" font-size="11" fill="#0f0f10">f₀ = 1/2π√LC</text><text x="120" y="275" text-anchor="middle" font-family="Inter" font-size="9" fill="#7a766e" letter-spacing="3">POCKET A6</text></svg>`},
+    {id:'b5', title:'전기 안전 가이드', sub:'사고는 어디서 시작되는가', pages:48, copies:'1쇄 3,000부', bind:'saddle', bindLabel:'중철', price:4500, lead:5,
+      desc:'48쪽 소책자. 가정 · 작업 현장에서 자주 일어나는 사고 사례 24건과 예방 체크리스트.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#c8211a"/><polygon points="120,60 60,170 180,170" fill="#f1c40f" stroke="#0f0f10" stroke-width="2"/><text x="120" y="155" text-anchor="middle" font-family="Inter" font-size="62" font-weight="900" fill="#0f0f10">!</text><text x="120" y="220" text-anchor="middle" font-family="Noto Serif KR" font-size="22" font-weight="800" fill="#fff">전기 안전</text><text x="120" y="245" text-anchor="middle" font-family="Inter" font-size="11" letter-spacing="4" fill="#fff" opacity=".85">SAFETY</text><text x="120" y="290" text-anchor="middle" font-family="Inter" font-size="9" fill="#fff" opacity=".6" letter-spacing="3">SPARK · BOOKLET</text></svg>`},
+    {id:'b6', title:'전기기능사 합격 노트', sub:'600제 + 도해 정리', pages:420, copies:'1쇄 2,500부', bind:'paperback', bindLabel:'무선철', price:22000, lead:14,
+      desc:'B5 대형판. 기출 600문항 + 단원별 도해 정리 + 모의고사 8회. 시험 전 한 달 집중 학습용.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#fbfaf6"/><rect x="0" y="0" width="240" height="100" fill="#0f0f10"/><text x="20" y="55" font-family="Noto Serif KR" font-size="22" font-weight="900" fill="#fff">전기기능사</text><text x="20" y="80" font-family="Noto Serif KR" font-size="18" font-weight="700" fill="#c8211a">합격 노트</text><text x="220" y="55" text-anchor="end" font-family="Inter" font-size="48" font-weight="900" fill="#f1c40f">600</text><text x="220" y="80" text-anchor="end" font-family="Inter" font-size="10" letter-spacing="3" fill="#fbfaf6">Q &amp; A</text><rect x="20" y="130" width="200" height="160" fill="#f2efe7" stroke="#cfc9b8"/><line x1="30" y1="150" x2="210" y2="150" stroke="#cfc9b8"/><line x1="30" y1="165" x2="200" y2="165" stroke="#cfc9b8"/><line x1="30" y1="180" x2="195" y2="180" stroke="#cfc9b8"/><line x1="30" y1="195" x2="205" y2="195" stroke="#cfc9b8"/><line x1="30" y1="210" x2="190" y2="210" stroke="#cfc9b8"/><line x1="30" y1="225" x2="200" y2="225" stroke="#cfc9b8"/><circle cx="200" cy="270" r="14" fill="#c8211a"/><text x="200" y="275" text-anchor="middle" font-family="Inter" font-size="9" font-weight="700" fill="#fff">HOT</text></svg>`},
+    {id:'b7', title:'패러데이 자서전', sub:'한 대장장이의 아이가', pages:320, copies:'1쇄 1,000부', bind:'hardcover', bindLabel:'양장', price:28000, lead:21,
+      desc:'(가상) 마이클 패러데이의 일대기를 1인칭 자서전 형식으로 재구성한 가상의 단행본. 19세기 영국 실험실 풍경 일러스트 26점.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#5b4a3a"/><rect x="18" y="18" width="204" height="284" fill="#5b4a3a" stroke="#d9c89a" stroke-width="1"/><text x="120" y="80" text-anchor="middle" font-family="Noto Serif KR" font-size="20" font-style="italic" fill="#d9c89a">패러데이</text><text x="120" y="110" text-anchor="middle" font-family="Inter" font-size="10" letter-spacing="5" fill="#d9c89a" opacity=".7">AUTOBIOGRAPHY</text><g transform="translate(120,180)" stroke="#d9c89a" stroke-width="1.5" fill="none"><ellipse rx="50" ry="20"/><ellipse rx="50" ry="20" transform="rotate(60)"/><ellipse rx="50" ry="20" transform="rotate(120)"/><circle r="6" fill="#d9c89a"/></g><text x="120" y="270" text-anchor="middle" font-family="Inter" font-size="9" fill="#d9c89a" opacity=".6" letter-spacing="3">1791 — 1867 (가상)</text></svg>`},
+    {id:'b8', title:'테슬라 전기 백과', sub:'교류의 시대를 연 사람', pages:560, copies:'1쇄 600부 (전집)', bind:'hardcover', bindLabel:'양장 · 전집', price:65000, lead:28,
+      desc:'(가상) 니콜라 테슬라를 키워드로 정리한 인물·기술·연도 백과사전. 3권 양장 전집 · 박 제목 · 책갈피 리본 2개.',
+      cover:`<svg viewBox="0 0 240 320"><rect width="240" height="320" fill="#0f0f10"/><rect x="20" y="20" width="200" height="280" fill="#0f0f10" stroke="#1eb0d8" stroke-width="1.5"/><text x="120" y="70" text-anchor="middle" font-family="Noto Serif KR" font-size="22" font-weight="900" fill="#1eb0d8">테슬라</text><text x="120" y="92" text-anchor="middle" font-family="Inter" font-size="9" letter-spacing="6" fill="#1eb0d8" opacity=".7">ENCYCLOPEDIA</text><g transform="translate(120,180)" stroke="#1eb0d8" fill="none" stroke-width="1"><circle r="50"/><circle r="38" opacity=".6"/><circle r="26" opacity=".4"/><path d="M -50 0 L -30 -10 L -10 10 L 10 -15 L 30 5 L 50 0" stroke-width="1.8"/></g><circle cx="120" cy="180" r="4" fill="#1eb0d8"/><text x="120" y="270" text-anchor="middle" font-family="Inter" font-size="9" fill="#1eb0d8" opacity=".7" letter-spacing="4">VOL. I · II · III</text></svg>`}
+  ];
+
+  const liked = new Set();
+
+  function renderBooks(filter){
+    const wrap = $('#bookGrid');
+    const list = filter==='all' ? books : books.filter(b=> b.bind===filter);
+    wrap.innerHTML = list.map(b=>`
+      <article class="book-card" data-id="${esc(b.id)}">
+        <button class="like-btn ${liked.has(b.id)?'is-on':''}" data-like="${esc(b.id)}" aria-label="좋아요">♥</button>
+        <div class="book-cover">${b.cover}</div>
+        <div class="p-4">
+          <div class="flex items-center justify-between text-[10px] tracking-press text-[var(--muted)] mb-1">
+            <span>${esc(b.bindLabel)}</span>
+            <span>${esc(b.pages)}쪽</span>
+          </div>
+          <div class="font-serif text-base font-bold leading-tight">${esc(b.title)}</div>
+          <div class="text-[var(--muted)] text-xs mt-1 truncate">${esc(b.sub)}</div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <div class="font-serif font-bold text-lg price">₩${won(b.price)}</div>
+            <div class="text-[10px] tracking-press text-[var(--muted)]">${esc(b.lead)}일 납기</div>
+          </div>
+        </div>
+      </article>
+    `).join('');
+    // events
+    $$('#bookGrid .book-card').forEach(card=>{
+      card.addEventListener('click', (e)=>{
+        if(e.target.closest('[data-like]')) return;
+        openBookModal(card.dataset.id);
+      });
+    });
+    $$('#bookGrid [data-like]').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const id = btn.dataset.like;
+        if(liked.has(id)){ liked.delete(id); btn.classList.remove('is-on'); showToast('좋아요 취소'); }
+        else { liked.add(id); btn.classList.add('is-on'); showToast('좋아요'); }
+      });
+    });
+  }
+
+  function openBookModal(id){
+    const b = books.find(x=> x.id===id); if(!b) return;
+    $('#modalBody').innerHTML = `
+      <div class="grid md:grid-cols-2">
+        <div class="bg-[var(--paper-2)] p-8 flex items-center justify-center min-h-[320px]">
+          <div class="w-full max-w-[280px] shadow-[0_12px_30px_rgba(0,0,0,.18)]">${b.cover}</div>
+        </div>
+        <div class="p-7">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="label-tag">${esc(b.bindLabel.toUpperCase())}</span>
+            <span class="pill">${esc(b.copies)}</span>
+          </div>
+          <h3 class="font-serif text-2xl font-bold leading-tight">${esc(b.title)}</h3>
+          <div class="text-[var(--muted)] text-sm mt-1">${esc(b.sub)}</div>
+          <p class="mt-4 text-[var(--ink-2)] text-sm leading-relaxed">${esc(b.desc)}</p>
+
+          <div class="mt-5 grid grid-cols-2 gap-y-2 text-sm border-t border-dashed border-[var(--line)] pt-4">
+            <div class="text-[var(--muted)]">페이지</div><div class="text-right price">${won(b.pages)}쪽</div>
+            <div class="text-[var(--muted)]">제본</div><div class="text-right">${esc(b.bindLabel)}</div>
+            <div class="text-[var(--muted)]">부수</div><div class="text-right">${esc(b.copies)}</div>
+            <div class="text-[var(--muted)]">납기</div><div class="text-right price">${esc(b.lead)}일</div>
+            <div class="text-[var(--muted)] font-medium pt-2 border-t border-[var(--line)] mt-1">가격</div>
+            <div class="text-right pt-2 border-t border-[var(--line)] mt-1 font-serif font-bold price">₩${won(b.price)}</div>
+          </div>
+
+          <div class="mt-5 flex gap-2 flex-wrap">
+            <button class="inline-flex items-center gap-2 bg-[var(--ink)] text-white px-4 py-2 text-sm hover:bg-[var(--red)] transition-colors" data-modal-quote="${esc(b.id)}">이 책 사양으로 견적</button>
+            <button class="inline-flex items-center gap-2 border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--ink)]" data-modal-like="${esc(b.id)}">${liked.has(b.id)?'♥ 좋아요됨':'♡ 좋아요'}</button>
+          </div>
+
+          <div class="mt-5 barcode opacity-80"></div>
+          <div class="text-[10px] tracking-press text-[var(--muted)] mt-2">SPARK · ${esc(b.id.toUpperCase())} · 가상 도서</div>
+        </div>
+      </div>
+    `;
+    $('#bookModal').classList.remove('hidden');
+    $('#bookModal').classList.add('flex');
+
+    const qBtn = $('#modalBody [data-modal-quote]');
+    if(qBtn) qBtn.addEventListener('click', ()=>{
+      $('#qPages').value = b.pages;
+      $('#qCopies').value = (b.copies.match(/[\d,]+/)||['500'])[0].replace(/,/g,'');
+      $$('input[name="bind"]').forEach(r=> r.checked = (r.value===b.bind));
+      closeModal();
+      computeQuote();
+      $('#quote').scrollIntoView({behavior:'smooth'});
+      showToast('이 책 사양으로 견적이 채워졌습니다');
+    });
+    const lBtn = $('#modalBody [data-modal-like]');
+    if(lBtn) lBtn.addEventListener('click', ()=>{
+      if(liked.has(b.id)){ liked.delete(b.id); lBtn.textContent = '♡ 좋아요'; showToast('좋아요 취소'); }
+      else { liked.add(b.id); lBtn.textContent = '♥ 좋아요됨'; showToast('좋아요'); }
+      // 카드 동기화
+      const cardBtn = document.querySelector(`#bookGrid [data-like="${b.id}"]`);
+      if(cardBtn) cardBtn.classList.toggle('is-on', liked.has(b.id));
+    });
+  }
+
+  function closeModal(){
+    $('#bookModal').classList.add('hidden');
+    $('#bookModal').classList.remove('flex');
+  }
+
+  $('#modalClose').addEventListener('click', closeModal);
+  $('#bookModal').addEventListener('click', (e)=>{ if(e.target===$('#bookModal')) closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+  // 필터
+  $$('[data-filter]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('[data-filter]').forEach(b=> b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      renderBooks(btn.dataset.filter);
+    });
+  });
+
+  // ============== 견적 계산기 ==============
+  function computeQuote(){
+    const pages = clamp(parseInt($('#qPages').value||'0',10), 8, 800);
+    const copies = clamp(parseInt($('#qCopies').value||'0',10), 10, 10000);
+    const bindEl = $('input[name="bind"]:checked');
+    const bind = bindEl ? bindEl.value : 'paperback';
+    const finishes = $$('[data-finish]').filter(c=> c.checked).map(c=> c.dataset.finish);
+
+    // 가상 단가
+    const paperPerSheet = 24; // 원/장
+    const sheetsPerCopy = Math.ceil(pages/2); // 양면 가정
+    const totalSheets = sheetsPerCopy * copies;
+    const paper = totalSheets * paperPerSheet;
+
+    const printPerSheet = 21;
+    const print = totalSheets * printPerSheet;
+
+    const bindUnit = bind==='paperback'?3000 : bind==='hardcover'?9000 : bind==='saddle'?1200 : 2200;
+    const bindCost = bindUnit * copies;
+
+    const plate = 120000 * 4;
+    let finishRate = 0;
+    if(finishes.includes('coating')) finishRate += 0.05;
+    if(finishes.includes('foil')) finishRate += 0.12;
+    if(finishes.includes('emboss')) finishRate += 0.08;
+    const finish = Math.round((paper + print + bindCost) * finishRate);
+    const ship = 300000;
+
+    const subtotal = paper + print + bindCost + plate + finish + ship;
+    const total = Math.round(subtotal * 1.1);
+    const unit = Math.round(total / copies);
+
+    // 납기
+    const baseLead = bind==='paperback'?9 : bind==='hardcover'?16 : bind==='saddle'?6 : 8;
+    const lead = baseLead + (finishes.length?2:0) + (pages>300?2:0) + (copies>2000?1:0);
+
+    // 잉크 사용량 (kg)
+    const ink = +(totalSheets * 0.000064).toFixed(2);
+
+    $('#qPaper').textContent = won(paper);
+    $('#qPrint').textContent = won(print);
+    $('#qBind').textContent = won(bindCost);
+    $('#qBindLabel').textContent = bind==='paperback'?'무선철':bind==='hardcover'?'양장':bind==='saddle'?'중철':'포켓북';
+    $('#qPlate').textContent = won(plate);
+    $('#qFinish').textContent = won(finish);
+    $('#qShip').textContent = won(ship);
+    $('#qSum').textContent = won(total);
+    $('#qTotal').textContent = won(total);
+    $('#qUnit').textContent = won(unit);
+    $('#qTotalBooks').textContent = won(copies);
+    $('#qLead').textContent = lead;
+    $('#qSheets').textContent = won(totalSheets);
+    $('#qInk').textContent = ink;
+  }
+  ['qPages','qCopies'].forEach(id=>{
+    $('#'+id).addEventListener('input', computeQuote);
+  });
+  $$('input[name="bind"]').forEach(r=> r.addEventListener('change', computeQuote));
+  $$('[data-finish]').forEach(c=> c.addEventListener('change', computeQuote));
+
+  $('#quoteBtn').addEventListener('click', ()=>{
+    $('#quote').scrollIntoView({behavior:'smooth'});
+  });
+
+  // ============== 잉크 차트 ==============
+  const inks = [
+    {name:'C', full:'Cyan 100', hex:'#1eb0d8', kind:'CMYK'},
+    {name:'M', full:'Magenta 100', hex:'#e3308b', kind:'CMYK'},
+    {name:'Y', full:'Yellow 100', hex:'#f1c40f', kind:'CMYK'},
+    {name:'K', full:'Black 100', hex:'#0f0f10', kind:'CMYK'},
+    {name:'186C', full:'Spark Red', hex:'#c8211a', kind:'PANTONE'},
+    {name:'286C', full:'Spark Blue', hex:'#2d4ea0', kind:'PANTONE'},
+    {name:'872C', full:'Antique Gold', hex:'#a48530', kind:'PANTONE'},
+    {name:'COOL10', full:'Cool Grey 10', hex:'#54555a', kind:'PANTONE'}
+  ];
+  function renderInks(){
+    $('#inkGrid').innerHTML = inks.map(ink=>`
+      <article class="bg-white border border-[var(--line)] p-4 flex items-center gap-3">
+        <div class="ink-dot" style="background:${esc(ink.hex)};">${esc(ink.name)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[10px] tracking-press text-[var(--muted)]">${esc(ink.kind)}</div>
+          <div class="font-medium truncate">${esc(ink.full)}</div>
+          <div class="text-[11px] text-[var(--muted)] price">${esc(ink.hex)}</div>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  // ============== 공정 뷰 토글 ==============
+  $$('[data-view-process]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('[data-view-process]').forEach(b=> b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      const wrap = $('#processGrid');
+      if(btn.dataset.viewProcess==='line'){
+        wrap.classList.remove('sm:grid-cols-2','lg:grid-cols-3');
+        wrap.classList.add('grid-cols-1','lg:grid-cols-6');
+      }else{
+        wrap.classList.add('sm:grid-cols-2','lg:grid-cols-3');
+        wrap.classList.remove('grid-cols-1','lg:grid-cols-6');
+      }
+    });
+  });
+
+  // ============== 부드러운 스크롤 ==============
+  $$('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click', (e)=>{
+      const id = a.getAttribute('href');
+      if(id.length<2) return;
+      const el = document.querySelector(id);
+      if(!el) return;
+      e.preventDefault();
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  // ============== init ==============
+  renderProcess();
+  renderBooks('all');
+  renderInks();
+  computeQuote();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전동기 기동 방식 비교 시뮬레이터 (DOL · Y-Δ · 리액터 · 소프트 · VVVF)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    svg: { fontCache: 'global' }
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 640px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#curveCanvas {
+    display: block;
+    width: 100%;
+    height: 220px;
+    border-radius: 12px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,197,94,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #86efac);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-i { background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.5); color: #fca5a5; }
+.chip-t { background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(168,85,247,0.06)); border-color: rgba(168,85,247,0.5); color: #d8b4fe; }
+.chip-n { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+.chip-mode { background: linear-gradient(135deg, rgba(34,197,94,0.22), rgba(34,197,94,0.06)); border-color: rgba(34,197,94,0.5); color: #86efac; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-pill.warn {
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+}
+.live-pill.danger {
+    border-color: rgba(244, 63, 94, 0.7);
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.45);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.25);
+    color: #c4b5fd;
+    transition: all 200ms;
+}
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(168,85,247,0.4), rgba(99,102,241,0.4));
+    border-color: rgba(216, 180, 254, 0.8);
+    color: #fff;
+    box-shadow: 0 0 18px rgba(168, 139, 250, 0.5);
+}
+.go-btn {
+    background: linear-gradient(135deg, rgba(34,197,94,0.4), rgba(16,185,129,0.4));
+    border: 1px solid rgba(110,231,183,0.6);
+    color: #d1fae5;
+    transition: all 200ms;
+}
+.go-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.5);
+}
+.stop-btn {
+    background: linear-gradient(135deg, rgba(244,63,94,0.4), rgba(225,29,72,0.4));
+    border: 1px solid rgba(252,165,165,0.6);
+    color: #fee2e2;
+    transition: all 200ms;
+}
+.stop-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(244, 63, 94, 0.5);
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.legend-dot {
+    display: inline-block; width: 12px; height: 3px;
+    border-radius: 2px; vertical-align: middle; margin-right: 4px;
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · MOTOR STARTING · 5-METHOD COMPARISON
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            ⚡ 전동기 기동 방식 비교 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">유도전동기 기동 시 발생하는 큰 돌입 전류(6~8×In)를 줄이기 위한 5가지 대표 기동 방식을 비교합니다. DOL · Y-Δ · 리액터 · 소프트 스타터 · 인버터(VVVF) 각각의 회로/전류/토크 거동을 한 화면에서 확인.</p>
+    </header>
+
+    <!-- 라이브 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-i">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">기동 전류 I_st</p>
+            <p class="mt-1 text-lg font-bold"><span id="iVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-torque">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">기동 토크 T_st</p>
+            <p class="mt-1 text-lg font-bold"><span id="torqueVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-speed">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">회전 속도 N</p>
+            <p class="mt-1 text-lg font-bold"><span id="speedVal" class="live-num">0 rpm</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-time">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">기동 시간</p>
+            <p class="mt-1 text-lg font-bold"><span id="timeVal" class="live-num">0.00 s</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide" id="circuitLabel">3상 전원 → 기동 회로 → 농형 유도전동기</span>
+                    <div class="flex items-center gap-2">
+                        <button id="btnStart" class="go-btn rounded-md px-3 py-1.5 text-xs font-bold">▶ 기동</button>
+                        <button id="btnStop" class="stop-btn rounded-md px-3 py-1.5 text-xs font-bold">■ 정지</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 5종 비교 곡선 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">기동 전류 · 토크 vs 시간 — 5종 비교</span>
+                    <div class="flex gap-1.5 text-[9px]">
+                        <button data-curve="i" class="curve-btn mode-btn active rounded-md px-2 py-0.5 font-bold">I(t)</button>
+                        <button data-curve="t" class="curve-btn mode-btn rounded-md px-2 py-0.5 font-bold">T(N)</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,197,94,0.4));">
+                    <canvas id="curveCanvas"></canvas>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-400">
+                    <span><span class="legend-dot" style="background:#f472b6"></span>DOL</span>
+                    <span><span class="legend-dot" style="background:#86efac"></span>Y-Δ</span>
+                    <span><span class="legend-dot" style="background:#fcd34d"></span>리액터</span>
+                    <span><span class="legend-dot" style="background:#67e8f9"></span>소프트</span>
+                    <span><span class="legend-dot" style="background:#c4b5fd"></span>VVVF</span>
+                </div>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">기동 방식 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">직입 기동 전류</p>
+                        <div class="math-container mt-2">\(I_{st,DOL} = (6\!\sim\!8)\,I_n\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">Y-Δ 기동 전류</p>
+                        <div class="math-container mt-2">\(I_{st,Y} = \dfrac{1}{3}\,I_{st,\Delta}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">감압 기동 토크</p>
+                        <div class="math-container mt-2">\(T_{st} \propto V^{2}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">리액터 기동</p>
+                        <div class="math-container mt-2">\(I_{st} = k\,I_{st,DOL},\ T \propto k^{2}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">소프트 스타터</p>
+                        <div class="math-container mt-2">\(V(t)=V_n\cdot \dfrac{t}{t_{ramp}}\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">VVVF (V/f 일정)</p>
+                        <div class="math-container mt-2">\(\dfrac{V}{f}=\text{const},\ N_s=\dfrac{120f}{P}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">DOL (직입)</span> · 정격 전압 직접 인가, I_st 6~8×In, 전원/모터 충격 큼, 소형 모터(5kW 이하)에 사용</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-emerald-300">Y-Δ</span> · Y 기동 → Δ 운전, 전류/토크 모두 <span class="font-bold">1/3</span>, 6단자 모터 필요, 5.5kW~37kW 범용</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-amber-300">리액터 기동</span> · 직렬 리액터로 전압 강하 k배, I_st = k×직입, T_st = k²×직입, 단락 스위치로 정상 운전</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-cyan-300">소프트 스타터</span> · 사이리스터 위상 제어, 전압을 점진 상승, 부드러운 가속, 가격↑ 효율 운전 시 바이패스</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-violet-300">VVVF (인버터)</span> · 주파수 가변, V/f 일정 제어, 기동 전류 최소(1~1.5×In), 속도 제어 동시, 가격 최고</li>
+                    <li class="feature-row rounded-lg p-3"><span class="font-bold text-pink-300">선택 기준</span> · 모터 용량 · 부하 토크 특성 · 전원 계통 용량 · 가속 시간 요구 사양에 따라 결정</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2">기동 방식 (5종)</label>
+                <div class="grid grid-cols-1 gap-1.5">
+                    <button data-m="dol" class="mode-btn rounded-md py-1.5 text-xs font-bold active">직입 (DOL)</button>
+                    <button data-m="ydelta" class="mode-btn rounded-md py-1.5 text-xs font-bold">Y-Δ 기동</button>
+                    <button data-m="reactor" class="mode-btn rounded-md py-1.5 text-xs font-bold">리액터 기동</button>
+                    <button data-m="soft" class="mode-btn rounded-md py-1.5 text-xs font-bold">소프트 스타터</button>
+                    <button data-m="vvvf" class="mode-btn rounded-md py-1.5 text-xs font-bold">인버터 (VVVF)</button>
+                </div>
+            </div>
+
+            <div class="chip-i chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>정격 전류 In</span><span id="inDisp" class="font-mono text-base">30</span></label>
+                <input type="range" id="inA" min="10" max="150" step="1" value="30" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 토크 (정격비)</span><span id="tlDisp" class="font-mono text-base">0.5</span></label>
+                <input type="range" id="tLoad" min="0" max="1.5" step="0.05" value="0.5" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">× T_n</p>
+            </div>
+
+            <div class="chip-n chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>기동 시간 파라미터</span><span id="tStartDisp" class="font-mono text-base">5.0</span></label>
+                <input type="range" id="tStart" min="2" max="15" step="0.5" value="5" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">초 (Y구간/램프)</p>
+            </div>
+
+            <div class="chip rounded-lg p-3" id="kReactorBox">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>리액터 탭 비 k</span><span id="kDisp" class="font-mono text-base">0.65</span></label>
+                <input type="range" id="kReactor" min="0.4" max="0.85" step="0.05" value="0.65" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V_motor / V_n</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-indigo-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2">기동 전류 = 정격의 <span class="text-rose-300 font-bold">6~8배</span> (DOL 기준)</p>
+                <p class="feature-row rounded-md p-2">감압 기동: 전류는 <span class="text-amber-300 font-bold">k배</span>, 토크는 <span class="text-emerald-300 font-bold">k²배</span></p>
+                <p class="feature-row rounded-md p-2">Y-Δ: 상전압 1/√3 → 전류·토크 모두 <span class="text-cyan-300 font-bold">1/3</span></p>
+                <p class="feature-row rounded-md p-2">소프트 스타터: 전압 램프 → <span class="text-violet-300 font-bold">부드러운</span> 가속</p>
+                <p class="feature-row rounded-md p-2">VVVF: V/f 일정 → 저주파에서도 <span class="text-pink-300 font-bold">정격 토크</span>, 기동 전류 최소</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const curveCv = $('curveCanvas');
+const cctx = curveCv.getContext('2d');
+
+let state = {
+    In: 30,
+    tLoad: 0.5,        // 부하 토크 (정격비)
+    tStart: 5.0,       // 기동 시간 파라미터
+    kReactor: 0.65,    // 리액터 탭 비
+    mode: 'dol',       // 'dol' | 'ydelta' | 'reactor' | 'soft' | 'vvvf'
+    phase: 'idle',     // 'idle' | 'starting' | 'star' | 'transition' | 'delta' | 'running'
+    running: false,
+    elapsed: 0,
+    omega: 0,          // 회전 위상 (시각화)
+    N: 0,              // 회전 속도 [rpm]
+    Ns: 1800,          // 동기 속도 [rpm]
+    history: [],       // {t, i}
+    lastTs: 0,
+    curveMode: 'i',    // 'i' | 't'
+};
+
+const DEAD_TIME = 0.4;
+const PEAK_DOL = 6.5;   // I_st_DOL / In
+const T_DOL_PU = 1.8;   // 기동 토크 (정격비)
+const TAU = 2.2;        // 시정수 [s]
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 640;
+    curveCv.width = curveCv.parentElement.clientWidth - 2;
+    curveCv.height = 220;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ===== 전류/토크 모델 =====
+// 각 모드별 기동 전류 (정격 배수, t=0 기준 시간 함수)
+function currentCurve(mode, t) {
+    if (t < 0) return 0;
+    const dolPeak = PEAK_DOL;
+    const dolDecay = (tt) => 1 + (dolPeak - 1) * Math.exp(-tt / TAU);
+
+    if (mode === 'dol') {
+        return dolDecay(t);
+    }
+    if (mode === 'ydelta') {
+        if (t < state.tStart) return dolDecay(t) / 3;
+        if (t < state.tStart + DEAD_TIME) return 0.4;
+        const dt = t - state.tStart - DEAD_TIME;
+        const surge = 3.0;
+        return 1 + (surge - 1) * Math.exp(-dt / 1.5);
+    }
+    if (mode === 'reactor') {
+        const k = state.kReactor;
+        if (t < state.tStart) return dolDecay(t) * k;
+        const dt = t - state.tStart;
+        // 단락 스위치 ON → 정격 인가 → 잔여 전류
+        const surge = dolPeak * 0.55;
+        return 1 + (surge - 1) * Math.exp(-dt / 1.2);
+    }
+    if (mode === 'soft') {
+        // 전압 램프: V = (t/tStart) × Vn, t≥tStart → Vn
+        const ramp = Math.min(1, t / state.tStart);
+        // 전류는 ramp 비례, 다만 가속 중에는 ~3×In 수준 유지
+        if (t < state.tStart) {
+            const target = 1 + (3.5 - 1) * (1 - Math.exp(-t / (state.tStart * 0.4)));
+            return target;
+        }
+        const dt = t - state.tStart;
+        return 1 + 0.5 * Math.exp(-dt / 0.8);
+    }
+    if (mode === 'vvvf') {
+        // 주파수 가변: 기동 전류 최소(1~1.5×In)
+        if (t < state.tStart) {
+            return 1.2 + 0.3 * Math.sin(t * 1.5);
+        }
+        return 1.0;
+    }
+    return 0;
+}
+
+// 토크 곡선 (정격비)
+function torqueCurve(mode, t) {
+    if (t < 0) return 0;
+    if (mode === 'dol') return T_DOL_PU;
+    if (mode === 'ydelta') {
+        if (t < state.tStart) return T_DOL_PU / 3;
+        if (t < state.tStart + DEAD_TIME) return 0;
+        return T_DOL_PU;
+    }
+    if (mode === 'reactor') {
+        const k = state.kReactor;
+        if (t < state.tStart) return T_DOL_PU * k * k;
+        return T_DOL_PU;
+    }
+    if (mode === 'soft') {
+        const ramp = Math.min(1, t / state.tStart);
+        return T_DOL_PU * ramp * ramp;
+    }
+    if (mode === 'vvvf') {
+        // 정격 토크를 거의 유지
+        return Math.min(1.2, 0.9 + t * 0.05);
+    }
+    return 0;
+}
+
+// 회전 속도 모델 (간단)
+function updateSpeed(dt) {
+    if (!state.running) {
+        // 정지 시 점진 감속
+        state.N = Math.max(0, state.N - 600 * dt);
+        return;
+    }
+    const T = torqueCurve(state.mode, state.elapsed) * state.In * 1.0; // 토크 ~ I×k
+    const TLoad = state.tLoad;
+    // 가속도 = (T - TLoad) × 상수
+    const Tnet = (torqueCurve(state.mode, state.elapsed) - TLoad);
+    // dN/dt = Tnet × 일정 계수 (간이 모델)
+    const accel = Tnet * 380; // rpm/s
+    state.N += accel * dt;
+    if (state.N > state.Ns - 30) state.N = state.Ns - 30; // 슬립 약 2%
+    if (state.N < 0) state.N = 0;
+}
+
+// 상태 머신
+function updatePhase(dt) {
+    if (!state.running) {
+        if (state.phase !== 'idle') {
+            state.phase = 'idle';
+            state.elapsed = 0;
+            state.history = [];
+        }
+        return;
+    }
+    state.elapsed += dt;
+    if (state.mode === 'ydelta') {
+        if (state.elapsed < state.tStart) state.phase = 'star';
+        else if (state.elapsed < state.tStart + DEAD_TIME) state.phase = 'transition';
+        else state.phase = 'delta';
+    } else if (state.elapsed < state.tStart) {
+        state.phase = 'starting';
+    } else {
+        state.phase = 'running';
+    }
+}
+
+function instantCurrent() {
+    if (!state.running) return 0;
+    return currentCurve(state.mode, state.elapsed) * state.In;
+}
+function instantTorque() {
+    if (!state.running) return 0;
+    return torqueCurve(state.mode, state.elapsed);
+}
+
+// ===== 메인 캔버스 =====
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경 그라데이션
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 40) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 타이틀
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ MOTOR STARTING CIRCUIT · ' + modeLabel(state.mode).toUpperCase(), 12, 10);
+    ctx.restore();
+
+    // === 공통 레이아웃 ===
+    const supplyX = 60;
+    const supplyTopY = 80;
+    const phaseColors = ['#ef4444', '#22c55e', '#3b82f6'];
+    const phaseLights = ['#fca5a5', '#86efac', '#93c5fd'];
+    const phaseNames = ['R', 'S', 'T'];
+    const supplyLineYs = [supplyTopY, supplyTopY + 35, supplyTopY + 70];
+
+    // 전원 라벨
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, supplyX - 36, supplyTopY - 32, 72, 22, 8);
+    ctx.fill();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#fcd34d';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('AC 3φ 380V', supplyX, supplyTopY - 21);
+    ctx.restore();
+
+    // 3상 전원 라인
+    for (let i = 0; i < 3; i++) {
+        const y = supplyLineYs[i];
+        ctx.save();
+        ctx.strokeStyle = state.running ? phaseLights[i] : 'rgba(148,163,184,0.5)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        if (state.running) {
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = phaseColors[i];
+        }
+        ctx.beginPath();
+        ctx.moveTo(supplyX, y);
+        ctx.lineTo(supplyX + 50, y);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillStyle = phaseLights[i];
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(phaseNames[i], supplyX - 8, y);
+        ctx.restore();
+    }
+
+    // 모터 박스 위치
+    const motorCX = W - 110;
+    const motorCY = H * 0.45;
+    const motorR = 78;
+
+    // === 모드별 회로 ===
+    drawCircuit(state.mode, supplyX + 50, supplyLineYs, motorCX, motorCY, motorR, phaseColors, phaseLights);
+
+    // 모터 하우징 (공통)
+    drawMotorHousing(motorCX, motorCY, motorR, state.omega, state.N);
+
+    // === 상태 라벨 ===
+    drawConnectionLabel(W - 24, 22);
+
+    // === 하단 시퀀스 진행바 ===
+    drawSequenceBar(20, H - 42, W - 40, 26);
+}
+
+function modeLabel(m) {
+    return ({
+        dol: '직입 (DOL)',
+        ydelta: 'Y-Δ',
+        reactor: '리액터 기동',
+        soft: '소프트 스타터',
+        vvvf: '인버터 (VVVF)'
+    })[m] || m;
+}
+
+// 모드별 회로 라우팅
+function drawCircuit(mode, x0, supplyLineYs, motorCX, motorCY, motorR, phaseColors, phaseLights) {
+    const ctx0 = ctx;
+    if (mode === 'dol') {
+        // KM 단독, 직접 모터로
+        const kmX = x0 + 80;
+        const kmY = supplyLineYs[1];
+        drawContactor(kmX, kmY, 'KM', state.running);
+        // KM 입력
+        connectLines(x0, supplyLineYs, kmX, [kmY-22, kmY, kmY+22], phaseColors, phaseLights, state.running);
+        // KM 출력 → 모터
+        const outX = kmX + 60;
+        const motorTermXs = [motorCX - motorR - 20, motorCX - motorR - 20, motorCX - motorR - 20];
+        const motorTermYs = [motorCY - 36, motorCY, motorCY + 36];
+        connectMultiLines([outX, outX, outX], [kmY-22, kmY, kmY+22], motorTermXs, motorTermYs, phaseColors, phaseLights, state.running);
+        drawTerminalCluster(motorTermXs[0], motorTermYs, ['U', 'V', 'W'], phaseLights);
+    }
+    else if (mode === 'ydelta') {
+        // KM → 분기 (KS Y쪽 / KD Δ쪽)
+        const kmX = x0 + 80;
+        const kmY = supplyLineYs[1];
+        drawContactor(kmX, kmY, 'KM', state.running);
+        connectLines(x0, supplyLineYs, kmX, [kmY-22, kmY, kmY+22], phaseColors, phaseLights, state.running);
+        // KM 출력 → 분기점
+        const branchX = kmX + 60 + 50;
+        const branchYs = [kmY-22, kmY, kmY+22];
+        connectMultiLines([kmX+60, kmX+60, kmX+60], branchYs, [branchX, branchX, branchX], branchYs, phaseColors, phaseLights, state.running);
+
+        // 모터 1차 단자 (U1V1W1) — 좌측, 2차 단자 (U2V2W2) — 위쪽 별도
+        const motorT1Xs = [motorCX - motorR - 20, motorCX - motorR - 20, motorCX - motorR - 20];
+        const motorT1Ys = [motorCY - 36, motorCY, motorCY + 36];
+        // 분기 → U1V1W1
+        connectMultiLines([branchX, branchX, branchX], branchYs, motorT1Xs, motorT1Ys, phaseColors, phaseLights, state.running);
+        drawTerminalCluster(motorT1Xs[0], motorT1Ys, ['U1', 'V1', 'W1'], phaseLights);
+
+        // U2V2W2 단자 — 모터 우측
+        const motorT2Xs = [motorCX + motorR + 14, motorCX + motorR + 14, motorCX + motorR + 14];
+        const motorT2Ys = [motorCY - 36, motorCY, motorCY + 36];
+        // 우측 작은 점
+        for (let i = 0; i < 3; i++) {
+            ctx0.save();
+            ctx0.fillStyle = state.running ? phaseLights[i] : 'rgba(148,163,184,0.5)';
+            ctx0.shadowBlur = state.running ? 8 : 0;
+            ctx0.shadowColor = phaseColors[i];
+            ctx0.beginPath();
+            ctx0.arc(motorT2Xs[i], motorT2Ys[i], 4, 0, Math.PI * 2);
+            ctx0.fill();
+            ctx0.font = 'bold 9px ui-monospace, monospace';
+            ctx0.fillStyle = '#e2e8f0';
+            ctx0.shadowBlur = 0;
+            ctx0.textAlign = 'left'; ctx0.textBaseline = 'middle';
+            ctx0.fillText(['U2','V2','W2'][i], motorT2Xs[i] + 8, motorT2Ys[i]);
+            ctx0.restore();
+        }
+
+        // KS (Y접촉기) — 하단
+        const ksX = motorCX - 30;
+        const ksY = motorCY + motorR + 50;
+        const ksActive = state.phase === 'star';
+        drawContactor(ksX, ksY, 'KS (Y)', ksActive);
+        // KD (Δ접촉기) — 우측 하단
+        const kdX = motorCX + motorR - 20;
+        const kdY = motorCY + motorR + 50;
+        const kdActive = state.phase === 'delta';
+        drawContactor(kdX, kdY, 'KD (Δ)', kdActive);
+
+        // U2V2W2 → KS (중성점)
+        if (ksActive) {
+            for (let i = 0; i < 3; i++) {
+                ctx0.save();
+                ctx0.strokeStyle = phaseLights[i];
+                ctx0.lineWidth = 2.2;
+                ctx0.lineCap = 'round';
+                ctx0.shadowBlur = 8;
+                ctx0.shadowColor = phaseColors[i];
+                ctx0.beginPath();
+                ctx0.moveTo(motorT2Xs[i] + 4, motorT2Ys[i]);
+                ctx0.lineTo(motorT2Xs[i] + 30, motorT2Ys[i]);
+                ctx0.lineTo(motorT2Xs[i] + 30, ksY);
+                ctx0.lineTo(ksX + 60, ksY);
+                ctx0.stroke();
+                ctx0.restore();
+            }
+            // 중성점 표시
+            ctx0.save();
+            ctx0.fillStyle = '#fcd34d';
+            ctx0.shadowBlur = 14;
+            ctx0.shadowColor = '#fcd34d';
+            ctx0.beginPath();
+            ctx0.arc(motorT2Xs[0] + 30, ksY - 20, 5, 0, Math.PI * 2);
+            ctx0.fill();
+            ctx0.font = 'bold 10px ui-monospace, monospace';
+            ctx0.fillStyle = '#fef3c7';
+            ctx0.textAlign = 'left'; ctx0.shadowBlur = 0;
+            ctx0.fillText('N (중성점)', motorT2Xs[0] + 38, ksY - 20);
+            ctx0.restore();
+        }
+        // U2V2W2 → KD (Δ 크로스)
+        if (kdActive) {
+            const pairs = [[0,1],[1,2],[2,0]];
+            for (let k = 0; k < 3; k++) {
+                const [a, b] = pairs[k];
+                ctx0.save();
+                ctx0.strokeStyle = phaseLights[a];
+                ctx0.lineWidth = 2.2;
+                ctx0.lineCap = 'round';
+                ctx0.shadowBlur = 8;
+                ctx0.shadowColor = phaseColors[a];
+                const offset = k * 8;
+                ctx0.beginPath();
+                ctx0.moveTo(motorT2Xs[a] + 4, motorT2Ys[a]);
+                ctx0.lineTo(motorT2Xs[a] + 50 + offset, motorT2Ys[a]);
+                ctx0.lineTo(motorT2Xs[a] + 50 + offset, motorT1Ys[b]);
+                // 좌측 U1V1W1으로 라우팅 (외곽 우회)
+                ctx0.lineTo(motorT2Xs[a] + 50 + offset, motorCY - motorR - 30 - offset);
+                ctx0.lineTo(motorT1Xs[b] - 30 - offset, motorCY - motorR - 30 - offset);
+                ctx0.lineTo(motorT1Xs[b] - 30 - offset, motorT1Ys[b]);
+                ctx0.lineTo(motorT1Xs[b] - 4, motorT1Ys[b]);
+                ctx0.stroke();
+                ctx0.restore();
+            }
+        }
+    }
+    else if (mode === 'reactor') {
+        // KM → 리액터 (직렬) → 모터, 병렬로 KS (단락 스위치)
+        const kmX = x0 + 80;
+        const kmY = supplyLineYs[1];
+        drawContactor(kmX, kmY, 'KM', state.running);
+        connectLines(x0, supplyLineYs, kmX, [kmY-22, kmY, kmY+22], phaseColors, phaseLights, state.running);
+
+        // 리액터 (3개 직렬)
+        const reactorX = kmX + 90;
+        const reactorYs = [kmY-22, kmY, kmY+22];
+        const isShorted = state.phase === 'running';
+        // 라인: KM 출력 → 리액터 좌측
+        connectMultiLines([kmX+60, kmX+60, kmX+60], reactorYs, [reactorX, reactorX, reactorX], reactorYs, phaseColors, phaseLights, state.running);
+        for (let i = 0; i < 3; i++) {
+            drawReactor(reactorX, reactorYs[i], 60, phaseColors[i], phaseLights[i], !isShorted && state.running);
+        }
+        // 리액터 출력
+        const rOutX = reactorX + 60;
+        const motorTermXs = [motorCX - motorR - 20, motorCX - motorR - 20, motorCX - motorR - 20];
+        const motorTermYs = [motorCY - 36, motorCY, motorCY + 36];
+        connectMultiLines([rOutX, rOutX, rOutX], reactorYs, motorTermXs, motorTermYs, phaseColors, phaseLights, state.running);
+        drawTerminalCluster(motorTermXs[0], motorTermYs, ['U', 'V', 'W'], phaseLights);
+
+        // 단락 스위치 KS (리액터 병렬) - 위쪽 우회
+        const ksX = reactorX + 5;
+        const ksY = kmY - 70;
+        drawContactor(ksX + 10, ksY, 'KS (단락)', isShorted);
+        if (isShorted) {
+            for (let i = 0; i < 3; i++) {
+                ctx0.save();
+                ctx0.strokeStyle = phaseLights[i];
+                ctx0.lineWidth = 2.2;
+                ctx0.lineCap = 'round';
+                ctx0.shadowBlur = 8;
+                ctx0.shadowColor = phaseColors[i];
+                const offY = ksY + (i - 1) * 8;
+                ctx0.beginPath();
+                ctx0.moveTo(reactorX, reactorYs[i]);
+                ctx0.lineTo(reactorX, offY);
+                ctx0.lineTo(rOutX, offY);
+                ctx0.lineTo(rOutX, reactorYs[i]);
+                ctx0.stroke();
+                ctx0.restore();
+            }
+        }
+        // 라벨: 리액터 탭 비
+        ctx0.save();
+        ctx0.font = 'bold 10px ui-monospace, monospace';
+        ctx0.fillStyle = isShorted ? '#94a3b8' : '#fcd34d';
+        ctx0.textAlign = 'center';
+        ctx0.fillText(`탭 비 k = ${state.kReactor.toFixed(2)}`, reactorX + 30, reactorYs[2] + 32);
+        ctx0.restore();
+    }
+    else if (mode === 'soft') {
+        // KM → 사이리스터 3상 → 모터
+        const kmX = x0 + 80;
+        const kmY = supplyLineYs[1];
+        drawContactor(kmX, kmY, 'KM', state.running);
+        connectLines(x0, supplyLineYs, kmX, [kmY-22, kmY, kmY+22], phaseColors, phaseLights, state.running);
+
+        // 사이리스터 (역병렬, 3상)
+        const scrX = kmX + 90;
+        const scrYs = [kmY-22, kmY, kmY+22];
+        connectMultiLines([kmX+60, kmX+60, kmX+60], scrYs, [scrX, scrX, scrX], scrYs, phaseColors, phaseLights, state.running);
+        // 전압 램프 (0 → 100%)
+        const rampPct = state.running ? Math.min(1, state.elapsed / state.tStart) : 0;
+        for (let i = 0; i < 3; i++) {
+            drawThyristorPair(scrX, scrYs[i], 70, phaseColors[i], phaseLights[i], state.running, rampPct);
+        }
+
+        // 사이리스터 출력 → 모터
+        const sOutX = scrX + 70;
+        const motorTermXs = [motorCX - motorR - 20, motorCX - motorR - 20, motorCX - motorR - 20];
+        const motorTermYs = [motorCY - 36, motorCY, motorCY + 36];
+        connectMultiLines([sOutX, sOutX, sOutX], scrYs, motorTermXs, motorTermYs, phaseColors, phaseLights, state.running);
+        drawTerminalCluster(motorTermXs[0], motorTermYs, ['U', 'V', 'W'], phaseLights);
+
+        // 전압 램프 표시
+        ctx0.save();
+        ctx0.font = 'bold 10px ui-monospace, monospace';
+        ctx0.fillStyle = '#67e8f9';
+        ctx0.textAlign = 'center';
+        ctx0.fillText(`V_out = ${(rampPct * 100).toFixed(0)}% × V_n`, scrX + 35, scrYs[2] + 40);
+
+        // 미니 램프 그래프
+        const gx = scrX - 10, gy = scrYs[2] + 55, gw = 90, gh = 18;
+        ctx0.fillStyle = 'rgba(15, 23, 42, 0.7)';
+        roundRect(ctx0, gx, gy, gw, gh, 4);
+        ctx0.fill();
+        ctx0.strokeStyle = 'rgba(103, 232, 249, 0.4)';
+        ctx0.stroke();
+        ctx0.fillStyle = 'rgba(103, 232, 249, 0.5)';
+        ctx0.fillRect(gx + 2, gy + 2, (gw - 4) * rampPct, gh - 4);
+        ctx0.restore();
+    }
+    else if (mode === 'vvvf') {
+        // KM → 정류기 → DC 링크 → 인버터 (IGBT) → 모터
+        const kmX = x0 + 70;
+        const kmY = supplyLineYs[1];
+        drawContactor(kmX, kmY, 'KM', state.running);
+        connectLines(x0, supplyLineYs, kmX, [kmY-22, kmY, kmY+22], phaseColors, phaseLights, state.running);
+
+        // 정류기 (Rectifier 박스)
+        const rectX = kmX + 80;
+        const rectY = kmY;
+        drawConverterBlock(rectX, rectY, 70, 70, 'RECT', '~/=', state.running);
+        connectMultiLines([kmX+60, kmX+60, kmX+60], [kmY-22, kmY, kmY+22], [rectX, rectX, rectX], [rectY-22, rectY, rectY+22], phaseColors, phaseLights, state.running);
+
+        // DC 링크 (2 라인)
+        const dcX = rectX + 70;
+        const dcOutX = dcX + 60;
+        ctx0.save();
+        ctx0.strokeStyle = state.running ? '#fcd34d' : 'rgba(148,163,184,0.4)';
+        ctx0.lineWidth = 2.6;
+        ctx0.lineCap = 'round';
+        if (state.running) { ctx0.shadowBlur = 12; ctx0.shadowColor = '#f59e0b'; }
+        ctx0.beginPath();
+        ctx0.moveTo(dcX, rectY - 14); ctx0.lineTo(dcOutX, rectY - 14);
+        ctx0.moveTo(dcX, rectY + 14); ctx0.lineTo(dcOutX, rectY + 14);
+        ctx0.stroke();
+        ctx0.restore();
+        // DC 평활 커패시터
+        ctx0.save();
+        ctx0.strokeStyle = state.running ? '#fde68a' : 'rgba(148,163,184,0.4)';
+        ctx0.lineWidth = 3;
+        ctx0.beginPath();
+        ctx0.moveTo(dcX + 30, rectY - 10); ctx0.lineTo(dcX + 30, rectY - 18);
+        ctx0.moveTo(dcX + 36, rectY - 6); ctx0.lineTo(dcX + 36, rectY - 22);
+        ctx0.moveTo(dcX + 30, rectY + 10); ctx0.lineTo(dcX + 30, rectY + 18);
+        ctx0.moveTo(dcX + 36, rectY + 6); ctx0.lineTo(dcX + 36, rectY + 22);
+        ctx0.stroke();
+        ctx0.restore();
+        ctx0.save();
+        ctx0.font = 'bold 9px ui-monospace, monospace';
+        ctx0.fillStyle = '#fde68a';
+        ctx0.textAlign = 'center';
+        ctx0.fillText('DC LINK', dcX + 30, rectY + 35);
+        ctx0.restore();
+
+        // 인버터 (IGBT 박스)
+        drawConverterBlock(dcOutX, rectY, 70, 70, 'INV', '=/~', state.running);
+
+        // 인버터 출력 → 모터
+        const invOutX = dcOutX + 70;
+        const motorTermXs = [motorCX - motorR - 20, motorCX - motorR - 20, motorCX - motorR - 20];
+        const motorTermYs = [motorCY - 36, motorCY, motorCY + 36];
+        connectMultiLines([invOutX, invOutX, invOutX], [rectY-22, rectY, rectY+22], motorTermXs, motorTermYs, phaseColors, phaseLights, state.running);
+        drawTerminalCluster(motorTermXs[0], motorTermYs, ['U', 'V', 'W'], phaseLights);
+
+        // 주파수 표시
+        const fNow = state.running ? (state.elapsed < state.tStart ? (state.elapsed / state.tStart) * 60 : 60) : 0;
+        ctx0.save();
+        ctx0.font = 'bold 10px ui-monospace, monospace';
+        ctx0.fillStyle = '#c4b5fd';
+        ctx0.textAlign = 'center';
+        ctx0.fillText(`f = ${fNow.toFixed(1)} Hz`, dcOutX + 35, rectY + 50);
+        ctx0.fillText(`V/f = const`, dcOutX + 35, rectY + 64);
+        ctx0.restore();
+    }
+}
+
+// 공통 연결 함수
+function connectLines(x0, ysFrom, x1, ysTo, colors, lights, active) {
+    for (let i = 0; i < 3; i++) {
+        ctx.save();
+        ctx.strokeStyle = active ? lights[i] : 'rgba(148,163,184,0.4)';
+        ctx.lineWidth = 2.6;
+        ctx.lineCap = 'round';
+        if (active) { ctx.shadowBlur = 10; ctx.shadowColor = colors[i]; }
+        ctx.beginPath();
+        ctx.moveTo(x0, ysFrom[i]);
+        ctx.lineTo(x1, ysFrom[i]);
+        if (ysFrom[i] !== ysTo[i]) {
+            ctx.lineTo(x1, ysTo[i]);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+function connectMultiLines(xsFrom, ysFrom, xsTo, ysTo, colors, lights, active) {
+    for (let i = 0; i < 3; i++) {
+        ctx.save();
+        ctx.strokeStyle = active ? lights[i] : 'rgba(148,163,184,0.4)';
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round';
+        if (active) { ctx.shadowBlur = 9; ctx.shadowColor = colors[i]; }
+        ctx.beginPath();
+        ctx.moveTo(xsFrom[i], ysFrom[i]);
+        // L-shape
+        const midX = (xsFrom[i] + xsTo[i]) / 2;
+        ctx.lineTo(midX, ysFrom[i]);
+        ctx.lineTo(midX, ysTo[i]);
+        ctx.lineTo(xsTo[i], ysTo[i]);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawTerminalCluster(x, ys, names, lights) {
+    for (let i = 0; i < 3; i++) {
+        ctx.save();
+        ctx.fillStyle = lights[i];
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = lights[i];
+        ctx.beginPath();
+        ctx.arc(x, ys[i], 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#e2e8f0';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(names[i], x - 8, ys[i]);
+        ctx.restore();
+    }
+}
+
+// 접촉기
+function drawContactor(x, y, name, active) {
+    const w = 60, h = 56;
+    ctx.save();
+    const grad = ctx.createLinearGradient(x, y - h/2, x + w, y + h/2);
+    if (active) {
+        grad.addColorStop(0, 'rgba(34, 197, 94, 0.7)');
+        grad.addColorStop(1, 'rgba(16, 185, 129, 0.55)');
+        ctx.shadowBlur = 22;
+        ctx.shadowColor = '#34d399';
+    } else {
+        grad.addColorStop(0, 'rgba(51, 65, 85, 0.7)');
+        grad.addColorStop(1, 'rgba(30, 41, 59, 0.7)');
+    }
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y - h/2, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = active ? 'rgba(167, 243, 208, 0.95)' : 'rgba(148, 163, 184, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // 접점 표시
+    ctx.save();
+    ctx.strokeStyle = active ? '#d1fae5' : 'rgba(148, 163, 184, 0.6)';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+        const ly = y - h/2 + 12 + i * 12;
+        ctx.beginPath();
+        ctx.moveTo(x + 6, ly);
+        if (active) {
+            ctx.lineTo(x + w - 6, ly);
+        } else {
+            ctx.lineTo(x + 22, ly);
+            ctx.moveTo(x + w - 22, ly - 8);
+            ctx.lineTo(x + w - 6, ly);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = active ? '#ecfdf5' : '#cbd5e1';
+    ctx.fillText(name, x + w/2, y + h/2 + 14);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = active ? '#86efac' : '#94a3b8';
+    ctx.fillText(active ? '● ON' : '○ OFF', x + w/2, y + h/2 + 28);
+    ctx.restore();
+}
+
+// 리액터 (코일 형태)
+function drawReactor(x, y, w, color, light, active) {
+    ctx.save();
+    if (active) {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+    }
+    ctx.strokeStyle = active ? light : 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    // 코일 4 loop
+    const loops = 4;
+    const step = w / loops;
+    ctx.moveTo(x, y);
+    for (let i = 0; i < loops; i++) {
+        const cx = x + step * (i + 0.5);
+        ctx.arc(cx, y, step / 2, Math.PI, 0, false);
+    }
+    ctx.stroke();
+    ctx.restore();
+    // 박스
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.strokeRect(x - 2, y - 12, w + 4, 24);
+    ctx.setLineDash([]);
+    ctx.restore();
+}
+
+// 사이리스터 쌍 (역병렬)
+function drawThyristorPair(x, y, w, color, light, active, ramp) {
+    ctx.save();
+    if (active) {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+    }
+    ctx.strokeStyle = active ? light : 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    // 본선
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    ctx.stroke();
+    // 삼각형 (사이리스터 기호) 2개 역방향
+    const tx1 = x + w * 0.35;
+    const tx2 = x + w * 0.65;
+    ctx.fillStyle = active ? light : 'rgba(148, 163, 184, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(tx1 - 8, y - 6); ctx.lineTo(tx1 + 8, y); ctx.lineTo(tx1 - 8, y + 6); ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(tx2 + 8, y - 6); ctx.lineTo(tx2 - 8, y); ctx.lineTo(tx2 + 8, y + 6); ctx.closePath();
+    ctx.fill();
+    // 게이트
+    if (active) {
+        ctx.strokeStyle = `rgba(252, 211, 77, ${0.4 + ramp * 0.5})`;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(tx1 + 2, y - 4); ctx.lineTo(tx1 + 2, y - 14);
+        ctx.moveTo(tx2 - 2, y + 4); ctx.lineTo(tx2 - 2, y + 14);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// 변환기 박스 (정류기/인버터)
+function drawConverterBlock(x, y, w, h, name, symbol, active) {
+    ctx.save();
+    const grad = ctx.createLinearGradient(x, y - h/2, x + w, y + h/2);
+    if (active) {
+        grad.addColorStop(0, 'rgba(168, 85, 247, 0.55)');
+        grad.addColorStop(1, 'rgba(99, 102, 241, 0.5)');
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#a855f7';
+    } else {
+        grad.addColorStop(0, 'rgba(51, 65, 85, 0.7)');
+        grad.addColorStop(1, 'rgba(30, 41, 59, 0.7)');
+    }
+    ctx.fillStyle = grad;
+    roundRect(ctx, x, y - h/2, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = active ? 'rgba(216, 180, 254, 0.95)' : 'rgba(148, 163, 184, 0.45)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = '#f5f3ff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(name, x + w/2, y - 6);
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillText(symbol, x + w/2, y + 10);
+    ctx.restore();
+}
+
+// 모터 하우징 + 회전자
+function drawMotorHousing(cx, cy, R, rotorAngle, N) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // 고정자 슬롯 표시 (12개)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * R * 0.92, cy + Math.sin(a) * R * 0.92);
+        ctx.lineTo(cx + Math.cos(a) * R * 0.78, cy + Math.sin(a) * R * 0.78);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 회전자
+    ctx.save();
+    ctx.shadowBlur = 22;
+    const intensity = Math.min(1, N / state.Ns);
+    ctx.shadowColor = state.running ? `rgba(251, 191, 36, ${0.5 + intensity * 0.5})` : '#475569';
+    const grad = ctx.createRadialGradient(cx - R*0.25, cy - R*0.3, 4, cx, cy, R * 0.7);
+    if (state.running) {
+        grad.addColorStop(0, '#fef3c7');
+        grad.addColorStop(0.4, '#fbbf24');
+        grad.addColorStop(1, '#7c2d12');
+    } else {
+        grad.addColorStop(0, '#64748b');
+        grad.addColorStop(1, '#1e293b');
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 회전 마커
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rotorAngle);
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#dc2626';
+    ctx.strokeStyle = 'rgba(254, 226, 226, 0.95)';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.55, 0);
+    ctx.lineTo(R * 0.55, 0);
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    ctx.save();
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(254, 215, 170, 0.95)';
+    ctx.textAlign = 'center';
+    ctx.fillText('MOTOR', cx, cy + R + 28);
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('3φ 농형 유도전동기', cx, cy + R + 44);
+    ctx.fillStyle = '#fcd34d';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillText(`${N.toFixed(0)} rpm`, cx, cy + R + 60);
+    ctx.restore();
+}
+
+// 결선 상태 큰 라벨
+function drawConnectionLabel(rightX, topY) {
+    let label = modeLabel(state.mode);
+    let sub = '';
+    let color = '#94a3b8', dotColor = '#475569';
+
+    if (state.phase === 'idle') { sub = 'STAND-BY'; color = '#cbd5e1'; dotColor = '#64748b'; }
+    else if (state.mode === 'ydelta' && state.phase === 'star') { sub = 'Y 결선 (기동)'; color = '#86efac'; dotColor = '#22c55e'; }
+    else if (state.mode === 'ydelta' && state.phase === 'transition') { sub = '전환 중'; color = '#fcd34d'; dotColor = '#f59e0b'; }
+    else if (state.mode === 'ydelta' && state.phase === 'delta') { sub = 'Δ 결선 (정상)'; color = '#fda4af'; dotColor = '#ef4444'; }
+    else if (state.phase === 'starting') { sub = '기동 중'; color = '#fcd34d'; dotColor = '#f59e0b'; }
+    else if (state.phase === 'running') { sub = '정상 운전'; color = '#86efac'; dotColor = '#22c55e'; }
+
+    ctx.save();
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    const labelLine1 = label;
+    const labelLine2 = sub;
+    const tw = Math.max(ctx.measureText(labelLine1).width, ctx.measureText(labelLine2).width);
+    const bw = tw + 44, bh = 44;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    roundRect(ctx, rightX - bw, topY, bw, bh, 10);
+    ctx.fill();
+    ctx.strokeStyle = `${dotColor}88`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = dotColor;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = dotColor;
+    ctx.beginPath();
+    ctx.arc(rightX - bw + 16, topY + bh/2, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(labelLine1, rightX - 10, topY + 14);
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillText(labelLine2, rightX - 10, topY + 30);
+    ctx.restore();
+}
+
+// 시퀀스 진행바
+function drawSequenceBar(x, y, w, h) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    let stages;
+    if (state.mode === 'ydelta') {
+        stages = [
+            { name: 'Y 기동', dur: state.tStart, color: 'rgba(34,197,94,0.55)', edge: '#86efac' },
+            { name: '전환', dur: DEAD_TIME, color: 'rgba(245,158,11,0.55)', edge: '#fcd34d' },
+            { name: 'Δ 정상', dur: 4, color: 'rgba(244,114,182,0.55)', edge: '#fda4af' },
+        ];
+    } else if (state.mode === 'dol') {
+        stages = [{ name: '직입 기동·정상', dur: state.tStart + 4, color: 'rgba(244,63,94,0.55)', edge: '#fca5a5' }];
+    } else if (state.mode === 'reactor') {
+        stages = [
+            { name: '리액터 기동', dur: state.tStart, color: 'rgba(245,158,11,0.55)', edge: '#fcd34d' },
+            { name: '단락(정상)', dur: 4, color: 'rgba(244,114,182,0.55)', edge: '#fda4af' },
+        ];
+    } else if (state.mode === 'soft') {
+        stages = [
+            { name: '전압 램프', dur: state.tStart, color: 'rgba(34,211,238,0.55)', edge: '#67e8f9' },
+            { name: '정상', dur: 4, color: 'rgba(244,114,182,0.55)', edge: '#fda4af' },
+        ];
+    } else if (state.mode === 'vvvf') {
+        stages = [
+            { name: '주파수 램프 (0→60Hz)', dur: state.tStart, color: 'rgba(168,85,247,0.55)', edge: '#c4b5fd' },
+            { name: '정상 (60Hz)', dur: 4, color: 'rgba(244,114,182,0.55)', edge: '#fda4af' },
+        ];
+    }
+    const total = stages.reduce((s, st) => s + st.dur, 0);
+
+    let cursorX = x + 2;
+    for (const stg of stages) {
+        const sw = (stg.dur / total) * (w - 4);
+        ctx.fillStyle = stg.color;
+        roundRect(ctx, cursorX, y + 2, sw, h - 4, 6);
+        ctx.fill();
+        ctx.strokeStyle = stg.edge;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = '#0f172a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(stg.name, cursorX + sw/2, y + h/2);
+        cursorX += sw;
+    }
+
+    if (state.running) {
+        const tt = Math.min(state.elapsed, total);
+        const mx = x + 2 + (tt / total) * (w - 4);
+        ctx.strokeStyle = '#f9a8d4';
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#f472b6';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(mx, y - 3);
+        ctx.lineTo(mx, y + h + 3);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ===== 비교 곡선 캔버스 (5종 동시) =====
+function drawCurve() {
+    const W = curveCv.width, H = curveCv.height;
+    cctx.clearRect(0, 0, W, H);
+
+    const bg = cctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    cctx.fillStyle = bg;
+    cctx.fillRect(0, 0, W, H);
+
+    cctx.save();
+    cctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    cctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { cctx.beginPath(); cctx.moveTo(i, 0); cctx.lineTo(i, H); cctx.stroke(); }
+    for (let i = 0; i < H; i += 30) { cctx.beginPath(); cctx.moveTo(0, i); cctx.lineTo(W, i); cctx.stroke(); }
+    cctx.restore();
+
+    const padL = 40, padR = 16, padT = 18, padB = 24;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const colors = {
+        dol: '#f472b6',
+        ydelta: '#86efac',
+        reactor: '#fcd34d',
+        soft: '#67e8f9',
+        vvvf: '#c4b5fd'
+    };
+
+    if (state.curveMode === 'i') {
+        // I(t) 곡선
+        const Tmax = Math.max(15, state.tStart + 8);
+        const Imax = 8;
+        // Y축
+        cctx.save();
+        cctx.font = 'bold 9px ui-monospace, monospace';
+        cctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        cctx.textAlign = 'right'; cctx.textBaseline = 'middle';
+        for (const yt of [0, 1, 3, 5, 7]) {
+            const py = padT + plotH - (yt / Imax) * plotH;
+            cctx.fillText(`${yt}In`, padL - 6, py);
+            cctx.strokeStyle = yt === 1 ? 'rgba(167, 243, 208, 0.3)' : 'rgba(148, 163, 184, 0.12)';
+            cctx.lineWidth = yt === 1 ? 1.4 : 1;
+            cctx.beginPath();
+            cctx.moveTo(padL, py); cctx.lineTo(W - padR, py);
+            cctx.stroke();
+        }
+        // X축
+        cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+        for (let i = 0; i <= 6; i++) {
+            const tt = (i / 6) * Tmax;
+            const px = padL + (tt / Tmax) * plotW;
+            cctx.fillText(`${tt.toFixed(0)}s`, px, H - padB + 4);
+        }
+        cctx.restore();
+
+        // 5종 곡선
+        const modes = ['dol', 'ydelta', 'reactor', 'soft', 'vvvf'];
+        for (const m of modes) {
+            cctx.save();
+            const isCurrent = m === state.mode;
+            cctx.strokeStyle = colors[m];
+            cctx.lineWidth = isCurrent ? 2.6 : 1.4;
+            cctx.globalAlpha = isCurrent ? 1 : 0.5;
+            if (isCurrent) {
+                cctx.shadowBlur = 8;
+                cctx.shadowColor = colors[m];
+            }
+            cctx.beginPath();
+            const oldMode = state.mode;
+            // 모드를 일시적으로 변경하지 않고 currentCurve(m, t) 직접 호출
+            for (let px = 0; px <= plotW; px++) {
+                const t = (px / plotW) * Tmax;
+                const i = currentCurve(m, t);
+                const py = padT + plotH - Math.min(Imax, Math.max(0, i)) / Imax * plotH;
+                if (px === 0) cctx.moveTo(padL + px, py);
+                else cctx.lineTo(padL + px, py);
+            }
+            cctx.stroke();
+            cctx.restore();
+        }
+
+        // 현재 진행 위치 (running)
+        if (state.running) {
+            const px = padL + (state.elapsed / Tmax) * plotW;
+            const cur = currentCurve(state.mode, state.elapsed);
+            const py = padT + plotH - Math.min(Imax, cur) / Imax * plotH;
+            cctx.save();
+            cctx.strokeStyle = '#f9a8d4';
+            cctx.lineWidth = 1.5;
+            cctx.setLineDash([3, 3]);
+            cctx.beginPath();
+            cctx.moveTo(px, padT); cctx.lineTo(px, padT + plotH);
+            cctx.stroke();
+            cctx.setLineDash([]);
+            cctx.shadowBlur = 14;
+            cctx.shadowColor = '#f472b6';
+            cctx.fillStyle = '#fce7f3';
+            cctx.beginPath();
+            cctx.arc(px, py, 5, 0, Math.PI * 2);
+            cctx.fill();
+            cctx.restore();
+        }
+        // 타이틀
+        cctx.save();
+        cctx.font = 'bold 10px ui-monospace, monospace';
+        cctx.fillStyle = 'rgba(186, 230, 253, 0.7)';
+        cctx.textAlign = 'left';
+        cctx.fillText(`I/In vs t  ·  In = ${state.In}A · 굵은 선 = 현재 모드`, padL + 4, padT - 12);
+        cctx.restore();
+    }
+    else { // 't' = 토크-속도 곡선
+        // 토크-속도 곡선 (모터 특성: T-N curve)
+        // 각 기동 방식별 T(N) 차이 표현
+        const Nmax = 1800;
+        const Tmax = 2.5;
+        cctx.save();
+        cctx.font = 'bold 9px ui-monospace, monospace';
+        cctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        cctx.textAlign = 'right'; cctx.textBaseline = 'middle';
+        for (const yt of [0, 0.5, 1, 1.5, 2, 2.5]) {
+            const py = padT + plotH - (yt / Tmax) * plotH;
+            cctx.fillText(`${yt}Tn`, padL - 6, py);
+            cctx.strokeStyle = yt === 1 ? 'rgba(167, 243, 208, 0.3)' : 'rgba(148, 163, 184, 0.12)';
+            cctx.beginPath();
+            cctx.moveTo(padL, py); cctx.lineTo(W - padR, py);
+            cctx.stroke();
+        }
+        cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+        for (let i = 0; i <= 6; i++) {
+            const nn = (i / 6) * Nmax;
+            const px = padL + (nn / Nmax) * plotW;
+            cctx.fillText(`${nn.toFixed(0)}`, px, H - padB + 4);
+        }
+        cctx.restore();
+
+        // 5종 T-N 곡선
+        const modes = ['dol', 'ydelta', 'reactor', 'soft', 'vvvf'];
+        for (const m of modes) {
+            cctx.save();
+            const isCurrent = m === state.mode;
+            cctx.strokeStyle = colors[m];
+            cctx.lineWidth = isCurrent ? 2.6 : 1.4;
+            cctx.globalAlpha = isCurrent ? 1 : 0.5;
+            if (isCurrent) {
+                cctx.shadowBlur = 8;
+                cctx.shadowColor = colors[m];
+            }
+            cctx.beginPath();
+            for (let px = 0; px <= plotW; px++) {
+                const n = (px / plotW) * Nmax;
+                const t = torqueNCurve(m, n);
+                const py = padT + plotH - Math.min(Tmax, Math.max(0, t)) / Tmax * plotH;
+                if (px === 0) cctx.moveTo(padL + px, py);
+                else cctx.lineTo(padL + px, py);
+            }
+            cctx.stroke();
+            cctx.restore();
+        }
+
+        // 부하 토크 수평선
+        cctx.save();
+        cctx.strokeStyle = 'rgba(244, 63, 94, 0.6)';
+        cctx.lineWidth = 1.4;
+        cctx.setLineDash([4, 4]);
+        cctx.beginPath();
+        const py = padT + plotH - Math.min(Tmax, state.tLoad) / Tmax * plotH;
+        cctx.moveTo(padL, py);
+        cctx.lineTo(W - padR, py);
+        cctx.stroke();
+        cctx.setLineDash([]);
+        cctx.font = 'bold 9px ui-monospace, monospace';
+        cctx.fillStyle = '#fca5a5';
+        cctx.textAlign = 'left';
+        cctx.fillText(`부하 토크 ${state.tLoad.toFixed(2)}×Tn`, padL + 4, py - 6);
+        cctx.restore();
+
+        // 운전점 (현재 N에서의 토크)
+        if (state.running) {
+            const px = padL + (state.N / Nmax) * plotW;
+            const tCur = torqueNCurve(state.mode, state.N);
+            const py = padT + plotH - Math.min(Tmax, tCur) / Tmax * plotH;
+            cctx.save();
+            cctx.shadowBlur = 14;
+            cctx.shadowColor = '#f472b6';
+            cctx.fillStyle = '#fce7f3';
+            cctx.beginPath();
+            cctx.arc(px, py, 5, 0, Math.PI * 2);
+            cctx.fill();
+            cctx.restore();
+        }
+
+        cctx.save();
+        cctx.font = 'bold 10px ui-monospace, monospace';
+        cctx.fillStyle = 'rgba(186, 230, 253, 0.7)';
+        cctx.textAlign = 'left';
+        cctx.fillText(`Torque vs Speed (rpm)  ·  굵은 선 = 현재 모드`, padL + 4, padT - 12);
+        cctx.restore();
+    }
+}
+
+// T-N 곡선 모델 (간이): 정지 시 기동 토크, 동기 속도에서 0
+// DOL = 기준, Y-Δ = 1/3 (Y), 리액터 = k², 소프트 = ramp²(시간 무관 — 그래프 상 표현 위해 일정 비율), VVVF = 거의 일정
+function torqueNCurve(mode, N) {
+    const Ns = 1800;
+    const s = 1 - N / Ns; // 슬립
+    if (s <= 0) return 0;
+    // 기준 곡선 (DOL): T_max ≈ 2.2×Tn @ s≈0.2, T_st ≈ 1.8×Tn @ s=1
+    // 간이: 2 × s × (1.3 - s) (피크 형태)
+    const dolBase = 2.4 * s * (1.2 - s * 0.4);
+    if (mode === 'dol') return dolBase;
+    if (mode === 'ydelta') {
+        // 기동 시 1/3, 가속 후 풀 토크
+        if (N < Ns * 0.4) return dolBase / 3;       // Y 구간
+        return dolBase;                              // Δ 구간
+    }
+    if (mode === 'reactor') {
+        const k = state.kReactor;
+        if (N < Ns * 0.6) return dolBase * k * k;
+        return dolBase;
+    }
+    if (mode === 'soft') {
+        // 램프 토크 (저속 → 점진 증가)
+        const ramp = Math.min(1, N / (Ns * 0.7));
+        return dolBase * ramp;
+    }
+    if (mode === 'vvvf') {
+        // V/f 일정 → 어느 속도에서도 정격 토크
+        return Math.min(1.3, 1.0 + (s > 0.5 ? 0.2 : 0));
+    }
+    return 0;
+}
+
+// ===== UI 업데이트 =====
+function updateUI() {
+    state.In = +$('inA').value;
+    state.tLoad = +$('tLoad').value;
+    state.tStart = +$('tStart').value;
+    state.kReactor = +$('kReactor').value;
+    $('inDisp').textContent = state.In;
+    $('tlDisp').textContent = state.tLoad.toFixed(2);
+    $('tStartDisp').textContent = state.tStart.toFixed(1);
+    $('kDisp').textContent = state.kReactor.toFixed(2);
+
+    // 리액터 박스 활성/비활성 표시
+    $('kReactorBox').style.opacity = state.mode === 'reactor' ? '1' : '0.4';
+
+    // 회로 라벨
+    $('circuitLabel').textContent = '3상 전원 → ' + modeLabel(state.mode) + ' 회로 → 농형 유도전동기';
+
+    const Inow = instantCurrent();
+    const tNow = instantTorque();
+    $('iVal').textContent = state.running ? `${Inow.toFixed(1)} A · ${(Inow/state.In).toFixed(2)}×In` : '—';
+    $('torqueVal').textContent = state.running ? `${tNow.toFixed(2)}×Tn` : '—';
+    $('speedVal').textContent = `${state.N.toFixed(0)} rpm`;
+    $('timeVal').textContent = `${state.elapsed.toFixed(2)} s`;
+
+    $('pill-i').classList.toggle('danger', state.running && Inow > 4 * state.In);
+    $('pill-i').classList.toggle('warn', state.running && Inow > 2 * state.In && Inow <= 4 * state.In);
+    $('pill-i').classList.toggle('flash', state.running && Inow > state.In && Inow <= 2 * state.In);
+    $('pill-speed').classList.toggle('flash', state.running && state.N > state.Ns * 0.5);
+    $('pill-time').classList.toggle('flash', state.running);
+    $('pill-torque').classList.toggle('flash', state.running && tNow > 0.5);
+}
+
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+}
+
+// ===== 이벤트 =====
+['inA', 'tLoad', 'tStart', 'kReactor'].forEach(id => {
+    $(id).addEventListener('input', () => { updateUI(); flashCard(); });
+});
+
+document.querySelectorAll('.mode-btn[data-m]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn[data-m]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.mode = btn.dataset.m;
+        state.running = false;
+        state.phase = 'idle';
+        state.elapsed = 0;
+        state.N = 0;
+        state.history = [];
+        updateUI();
+        flashCard();
+    });
+});
+
+document.querySelectorAll('.curve-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.curve-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.curveMode = btn.dataset.curve;
+    });
+});
+
+$('btnStart').addEventListener('click', () => {
+    if (state.running) return;
+    state.running = true;
+    state.elapsed = 0;
+    state.history = [];
+    state.N = 0;
+    state.phase = state.mode === 'ydelta' ? 'star' : 'starting';
+    flashCard();
+});
+
+$('btnStop').addEventListener('click', () => {
+    state.running = false;
+    state.phase = 'idle';
+    state.elapsed = 0;
+    state.history = [];
+    updateUI();
+    flashCard();
+});
+
+// ===== 메인 루프 =====
+function animate(ts) {
+    if (!state.lastTs) state.lastTs = ts;
+    let dt = (ts - state.lastTs) / 1000;
+    state.lastTs = ts;
+    if (dt > 0.1) dt = 0.1;
+
+    updatePhase(dt);
+    updateSpeed(dt);
+
+    // 회전 위상 (시각화) — N에 비례
+    state.omega += (state.N / state.Ns) * 0.25;
+
+    if (state.running) {
+        const i = instantCurrent();
+        state.history.push({ t: state.elapsed, i });
+        if (state.history.length > 800) state.history.shift();
+    }
+
+    drawMain();
+    drawCurve();
+    updateUI();
+
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    updateUI();
+    requestAnimationFrame(animate);
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>

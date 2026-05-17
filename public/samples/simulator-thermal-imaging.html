@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>열화상 카메라 시뮬레이터 — 전기 설비 결함 진단</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(244, 63, 94, 0.16), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(251, 146, 60, 0.16), transparent),
+        radial-gradient(900px 800px at 50% 50%, rgba(20, 14, 30, 0.6), transparent),
+        #060614;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 14% 22%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 62% 76%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 28%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 32% 78%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 42%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 46% 60%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 92% 84%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 64%, rgba(255,255,255,0.4), transparent);
+    background-size: 640px 640px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.55;
+}
+@keyframes twinkle { 0% { opacity: 0.35 } 100% { opacity: 0.8 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,63,94,0.45), rgba(251,146,60,0.42), rgba(253,224,71,0.45));
+    box-shadow: 0 30px 100px -20px rgba(244, 63, 94, 0.30), 0 0 40px rgba(251, 146, 60, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 760px;
+    border-radius: 17px;
+    background: #04060f;
+    cursor: crosshair;
+}
+.glass {
+    background: rgba(15, 14, 28, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244, 63, 94, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fb7185; box-shadow: 0 0 12px #fb7185;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fb7185; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(251,146,60,0.4), rgba(253,224,71,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #fdba74, #fde68a);
+    box-shadow: 0 0 22px rgba(251, 146, 60, 0.85);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 14, 28, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-load { background: linear-gradient(135deg, rgba(125,211,252,0.20), rgba(125,211,252,0.06)); border-color: rgba(125,211,252,0.5); color: #bae6fd; }
+.chip-r    { background: linear-gradient(135deg, rgba(251,146,60,0.22), rgba(251,146,60,0.06)); border-color: rgba(251,146,60,0.55); color: #fed7aa; }
+.chip-amb  { background: linear-gradient(135deg, rgba(125,211,252,0.18), rgba(168,139,250,0.10)); border-color: rgba(168,139,250,0.45); color: #c4b5fd; }
+.chip-cmap { background: linear-gradient(135deg, rgba(253,224,71,0.22), rgba(244,63,94,0.10)); border-color: rgba(253,224,71,0.45); color: #fde68a; }
+.chip-fault{ background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06)); border-color: rgba(244,63,94,0.55); color: #fecaca; }
+.live-pill {
+    background: rgba(15, 14, 28, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 146, 60, 0.7);
+    box-shadow: 0 0 24px rgba(251, 146, 60, 0.45);
+}
+.live-pill.warn {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, rgba(251,191,36,0.14), rgba(15,14,28,0.85));
+}
+.live-pill.alarm {
+    border-color: rgba(251, 146, 60, 0.9);
+    box-shadow: 0 0 24px rgba(251, 146, 60, 0.5);
+    background: linear-gradient(135deg, rgba(251,146,60,0.18), rgba(15,14,28,0.85));
+}
+.live-pill.danger {
+    border-color: rgba(244, 63, 94, 0.9);
+    box-shadow: 0 0 28px rgba(244, 63, 94, 0.55);
+    background: linear-gradient(135deg, rgba(244,63,94,0.20), rgba(15,14,28,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fda4af, #fdba74, #fde68a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 26, 44, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 26, 44, 0.7);
+    border-color: rgba(251, 146, 60, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(251,146,60,0.16), rgba(244,63,94,0.10)), rgba(15, 14, 28, 0.6);
+    border: 1px solid rgba(251, 146, 60, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fed7aa; }
+.fault-btn {
+    background: rgba(15, 14, 28, 0.7);
+    border: 1px solid rgba(244, 63, 94, 0.28);
+    color: #fecaca;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.fault-btn.active {
+    background: linear-gradient(135deg, rgba(244,63,94,0.32), rgba(225,29,72,0.25));
+    border-color: rgba(244, 63, 94, 0.85);
+    color: #fff1f2;
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.45);
+}
+.cmap-btn {
+    background: rgba(15, 14, 28, 0.7);
+    border: 1px solid rgba(253, 224, 71, 0.28);
+    color: #fde68a;
+    cursor: pointer;
+    transition: all 200ms;
+}
+.cmap-btn.active {
+    background: linear-gradient(135deg, rgba(253,224,71,0.30), rgba(251,146,60,0.22));
+    border-color: rgba(253, 224, 71, 0.85);
+    color: #fefce8;
+    box-shadow: 0 0 18px rgba(253, 224, 71, 0.40);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(244,63,94,0.18), rgba(251,146,60,0.18));
+    border: 1px solid rgba(244,63,94,0.45);
+    color: #fecaca;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(244,63,94,0.32), rgba(251,146,60,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(244,63,94,0.45);
+}
+.alarm-banner {
+    background: linear-gradient(90deg, rgba(244,63,94,0.18), rgba(244,63,94,0.04), rgba(244,63,94,0.18));
+    border: 1px solid rgba(244, 63, 94, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(244,63,94,0.35); } 50% { box-shadow: 0 0 28px rgba(244,63,94,0.7); } }
+.stage-card {
+    background: rgba(15, 14, 28, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+}
+.stage-card.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(15,14,28,0.75));
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.32);
+    transform: translateY(-2px);
+}
+.stage-card.danger {
+    background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(15,14,28,0.75));
+    border-color: rgba(244, 63, 94, 0.75);
+    box-shadow: 0 0 18px rgba(244, 63, 94, 0.4);
+}
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-rose-300">
+            <span class="pulse-dot"></span>
+            THERMAL IMAGING · IR CAMERA · &Delta;T DIAGNOSIS · IEC TS 62271-205
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-rose-200 via-orange-200 to-amber-200 bg-clip-text text-transparent">
+            열화상 카메라 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            전기 설비의 <span class="text-rose-300 font-semibold">접속 불량 · 과부하 · 절연 열화</span> 는 모두 <span class="text-orange-300 font-semibold">발열</span> 로 나타납니다.
+            적외선 카메라로 표면 온도 분포를 가시화하고
+            <span class="text-amber-300 font-semibold">정상부와 결함부의 온도차(&Delta;T)</span> 로 결함 등급을 판정합니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-hot">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">핫스팟 온도 T<sub>hot</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="hotDisp" class="live-num">25.0</span> <span class="text-xs opacity-60 font-normal">°C</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-amb">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">환경 온도 T<sub>amb</sub></p>
+            <p class="mt-1 text-lg font-bold"><span id="ambDisp" class="live-num">25</span> <span class="text-xs opacity-60 font-normal">°C</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-dt">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">온도차 &Delta;T</p>
+            <p class="mt-1 text-lg font-bold"><span id="dtDisp" class="live-num">0.0</span> <span class="text-xs opacity-60 font-normal">K</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-grade">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">알람 등급</p>
+            <p class="mt-1 text-lg font-bold" id="gradeDisp"><span class="text-emerald-300">● 정상</span></p>
+        </div>
+    </div>
+
+    <!-- 알람 배너 -->
+    <div id="alarmBanner" class="alarm-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        <span id="alarmText">⚠ ALARM</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">좌: RGB · 우: IR(히트맵) · 마우스로 SPOT 측정 (캔버스 위)</span>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="normal">정상</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="warn">경계 75°C</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="alarm">위험 110°C</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- 진단 시퀀스 단계 표시 -->
+            <div class="glass rounded-2xl p-5" id="stageCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">🌡</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-amber-200 bg-clip-text text-transparent">열화상 진단 절차</span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[11px]" id="stageList">
+                    <div class="stage-card rounded-lg p-3" data-stage="scan">
+                        <p class="font-bold text-sky-300">① 스캔</p>
+                        <p class="text-slate-400 mt-0.5">부하 가동 상태에서 배전반·MCC 전체를 IR 촬영</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="spot">
+                        <p class="font-bold text-amber-300">② 스팟</p>
+                        <p class="text-slate-400 mt-0.5">핫스팟·정상부 동일 부품에서 두 지점 측정</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="dt">
+                        <p class="font-bold text-orange-300">③ &Delta;T 산정</p>
+                        <p class="text-slate-400 mt-0.5">동일 부하의 정상부 대비 온도차로 결함 강도 판단</p>
+                    </div>
+                    <div class="stage-card rounded-lg p-3" data-stage="grade">
+                        <p class="font-bold text-rose-300">④ 등급</p>
+                        <p class="text-slate-400 mt-0.5">60 / 80 / 100 °C 임계로 정상 · 경계 · 알람 · 위험</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-rose-200 to-amber-200 bg-clip-text text-transparent">발열 모델 (Joule + 방열)</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$P_{loss} = I^2 R_c \;+\; P_{leak} \quad [\text{W}]$$
+                </div>
+                <div class="math-container mt-2">
+                    $$T_{hot} = T_{amb} + \frac{P_{loss}}{h \cdot A} \quad [^\circ\text{C}]$$
+                </div>
+                <div class="math-container mt-2">
+                    $$\Delta T = T_{hot} - T_{ref}\quad(\text{동일 부하의 정상부 기준})$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">
+                    접속 불량은 접촉저항 R<sub>c</sub> 증가로 I²R 손실이 커져 국소 발열 → 핫스팟. 과부하는 도체 전체가 균일하게 가열되어 <strong>면(面) 발열</strong>,
+                    절연 열화는 누설전류가 절연체를 통해 흐르며 <strong>유전 손실</strong> 로 발열합니다. 일반적으로 <strong>&Delta;T ≥ 20 K</strong> 부터 즉시 조치 권고.
+                </p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-rose-200">측정 조건</h2>
+
+            <div class="chip-load chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 전류 I</span><span id="loadVal" class="font-mono text-base">100</span></label>
+                <input type="range" id="load" min="0" max="300" step="5" value="100" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">A · 0 ~ 300</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>접촉 저항 R<sub>c</sub></span><span id="rcVal" class="font-mono text-base">0.10</span></label>
+                <input type="range" id="rc" min="0.05" max="5" step="0.05" value="0.10" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">mΩ · 정상 0.05 ~ 결함 5</p>
+            </div>
+
+            <div class="chip-amb chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>환경 온도 T<sub>amb</sub></span><span id="ambVal" class="font-mono text-base">25</span></label>
+                <input type="range" id="amb" min="-10" max="50" step="1" value="25" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">°C · 주위 온도</p>
+            </div>
+
+            <div class="chip-fault chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">결함 종류</p>
+                <div class="grid grid-cols-1 gap-1.5 mt-2">
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-fault="contact">접속 불량 (R<sub>c</sub>↑)</button>
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-fault="overload">과부하 (전체 가열)</button>
+                    <button class="fault-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-fault="insulation">절연 열화 (누설)</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">발열 분포 형태가 달라짐</p>
+            </div>
+
+            <div class="chip-cmap chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">표시 컬러맵</p>
+                <div class="grid grid-cols-3 gap-1.5 mt-2">
+                    <button class="cmap-btn rounded-md px-1.5 py-1.5 text-[11px] font-bold active" data-cmap="iron">Iron</button>
+                    <button class="cmap-btn rounded-md px-1.5 py-1.5 text-[11px] font-bold" data-cmap="rainbow">Rainbow</button>
+                    <button class="cmap-btn rounded-md px-1.5 py-1.5 text-[11px] font-bold" data-cmap="gray">Gray</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">FLIR/Fluke 표준 팔레트</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">정상</span> · T &lt; 60 °C, &Delta;T &lt; 10 K</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">경계</span> · 60 ≤ T &lt; 80 °C · 점검 계획</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-orange-300">알람</span> · 80 ≤ T &lt; 100 °C · 조속 정비</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">위험</span> · T ≥ 100 °C · 즉시 차단·교체</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const TOP_H = 480;       // 영상 패널 영역 (RGB + IR)
+const BAR_H = 64;        // 컬러바
+const HIST_H = 216;      // 온도 히스토리
+const TOTAL_H = TOP_H + BAR_H + HIST_H;
+
+const state = {
+    I: 100,           // A
+    Rc: 0.10,         // mΩ (정상 ~0.05~0.15, 결함 1~5)
+    Tamb: 25,         // °C
+    fault: 'contact', // 'contact' | 'overload' | 'insulation'
+    cmap: 'iron',     // 'iron' | 'rainbow' | 'gray'
+    Thot: 25,
+    Tref: 25,         // 동일 부하의 정상부 기준
+    cursor: null,     // {gx, gy, t}  (그리드 좌표)
+    cursorTemp: null,
+    t: 0,
+    history: [],      // 최근 핫스팟 온도 (시간축)
+};
+
+// 히트맵 그리드 해상도 (IR 카메라는 보통 80x60 ~ 640x480)
+const GW = 96, GH = 60;
+let heatGrid = new Float32Array(GW * GH);
+
+// 결함 위치 (그리드 좌표)
+const HOT = { gx: 64, gy: 26, r: 6 };       // 접속 불량 핫스팟 (오른쪽 단자)
+const NORMAL = { gx: 28, gy: 26, r: 6 };    // 정상부 단자 (왼쪽)
+
+// 캔버스 픽셀 좌표 변환용 (drawIR 안에서 갱신)
+let irBox = { x: 0, y: 0, w: 0, h: 0 };
+let rgbBox = { x: 0, y: 0, w: 0, h: 0 };
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+}
+window.addEventListener('resize', resize);
+
+// ============ 발열 물리 ============
+// 정상부 발열: 접촉저항 0.05 mΩ 가정, 같은 부하
+function tempRise(I, Rc_mOhm, fault) {
+    const Rc = Rc_mOhm * 1e-3; // Ω
+    // 단자 1개 자체 손실 P = I^2 * Rc
+    let P = I * I * Rc; // W
+    // 결함별 보정
+    if (fault === 'overload') {
+        // 도체 전체가 발열, 동일 R 이지만 정격 초과로 면 발열량 증가
+        // I 가 정격(150A) 초과시 추가 가열
+        const Inom = 150;
+        if (I > Inom) P += Math.pow((I - Inom) / Inom, 1.6) * 40;
+    } else if (fault === 'insulation') {
+        // 절연체 누설 전류 (수십~수백 mA) 에 의한 발열
+        // 누설은 절연저항 감소로 모델 (Rc 가 클수록 누설 ↑)
+        const Vph = 380;
+        const leakage = (Rc_mOhm / 5) * 0.4; // 0~0.4 A
+        P += Vph * leakage; // 유전 손실 등가
+    }
+    // 방열 계수 hA (W/K) — 자연 대류 단자 클램프 가정 0.6 W/K
+    const hA = 0.6;
+    return P / hA;
+}
+
+// ============ 컬러맵 ============
+function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+function ironMap(v) {
+    v = clamp01(v);
+    // 0=black, 0.25=violet, 0.5=red, 0.75=orange, 1=yellow/white
+    const stops = [
+        [0.00, [  0,   0,   0]],
+        [0.15, [ 40,   0,  70]],
+        [0.35, [120,  20, 130]],
+        [0.55, [220,  60,  60]],
+        [0.75, [255, 150,  20]],
+        [0.90, [255, 230,  90]],
+        [1.00, [255, 255, 230]]
+    ];
+    return interpStops(stops, v);
+}
+function rainbowMap(v) {
+    v = clamp01(v);
+    const stops = [
+        [0.00, [ 12,  24,  90]],
+        [0.20, [ 30, 120, 200]],
+        [0.40, [ 40, 200, 160]],
+        [0.55, [120, 220,  60]],
+        [0.72, [255, 230,  40]],
+        [0.88, [255, 110,  20]],
+        [1.00, [220,  20,  40]]
+    ];
+    return interpStops(stops, v);
+}
+function grayMap(v) {
+    v = clamp01(v);
+    const g = Math.round(20 + v * 230);
+    return [g, g, g];
+}
+function interpStops(stops, v) {
+    for (let i = 1; i < stops.length; i++) {
+        if (v <= stops[i][0]) {
+            const t = (v - stops[i-1][0]) / (stops[i][0] - stops[i-1][0]);
+            const a = stops[i-1][1], b = stops[i][1];
+            return [
+                Math.round(a[0] + (b[0] - a[0]) * t),
+                Math.round(a[1] + (b[1] - a[1]) * t),
+                Math.round(a[2] + (b[2] - a[2]) * t)
+            ];
+        }
+    }
+    return stops[stops.length-1][1];
+}
+function pickCmap(v) {
+    if (state.cmap === 'iron') return ironMap(v);
+    if (state.cmap === 'rainbow') return rainbowMap(v);
+    return grayMap(v);
+}
+
+// ============ 히트 그리드 계산 ============
+function computeHeatField() {
+    // T_amb 기반 + 결함부 + 정상부 가산
+    const baseRise = tempRise(state.I, 0.05, 'contact'); // 정상 단자 가산 (작음)
+    const Tnormal = state.Tamb + baseRise;
+    state.Tref = Tnormal;
+
+    // 결함 발열
+    const dTfault = tempRise(state.I, state.Rc, state.fault) - baseRise;
+    const Tfault = Tnormal + Math.max(0, dTfault);
+    state.Thot = Tfault;
+
+    // 그리드 채우기 — 결함 종류별 분포 모양
+    for (let y = 0; y < GH; y++) {
+        for (let x = 0; x < GW; x++) {
+            // 기본: 환경 + 부하에 따른 약한 케이스 가열
+            let T = state.Tamb + 0.02 * state.I; // 외함 약한 가열
+
+            // 도체 라인 (수평) 부근 약한 가열
+            const distLine1 = Math.abs(y - 18);
+            const distLine2 = Math.abs(y - 26);
+            const distLine3 = Math.abs(y - 34);
+            const lineFalloff = Math.exp(-distLine1*distLine1*0.06) + Math.exp(-distLine2*distLine2*0.06) + Math.exp(-distLine3*distLine3*0.06);
+            T += baseRise * 0.35 * lineFalloff;
+
+            // 정상부 단자 — 약하게 부풀어오름
+            const dxN = x - NORMAL.gx, dyN = y - NORMAL.gy;
+            const dN = Math.sqrt(dxN*dxN + dyN*dyN);
+            T += baseRise * Math.exp(-dN*dN / (2 * NORMAL.r * NORMAL.r));
+
+            // 결함부 — 결함 종류별 모양
+            if (state.fault === 'contact') {
+                // 좁고 진한 핫스팟 (점 발열)
+                const dxH = x - HOT.gx, dyH = y - HOT.gy;
+                const dH = Math.sqrt(dxH*dxH + dyH*dyH);
+                T += dTfault * Math.exp(-dH*dH / (2 * HOT.r * HOT.r));
+            } else if (state.fault === 'overload') {
+                // 도체 전체가 균일하게 가열 (수평 라인 따라 넓게)
+                const distAny = Math.min(distLine1, distLine2, distLine3);
+                T += dTfault * Math.exp(-distAny*distAny*0.12) * 0.85;
+            } else if (state.fault === 'insulation') {
+                // 절연체(부분) — 패치 모양 (단자 사이 케이블 둘레)
+                const cx1 = 48, cy1 = 20;
+                const cx2 = 52, cy2 = 32;
+                const d1 = Math.hypot(x - cx1, y - cy1);
+                const d2 = Math.hypot(x - cx2, y - cy2);
+                T += dTfault * 0.55 * (Math.exp(-d1*d1/40) + Math.exp(-d2*d2/40));
+            }
+            heatGrid[y * GW + x] = T;
+        }
+    }
+
+    // 핫스팟 위치별 정확한 결함 온도 보장
+    if (state.fault === 'contact') {
+        heatGrid[HOT.gy * GW + HOT.gx] = Tfault;
+    } else if (state.fault === 'overload') {
+        // 라인 중심 어디든 거의 같은 온도
+        heatGrid[26 * GW + 48] = Tnormal + dTfault * 0.85;
+    } else {
+        heatGrid[20 * GW + 48] = Tnormal + dTfault * 0.55;
+    }
+
+    // 히스토리 — 매 4프레임마다 기록
+    if (state.t % 4 === 0) {
+        state.history.push(state.Thot);
+        if (state.history.length > 200) state.history.shift();
+    }
+}
+
+// ============ 디스플레이 ============
+function gradeFor(T, dT) {
+    if (T >= 100 || dT >= 40) return { name: '위험', color: '#f43f5e', pill: 'danger' };
+    if (T >= 80  || dT >= 20) return { name: '알람', color: '#fb923c', pill: 'alarm' };
+    if (T >= 60  || dT >= 10) return { name: '경계', color: '#fbbf24', pill: 'warn' };
+    return { name: '정상', color: '#34d399', pill: '' };
+}
+
+function updateDisplays() {
+    state.I    = +$('load').value;
+    state.Rc   = +$('rc').value;
+    state.Tamb = +$('amb').value;
+
+    $('loadVal').textContent = state.I.toFixed(0);
+    $('rcVal').textContent   = state.Rc.toFixed(2);
+    $('ambVal').textContent  = state.Tamb.toFixed(0);
+
+    const dT = state.Thot - state.Tref;
+    const g = gradeFor(state.Thot, dT);
+
+    $('hotDisp').textContent = state.Thot.toFixed(1);
+    $('ambDisp').textContent = state.Tamb.toFixed(0);
+    $('dtDisp').textContent  = dT.toFixed(1);
+
+    const gradeEl = $('gradeDisp');
+    const pillGrade = $('pill-grade');
+    const pillHot   = $('pill-hot');
+    const pillDt    = $('pill-dt');
+    pillGrade.classList.remove('warn','alarm','danger');
+    pillHot.classList.remove('warn','alarm','danger');
+    pillDt.classList.remove('warn','alarm','danger');
+
+    gradeEl.innerHTML = `<span style="color:${g.color}">● ${g.name}</span>`;
+    if (g.pill) {
+        pillGrade.classList.add(g.pill);
+        pillHot.classList.add(g.pill);
+        pillDt.classList.add(g.pill);
+    }
+
+    // 알람 배너
+    const banner = $('alarmBanner');
+    if (g.name === '정상') {
+        banner.classList.add('hidden');
+    } else {
+        banner.classList.remove('hidden');
+        const txt = { '경계': '⚠ 경계 — &Delta;T ≥ 10 K · 점검 계획 수립',
+                      '알람': '⚠ ALARM — T ≥ 80 °C · 조속 정비 필요',
+                      '위험': '⛔ 위험 — T ≥ 100 °C · 즉시 차단 및 부품 교체' }[g.name];
+        $('alarmText').innerHTML = txt;
+    }
+
+    // 진단 단계
+    const stages = document.querySelectorAll('#stageList .stage-card');
+    stages.forEach(el => el.classList.remove('active','danger'));
+    if (g.name === '위험' || g.name === '알람') {
+        stages.forEach(el => el.classList.add(g.name === '위험' ? 'danger' : 'active'));
+    } else if (g.name === '경계') {
+        stages[0].classList.add('active');
+        stages[1].classList.add('active');
+        stages[2].classList.add('active');
+    } else if (state.I > 0) {
+        stages[0].classList.add('active');
+    }
+}
+
+// ============ 캔버스 그리기 ============
+function drawBackground() {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#08081a');
+    grad.addColorStop(1, '#04040f');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+}
+
+function drawHeader() {
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 164, 175, 0.78)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ IR CAMERA · 7.5–13 μm · 320×240 · ε = 0.95 · 거리 1 m', 12, 8);
+    ctx.restore();
+}
+
+// RGB(가시광) 패널 — MCC/배전반 단순 일러스트
+function drawRGB(x0, y0, w, h) {
+    rgbBox = { x: x0, y: y0, w, h };
+    ctx.save();
+    // 외함
+    const g = ctx.createLinearGradient(x0, y0, x0 + w, y0 + h);
+    g.addColorStop(0, '#1a2233');
+    g.addColorStop(1, '#0e1422');
+    ctx.fillStyle = g;
+    ctx.fillRect(x0, y0, w, h);
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
+
+    // 캐비넷 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('MCC PANEL · RGB', x0 + 8, y0 + 6);
+
+    // 내부 백판
+    const ix = x0 + 18, iy = y0 + 32, iw = w - 36, ih = h - 50;
+    ctx.fillStyle = '#0b1020';
+    ctx.fillRect(ix, iy, iw, ih);
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.25)';
+    ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
+
+    // 3개 도체 (R/S/T)
+    const phaseY = [iy + ih * 0.22, iy + ih * 0.5, iy + ih * 0.78];
+    const phaseLabel = ['R', 'S', 'T'];
+    const phaseColor = ['#fb7185', '#fbbf24', '#7dd3fc'];
+
+    phaseY.forEach((py, i) => {
+        // 부스바
+        ctx.save();
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(ix + 8, py - 6, iw - 16, 12);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.strokeRect(ix + 8 + 0.5, py - 6 + 0.5, iw - 17, 11);
+
+        // 좌측 단자 (정상부)
+        const termX1 = ix + 10 + iw * 0.20;
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(termX1 - 8, py - 10, 16, 20);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.arc(termX1, py, 3, 0, Math.PI * 2); ctx.fill();
+
+        // 우측 단자 (결함부)
+        const termX2 = ix + 10 + iw * 0.65;
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(termX2 - 8, py - 10, 16, 20);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.arc(termX2, py, 3, 0, Math.PI * 2); ctx.fill();
+
+        // 케이블 (결함부 너머로 나가는)
+        ctx.strokeStyle = phaseColor[i];
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = phaseColor[i];
+        ctx.beginPath();
+        ctx.moveTo(termX2 + 8, py);
+        ctx.bezierCurveTo(termX2 + 30, py, termX2 + 40, py + (i - 1) * 8, ix + iw - 4, py + (i - 1) * 6);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // 상 라벨
+        ctx.fillStyle = phaseColor[i];
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(phaseLabel[i], ix + 4, py - 4);
+    });
+
+    // 결함 부위에 시각적 힌트 (RGB 에서는 약하게)
+    if (state.fault === 'contact') {
+        // 가운데 상(S) 우측 단자 부근에 살짝 그을음 표현
+        const py = phaseY[1];
+        const termX2 = ix + 10 + iw * 0.65;
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.6, Math.max(0, (state.Thot - 60) / 80));
+        ctx.fillStyle = '#1a0606';
+        ctx.beginPath();
+        ctx.ellipse(termX2, py, 14, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    } else if (state.fault === 'insulation') {
+        // 케이블 절연 균열 표현 (점선)
+        const py = phaseY[1];
+        const termX2 = ix + 10 + iw * 0.65;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(termX2 + 8, py - 4);
+        ctx.lineTo(termX2 + 22, py - 8);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 그리드 (옅게)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let gx = ix; gx < ix + iw; gx += 20) {
+        ctx.beginPath(); ctx.moveTo(gx, iy); ctx.lineTo(gx, iy + ih); ctx.stroke();
+    }
+    for (let gy = iy; gy < iy + ih; gy += 20) {
+        ctx.beginPath(); ctx.moveTo(ix, gy); ctx.lineTo(ix + iw, gy); ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.restore();
+}
+
+// IR(열화상) 패널 — 히트맵
+function drawIR(x0, y0, w, h) {
+    irBox = { x: x0, y: y0, w, h };
+
+    // 히트맵 정규화 범위
+    let Tmin = 20, Tmax = Math.max(state.Thot + 5, 50);
+    // 환경온도가 낮으면 따라 내려감
+    Tmin = Math.min(Tmin, state.Tamb - 2);
+
+    // 백그라운드
+    ctx.save();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(x0, y0, w, h);
+
+    // 히트맵 렌더 (ImageData)
+    // 그리드 영역 = 영상 영역 안쪽 (라벨 공간 제외)
+    const pad = 18;
+    const ix = x0 + pad, iy = y0 + pad + 14, iw = w - 2 * pad, ih = h - pad * 2 - 14;
+    const cellW = iw / GW;
+    const cellH = ih / GH;
+
+    // ImageData 한 번에 그리기 (작은 그리드를 큰 영역에 확대)
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = GW; offCanvas.height = GH;
+    const offCtx = offCanvas.getContext('2d');
+    const img = offCtx.createImageData(GW, GH);
+    for (let y = 0; y < GH; y++) {
+        for (let x = 0; x < GW; x++) {
+            const T = heatGrid[y * GW + x];
+            const v = (T - Tmin) / (Tmax - Tmin);
+            const [r, g, b] = pickCmap(v);
+            const idx = (y * GW + x) * 4;
+            img.data[idx]   = r;
+            img.data[idx+1] = g;
+            img.data[idx+2] = b;
+            img.data[idx+3] = 255;
+        }
+    }
+    offCtx.putImageData(img, 0, 0);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(offCanvas, ix, iy, iw, ih);
+
+    // 외곽 프레임
+    ctx.strokeStyle = 'rgba(253, 164, 175, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
+
+    // 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 164, 175, 0.92)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`IR · ${state.cmap.toUpperCase()} · ${Tmin.toFixed(0)} – ${Tmax.toFixed(0)} °C`, x0 + 8, y0 + 6);
+
+    // 십자선/스코프 + 자동 핫스팟 마커
+    let hotPx, hotPy;
+    if (state.fault === 'contact') {
+        hotPx = ix + (HOT.gx + 0.5) * cellW;
+        hotPy = iy + (HOT.gy + 0.5) * cellH;
+    } else if (state.fault === 'overload') {
+        hotPx = ix + (48 + 0.5) * cellW;
+        hotPy = iy + (26 + 0.5) * cellH;
+    } else {
+        hotPx = ix + (50 + 0.5) * cellW;
+        hotPy = iy + (26 + 0.5) * cellH;
+    }
+    // 핫스팟 박스
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.6;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#fff';
+    ctx.strokeRect(hotPx - 8, hotPy - 8, 16, 16);
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`SP1 ${state.Thot.toFixed(1)}°C`, hotPx + 11, hotPy - 11);
+
+    // 정상부 SP2
+    const refPx = ix + (NORMAL.gx + 0.5) * cellW;
+    const refPy = iy + (NORMAL.gy + 0.5) * cellH;
+    ctx.strokeStyle = '#bef264';
+    ctx.lineWidth = 1.4;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#bef264';
+    ctx.beginPath(); ctx.arc(refPx, refPy, 7, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ecfccb';
+    ctx.fillText(`SP2 ${state.Tref.toFixed(1)}°C`, refPx + 10, refPy + 10);
+
+    // 커서 SP3 (사용자 스팟)
+    if (state.cursor && state.cursorTemp != null) {
+        const cpx = ix + (state.cursor.gx + 0.5) * cellW;
+        const cpy = iy + (state.cursor.gy + 0.5) * cellH;
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 1.4;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#67e8f9';
+        ctx.beginPath();
+        ctx.moveTo(cpx - 10, cpy); ctx.lineTo(cpx + 10, cpy);
+        ctx.moveTo(cpx, cpy - 10); ctx.lineTo(cpx, cpy + 10);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#cffafe';
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        // 라벨 위치는 캔버스 가장자리에 닿지 않도록
+        const tx = Math.min(cpx + 10, x0 + w - 100);
+        const ty = Math.max(cpy - 10, y0 + 18);
+        ctx.fillText(`SP3 ${state.cursorTemp.toFixed(1)}°C`, tx, ty);
+    }
+
+    // 영상 영역 그리드 (스캔라인 느낌)
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    ctx.strokeStyle = '#fff';
+    for (let yy = iy; yy < iy + ih; yy += 4) {
+        ctx.beginPath(); ctx.moveTo(ix, yy); ctx.lineTo(ix + iw, yy); ctx.stroke();
+    }
+    ctx.restore();
+
+    // 코너 마커 (카메라 뷰파인더 느낌)
+    ctx.strokeStyle = 'rgba(253, 224, 71, 0.85)';
+    ctx.lineWidth = 1.6;
+    const cs = 12;
+    [[ix, iy, 1, 1],[ix + iw, iy, -1, 1],[ix, iy + ih, 1, -1],[ix + iw, iy + ih, -1, -1]].forEach(([cx, cy, sx, sy]) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + sy * cs); ctx.lineTo(cx, cy); ctx.lineTo(cx + sx * cs, cy);
+        ctx.stroke();
+    });
+
+    ctx.restore();
+
+    // IR 패널 내부 영역 저장 (마우스 좌표 변환용)
+    irBox.innerX = ix; irBox.innerY = iy; irBox.innerW = iw; irBox.innerH = ih;
+    irBox.cellW = cellW; irBox.cellH = cellH;
+    irBox.Tmin = Tmin; irBox.Tmax = Tmax;
+}
+
+// 컬러바
+function drawColorBar(x0, y0, w, h) {
+    ctx.save();
+    const labelW = 56;
+    const barX = x0 + labelW;
+    const barW = w - labelW - 60;
+    const barY = y0 + 22;
+    const barH = h - 36;
+
+    // 제목
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`◯ COLOR BAR · ${state.cmap.toUpperCase()} PALETTE`, x0 + 8, y0 + 6);
+
+    // 그라데이션 바
+    const N = 200;
+    const Tmin = irBox.Tmin ?? 20;
+    const Tmax = irBox.Tmax ?? 100;
+    for (let i = 0; i < N; i++) {
+        const v = i / (N - 1);
+        const [r, g, b] = pickCmap(v);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(barX + (barW * i) / N, barY, barW / N + 1, barH);
+    }
+    ctx.strokeStyle = 'rgba(229, 231, 235, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
+
+    // 눈금
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.85)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const N2 = 5;
+    for (let i = 0; i <= N2; i++) {
+        const px = barX + (barW * i) / N2;
+        const T = Tmin + (Tmax - Tmin) * (i / N2);
+        ctx.beginPath(); ctx.moveTo(px, barY + barH); ctx.lineTo(px, barY + barH + 4); ctx.stroke();
+        ctx.fillText(`${T.toFixed(0)}`, px, barY + barH + 6);
+    }
+
+    // 임계선 마커 (60 / 80 / 100)
+    const thresholds = [
+        { T: 60, color: '#fbbf24', label: '경계' },
+        { T: 80, color: '#fb923c', label: '알람' },
+        { T: 100, color: '#f43f5e', label: '위험' }
+    ];
+    thresholds.forEach(th => {
+        if (th.T >= Tmin && th.T <= Tmax) {
+            const px = barX + ((th.T - Tmin) / (Tmax - Tmin)) * barW;
+            ctx.strokeStyle = th.color;
+            ctx.lineWidth = 1.5;
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = th.color;
+            ctx.beginPath();
+            ctx.moveTo(px, barY - 4); ctx.lineTo(px, barY + barH + 4);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = th.color;
+            ctx.font = 'bold 9px ui-monospace, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(th.label, px, barY - 14);
+        }
+    });
+
+    // 현재 핫스팟 마커 (역삼각)
+    if (state.Thot >= Tmin && state.Thot <= Tmax) {
+        const px = barX + ((state.Thot - Tmin) / (Tmax - Tmin)) * barW;
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(px, barY + barH + 1);
+        ctx.lineTo(px - 4, barY + barH + 9);
+        ctx.lineTo(px + 4, barY + barH + 9);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+
+    // °C 라벨
+    ctx.fillStyle = 'rgba(229, 231, 235, 0.85)';
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('LOW', x0 + 8, barY + barH / 2 - 5);
+    ctx.fillText('°C', x0 + w - 22, barY + barH / 2 - 5);
+
+    ctx.restore();
+}
+
+// 온도 히스토리 차트
+function drawHistory(x0, y0, w, h) {
+    ctx.save();
+    // 배경
+    const grad = ctx.createLinearGradient(0, y0, 0, y0 + h);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x0, y0, w, h);
+
+    const divGrad = ctx.createLinearGradient(x0, y0, x0 + w, y0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(244, 63, 94, 0.6)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x0 + w, y0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(253, 164, 175, 0.85)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ TEMPERATURE TREND · 시간축 (최근 200 샘플) · 핫스팟 T(t)', x0 + 12, y0 + 8);
+    ctx.restore();
+
+    const padL = 56, padR = 24, padT = 32, padB = 28;
+    const px0 = x0 + padL, py0 = y0 + padT;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    // Y축: 0 ~ 140 °C
+    const Tmin = 0, Tmax = 140;
+    const yOf = T => py0 + plotH - ((T - Tmin) / (Tmax - Tmin)) * plotH;
+
+    // 그리드 + Y 라벨
+    ctx.save();
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [0, 25, 50, 75, 100, 125].forEach(T => {
+        const yy = yOf(T);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        ctx.beginPath(); ctx.moveTo(px0, yy); ctx.lineTo(px0 + plotW, yy); ctx.stroke();
+        ctx.fillText(`${T}°C`, px0 - 4, yy);
+    });
+
+    // 임계선 60/80/100
+    const thresholds = [
+        { T: 60, color: 'rgba(251, 191, 36, 0.55)' },
+        { T: 80, color: 'rgba(251, 146, 60, 0.65)' },
+        { T: 100, color: 'rgba(244, 63, 94, 0.75)' }
+    ];
+    thresholds.forEach(th => {
+        const yy = yOf(th.T);
+        ctx.strokeStyle = th.color;
+        ctx.setLineDash([5, 4]);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(px0, yy); ctx.lineTo(px0 + plotW, yy); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = th.color;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${th.T}°C`, px0 + plotW - 30, yy - 3);
+    });
+
+    // 축
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px0, py0); ctx.lineTo(px0, py0 + plotH); ctx.lineTo(px0 + plotW, py0 + plotH);
+    ctx.stroke();
+    ctx.restore();
+
+    // 트렌드 라인
+    const hist = state.history;
+    if (hist.length >= 2) {
+        // 필 영역
+        ctx.save();
+        const gFill = ctx.createLinearGradient(0, py0, 0, py0 + plotH);
+        gFill.addColorStop(0, 'rgba(251, 146, 60, 0.55)');
+        gFill.addColorStop(1, 'rgba(251, 146, 60, 0.02)');
+        ctx.fillStyle = gFill;
+        ctx.beginPath();
+        ctx.moveTo(px0, py0 + plotH);
+        for (let i = 0; i < hist.length; i++) {
+            const xx = px0 + (i / 199) * plotW;
+            const yy = yOf(Math.max(Tmin, Math.min(Tmax, hist[i])));
+            if (i === 0) ctx.lineTo(xx, yy); else ctx.lineTo(xx, yy);
+        }
+        ctx.lineTo(px0 + ((hist.length - 1) / 199) * plotW, py0 + plotH);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 라인
+        ctx.save();
+        ctx.strokeStyle = '#fb923c';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#fb923c';
+        ctx.beginPath();
+        for (let i = 0; i < hist.length; i++) {
+            const xx = px0 + (i / 199) * plotW;
+            const yy = yOf(Math.max(Tmin, Math.min(Tmax, hist[i])));
+            if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // 현재 값 마커
+        const lastX = px0 + ((hist.length - 1) / 199) * plotW;
+        const lastY = yOf(Math.max(Tmin, Math.min(Tmax, hist[hist.length-1])));
+        ctx.save();
+        ctx.fillStyle = '#fb923c';
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#fb923c';
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, 4.5 + Math.sin(state.t * 0.2) * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    } else {
+        ctx.save();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.textAlign = 'center';
+        ctx.fillText('샘플 수집 중...', x0 + w / 2, y0 + h / 2);
+        ctx.restore();
+    }
+
+    // 범례 (등급)
+    ctx.save();
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    const lx = px0 + 8, ly = py0 + 8;
+    const legend = [
+        { c: '#34d399', t: '정상 < 60°C' },
+        { c: '#fbbf24', t: '경계 60~80' },
+        { c: '#fb923c', t: '알람 80~100' },
+        { c: '#f43f5e', t: '위험 ≥ 100' }
+    ];
+    legend.forEach((l, i) => {
+        const yy = ly + i * 13;
+        ctx.fillStyle = l.c;
+        ctx.fillRect(lx, yy, 12, 3);
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.85)';
+        ctx.textAlign = 'left';
+        ctx.fillText(l.t, lx + 18, yy + 3);
+    });
+    ctx.restore();
+}
+
+// ============ 마우스 ============
+function canvasMouse(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+canvas.addEventListener('mousemove', e => {
+    const m = canvasMouse(e);
+    if (!irBox.innerW) return;
+    if (m.x < irBox.innerX || m.x > irBox.innerX + irBox.innerW ||
+        m.y < irBox.innerY || m.y > irBox.innerY + irBox.innerH) {
+        state.cursor = null;
+        state.cursorTemp = null;
+        return;
+    }
+    const gx = Math.floor((m.x - irBox.innerX) / irBox.cellW);
+    const gy = Math.floor((m.y - irBox.innerY) / irBox.cellH);
+    if (gx >= 0 && gx < GW && gy >= 0 && gy < GH) {
+        state.cursor = { gx, gy };
+        state.cursorTemp = heatGrid[gy * GW + gx];
+    }
+});
+canvas.addEventListener('mouseleave', () => {
+    state.cursor = null;
+    state.cursorTemp = null;
+});
+
+// ============ TRIP/ALARM 효과 ============
+function flashEffect(level) {
+    if (!window.gsap) return;
+    const color = level === 'danger' ? 'rgba(244, 63, 94, 0.7)' :
+                  level === 'alarm'  ? 'rgba(251, 146, 60, 0.7)' :
+                                       'rgba(251, 191, 36, 0.6)';
+    gsap.fromTo('#canvasCard',
+        { boxShadow: `0 0 0 0 ${color}` },
+        { boxShadow: `0 0 80px 6px ${color.replace(/, [\d.]+\)/, ', 0)')}`, duration: 0.9 });
+}
+
+let prevGrade = '';
+function checkGradeChange() {
+    const dT = state.Thot - state.Tref;
+    const g = gradeFor(state.Thot, dT);
+    if (g.pill && g.name !== prevGrade) {
+        flashEffect(g.pill);
+        if (window.gsap) {
+            gsap.fromTo('#pill-hot', { scale: 1.10 }, { scale: 1, duration: 0.4, ease: 'back.out(1.7)' });
+            gsap.fromTo('#pill-grade', { scale: 1.12 }, { scale: 1, duration: 0.45, ease: 'back.out(1.7)' });
+        }
+    }
+    prevGrade = g.name;
+}
+
+// ============ 메인 루프 ============
+function frame() {
+    state.t++;
+    computeHeatField();
+    updateDisplays();
+    checkGradeChange();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
+    drawHeader();
+
+    // 상단 패널: RGB + IR 좌우 분할
+    const topY = 22;
+    const topH = TOP_H - topY - 8;
+    const half = (canvas.width - 24) / 2;
+    drawRGB(8, topY, half, topH);
+    drawIR(8 + half + 8, topY, half, topH);
+
+    // 컬러바
+    drawColorBar(8, TOP_H, canvas.width - 16, BAR_H);
+
+    // 히스토리
+    drawHistory(0, TOP_H + BAR_H, canvas.width, HIST_H);
+
+    requestAnimationFrame(frame);
+}
+
+// ============ 인터랙션 ============
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+['load','rc','amb'].forEach(id => {
+    const map = { load: 'pill-hot', rc: 'pill-hot', amb: 'pill-amb' };
+    $(id).addEventListener('input', () => flashPanel(map[id]));
+});
+
+document.querySelectorAll('.fault-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.fault-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.fault = b.dataset.fault;
+        state.history = []; // 결함 바꾸면 트렌드 초기화
+        flashPanel('pill-hot');
+    });
+});
+
+document.querySelectorAll('.cmap-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        document.querySelectorAll('.cmap-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state.cmap = b.dataset.cmap;
+        flashPanel('pill-hot');
+    });
+});
+
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const mode = b.dataset.preset;
+        const presets = {
+            normal:  { I: 80,  Rc: 0.10, amb: 25 },
+            warn:    { I: 150, Rc: 0.8,  amb: 28 },
+            alarm:   { I: 200, Rc: 2.0,  amb: 30 },
+            reset:   { I: 100, Rc: 0.10, amb: 25 }
+        };
+        const p = presets[mode] || presets.reset;
+        state.history = [];
+        if (window.gsap) {
+            gsap.to($('load'), { value: p.I, duration: 0.6, ease: 'power3.out',
+                onUpdate: () => { $('loadVal').textContent = (+$('load').value).toFixed(0); } });
+            gsap.to($('rc'), { value: p.Rc, duration: 0.6, ease: 'power3.out',
+                onUpdate: () => { $('rcVal').textContent = (+$('rc').value).toFixed(2); } });
+            gsap.to($('amb'), { value: p.amb, duration: 0.6, ease: 'power3.out',
+                onUpdate: () => { $('ambVal').textContent = (+$('amb').value).toFixed(0); } });
+        } else {
+            $('load').value = p.I;   $('loadVal').textContent = p.I.toFixed(0);
+            $('rc').value   = p.Rc;  $('rcVal').textContent   = p.Rc.toFixed(2);
+            $('amb').value  = p.amb; $('ambVal').textContent  = p.amb.toFixed(0);
+        }
+        flashPanel('pill-hot');
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeHeatField();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#stageCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

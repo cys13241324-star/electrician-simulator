@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK CALL CENTER · 스파크 상담 센터</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f6fb;
+    --bg-2: #ffffff;
+    --bg-soft: #eef3fa;
+    --line: #dbe4f0;
+    --line-2: #c4d2e6;
+    --txt-0: #0b1a2e;
+    --txt-1: #2c3e5a;
+    --txt-2: #5a6c87;
+    --txt-3: #8da0ba;
+    --blue: #1e6fe6;
+    --blue-2: #3e89ff;
+    --blue-3: #0a4eb8;
+    --blue-soft: #e6efff;
+    --green: #16a34a;
+    --green-2: #22c55e;
+    --green-soft: #dcfce7;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+  }
+  * { font-family: 'Inter', 'Noto Sans KR', sans-serif; -webkit-font-smoothing: antialiased; }
+  html, body { background: var(--bg); color: var(--txt-0); }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(62,137,255,0.06), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(22,163,74,0.05), transparent 45%),
+      linear-gradient(180deg, #eef3fa 0%, #f3f6fb 100%);
+  }
+  .mono { font-family: 'JetBrains Mono', 'Inter', monospace; letter-spacing: 0.01em; }
+  .card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px rgba(11,26,46,0.04), 0 4px 16px rgba(11,26,46,0.04);
+  }
+  .panel {
+    background: linear-gradient(180deg, #ffffff 0%, #f7fafd 100%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+    background: var(--blue-soft); color: var(--blue-3);
+    border: 1px solid rgba(30,111,230,0.18);
+  }
+  .chip-green { background: var(--green-soft); color: #166534; border-color: rgba(22,163,74,0.2); }
+  .chip-amber { background: #fef3c7; color: #92400e; border-color: rgba(245,158,11,0.25); }
+  .chip-red { background: #fee2e2; color: #991b1b; border-color: rgba(239,68,68,0.25); }
+  .chip-gray { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  .dot { display:inline-block; width:8px; height:8px; border-radius:999px; }
+  .dot-green { background: var(--green-2); box-shadow: 0 0 0 3px rgba(34,197,94,0.18); }
+  .dot-red { background: var(--red); box-shadow: 0 0 0 3px rgba(239,68,68,0.18); }
+  .dot-amber { background: var(--amber); box-shadow: 0 0 0 3px rgba(245,158,11,0.18); }
+  .dot-blue { background: var(--blue); box-shadow: 0 0 0 3px rgba(30,111,230,0.18); }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.45); }
+    70% { box-shadow: 0 0 0 14px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  .pulse-live { animation: pulse-ring 1.8s ease-out infinite; }
+
+  @keyframes pulse-ring-blue {
+    0% { box-shadow: 0 0 0 0 rgba(30,111,230,0.45); }
+    70% { box-shadow: 0 0 0 14px rgba(30,111,230,0); }
+    100% { box-shadow: 0 0 0 0 rgba(30,111,230,0); }
+  }
+  .pulse-blue { animation: pulse-ring-blue 2.2s ease-out infinite; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 14px; border-radius: 12px;
+    font-weight: 600; font-size: 13px; letter-spacing: 0.01em;
+    border: 1px solid var(--line); background: #fff; color: var(--txt-1);
+    cursor: pointer; transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover { background: #f7fafd; }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: linear-gradient(180deg, var(--blue-2) 0%, var(--blue) 100%); color: #fff; border-color: var(--blue-3); box-shadow: 0 4px 12px rgba(30,111,230,0.25); }
+  .btn-primary:hover { background: linear-gradient(180deg, #4f96ff 0%, #2a7af0 100%); }
+  .btn-green { background: linear-gradient(180deg, var(--green-2) 0%, var(--green) 100%); color: #fff; border-color: #15803d; box-shadow: 0 4px 12px rgba(22,163,74,0.25); }
+  .btn-green:hover { background: linear-gradient(180deg, #2bd361 0%, #18b154 100%); }
+  .btn-red { background: linear-gradient(180deg, #f87171 0%, var(--red) 100%); color: #fff; border-color: #b91c1c; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
+  .btn-red:hover { background: linear-gradient(180deg, #fb8585 0%, #f24747 100%); }
+  .btn-ghost { background: transparent; }
+  .btn-icon { padding: 10px; width: 44px; height: 44px; }
+
+  .stat-num { font-variant-numeric: tabular-nums; }
+
+  .scroll-area { overflow-y: auto; }
+  .scroll-area::-webkit-scrollbar { width: 8px; }
+  .scroll-area::-webkit-scrollbar-track { background: transparent; }
+  .scroll-area::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 999px; }
+  .scroll-area::-webkit-scrollbar-thumb:hover { background: #95a8c4; }
+
+  .log-row {
+    display: grid; grid-template-columns: 56px 1fr auto; gap: 10px;
+    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: #fff; font-size: 12.5px;
+    transition: background 0.15s ease;
+  }
+  .log-row:hover { background: #f7fafd; }
+
+  .queue-row {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center;
+    padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line);
+    background: #fff; font-size: 12.5px;
+  }
+
+  .ring-soft { box-shadow: 0 0 0 3px rgba(30,111,230,0.12); }
+
+  .star { cursor: pointer; transition: transform 0.12s ease, color 0.15s ease; color: #cbd5e1; }
+  .star.on { color: #f59e0b; }
+  .star:hover { transform: scale(1.12); }
+
+  .tab {
+    padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    color: var(--txt-2); cursor: pointer;
+  }
+  .tab.on { background: var(--blue); color: #fff; box-shadow: 0 4px 12px rgba(30,111,230,0.2); }
+
+  textarea, input { outline: none; }
+  textarea:focus, input:focus { border-color: var(--blue) !important; box-shadow: 0 0 0 3px rgba(30,111,230,0.15); }
+
+  .ai-bubble {
+    background: linear-gradient(135deg, #faf5ff 0%, #eff6ff 100%);
+    border: 1px solid #e9d8fd;
+    border-radius: 14px;
+  }
+  .ai-dot { width:6px; height:6px; border-radius: 999px; background: var(--purple); display:inline-block; }
+
+  @keyframes typing-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-3px); opacity: 1; }
+  }
+  .typing-dot { display:inline-block; width:5px; height:5px; border-radius:999px; background: var(--purple); margin-right:3px; animation: typing-bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+  .head-icon-glow {
+    filter: drop-shadow(0 6px 20px rgba(30,111,230,0.35)) drop-shadow(0 2px 6px rgba(30,111,230,0.2));
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, var(--blue) 0%, var(--green) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .gradient-stripe {
+    background: linear-gradient(90deg, var(--blue) 0%, var(--blue-2) 50%, var(--green) 100%);
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ========== HEADER ========== -->
+<header class="card mx-4 md:mx-8 mt-6 px-5 md:px-7 py-4">
+  <div class="flex items-center gap-4 flex-wrap">
+    <!-- Logo + Headset -->
+    <div class="flex items-center gap-3">
+      <div class="relative head-icon-glow">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="hg1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#3e89ff"/>
+              <stop offset="100%" stop-color="#1e6fe6"/>
+            </linearGradient>
+          </defs>
+          <path d="M22 5c-8.8 0-16 7.2-16 16v9a4 4 0 0 0 4 4h3v-12h-5v-1c0-7.7 6.3-14 14-14s14 6.3 14 14v1h-5v12h3a4 4 0 0 0 4-4v-9c0-8.8-7.2-16-16-16z" fill="url(#hg1)"/>
+          <rect x="10" y="22" width="6" height="12" rx="2" fill="#1e6fe6"/>
+          <rect x="28" y="22" width="6" height="12" rx="2" fill="#1e6fe6"/>
+          <circle cx="22" cy="38" r="3" fill="#22c55e"/>
+        </svg>
+      </div>
+      <div>
+        <div class="text-xs mono text-[color:var(--txt-3)] tracking-[0.18em]">SPARK CALL CENTER</div>
+        <div class="text-[19px] md:text-[22px] font-extrabold tracking-tight gradient-text">스파크 상담 센터</div>
+      </div>
+    </div>
+
+    <div class="hidden md:block h-10 w-px bg-[color:var(--line)] mx-2"></div>
+
+    <!-- Agent Info -->
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-bold text-sm ring-soft">전</div>
+      <div>
+        <div class="text-[13px] font-semibold text-[color:var(--txt-0)] flex items-center gap-2">
+          전기상담 김상담 <span class="chip">LV.7 시니어</span>
+        </div>
+        <div class="text-[11px] mono text-[color:var(--txt-2)]">AGENT ID · A-0427 · 부서: 학습지원</div>
+      </div>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <!-- Status + Clock -->
+    <div class="flex items-center gap-4 flex-wrap">
+      <div class="flex items-center gap-2">
+        <span class="dot dot-green pulse-live"></span>
+        <span class="text-[12px] font-semibold text-[color:var(--txt-1)]">통화 가능</span>
+      </div>
+      <div class="panel px-3.5 py-2">
+        <div class="text-[10px] mono text-[color:var(--txt-3)]">REALTIME · KST</div>
+        <div id="clock" class="mono text-[15px] font-bold text-[color:var(--txt-0)] stat-num">00:00:00</div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-3 h-1 rounded-full gradient-stripe"></div>
+</header>
+
+<!-- ========== MAIN GRID ========== -->
+<main class="mx-4 md:mx-8 mt-5 grid grid-cols-12 gap-5 pb-8">
+
+  <!-- ========== LEFT: DASHBOARD ========== -->
+  <aside class="col-span-12 lg:col-span-3 flex flex-col gap-4">
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 gap-3">
+      <div class="card p-3.5">
+        <div class="flex items-center justify-between">
+          <div class="text-[10.5px] mono text-[color:var(--txt-3)] tracking-wider">대기 통화</div>
+          <span class="dot dot-amber"></span>
+        </div>
+        <div id="kpi-queue" class="text-[26px] font-extrabold text-[color:var(--txt-0)] stat-num leading-tight mt-1">10</div>
+        <div class="text-[10.5px] text-[color:var(--txt-2)]">건 · 최대대기 2:18</div>
+      </div>
+      <div class="card p-3.5">
+        <div class="flex items-center justify-between">
+          <div class="text-[10.5px] mono text-[color:var(--txt-3)] tracking-wider">처리 건수</div>
+          <span class="dot dot-blue"></span>
+        </div>
+        <div id="kpi-handled" class="text-[26px] font-extrabold text-[color:var(--txt-0)] stat-num leading-tight mt-1">47</div>
+        <div class="text-[10.5px] text-[color:var(--txt-2)]">건 · 오늘</div>
+      </div>
+      <div class="card p-3.5">
+        <div class="flex items-center justify-between">
+          <div class="text-[10.5px] mono text-[color:var(--txt-3)] tracking-wider">평균 통화</div>
+          <span class="dot dot-blue"></span>
+        </div>
+        <div id="kpi-avg" class="text-[26px] font-extrabold text-[color:var(--txt-0)] stat-num leading-tight mt-1">4:12</div>
+        <div class="text-[10.5px] text-[color:var(--txt-2)]">분 · AHT</div>
+      </div>
+      <div class="card p-3.5">
+        <div class="flex items-center justify-between">
+          <div class="text-[10.5px] mono text-[color:var(--txt-3)] tracking-wider">만족도</div>
+          <span class="dot dot-green"></span>
+        </div>
+        <div class="text-[26px] font-extrabold text-[color:var(--amber)] stat-num leading-tight mt-1 flex items-baseline gap-1">
+          <span id="kpi-csat">4.8</span><span class="text-[12px] text-[color:var(--txt-3)] font-semibold">/5.0</span>
+        </div>
+        <div class="text-[10.5px] text-[color:var(--txt-2)]">★ 누적평점</div>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-[13px] font-bold text-[color:var(--txt-0)] flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="text-[color:var(--blue)]"><path d="M3 6h18M3 12h18M3 18h12"/></svg>
+          대기 통화 큐
+        </div>
+        <span class="chip-gray chip">자동 정렬</span>
+      </div>
+      <div id="queue-list" class="flex flex-col gap-1.5 max-h-[260px] scroll-area">
+        <!-- JS fill -->
+      </div>
+    </div>
+
+    <!-- Today goal -->
+    <div class="card p-4">
+      <div class="text-[12px] font-bold text-[color:var(--txt-0)] mb-2">오늘의 목표</div>
+      <div class="flex items-center justify-between text-[11.5px] text-[color:var(--txt-2)] mb-1.5">
+        <span>처리 47 / 60건</span><span class="mono font-semibold text-[color:var(--blue)]">78%</span>
+      </div>
+      <div class="h-2 rounded-full bg-[color:var(--bg-soft)] overflow-hidden">
+        <div class="h-full gradient-stripe rounded-full" style="width:78%"></div>
+      </div>
+      <div class="flex items-center justify-between text-[11.5px] text-[color:var(--txt-2)] mt-3 mb-1.5">
+        <span>만족도 4.8 / 4.5★</span><span class="mono font-semibold text-[color:var(--green)]">달성</span>
+      </div>
+      <div class="h-2 rounded-full bg-[color:var(--bg-soft)] overflow-hidden">
+        <div class="h-full rounded-full bg-[color:var(--green-2)]" style="width:96%"></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ========== CENTER: CALL SCREEN ========== -->
+  <section class="col-span-12 lg:col-span-6 flex flex-col gap-4">
+
+    <!-- Active call card -->
+    <div class="card overflow-hidden">
+      <!-- Header strip -->
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[color:var(--line)] bg-[color:var(--bg-soft)]">
+        <div class="flex items-center gap-2">
+          <span class="dot dot-red pulse-live"></span>
+          <span class="text-[11.5px] mono font-bold tracking-wider text-[color:var(--red)]">ACTIVE CALL</span>
+          <span id="call-id" class="text-[11.5px] mono text-[color:var(--txt-2)]">#1248</span>
+        </div>
+        <div class="flex items-center gap-3 text-[11px] text-[color:var(--txt-2)]">
+          <span class="mono">암호화 E2E</span>
+          <span class="dot dot-green"></span>
+          <span class="mono">회선 안정</span>
+        </div>
+      </div>
+
+      <!-- Caller info -->
+      <div class="px-5 md:px-6 py-5 flex items-center gap-4 flex-wrap">
+        <div class="relative">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 text-white flex items-center justify-center text-xl font-extrabold pulse-blue">박</div>
+          <span class="absolute -bottom-0.5 -right-0.5 dot dot-green ring-2 ring-white" style="width:14px;height:14px;"></span>
+        </div>
+        <div class="flex-1 min-w-[180px]">
+          <div class="flex items-center gap-2 flex-wrap">
+            <div id="caller-name" class="text-[18px] font-bold text-[color:var(--txt-0)]">박OO 수험생</div>
+            <span class="chip">VIP · 회원</span>
+            <span class="chip-green chip">3회차 응시</span>
+          </div>
+          <div class="text-[12px] mono text-[color:var(--txt-2)] mt-0.5">
+            <span id="caller-phone">010-0***-**42</span> · 지역 서울
+          </div>
+          <div class="text-[11.5px] text-[color:var(--txt-2)] mt-1.5">
+            문의 유형 · <span id="caller-topic" class="font-semibold text-[color:var(--blue-3)]">옴의 법칙</span>
+          </div>
+        </div>
+
+        <!-- Timer -->
+        <div class="panel px-4 py-2.5 text-center min-w-[120px]">
+          <div class="text-[10px] mono text-[color:var(--txt-3)] tracking-widest">CALL DURATION</div>
+          <div id="call-timer" class="mono text-[26px] font-extrabold text-[color:var(--txt-0)] stat-num leading-none mt-0.5">00:00</div>
+        </div>
+      </div>
+
+      <!-- Waveform -->
+      <div class="px-5 md:px-6 pb-2">
+        <div class="panel p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[color:var(--blue)]"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v4"/></svg>
+              <span class="text-[11.5px] font-bold text-[color:var(--txt-1)]">음성 파형</span>
+              <span class="chip-green chip" id="mic-state">MIC ON</span>
+            </div>
+            <div class="text-[11px] mono text-[color:var(--txt-3)]">48kHz · 16bit</div>
+          </div>
+          <svg id="waveform" viewBox="0 0 600 80" class="w-full h-[78px]" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="wg" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stop-color="#3e89ff"/>
+                <stop offset="50%" stop-color="#1e6fe6"/>
+                <stop offset="100%" stop-color="#22c55e"/>
+              </linearGradient>
+            </defs>
+            <g id="wave-bars"></g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Script -->
+      <div class="px-5 md:px-6 pb-4">
+        <div class="text-[11px] mono text-[color:var(--txt-3)] tracking-wider mb-2">상담 스크립트 · 응답 가이드</div>
+        <div class="panel p-3.5">
+          <div class="text-[13px] leading-relaxed text-[color:var(--txt-1)]">
+            <span class="font-semibold text-[color:var(--blue-3)]">상담사 ▸</span>
+            <span id="script-greet">"안녕하세요 스파크 콜센터입니다. 무엇을 도와드릴까요?"</span>
+          </div>
+          <div class="mt-2 text-[12.5px] leading-relaxed text-[color:var(--txt-2)]" id="script-body">
+            네, <b class="text-[color:var(--txt-1)]">옴의 법칙</b>에 대해 안내드리겠습니다.
+            전압(V)은 전류(I)와 저항(R)의 곱으로 표현되며, 식은 V = I × R 입니다.
+            예시로 12V 회로에 4Ω 저항이 있다면 전류는 3A가 흐르게 됩니다.
+            더 자세한 부분이 궁금하시면 시뮬레이터에서 직접 값을 바꿔보시는 것을 추천드립니다.
+          </div>
+          <div class="mt-3 flex items-center gap-2 flex-wrap">
+            <span class="text-[10.5px] mono text-[color:var(--txt-3)] tracking-wider mr-1">TOPIC</span>
+            <button class="tab on" data-topic="옴의 법칙">옴의 법칙</button>
+            <button class="tab" data-topic="키르히호프">키르히호프</button>
+            <button class="tab" data-topic="변압기">변압기</button>
+            <button class="tab" data-topic="안전 수칙">안전 수칙</button>
+            <button class="tab" data-topic="합격 후기">합격 후기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memo -->
+      <div class="px-5 md:px-6 pb-4">
+        <div class="text-[11px] mono text-[color:var(--txt-3)] tracking-wider mb-2">상담 메모</div>
+        <textarea id="memo" rows="2" maxlength="240" placeholder="고객 요청 사항·핵심 요약을 입력하세요 (240자)..." class="w-full text-[13px] rounded-xl border border-[color:var(--line)] bg-white px-3.5 py-2.5 resize-none text-[color:var(--txt-1)]"></textarea>
+        <div class="flex items-center justify-between mt-1.5">
+          <div class="text-[11px] text-[color:var(--txt-3)]"><span id="memo-count">0</span>/240자 · ESC로 지우기</div>
+          <button id="save-memo" class="btn btn-ghost text-[11.5px] py-1.5 px-2.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>
+            저장
+          </button>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="px-5 md:px-6 pb-5 flex items-center gap-2 flex-wrap">
+        <button id="btn-hold" class="btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          HOLD
+        </button>
+        <button id="btn-mute" class="btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>
+          MUTE
+        </button>
+        <button id="btn-transfer" class="btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          TRANSFER
+        </button>
+        <div class="flex-1"></div>
+        <button id="btn-answer" class="btn btn-green hidden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          응답
+        </button>
+        <button id="btn-end" class="btn btn-red">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.05 4.18 2 2 0 0 1 5.05 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
+          END
+        </button>
+      </div>
+    </div>
+
+    <!-- AI assistant -->
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2.5">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4"><path d="M12 2 9 9l-7 3 7 3 3 7 3-7 7-3-7-3z"/></svg>
+          </div>
+          <div>
+            <div class="text-[13px] font-bold text-[color:var(--txt-0)]">AI 상담 보조</div>
+            <div class="text-[10.5px] mono text-[color:var(--txt-3)]">실시간 응답 추천 · 모의</div>
+          </div>
+        </div>
+        <span class="chip" style="background:#faf5ff;color:#6b21a8;border-color:#e9d8fd;">
+          <span class="ai-dot"></span> ASSISTANT
+        </span>
+      </div>
+      <div class="ai-bubble p-3.5">
+        <div id="ai-message" class="text-[12.5px] leading-relaxed text-[color:var(--txt-1)]">
+          고객님이 <b>옴의 법칙</b>의 기본 공식을 헷갈려하고 계세요. <b>V = I × R</b> 공식을 먼저 안내드리고, 시뮬레이터의 <b>전류 측정 화면</b>으로 안내하시면 이해도가 높아질 거예요.
+        </div>
+        <div class="mt-2 text-[10.5px] mono text-[color:var(--txt-3)]">
+          <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+          신뢰도 92% · 1.2초 전 추천
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========== RIGHT: CALL LOG ========== -->
+  <aside class="col-span-12 lg:col-span-3 flex flex-col gap-4">
+
+    <!-- Rating -->
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-[13px] font-bold text-[color:var(--txt-0)]">통화 만족도</div>
+        <span class="chip-gray chip">방금 종료</span>
+      </div>
+      <div class="text-[11.5px] text-[color:var(--txt-2)] mb-2">통화 #1247 · 옴의 법칙 안내</div>
+      <div id="stars" class="flex items-center gap-1 text-[26px] leading-none select-none">
+        <span class="star on" data-v="1">★</span>
+        <span class="star on" data-v="2">★</span>
+        <span class="star on" data-v="3">★</span>
+        <span class="star on" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+      <div class="mt-2 flex items-center justify-between">
+        <span id="rating-text" class="text-[11.5px] text-[color:var(--txt-2)]">4 / 5점 · 만족</span>
+        <button id="submit-rating" class="btn text-[11.5px] py-1.5 px-2.5">제출</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card p-4 flex flex-col">
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-[13px] font-bold text-[color:var(--txt-0)] flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" class="text-[color:var(--blue)]"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          통화 로그
+        </div>
+        <span class="chip-green chip">실시간</span>
+      </div>
+      <div id="log-list" class="flex flex-col gap-1.5 max-h-[420px] scroll-area pr-0.5">
+        <!-- JS fill -->
+      </div>
+    </div>
+
+    <!-- Daily stats -->
+    <div class="card p-4">
+      <div class="text-[13px] font-bold text-[color:var(--txt-0)] mb-3">일일 통계</div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11.5px] text-[color:var(--txt-2)]">통화 처리</span>
+          <span class="mono text-[12.5px] font-bold text-[color:var(--txt-0)] stat-num"><span id="stat-handled">47</span>건</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11.5px] text-[color:var(--txt-2)]">평균 만족도</span>
+          <span class="mono text-[12.5px] font-bold text-[color:var(--amber)] stat-num">★ 4.8</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11.5px] text-[color:var(--txt-2)]">평균 대기 시간</span>
+          <span class="mono text-[12.5px] font-bold text-[color:var(--txt-0)] stat-num">52초</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11.5px] text-[color:var(--txt-2)]">최장 통화</span>
+          <span class="mono text-[12.5px] font-bold text-[color:var(--txt-0)] stat-num">12:38</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-[11.5px] text-[color:var(--txt-2)]">FCR (1차 해결률)</span>
+          <span class="mono text-[12.5px] font-bold text-[color:var(--green)] stat-num">91%</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+</main>
+
+<!-- ========== FOOTER ========== -->
+<footer class="mx-4 md:mx-8 mb-6 mt-1 card px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+  <div class="text-[11.5px] text-[color:var(--txt-2)] flex items-center gap-2">
+    <span class="dot dot-blue"></span>
+    <span class="mono">SPARK CC · v2026.05 · 전기기능사 학습 지원 상담</span>
+  </div>
+  <div class="text-[11px] mono text-[color:var(--txt-3)]">가상 콜센터 시뮬레이션 · 본 화면의 통화·연락처·고객 정보는 실재하지 않습니다.</div>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Safe escape ----------
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // ---------- Clock ----------
+  const $clock = document.getElementById('clock');
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const tick = () => {
+    const d = new Date();
+    $clock.textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  };
+  tick(); setInterval(tick, 1000);
+
+  // ---------- Queue ----------
+  const queueData = [
+    { id: 1249, name: '이OO', topic: '키르히호프', wait: '0:48', tag: 'green' },
+    { id: 1250, name: '정OO', topic: '시뮬레이터', wait: '1:02', tag: 'green' },
+    { id: 1251, name: '강OO', topic: '안전 수칙', wait: '1:24', tag: 'amber' },
+    { id: 1252, name: '윤OO', topic: '변압기',   wait: '1:31', tag: 'amber' },
+    { id: 1253, name: '조OO', topic: '응시 방법', wait: '1:48', tag: 'amber' },
+    { id: 1254, name: '최OO', topic: '교재 환불', wait: '2:01', tag: 'red' },
+    { id: 1255, name: '한OO', topic: 'CBT 오류',  wait: '2:07', tag: 'red' },
+    { id: 1256, name: '서OO', topic: '합격 후기', wait: '2:12', tag: 'red' },
+    { id: 1257, name: '문OO', topic: '오디오북',   wait: '2:14', tag: 'red' },
+    { id: 1258, name: '배OO', topic: '결제 문의', wait: '2:18', tag: 'red' },
+  ];
+  const $queue = document.getElementById('queue-list');
+  const renderQueue = () => {
+    $queue.innerHTML = queueData.map((q, i) => `
+      <div class="queue-row">
+        <div class="mono text-[11px] text-[color:var(--txt-3)] text-center">${esc(String(i+1).padStart(2,'0'))}</div>
+        <div class="min-w-0">
+          <div class="text-[12.5px] font-semibold text-[color:var(--txt-0)] truncate">${esc(q.name)} <span class="text-[color:var(--txt-3)] mono text-[10.5px]">#${esc(q.id)}</span></div>
+          <div class="text-[11px] text-[color:var(--txt-2)] truncate">${esc(q.topic)}</div>
+        </div>
+        <div class="mono text-[11px] font-semibold ${q.tag === 'red' ? 'text-[color:var(--red)]' : q.tag === 'amber' ? 'text-[color:var(--amber)]' : 'text-[color:var(--green)]'}">${esc(q.wait)}</div>
+      </div>
+    `).join('');
+  };
+  renderQueue();
+
+  // ---------- Topics + Script ----------
+  const topics = {
+    '옴의 법칙': '네, <b class="text-[color:var(--txt-1)]">옴의 법칙</b>에 대해 안내드리겠습니다. 전압(V)은 전류(I)와 저항(R)의 곱으로 표현되며, 식은 V = I × R 입니다. 예시로 12V 회로에 4Ω 저항이 있다면 전류는 3A가 흐르게 됩니다. 더 자세한 부분이 궁금하시면 시뮬레이터에서 직접 값을 바꿔보시는 것을 추천드립니다.',
+    '키르히호프': '<b class="text-[color:var(--txt-1)]">키르히호프 법칙</b>은 회로 해석의 기본입니다. 전류 법칙(KCL)은 한 노드에 들어오고 나가는 전류의 합이 0, 전압 법칙(KVL)은 폐회로의 전압 강하 합이 0이라는 원리입니다. 학습 페이지의 회로도 예제와 함께 보시면 이해가 빠릅니다.',
+    '변압기':   '<b class="text-[color:var(--txt-1)]">변압기</b>의 핵심은 권수비 a = N1/N2 = V1/V2 = I2/I1 입니다. 1차·2차 코일의 권수 비율로 전압을 승압·강압하며, 손실은 동손과 철손으로 구분됩니다. 효율 계산 문제가 매년 1~2문항 출제되니 공식 정리를 추천드립니다.',
+    '안전 수칙': '<b class="text-[color:var(--txt-1)]">전기 안전</b>의 기본은 정전 작업과 보호구 착용입니다. 작업 전에는 검전기로 무전압 상태를 확인하고, 절연용 보호구(절연장갑·절연화)를 반드시 착용하셔야 합니다. 활선 작업 시에는 2인 1조 원칙이 적용됩니다.',
+    '합격 후기': '많은 분들이 <b class="text-[color:var(--txt-1)]">CBT 반복 학습 + 시뮬레이터 실습</b>으로 합격하셨어요. 기출 10년치를 3회독한 후 오답노트만 다시 푸는 전략이 가장 효과가 좋았습니다. 응원 드리며, 시험 1주일 전 모의고사도 꼭 활용해 보세요.',
+  };
+  const topicGreets = {
+    '옴의 법칙': '"안녕하세요 스파크 콜센터입니다. 옴의 법칙 관련 문의시군요. 차근차근 안내드리겠습니다."',
+    '키르히호프': '"안녕하세요 스파크 콜센터입니다. 키르히호프 법칙은 회로 해석 기본이라 자주 나오는 부분이죠. 도와드리겠습니다."',
+    '변압기':   '"안녕하세요 스파크 콜센터입니다. 변압기 단원은 출제 비중이 높아요. 공식부터 정리해 드릴게요."',
+    '안전 수칙': '"안녕하세요 스파크 콜센터입니다. 안전 수칙은 가장 중요한 부분이죠. 핵심만 짚어 드리겠습니다."',
+    '합격 후기': '"안녕하세요 스파크 콜센터입니다. 합격 사례 궁금하시군요. 합격생 데이터를 기반으로 안내드릴게요."',
+  };
+  const aiTips = {
+    '옴의 법칙': '고객님이 <b>옴의 법칙</b>의 기본 공식을 헷갈려하고 계세요. <b>V = I × R</b> 공식을 먼저 안내드리고, 시뮬레이터의 <b>전류 측정 화면</b>으로 안내하시면 이해도가 높아질 거예요.',
+    '키르히호프': '<b>KCL/KVL</b> 두 법칙을 표로 비교해 드리세요. 회로도 예제 #4-2가 가장 직관적이에요.',
+    '변압기':   '권수비·효율 공식을 먼저 짚어주세요. <b>기출 2022 · 14번</b>과 연결하면 좋은 흐름입니다.',
+    '안전 수칙': '<b>검전 → 단락접지 → 보호구 착용</b> 3단계 안내. 안전 단원 정리 PDF를 채팅으로 보내드리세요.',
+    '합격 후기': '학습 코치 페이지의 <b>합격생 인터뷰</b> 링크를 채팅으로 함께 전달하시는 게 좋습니다.',
+  };
+
+  const $tabs = document.querySelectorAll('.tab');
+  const $scriptBody = document.getElementById('script-body');
+  const $scriptGreet = document.getElementById('script-greet');
+  const $callerTopic = document.getElementById('caller-topic');
+  const $aiMessage = document.getElementById('ai-message');
+  $tabs.forEach(t => t.addEventListener('click', () => {
+    $tabs.forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    const topic = t.dataset.topic;
+    $scriptBody.innerHTML = topics[topic] || '';
+    $scriptGreet.textContent = topicGreets[topic] || $scriptGreet.textContent;
+    $callerTopic.textContent = topic;
+    $aiMessage.innerHTML = aiTips[topic] || '';
+  }));
+
+  // ---------- Call timer ----------
+  let callSec = 0;
+  let callOn = true;
+  let callId = 1248;
+  const $callTimer = document.getElementById('call-timer');
+  const $callIdEl = document.getElementById('call-id');
+  const fmtTime = (s) => `${pad2(Math.floor(s/60))}:${pad2(s%60)}`;
+  const fmtLong = (s) => s >= 60 ? `${Math.floor(s/60)}분 ${s%60}초` : `${s}초`;
+  setInterval(() => {
+    if (callOn) { callSec++; $callTimer.textContent = fmtTime(callSec); }
+  }, 1000);
+
+  // ---------- Waveform ----------
+  const $wave = document.getElementById('wave-bars');
+  const BARS = 60;
+  const buildWave = () => {
+    const parts = [];
+    const cw = 600 / BARS;
+    for (let i = 0; i < BARS; i++) {
+      const x = i * cw + cw/2 - 1.5;
+      const h = callOn ? (8 + Math.random() * 56 * (0.4 + 0.6*Math.sin(i*0.3 + Date.now()*0.002))) : 4;
+      const y = 40 - h/2;
+      parts.push(`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="3" height="${Math.max(2,h).toFixed(2)}" rx="1.5" fill="url(#wg)" opacity="${callOn ? 0.95 : 0.35}"/>`);
+    }
+    $wave.innerHTML = parts.join('');
+  };
+  buildWave();
+  setInterval(buildWave, 120);
+
+  // ---------- Log ----------
+  const initialLog = [
+    { id: 1247, name: '김OO', topic: '옴의 법칙',     dur: 200, status: 'ok' },
+    { id: 1246, name: '이OO', topic: '시뮬레이터 사용법', dur: 312, status: 'ok' },
+    { id: 1245, name: '박OO', topic: '키르히호프',     dur: 248, status: 'ok' },
+    { id: 1244, name: '최OO', topic: '안전 수칙',       dur: 175, status: 'ok' },
+    { id: 1243, name: '정OO', topic: '교재 환불',       dur: 412, status: 'escal' },
+    { id: 1242, name: '강OO', topic: '결제 오류',       dur: 96,  status: 'ok' },
+    { id: 1241, name: '윤OO', topic: '합격 후기',       dur: 287, status: 'ok' },
+    { id: 1240, name: '한OO', topic: 'CBT 응시법',      dur: 198, status: 'ok' },
+  ];
+  const $log = document.getElementById('log-list');
+  const statusChip = (s) => {
+    if (s === 'ok') return '<span class="chip-green chip">해결</span>';
+    if (s === 'escal') return '<span class="chip-amber chip">에스컬</span>';
+    if (s === 'miss') return '<span class="chip-red chip">미응답</span>';
+    return '<span class="chip-gray chip">접수</span>';
+  };
+  const renderLog = () => {
+    $log.innerHTML = initialLog.map(l => `
+      <div class="log-row">
+        <div class="mono text-[11px] text-[color:var(--txt-3)] self-start pt-0.5">#${esc(l.id)}</div>
+        <div class="min-w-0">
+          <div class="text-[12.5px] font-semibold text-[color:var(--txt-0)] truncate">${esc(l.name)} · ${esc(l.topic)}</div>
+          <div class="mono text-[11px] text-[color:var(--txt-2)] mt-0.5">${esc(fmtLong(l.dur))}</div>
+        </div>
+        <div class="self-start">${statusChip(l.status)}</div>
+      </div>
+    `).join('');
+  };
+  renderLog();
+
+  const topicsArr = ['옴의 법칙','키르히호프','변압기','안전 수칙','합격 후기','CBT 오류','시뮬레이터 사용법','오디오북','결제 문의','학습 코치'];
+  const namesArr  = ['김OO','이OO','박OO','최OO','정OO','강OO','윤OO','한OO','조OO','서OO','문OO','배OO'];
+  const pick = (a) => a[Math.floor(Math.random()*a.length)];
+
+  setInterval(() => {
+    const nextId = initialLog[0].id + 1;
+    const newRow = {
+      id: nextId, name: pick(namesArr), topic: pick(topicsArr),
+      dur: 60 + Math.floor(Math.random()*420),
+      status: Math.random() < 0.85 ? 'ok' : (Math.random() < 0.5 ? 'escal' : 'miss'),
+    };
+    initialLog.unshift(newRow);
+    if (initialLog.length > 24) initialLog.pop();
+    renderLog();
+    // bump handled
+    const $h = document.getElementById('kpi-handled');
+    const $h2 = document.getElementById('stat-handled');
+    const v = (parseInt($h.textContent, 10) || 0) + 1;
+    $h.textContent = v;
+    $h2.textContent = v;
+  }, 7000);
+
+  // ---------- Memo ----------
+  const $memo = document.getElementById('memo');
+  const $memoCount = document.getElementById('memo-count');
+  $memo.addEventListener('input', () => {
+    $memoCount.textContent = $memo.value.length;
+  });
+  $memo.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      $memo.value = '';
+      $memoCount.textContent = '0';
+      e.preventDefault();
+    }
+  });
+  document.getElementById('save-memo').addEventListener('click', () => {
+    const btn = document.getElementById('save-memo');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg> 저장됨';
+    setTimeout(() => { btn.innerHTML = orig; }, 1400);
+  });
+
+  // ---------- Controls ----------
+  const setActiveCall = (on) => {
+    callOn = on;
+    document.getElementById('btn-answer').classList.toggle('hidden', on);
+    document.getElementById('btn-end').classList.toggle('hidden', !on);
+  };
+
+  document.getElementById('btn-hold').addEventListener('click', () => {
+    const btn = document.getElementById('btn-hold');
+    btn.classList.toggle('btn-primary');
+  });
+  document.getElementById('btn-mute').addEventListener('click', () => {
+    const btn = document.getElementById('btn-mute');
+    const on = btn.classList.toggle('btn-primary');
+    document.getElementById('mic-state').textContent = on ? 'MIC MUTED' : 'MIC ON';
+    document.getElementById('mic-state').className = on ? 'chip chip-red' : 'chip chip-green';
+  });
+  document.getElementById('btn-transfer').addEventListener('click', () => {
+    const btn = document.getElementById('btn-transfer');
+    btn.classList.add('btn-primary');
+    setTimeout(() => btn.classList.remove('btn-primary'), 900);
+  });
+
+  document.getElementById('btn-end').addEventListener('click', () => {
+    if (!callOn) return;
+    // push to log
+    initialLog.unshift({
+      id: callId,
+      name: document.getElementById('caller-name').textContent.replace(/\s.*/, ''),
+      topic: $callerTopic.textContent,
+      dur: callSec,
+      status: 'ok',
+    });
+    if (initialLog.length > 24) initialLog.pop();
+    renderLog();
+    const $h = document.getElementById('kpi-handled');
+    const $h2 = document.getElementById('stat-handled');
+    const v = (parseInt($h.textContent, 10) || 0) + 1;
+    $h.textContent = v; $h2.textContent = v;
+    setActiveCall(false);
+  });
+
+  document.getElementById('btn-answer').addEventListener('click', () => {
+    if (callOn) return;
+    // take from queue
+    const next = queueData.shift();
+    if (next) {
+      callId = next.id;
+      $callIdEl.textContent = `#${next.id}`;
+      document.getElementById('caller-name').textContent = `${next.name} 수험생`;
+      document.getElementById('caller-phone').textContent = `010-0***-**${10 + Math.floor(Math.random()*89)}`;
+      $callerTopic.textContent = next.topic;
+      // match a topic if exists
+      const matchTab = [...$tabs].find(t => t.dataset.topic === next.topic);
+      if (matchTab) matchTab.click();
+      // refill queue with synthetic entry
+      queueData.push({
+        id: 1259 + Math.floor(Math.random()*20),
+        name: pick(namesArr), topic: pick(topicsArr),
+        wait: '0:0' + (Math.floor(Math.random()*9)),
+        tag: 'green',
+      });
+      renderQueue();
+      const qEl = document.getElementById('kpi-queue');
+      qEl.textContent = queueData.length;
+    }
+    callSec = 0;
+    $callTimer.textContent = '00:00';
+    setActiveCall(true);
+  });
+
+  // ---------- Stars ----------
+  const $stars = document.querySelectorAll('#stars .star');
+  const $ratingText = document.getElementById('rating-text');
+  let rating = 4;
+  const labels = ['', '1 / 5점 · 매우 불만', '2 / 5점 · 불만', '3 / 5점 · 보통', '4 / 5점 · 만족', '5 / 5점 · 매우 만족'];
+  const paintStars = (v) => {
+    $stars.forEach(s => {
+      s.classList.toggle('on', parseInt(s.dataset.v, 10) <= v);
+    });
+    $ratingText.textContent = labels[v] || labels[4];
+  };
+  $stars.forEach(s => {
+    s.addEventListener('click', () => {
+      rating = parseInt(s.dataset.v, 10);
+      paintStars(rating);
+    });
+  });
+  document.getElementById('submit-rating').addEventListener('click', () => {
+    const btn = document.getElementById('submit-rating');
+    const orig = btn.textContent;
+    btn.textContent = '제출됨';
+    btn.classList.add('btn-primary');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('btn-primary'); }, 1400);
+  });
+
+  // ---------- AI typing rotation ----------
+  const aiPool = [
+    '고객님 톤이 답답해하는 신호. <b>속도를 조금 늦추고</b> 핵심 한 줄로 정리해 주세요.',
+    '<b>유사 문의 패턴</b>이 발견됐어요. 동일 유형 답변 템플릿을 채팅으로 함께 전송 가능합니다.',
+    '<b>시뮬레이터 링크</b>를 SMS로 전송하면 통화시간이 평균 1분 단축됩니다.',
+    '회로 그림이 필요한 유형입니다. <b>학습 자료실 #4-2</b> 첨부를 추천합니다.',
+    '말씀 속도 적절. <b>마무리 멘트</b> 단계로 이동해도 좋습니다.',
+  ];
+  let aiIdx = 0;
+  setInterval(() => {
+    aiIdx = (aiIdx + 1) % aiPool.length;
+    $aiMessage.innerHTML = aiPool[aiIdx];
+  }, 9000);
+
+})();
+</script>
+</body>
+</html>

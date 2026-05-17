@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPARK AUCTION HOUSE — 전기 골동품 특별 경매 · 스파크 옥션</title>
+<meta name="description" content="스파크 옥션 하우스 가상 경매 시뮬레이션 — 19세기 전기 골동품부터 현대 합격 작품까지. 라이브 경매 카탈로그·입찰·낙찰 체험." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Noto+Serif+KR:wght@300;400;500;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Playfair Display"', '"Noto Serif KR"', 'serif'],
+          serif:   ['"Cormorant Garamond"', '"Noto Serif KR"', 'serif'],
+          kr:      ['"Noto Serif KR"', 'serif'],
+          sans:    ['"Noto Sans KR"', 'sans-serif'],
+        },
+        colors: {
+          spark: {
+            midnight: '#0b1228',
+            navy:     '#101a3d',
+            indigo:   '#1a2a5e',
+            velvet:   '#1f1530',
+            ivory:    '#f3ead4',
+            parch:    '#e9dcb5',
+            cream:    '#efe4c4',
+            gold:     '#c8a24a',
+            brass:    '#b48a3a',
+            champ:    '#e7c97a',
+            highlight:'#f4dd8a',
+            wine:     '#561a23',
+            ink:      '#070a18',
+          }
+        },
+        boxShadow: {
+          'gild':   '0 0 0 1px rgba(200,162,74,0.55), 0 18px 60px -25px rgba(7,10,24,0.85)',
+          'lot':    '0 25px 60px -30px rgba(7,10,24,0.85), 0 8px 22px -14px rgba(0,0,0,0.6)',
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root{
+    --midnight:#0b1228;
+    --navy:#101a3d;
+    --indigo:#1a2a5e;
+    --velvet:#1f1530;
+    --ivory:#f3ead4;
+    --parch:#e9dcb5;
+    --gold:#c8a24a;
+    --brass:#b48a3a;
+    --champ:#e7c97a;
+    --highlight:#f4dd8a;
+    --wine:#561a23;
+    --ink:#070a18;
+  }
+  html{ scroll-behavior:smooth; }
+  body{
+    font-family:'Cormorant Garamond','Noto Serif KR',serif;
+    background:
+      radial-gradient(1200px 700px at 10% -10%, #1a2a5e 0%, transparent 55%),
+      radial-gradient(1000px 600px at 92% 0%,  #221a44 0%, transparent 55%),
+      radial-gradient(900px 600px at 50% 110%, #1a2350 0%, transparent 60%),
+      linear-gradient(180deg, #070a18 0%, #0b1228 50%, #070a18 100%);
+    color:var(--ivory);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    pointer-events:none;
+    background-image:
+      radial-gradient(rgba(200,162,74,0.06) 1px, transparent 1px),
+      radial-gradient(rgba(243,234,212,0.04) 1px, transparent 1px);
+    background-size: 4px 4px, 9px 9px;
+    background-position: 0 0, 2px 3px;
+    opacity:.45;
+    z-index:0;
+  }
+  body::after{
+    content:'';
+    position:fixed; inset:0;
+    pointer-events:none;
+    background:
+      linear-gradient(180deg, rgba(7,10,24,0.6) 0%, transparent 12%, transparent 86%, rgba(7,10,24,0.85) 100%);
+    z-index:0;
+  }
+
+  .font-display{ font-family:'Playfair Display','Noto Serif KR',serif; }
+  .font-serif-en{ font-family:'Cormorant Garamond','Noto Serif KR',serif; }
+  .font-kr{ font-family:'Noto Serif KR',serif; }
+
+  .gold-text{
+    background:linear-gradient(180deg, #f4dd8a 0%, #c8a24a 55%, #8e6a2c 100%);
+    -webkit-background-clip:text; background-clip:text;
+    color:transparent;
+    text-shadow:0 1px 0 rgba(255,255,255,0.05);
+  }
+  .gold-rule{
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--gold) 15%, var(--champ) 50%, var(--gold) 85%, transparent);
+  }
+  .gold-rule-thick{
+    height:2px;
+    background:linear-gradient(90deg, transparent, var(--gold) 10%, var(--highlight) 50%, var(--gold) 90%, transparent);
+    box-shadow:0 0 18px rgba(200,162,74,0.4);
+  }
+  .gild-frame{
+    border:1px solid rgba(200,162,74,0.45);
+    background:
+      linear-gradient(180deg, rgba(243,234,212,0.04), rgba(7,10,24,0.4));
+    box-shadow:
+      inset 0 0 0 1px rgba(243,234,212,0.06),
+      inset 0 0 40px rgba(7,10,24,0.6),
+      0 25px 50px -28px rgba(0,0,0,0.7);
+  }
+  .gild-corner{
+    position:relative;
+  }
+  .gild-corner::before,
+  .gild-corner::after{
+    content:''; position:absolute; width:18px; height:18px;
+    border:1px solid var(--gold);
+    pointer-events:none;
+  }
+  .gild-corner::before{ top:6px; left:6px; border-right:0; border-bottom:0; }
+  .gild-corner::after{ bottom:6px; right:6px; border-left:0; border-top:0; }
+
+  .deco-rule{ display:flex; align-items:center; gap:.85rem; color:var(--gold); }
+  .deco-rule::before, .deco-rule::after{
+    content:''; flex:1; height:1px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity:.7;
+  }
+  .smallcaps{ letter-spacing:.32em; text-transform:uppercase; }
+  .tracking-wider2{ letter-spacing:.18em; }
+
+  .badge-live{
+    display:inline-flex; align-items:center; gap:.5rem;
+    background:#7a1622; color:#fff;
+    border:1px solid rgba(255,255,255,0.15);
+    padding:.25rem .75rem; border-radius:999px;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.7rem; letter-spacing:.22em; text-transform:uppercase;
+    box-shadow:0 0 0 1px rgba(122,22,34,0.4), 0 0 24px rgba(255,80,90,0.35);
+  }
+  .badge-live .dot{
+    width:.5rem; height:.5rem; border-radius:999px; background:#ff5566;
+    box-shadow:0 0 10px #ff5566;
+    animation:pulse 1.4s infinite;
+  }
+  @keyframes pulse{ 0%,100%{transform:scale(1); opacity:1;} 50%{transform:scale(1.4); opacity:.55;} }
+
+  .btn-gold{
+    background:linear-gradient(180deg, #f4dd8a 0%, #c8a24a 55%, #8e6a2c 100%);
+    color:#1a1208;
+    border:1px solid #8e6a2c;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.45),
+      inset 0 -2px 0 rgba(0,0,0,0.25),
+      0 14px 30px -15px rgba(200,162,74,0.65);
+    transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .btn-gold:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+  .btn-gold:active{ transform:translateY(0); filter:brightness(0.97); }
+  .btn-gold:disabled{ filter:grayscale(0.5) brightness(0.8); cursor:not-allowed; transform:none; }
+
+  .btn-ghost{
+    background:rgba(243,234,212,0.04);
+    color:var(--ivory);
+    border:1px solid rgba(200,162,74,0.4);
+    transition:all .15s ease;
+  }
+  .btn-ghost:hover{ background:rgba(200,162,74,0.12); border-color:var(--gold); }
+
+  .chip{
+    display:inline-flex; align-items:center; gap:.4rem;
+    background:rgba(243,234,212,0.06);
+    border:1px solid rgba(200,162,74,0.35);
+    padding:.18rem .55rem; border-radius:999px;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.7rem; color:var(--parch);
+    letter-spacing:.06em;
+  }
+
+  /* Sticky pill nav */
+  .nav-pill{
+    background:rgba(11,18,40,0.85);
+    backdrop-filter:saturate(160%) blur(10px);
+    border:1px solid rgba(200,162,74,0.3);
+  }
+  .nav-pill a{
+    color:var(--parch);
+    padding:.45rem .9rem;
+    border-radius:999px;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.78rem;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    transition:all .15s ease;
+  }
+  .nav-pill a:hover{ color:var(--highlight); }
+  .nav-pill a.active{
+    background:linear-gradient(180deg,#c8a24a,#8e6a2c);
+    color:#0b1228;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+
+  /* SVG art frame */
+  .art-mat{
+    background:
+      radial-gradient(60% 80% at 50% 30%, rgba(243,234,212,0.06), transparent 70%),
+      linear-gradient(180deg, #0d1428 0%, #070a18 100%);
+    border:1px solid rgba(200,162,74,0.4);
+    box-shadow:
+      inset 0 0 0 6px rgba(11,18,40,0.7),
+      inset 0 0 0 7px rgba(200,162,74,0.55),
+      inset 0 0 80px rgba(7,10,24,0.7);
+  }
+  .art-tag{
+    background:rgba(11,18,40,0.85);
+    border:1px solid rgba(200,162,74,0.45);
+    color:var(--parch);
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.65rem;
+    letter-spacing:.2em;
+  }
+
+  /* Lot card */
+  .lot-card{
+    background:
+      linear-gradient(180deg, rgba(16,26,61,0.55), rgba(7,10,24,0.85));
+    border:1px solid rgba(200,162,74,0.28);
+    transition:transform .2s ease, box-shadow .25s ease, border-color .2s ease;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+  }
+  .lot-card:hover{
+    transform:translateY(-3px);
+    border-color:rgba(231,201,122,0.7);
+    box-shadow:0 32px 60px -30px rgba(0,0,0,0.85), 0 0 0 1px rgba(231,201,122,0.5);
+  }
+  .lot-card::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(120deg, transparent 0%, rgba(243,234,212,0.06) 40%, transparent 60%);
+    transform:translateX(-100%);
+    transition:transform .6s ease;
+  }
+  .lot-card:hover::after{ transform:translateX(100%); }
+
+  .lot-no{
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    color:var(--champ);
+  }
+
+  /* Bid history list */
+  .bid-row{
+    display:grid;
+    grid-template-columns: 1fr auto auto;
+    gap:.75rem;
+    align-items:center;
+    padding:.5rem .75rem;
+    border-bottom:1px dashed rgba(200,162,74,0.18);
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.78rem;
+    color:var(--parch);
+    animation:fadeIn .35s ease;
+  }
+  .bid-row.you{ background:rgba(231,201,122,0.08); color:var(--highlight); }
+  .bid-row .who{ font-weight:500; }
+  .bid-row .amt{ font-variant-numeric:tabular-nums; color:var(--highlight); font-weight:600; }
+  .bid-row .ts{ color:rgba(243,234,212,0.5); font-size:.72rem; font-variant-numeric:tabular-nums; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Live ticker */
+  .ticker{
+    background:linear-gradient(180deg,#0b1228,#070a18);
+    border-top:1px solid rgba(200,162,74,0.35);
+    border-bottom:1px solid rgba(200,162,74,0.35);
+    overflow:hidden;
+    position:relative;
+  }
+  .ticker-track{
+    display:flex; gap:2.5rem;
+    animation: scrollX 60s linear infinite;
+    white-space:nowrap;
+    padding:.55rem 0;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.78rem;
+    color:var(--parch);
+    letter-spacing:.04em;
+  }
+  .ticker-track span b{ color:var(--highlight); font-weight:600; }
+  @keyframes scrollX{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+  /* Countdown box */
+  .clock{
+    display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.5rem;
+    font-family:'Playfair Display',serif;
+  }
+  .clock .unit{
+    background:linear-gradient(180deg,#0d1428,#070a18);
+    border:1px solid rgba(200,162,74,0.45);
+    border-radius:.5rem;
+    text-align:center;
+    padding:.55rem .25rem .4rem;
+    box-shadow:inset 0 -2px 0 rgba(0,0,0,0.5);
+  }
+  .clock .num{
+    font-size:1.85rem; line-height:1;
+    color:var(--highlight);
+    font-variant-numeric:tabular-nums;
+    text-shadow:0 0 14px rgba(231,201,122,0.4);
+  }
+  .clock .lbl{
+    display:block; margin-top:.25rem;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.6rem; letter-spacing:.22em;
+    color:var(--parch); text-transform:uppercase; opacity:.85;
+  }
+
+  /* Auctioneer speech bubble */
+  .speech{
+    position:relative;
+    background:linear-gradient(180deg, rgba(86,26,35,0.55), rgba(86,26,35,0.25));
+    border:1px solid rgba(231,201,122,0.45);
+    color:var(--ivory);
+    padding:.85rem 1rem .85rem 3rem;
+    border-radius:.5rem;
+    font-family:'Noto Serif KR',serif;
+    font-size:.92rem;
+    box-shadow:inset 0 0 0 1px rgba(243,234,212,0.06);
+  }
+  .speech::before{
+    content:'"';
+    position:absolute; left:.65rem; top:-.15rem;
+    font-family:'Playfair Display',serif;
+    font-size:2.6rem; line-height:1;
+    color:var(--champ);
+    opacity:.9;
+  }
+
+  /* Modal */
+  .modal-backdrop{
+    position:fixed; inset:0;
+    background:rgba(2,4,12,0.85);
+    backdrop-filter:blur(6px);
+    z-index:60;
+    display:none;
+    align-items:center; justify-content:center;
+    padding:1rem;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal-card{
+    background:linear-gradient(180deg, #0d1428 0%, #070a18 100%);
+    border:1px solid rgba(200,162,74,0.5);
+    box-shadow:0 50px 100px -30px rgba(0,0,0,0.9), 0 0 0 1px rgba(231,201,122,0.25);
+    width:min(960px, 100%);
+    max-height:92vh;
+    overflow:auto;
+    border-radius:.5rem;
+  }
+  .modal-card .seal{
+    position:absolute; right:1.25rem; top:1.25rem;
+    width:46px; height:46px; border-radius:999px;
+    border:1px dashed rgba(231,201,122,0.6);
+    display:grid; place-items:center;
+    color:var(--champ);
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    transform:rotate(-8deg);
+    background:rgba(86,26,35,0.3);
+  }
+
+  /* Toast (낙찰 알림) */
+  .toast{
+    position:fixed; right:1rem; bottom:1rem;
+    z-index:80;
+    display:flex; flex-direction:column; gap:.5rem;
+    pointer-events:none;
+  }
+  .toast .t-card{
+    pointer-events:auto;
+    background:linear-gradient(180deg, #0d1428, #070a18);
+    border:1px solid var(--champ);
+    color:var(--ivory);
+    padding:.8rem 1rem;
+    border-radius:.5rem;
+    box-shadow:0 25px 55px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(231,201,122,0.45);
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.85rem;
+    max-width:340px;
+    animation:slideIn .3s ease, fadeOut .3s ease 4.7s forwards;
+  }
+  @keyframes slideIn{ from{transform:translateY(20px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+  @keyframes fadeOut{ to{ opacity:0; transform:translateY(20px); } }
+
+  /* Scrollbar */
+  .pretty-scroll::-webkit-scrollbar{ width:8px; height:8px; }
+  .pretty-scroll::-webkit-scrollbar-thumb{ background:rgba(200,162,74,0.4); border-radius:999px; }
+  .pretty-scroll::-webkit-scrollbar-track{ background:rgba(7,10,24,0.4); }
+
+  /* Catalog filter chip */
+  .filter-chip{
+    padding:.4rem .9rem;
+    border-radius:999px;
+    border:1px solid rgba(200,162,74,0.35);
+    background:rgba(243,234,212,0.04);
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:.78rem;
+    color:var(--parch);
+    letter-spacing:.08em;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .filter-chip:hover{ border-color:var(--gold); color:var(--highlight); }
+  .filter-chip.on{
+    background:linear-gradient(180deg,#c8a24a,#8e6a2c);
+    color:#0b1228; border-color:#8e6a2c;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.35);
+  }
+
+  /* Star rating */
+  .stars{ color:var(--champ); letter-spacing:.05em; font-size:.85rem; }
+  .stars .off{ color:rgba(243,234,212,0.2); }
+
+  /* Marquee for headline */
+  .ribbon{
+    background:linear-gradient(90deg,#561a23,#7a1622,#561a23);
+    color:#f4dd8a;
+    border-top:1px solid rgba(231,201,122,0.45);
+    border-bottom:1px solid rgba(231,201,122,0.45);
+  }
+
+  /* Bid flash */
+  @keyframes bidFlash{
+    0%{ box-shadow:0 0 0 0 rgba(231,201,122,0.6); }
+    50%{ box-shadow:0 0 30px 6px rgba(231,201,122,0.45); }
+    100%{ box-shadow:0 0 0 0 rgba(231,201,122,0); }
+  }
+  .bid-flash{ animation:bidFlash .8s ease; }
+
+  /* Hover glow on art */
+  .lot-card .art-mat{ transition:filter .25s ease; }
+  .lot-card:hover .art-mat{ filter:brightness(1.06) saturate(1.1); }
+
+  /* Sold ribbon */
+  .sold-stamp{
+    position:absolute; top:1rem; right:-2.5rem;
+    transform:rotate(20deg);
+    background:#561a23;
+    color:#f4dd8a;
+    padding:.25rem 3rem;
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    font-weight:700;
+    letter-spacing:.25em;
+    font-size:.75rem;
+    border-top:1px solid rgba(231,201,122,0.6);
+    border-bottom:1px solid rgba(231,201,122,0.6);
+    box-shadow:0 6px 20px -6px rgba(0,0,0,0.6);
+    pointer-events:none;
+  }
+
+  /* Responsive helpers */
+  @media (max-width: 768px){
+    .clock .num{ font-size:1.5rem; }
+    .speech{ font-size:.85rem; }
+  }
+</style>
+</head>
+<body class="relative">
+
+<!-- ============== TOP STRIP ============== -->
+<div class="relative z-10 ribbon">
+  <div class="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between text-[0.72rem] tracking-wider2 font-sans">
+    <div class="flex items-center gap-3">
+      <span class="badge-live"><span class="dot"></span>LIVE</span>
+      <span class="hidden sm:inline">전기 골동품 특별 경매 · 86번째 시즌</span>
+    </div>
+    <div class="hidden md:flex items-center gap-4 text-spark-parch/90">
+      <span>가상 시뮬레이션 · 실재 인물·작품 무관</span>
+      <span>·</span>
+      <span>회원번호 <b class="text-spark-highlight">SP-2026-04412</b></span>
+    </div>
+    <div class="text-spark-highlight">2026.05.16 · 19:30 KST</div>
+  </div>
+</div>
+
+<!-- ============== HEADER ============== -->
+<header class="relative z-10">
+  <div class="max-w-7xl mx-auto px-4 pt-10 pb-6">
+    <div class="flex flex-col items-center text-center">
+      <div class="deco-rule w-full max-w-3xl mb-4">
+        <span class="smallcaps text-xs">Spark Auction House · Est. 1947 (Fictional)</span>
+      </div>
+      <h1 class="font-display text-5xl md:text-7xl leading-[1.05] tracking-tight">
+        <span class="gold-text">SPARK</span>
+        <span class="italic font-serif-en text-spark-ivory/95">&nbsp;Auction House</span>
+      </h1>
+      <p class="font-kr mt-3 text-spark-parch text-lg md:text-xl tracking-wider2">
+        스파크 옥션 · 전기 골동품 특별 경매
+      </p>
+      <div class="gold-rule-thick w-full max-w-2xl mt-6 mb-6"></div>
+
+      <!-- Meta grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-4xl">
+        <div>
+          <div class="font-sans smallcaps text-[0.65rem] text-spark-gold">Auction Date</div>
+          <div class="font-display text-xl mt-1 text-spark-ivory">May 16, 2026</div>
+          <div class="font-kr text-xs text-spark-parch/80">2026년 5월 16일 (토)</div>
+        </div>
+        <div>
+          <div class="font-sans smallcaps text-[0.65rem] text-spark-gold">Total Lots</div>
+          <div class="font-display text-xl mt-1 text-spark-ivory" id="metaLots">8</div>
+          <div class="font-kr text-xs text-spark-parch/80">출품 로트</div>
+        </div>
+        <div>
+          <div class="font-sans smallcaps text-[0.65rem] text-spark-gold">Current Lot</div>
+          <div class="font-display text-xl mt-1 text-spark-ivory">Lot No. <span id="metaCurrentLot">1</span></div>
+          <div class="font-kr text-xs text-spark-parch/80" id="metaCurrentTitle">에디슨 백열전구 모형</div>
+        </div>
+        <div>
+          <div class="font-sans smallcaps text-[0.65rem] text-spark-gold">Sale Room</div>
+          <div class="font-display text-xl mt-1 text-spark-ivory">Hall Ω · Ohm</div>
+          <div class="font-kr text-xs text-spark-parch/80">옴 홀 (가상)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky nav -->
+  <nav class="sticky top-3 z-30 px-4">
+    <div class="nav-pill mx-auto max-w-3xl rounded-full flex items-center justify-between p-1.5">
+      <a href="#live" class="active">Live</a>
+      <a href="#catalog">Catalog</a>
+      <a href="#history">Bids</a>
+      <a href="#consign">Consign</a>
+      <a href="#about">About</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ============== LIVE TICKER ============== -->
+<div class="ticker relative z-10 mt-6">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<!-- ============== LIVE AUCTION STAGE ============== -->
+<section id="live" class="relative z-10 mt-12">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-end justify-between mb-5">
+      <div>
+        <div class="smallcaps text-spark-gold text-xs">Live Bidding · 현재 경매 중</div>
+        <h2 class="font-display text-4xl md:text-5xl mt-1 gold-text">Lot 진행 중</h2>
+      </div>
+      <div class="hidden md:flex items-center gap-2 text-spark-parch font-sans text-xs tracking-wider2">
+        <span class="chip">총 입찰 <b class="text-spark-highlight ml-1" id="totalBids">0</b>회</span>
+        <span class="chip">참여자 <b class="text-spark-highlight ml-1" id="totalBidders">14</b>명</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- BIG ART (col-span-2) -->
+      <div class="lg:col-span-2 gild-frame gild-corner rounded-md p-5 md:p-7 relative">
+        <div class="flex items-center justify-between mb-3">
+          <span class="art-tag px-2 py-1 rounded">LOT NO. <span id="liveLotNo">1</span></span>
+          <span class="badge-live"><span class="dot"></span>입찰 중</span>
+        </div>
+
+        <div class="art-mat rounded-md p-3 md:p-5 relative">
+          <div id="liveArt" class="w-full aspect-[4/3] flex items-center justify-center">
+            <!-- SVG injected by JS -->
+          </div>
+          <div class="absolute bottom-3 left-3 art-tag px-2 py-1 rounded">
+            <span class="smallcaps text-[0.6rem]">Provenance · 출처</span>
+          </div>
+        </div>
+
+        <div class="mt-5 grid md:grid-cols-2 gap-5">
+          <div>
+            <div class="smallcaps text-spark-gold text-[0.65rem]">Title · 작품명</div>
+            <h3 id="liveTitle" class="font-display text-2xl md:text-3xl mt-1 text-spark-ivory leading-snug">
+              에디슨 백열전구 모형
+            </h3>
+            <p id="liveSubtitle" class="font-kr text-sm text-spark-parch/85 mt-1 italic">
+              "Edison Filament Bulb, Replica c.1879" · 19세기 백열전구 복각
+            </p>
+
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span class="chip" id="liveCat">전기조명</span>
+              <span class="chip" id="liveEra">19c 후기</span>
+              <span class="chip" id="liveCondition">상태 A+</span>
+              <span class="chip" id="liveAuth">인증 완료</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="smallcaps text-spark-gold text-[0.65rem]">Auctioneer · 경매사</div>
+            <div class="font-display text-lg mt-1 text-spark-ivory italic">M. Voltaire-Kim</div>
+            <div class="font-kr text-xs text-spark-parch/80">김보타르 (가상) · 시니어 옥셔니어</div>
+
+            <div class="speech mt-3" id="auctioneerSpeech">
+              "현재 입찰가에서 한 단위 더 받겠습니다. 신사 숙녀 여러분, 이 작품의 가치는 부정할 수 없습니다."
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIDDING PANEL -->
+      <aside class="gild-frame rounded-md p-5 flex flex-col">
+        <!-- Countdown -->
+        <div>
+          <div class="smallcaps text-spark-gold text-[0.65rem]">Time Remaining · 남은 시간</div>
+          <div class="clock mt-2" id="clock">
+            <div class="unit"><div class="num" id="cd-d">00</div><span class="lbl">DAY</span></div>
+            <div class="unit"><div class="num" id="cd-h">00</div><span class="lbl">HR</span></div>
+            <div class="unit"><div class="num" id="cd-m">04</div><span class="lbl">MIN</span></div>
+            <div class="unit"><div class="num" id="cd-s">30</div><span class="lbl">SEC</span></div>
+          </div>
+        </div>
+
+        <div class="gold-rule my-5"></div>
+
+        <!-- Price block -->
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div>
+            <div class="smallcaps text-spark-gold text-[0.62rem]">Starting Bid</div>
+            <div class="font-display text-2xl text-spark-ivory mt-0.5" id="startBid">₩ 12,000</div>
+          </div>
+          <div>
+            <div class="smallcaps text-spark-gold text-[0.62rem]">Estimate</div>
+            <div class="font-display text-base text-spark-ivory mt-1" id="estimate">₩ 800K – 1.2M</div>
+          </div>
+        </div>
+
+        <div class="gold-rule my-4"></div>
+
+        <!-- Current bid -->
+        <div class="text-center">
+          <div class="smallcaps text-spark-gold text-[0.65rem]">Current Bid · 현재가</div>
+          <div id="currentBidWrap" class="rounded-md border border-spark-gold/40 bg-spark-ink/40 mt-2 py-3">
+            <div class="font-display text-4xl md:text-5xl gold-text font-bold" id="currentBid">₩ 480,000</div>
+            <div class="text-xs font-sans tracking-wider2 text-spark-parch/80 mt-1">
+              by <span class="text-spark-highlight" id="topBidder">패럿_117</span>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-center gap-2 text-xs font-sans tracking-wider2 text-spark-parch">
+            <span>다음 입찰 단위</span>
+            <b class="text-spark-highlight" id="nextIncr">+ ₩ 30,000</b>
+          </div>
+        </div>
+
+        <!-- Bid buttons -->
+        <div class="mt-5 grid grid-cols-2 gap-2">
+          <button class="btn-gold rounded-md py-3 font-sans font-bold tracking-wider2 text-sm" id="bidBtn">
+            입찰 +₩30,000
+          </button>
+          <button class="btn-ghost rounded-md py-3 font-sans tracking-wider2 text-sm" id="bidBtn2">
+            +₩100,000
+          </button>
+        </div>
+        <button class="mt-2 btn-ghost rounded-md py-2 font-sans tracking-wider2 text-xs" id="autobidBtn">
+          자동 입찰 설정 (시뮬)
+        </button>
+
+        <div class="gold-rule my-4"></div>
+
+        <!-- Bid history -->
+        <div>
+          <div class="flex items-center justify-between">
+            <div class="smallcaps text-spark-gold text-[0.65rem]">Bid History · 입찰 내역</div>
+            <span class="text-[0.65rem] font-sans text-spark-parch/60" id="bidCount">12 bids</span>
+          </div>
+          <div id="bidList" class="mt-2 pretty-scroll max-h-44 overflow-auto rounded border border-spark-gold/20 bg-spark-ink/30"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CATALOG ============== -->
+<section id="catalog" class="relative z-10 mt-20">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="text-center max-w-3xl mx-auto">
+      <div class="deco-rule">
+        <span class="smallcaps text-xs">Catalogue · 카탈로그</span>
+      </div>
+      <h2 class="font-display text-4xl md:text-5xl mt-3 gold-text">전체 출품 로트</h2>
+      <p class="font-kr text-spark-parch/85 mt-2 italic">
+        총 8개 로트 · 19세기 골동품부터 현대 합격 작품까지
+      </p>
+      <div class="gold-rule mt-5 max-w-md mx-auto"></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="mt-8 flex flex-wrap justify-center gap-2" id="filters">
+      <button class="filter-chip on" data-filter="all">전체</button>
+      <button class="filter-chip" data-filter="조명">조명</button>
+      <button class="filter-chip" data-filter="문서">문서·도면</button>
+      <button class="filter-chip" data-filter="기계">기계·모형</button>
+      <button class="filter-chip" data-filter="현대">현대 미술</button>
+    </div>
+
+    <!-- Grid -->
+    <div id="catalogGrid" class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+  </div>
+</section>
+
+<!-- ============== HOUSE INFO ============== -->
+<section id="consign" class="relative z-10 mt-20">
+  <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-3 gap-6">
+
+    <!-- Consign -->
+    <div class="gild-frame gild-corner rounded-md p-6">
+      <div class="smallcaps text-spark-gold text-[0.65rem]">Consign with us</div>
+      <h3 class="font-display text-2xl mt-1 text-spark-ivory">위탁 출품 안내</h3>
+      <p class="font-kr text-sm text-spark-parch/85 mt-3 leading-relaxed">
+        보유하신 전기 골동품·합격 기념물·역사적 가치가 있는 부품을
+        스파크 옥션 하우스에 위탁할 수 있습니다 (가상 시뮬레이션).
+      </p>
+      <ul class="mt-4 space-y-2 text-sm font-kr text-spark-parch/90">
+        <li class="flex gap-2"><span class="text-spark-champ">◆</span> 전문 감정사 무료 상담</li>
+        <li class="flex gap-2"><span class="text-spark-champ">◆</span> 시작가·낙찰 예상가 분석</li>
+        <li class="flex gap-2"><span class="text-spark-champ">◆</span> 위탁 수수료 12% (가상)</li>
+        <li class="flex gap-2"><span class="text-spark-champ">◆</span> 카탈로그 사진·해설 제작</li>
+      </ul>
+      <button class="mt-5 btn-ghost rounded-md w-full py-2 font-sans tracking-wider2 text-xs">
+        감정 요청서 작성 (시뮬)
+      </button>
+    </div>
+
+    <!-- Provenance -->
+    <div class="gild-frame gild-corner rounded-md p-6" id="about">
+      <div class="smallcaps text-spark-gold text-[0.65rem]">About the House</div>
+      <h3 class="font-display text-2xl mt-1 text-spark-ivory">스파크 옥션 하우스</h3>
+      <p class="font-kr text-sm text-spark-parch/85 mt-3 leading-relaxed">
+        1947년 가상으로 설립된 스파크 옥션 하우스는 전기·전자 분야의
+        역사적 유물과 현대 합격 작품을 전문으로 취급합니다.
+        본 페이지의 모든 작품·인물·경매 결과는 시뮬레이션이며,
+        실재 크리스티·소더비 등 옥션 하우스 및 작품과는 무관합니다.
+      </p>
+      <div class="mt-5 grid grid-cols-3 text-center gap-2">
+        <div>
+          <div class="font-display text-2xl gold-text">79</div>
+          <div class="text-[0.65rem] font-sans smallcaps text-spark-parch/80">Years</div>
+        </div>
+        <div>
+          <div class="font-display text-2xl gold-text">14K+</div>
+          <div class="text-[0.65rem] font-sans smallcaps text-spark-parch/80">Lots Sold</div>
+        </div>
+        <div>
+          <div class="font-display text-2xl gold-text">31</div>
+          <div class="text-[0.65rem] font-sans smallcaps text-spark-parch/80">Specialists</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="gild-frame gild-corner rounded-md p-6">
+      <div class="smallcaps text-spark-gold text-[0.65rem]">Upcoming Sales</div>
+      <h3 class="font-display text-2xl mt-1 text-spark-ivory">예정 경매</h3>
+      <ul class="mt-4 space-y-3 text-sm">
+        <li class="flex items-start gap-3">
+          <div class="font-display text-spark-champ text-lg leading-none mt-0.5">06.04</div>
+          <div>
+            <div class="font-kr text-spark-ivory">옴의 법칙 200주년 특별전</div>
+            <div class="text-[0.7rem] font-sans text-spark-parch/70">Lot 24 · 19:00 KST</div>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <div class="font-display text-spark-champ text-lg leading-none mt-0.5">06.21</div>
+          <div>
+            <div class="font-kr text-spark-ivory">현대 합격 미술 컬렉션</div>
+            <div class="text-[0.7rem] font-sans text-spark-parch/70">Lot 32 · 20:00 KST</div>
+          </div>
+        </li>
+        <li class="flex items-start gap-3">
+          <div class="font-display text-spark-champ text-lg leading-none mt-0.5">07.09</div>
+          <div>
+            <div class="font-kr text-spark-ivory">변압기·모터 도면 경매</div>
+            <div class="text-[0.7rem] font-sans text-spark-parch/70">Lot 18 · 19:30 KST</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============== HISTORY / PAST RESULTS ============== -->
+<section id="history" class="relative z-10 mt-20">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="text-center">
+      <div class="deco-rule max-w-3xl mx-auto">
+        <span class="smallcaps text-xs">Past Results · 과거 낙찰</span>
+      </div>
+      <h2 class="font-display text-4xl md:text-5xl mt-3 gold-text">기록된 낙찰</h2>
+      <p class="font-kr text-spark-parch/85 mt-2 italic">최근 시즌 상위 낙찰가 (가상)</p>
+    </div>
+
+    <div class="mt-8 gild-frame rounded-md overflow-hidden">
+      <div class="grid grid-cols-12 px-4 py-3 text-[0.7rem] font-sans smallcaps text-spark-gold border-b border-spark-gold/30 bg-spark-ink/40">
+        <div class="col-span-1">Lot</div>
+        <div class="col-span-5">Title</div>
+        <div class="col-span-2">Date</div>
+        <div class="col-span-2 text-right">Estimate</div>
+        <div class="col-span-2 text-right">Hammer Price</div>
+      </div>
+      <div id="pastResults"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="relative z-10 mt-24 pb-10">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="gold-rule mb-8"></div>
+    <div class="grid md:grid-cols-3 gap-6 text-sm">
+      <div>
+        <div class="font-display text-2xl gold-text">SPARK Auction</div>
+        <p class="font-kr text-spark-parch/80 mt-2 text-xs leading-relaxed">
+          본 페이지는 전기기능사 학습용 가상 옥션 시뮬레이션입니다.
+          실재 옥션 하우스(크리스티·소더비 등), 실재 작품·인물·낙찰 결과와 무관하며,
+          모든 입찰·낙찰가는 학습 목적의 가상 데이터입니다.
+        </p>
+      </div>
+      <div>
+        <div class="smallcaps text-spark-gold text-[0.65rem]">Specialists</div>
+        <ul class="mt-2 space-y-1 font-kr text-xs text-spark-parch/85">
+          <li>전기 골동품 — M. Voltaire-Kim (가상)</li>
+          <li>현대 회로 미술 — Dr. A. Resistor (가상)</li>
+          <li>도면·필사본 — Ms. C. Henry (가상)</li>
+        </ul>
+      </div>
+      <div>
+        <div class="smallcaps text-spark-gold text-[0.65rem]">Hall Ω · 옴 홀</div>
+        <p class="font-kr text-xs text-spark-parch/85 mt-2">
+          가상 주소: Spark Plaza 220V, Hall Ω, 가상광역시
+          <br>경매 문의: simulation@spark-auction.invalid (가상)
+        </p>
+      </div>
+    </div>
+    <div class="mt-8 text-center text-[0.7rem] font-sans tracking-wider2 text-spark-parch/60">
+      © 2026 SPARK AUCTION HOUSE · Fictional Simulation · All lots, persons, and prices are imaginary.
+    </div>
+  </div>
+</footer>
+
+<!-- ============== MODAL ============== -->
+<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-card relative" role="document">
+    <div class="seal">SP</div>
+    <div class="p-6 md:p-8">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="smallcaps text-spark-gold text-[0.65rem]">Lot No. <span id="m-no">1</span></div>
+          <h3 class="font-display text-3xl md:text-4xl mt-1 text-spark-ivory" id="m-title">제목</h3>
+          <p class="font-kr italic text-spark-parch/85 mt-1" id="m-subtitle">부제</p>
+        </div>
+        <button id="modalClose" class="btn-ghost rounded-md px-3 py-1.5 text-xs font-sans tracking-wider2" aria-label="닫기">CLOSE ✕</button>
+      </div>
+
+      <div class="gold-rule my-5"></div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="art-mat rounded-md p-3">
+          <div id="m-art" class="aspect-[4/3] w-full flex items-center justify-center"></div>
+        </div>
+        <div>
+          <dl class="grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">분류</dt>
+            <dd class="col-span-2 font-kr text-spark-ivory" id="m-cat">—</dd>
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">제작 시기</dt>
+            <dd class="col-span-2 font-kr text-spark-ivory" id="m-era">—</dd>
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">상태</dt>
+            <dd class="col-span-2 font-kr text-spark-ivory" id="m-cond">—</dd>
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">기증자</dt>
+            <dd class="col-span-2 font-kr text-spark-ivory" id="m-donor">—</dd>
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">시작가</dt>
+            <dd class="col-span-2 font-display text-spark-ivory" id="m-start">—</dd>
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">낙찰 예상</dt>
+            <dd class="col-span-2 font-display text-spark-ivory" id="m-est">—</dd>
+            <dt class="col-span-1 smallcaps text-spark-gold text-[0.65rem] mt-1">현재가</dt>
+            <dd class="col-span-2 font-display text-2xl gold-text" id="m-current">—</dd>
+          </dl>
+
+          <div class="mt-4">
+            <div class="smallcaps text-spark-gold text-[0.65rem]">Provenance · 출처</div>
+            <p class="font-kr text-sm text-spark-parch/90 mt-1 leading-relaxed" id="m-prov">—</p>
+          </div>
+
+          <div class="mt-4">
+            <div class="smallcaps text-spark-gold text-[0.65rem]">Authentication · 인증</div>
+            <div class="stars mt-1" id="m-stars"></div>
+          </div>
+
+          <div class="mt-5 grid grid-cols-2 gap-2">
+            <button id="m-bid" class="btn-gold rounded-md py-2 font-sans tracking-wider2 text-xs font-bold">입찰하기</button>
+            <button id="m-bid2" class="btn-ghost rounded-md py-2 font-sans tracking-wider2 text-xs">관심 등록</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="gold-rule my-6"></div>
+
+      <div>
+        <div class="smallcaps text-spark-gold text-[0.65rem] mb-2">최근 입찰</div>
+        <div id="m-bidlist" class="pretty-scroll max-h-40 overflow-auto rounded border border-spark-gold/25 bg-spark-ink/30"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== TOAST ============== -->
+<div class="toast" id="toast" aria-live="polite"></div>
+
+<!-- ============== SCRIPT ============== -->
+<script>
+(() => {
+  'use strict';
+
+  // -------- SAFE ESCAPE --------
+  const esc = (s) => String(s ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
+
+  // -------- FORMAT --------
+  const krw = (n) => '₩ ' + Number(n).toLocaleString('ko-KR');
+  const krwK = (n) => {
+    if (n >= 1_000_000) return '₩ ' + (n/1_000_000).toFixed(n%1_000_000===0?0:1) + 'M';
+    if (n >= 1_000) return '₩ ' + Math.round(n/1000) + 'K';
+    return krw(n);
+  };
+  const pad = (n) => String(n).padStart(2,'0');
+  const now = () => {
+    const d = new Date();
+    return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  };
+
+  // -------- SVG ART LIBRARY --------
+  const SVG = {
+    bulb: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <radialGradient id="bg1" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+        <radialGradient id="glow1" cx="50%" cy="50%" r="55%">
+          <stop offset="0%" stop-color="#f4dd8a" stop-opacity="0.9"/>
+          <stop offset="60%" stop-color="#c8a24a" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#c8a24a" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="brass1" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#e7c97a"/><stop offset="50%" stop-color="#b48a3a"/><stop offset="100%" stop-color="#6e521e"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg1)"/>
+      <circle cx="200" cy="140" r="120" fill="url(#glow1)"/>
+      <!-- bulb glass -->
+      <path d="M155 80 Q200 30 245 80 Q260 130 235 175 L165 175 Q140 130 155 80 Z"
+            fill="rgba(243,234,212,0.12)" stroke="#e7c97a" stroke-width="1.5"/>
+      <!-- filament -->
+      <path d="M180 90 Q190 130 175 160 M200 90 Q210 130 195 160 M220 90 Q230 130 215 160"
+            stroke="#f4dd8a" stroke-width="1.2" fill="none" opacity="0.9"/>
+      <!-- coil -->
+      <path d="M170 170 Q200 180 230 170 M170 178 Q200 188 230 178 M170 186 Q200 196 230 186"
+            stroke="#f4dd8a" stroke-width="0.8" fill="none" opacity="0.7"/>
+      <!-- base -->
+      <rect x="160" y="175" width="80" height="14" fill="url(#brass1)" stroke="#6e521e" stroke-width="0.8"/>
+      <path d="M165 189 L235 189 L228 202 L172 202 Z" fill="url(#brass1)" stroke="#6e521e" stroke-width="0.8"/>
+      <path d="M175 202 L225 202 L218 215 L182 215 Z" fill="url(#brass1)" stroke="#6e521e" stroke-width="0.8"/>
+      <!-- screw -->
+      <path d="M180 216 L220 216 L213 224 L187 224 Z" fill="#6e521e"/>
+      <!-- inscription -->
+      <text x="200" y="280" text-anchor="middle" fill="#c8a24a" font-family="Playfair Display, serif" font-style="italic" font-size="14">— Replica, c. 1879 —</text>
+    </svg>`,
+
+    manuscript: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <linearGradient id="parch1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#efe4c4"/><stop offset="100%" stop-color="#c9b885"/>
+        </linearGradient>
+        <radialGradient id="bg2" cx="50%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg2)"/>
+      <g transform="rotate(-3 200 160)">
+        <rect x="80" y="50" width="240" height="220" fill="url(#parch1)" stroke="#8e6a2c" stroke-width="1.2"/>
+        <rect x="80" y="50" width="240" height="220" fill="none" stroke="#8e6a2c" stroke-width="0.4" stroke-dasharray="3 3" transform="translate(4 4)"/>
+        <!-- header -->
+        <text x="200" y="85" text-anchor="middle" fill="#3a2a1a" font-family="Playfair Display, serif" font-style="italic" font-size="18">Ohm's Law</text>
+        <line x1="120" y1="95" x2="280" y2="95" stroke="#3a2a1a" stroke-width="0.6"/>
+        <!-- equation -->
+        <text x="200" y="140" text-anchor="middle" fill="#3a2a1a" font-family="Cormorant Garamond, serif" font-size="34" font-style="italic">V = I · R</text>
+        <!-- handwriting lines -->
+        <g stroke="#3a2a1a" stroke-width="0.7" fill="none" opacity="0.7">
+          <path d="M100 170 Q140 165 180 170 T260 168 T300 170"/>
+          <path d="M100 185 Q140 180 180 185 T260 183 T300 185"/>
+          <path d="M100 200 Q140 195 180 200 T260 198 T300 200"/>
+          <path d="M100 215 Q140 210 180 215 T240 213"/>
+        </g>
+        <!-- signature -->
+        <text x="260" y="245" fill="#3a2a1a" font-family="Cormorant Garamond, serif" font-style="italic" font-size="14">— G. S. Ohm</text>
+        <!-- seal -->
+        <circle cx="115" cy="245" r="14" fill="none" stroke="#561a23" stroke-width="1.4"/>
+        <text x="115" y="249" text-anchor="middle" fill="#561a23" font-family="Playfair Display, serif" font-size="9" font-weight="bold">SEAL</text>
+      </g>
+    </svg>`,
+
+    coil: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <radialGradient id="bg3" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+        <linearGradient id="copper1" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#e9a35a"/><stop offset="50%" stop-color="#a8651e"/><stop offset="100%" stop-color="#5a3210"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg3)"/>
+      <!-- wooden base -->
+      <ellipse cx="200" cy="270" rx="130" ry="20" fill="#3a2a1a"/>
+      <ellipse cx="200" cy="265" rx="130" ry="20" fill="#5a3a1a"/>
+      <!-- core -->
+      <rect x="195" y="80" width="10" height="180" fill="#1a1208"/>
+      <!-- coil rings (toroidal style stack) -->
+      <g>
+        ${Array.from({length:14}).map((_,i)=>{
+          const y = 100 + i*11;
+          return `<ellipse cx="200" cy="${y}" rx="70" ry="9" fill="none" stroke="url(#copper1)" stroke-width="3.2"/>`;
+        }).join('')}
+      </g>
+      <!-- terminals -->
+      <circle cx="135" cy="260" r="6" fill="#c8a24a" stroke="#6e521e"/>
+      <circle cx="265" cy="260" r="6" fill="#c8a24a" stroke="#6e521e"/>
+      <line x1="135" y1="260" x2="135" y2="225" stroke="#a8651e" stroke-width="2"/>
+      <line x1="265" y1="260" x2="265" y2="225" stroke="#a8651e" stroke-width="2"/>
+      <!-- magnetic field hint -->
+      <g stroke="#f4dd8a" stroke-width="0.6" fill="none" opacity="0.45">
+        <path d="M200 70 Q280 170 200 270 Q120 170 200 70 Z"/>
+        <path d="M200 90 Q260 170 200 250 Q140 170 200 90 Z"/>
+      </g>
+      <text x="200" y="40" text-anchor="middle" fill="#c8a24a" font-family="Playfair Display, serif" font-style="italic" font-size="13">Faraday's Coil</text>
+    </svg>`,
+
+    circuit: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <radialGradient id="bg4" cx="50%" cy="40%" r="65%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+        <linearGradient id="paperT" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#efe4c4"/><stop offset="100%" stop-color="#c9b885"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg4)"/>
+      <rect x="40" y="40" width="320" height="240" fill="url(#paperT)" stroke="#8e6a2c"/>
+      <!-- grid -->
+      <g stroke="#8e6a2c" stroke-width="0.3" opacity="0.3">
+        ${Array.from({length:15}).map((_,i)=>`<line x1="${40+i*22}" y1="40" x2="${40+i*22}" y2="280"/>`).join('')}
+        ${Array.from({length:11}).map((_,i)=>`<line x1="40" y1="${40+i*24}" x2="360" y2="${40+i*24}"/>`).join('')}
+      </g>
+      <!-- circuit -->
+      <g stroke="#1a1208" stroke-width="2" fill="none" stroke-linecap="square">
+        <rect x="80" y="80" width="240" height="160" fill="none"/>
+        <!-- resistor zigzag -->
+        <polyline points="120,80 130,72 140,88 150,72 160,88 170,72 180,88 190,72 200,80"/>
+        <!-- inductor coils -->
+        <path d="M220 80 Q227 65 234 80 Q241 65 248 80 Q255 65 262 80"/>
+        <!-- capacitor -->
+        <line x1="290" y1="120" x2="290" y2="140"/>
+        <line x1="306" y1="120" x2="306" y2="140"/>
+        <line x1="280" y1="80" x2="290" y2="80"/>
+        <line x1="306" y1="80" x2="320" y2="80"/>
+        <line x1="298" y1="80" x2="298" y2="120"/>
+        <!-- ground -->
+        <line x1="200" y1="240" x2="200" y2="260"/>
+        <line x1="186" y1="260" x2="214" y2="260"/>
+        <line x1="190" y1="266" x2="210" y2="266"/>
+        <line x1="194" y1="272" x2="206" y2="272"/>
+        <!-- T coil (tesla) -->
+        <circle cx="120" cy="160" r="20" stroke-width="2"/>
+        <text x="120" y="164" text-anchor="middle" fill="#1a1208" font-family="Cormorant Garamond, serif" font-style="italic" font-size="14">T</text>
+      </g>
+      <!-- handwritten notes -->
+      <text x="60" y="60" fill="#561a23" font-family="Cormorant Garamond, serif" font-style="italic" font-size="14">Hi-V Coil — N. Tesla</text>
+      <text x="220" y="270" fill="#1a1208" font-family="Cormorant Garamond, serif" font-size="11" opacity="0.7">f₀ = 1 / 2π√(LC)</text>
+    </svg>`,
+
+    transformer: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <radialGradient id="bg5" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+        <linearGradient id="iron" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#3a3a44"/><stop offset="100%" stop-color="#16161c"/>
+        </linearGradient>
+        <linearGradient id="copper2" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#e9a35a"/><stop offset="100%" stop-color="#6e3e18"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg5)"/>
+      <!-- core (rectangular) -->
+      <rect x="100" y="80" width="200" height="160" fill="url(#iron)" stroke="#000"/>
+      <rect x="130" y="110" width="140" height="100" fill="#070a18" stroke="#000"/>
+      <!-- left winding -->
+      <g>
+        ${Array.from({length:12}).map((_,i)=>{
+          const y=92+i*12;
+          return `<rect x="110" y="${y}" width="40" height="6" fill="url(#copper2)" stroke="#3a1a08" stroke-width="0.4"/>`;
+        }).join('')}
+      </g>
+      <!-- right winding -->
+      <g>
+        ${Array.from({length:12}).map((_,i)=>{
+          const y=92+i*12;
+          return `<rect x="250" y="${y}" width="40" height="6" fill="url(#copper2)" stroke="#3a1a08" stroke-width="0.4"/>`;
+        }).join('')}
+      </g>
+      <!-- terminals -->
+      <g fill="#c8a24a" stroke="#6e521e">
+        <circle cx="110" cy="260" r="5"/>
+        <circle cx="150" cy="260" r="5"/>
+        <circle cx="250" cy="260" r="5"/>
+        <circle cx="290" cy="260" r="5"/>
+      </g>
+      <line x1="110" y1="260" x2="110" y2="245" stroke="#6e521e" stroke-width="1.5"/>
+      <line x1="150" y1="260" x2="150" y2="245" stroke="#6e521e" stroke-width="1.5"/>
+      <line x1="250" y1="260" x2="250" y2="245" stroke="#6e521e" stroke-width="1.5"/>
+      <line x1="290" y1="260" x2="290" y2="245" stroke="#6e521e" stroke-width="1.5"/>
+      <!-- label plate -->
+      <rect x="155" y="225" width="90" height="22" fill="#c8a24a" stroke="#6e521e"/>
+      <text x="200" y="241" text-anchor="middle" fill="#1a1208" font-family="Playfair Display, serif" font-weight="700" font-size="12">220V / 24V</text>
+      <!-- title -->
+      <text x="200" y="42" text-anchor="middle" fill="#c8a24a" font-family="Playfair Display, serif" font-style="italic" font-size="13">Miniature Transformer</text>
+    </svg>`,
+
+    radio: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <radialGradient id="bg6" cx="50%" cy="40%" r="65%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+        <linearGradient id="wood" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#7a5028"/><stop offset="100%" stop-color="#3a2410"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg6)"/>
+      <!-- radio body -->
+      <rect x="80" y="80" width="240" height="180" rx="14" fill="url(#wood)" stroke="#1a1208" stroke-width="2"/>
+      <!-- speaker grill -->
+      <rect x="100" y="100" width="100" height="120" rx="6" fill="#1a1208"/>
+      <g stroke="#c8a24a" stroke-width="0.6" opacity="0.6">
+        ${Array.from({length:10}).map((_,i)=>`<line x1="105" y1="${108+i*11}" x2="195" y2="${108+i*11}"/>`).join('')}
+      </g>
+      <!-- tuning dial -->
+      <rect x="220" y="100" width="90" height="40" rx="4" fill="#efe4c4" stroke="#6e521e"/>
+      <g stroke="#1a1208" stroke-width="0.5">
+        ${Array.from({length:8}).map((_,i)=>`<line x1="${228+i*11}" y1="105" x2="${228+i*11}" y2="135"/>`).join('')}
+      </g>
+      <line x1="265" y1="100" x2="265" y2="140" stroke="#c8a24a" stroke-width="1.6"/>
+      <text x="265" y="155" text-anchor="middle" fill="#efe4c4" font-family="Cormorant Garamond, serif" font-style="italic" font-size="10">88 — 108 MHz</text>
+      <!-- knobs -->
+      <circle cx="240" cy="200" r="16" fill="#1a1208" stroke="#c8a24a" stroke-width="1.5"/>
+      <line x1="240" y1="200" x2="240" y2="188" stroke="#c8a24a" stroke-width="1.5"/>
+      <circle cx="290" cy="200" r="16" fill="#1a1208" stroke="#c8a24a" stroke-width="1.5"/>
+      <line x1="290" y1="200" x2="300" y2="200" stroke="#c8a24a" stroke-width="1.5"/>
+      <!-- antenna -->
+      <line x1="320" y1="80" x2="370" y2="40" stroke="#c8a24a" stroke-width="1.6"/>
+      <circle cx="370" cy="40" r="3" fill="#c8a24a"/>
+      <!-- nameplate -->
+      <text x="265" y="245" text-anchor="middle" fill="#c8a24a" font-family="Playfair Display, serif" font-style="italic" font-size="11">RLC Resonance · 1958</text>
+    </svg>`,
+
+    motor: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <radialGradient id="bg7" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+        <linearGradient id="steel" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#bfc3cc"/><stop offset="50%" stop-color="#7a8090"/><stop offset="100%" stop-color="#2a2e38"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg7)"/>
+      <!-- base plate -->
+      <rect x="60" y="240" width="280" height="20" fill="#3a2a1a"/>
+      <!-- motor body -->
+      <ellipse cx="200" cy="170" rx="110" ry="80" fill="url(#steel)" stroke="#1a1208" stroke-width="1.5"/>
+      <!-- fins -->
+      <g stroke="#1a1208" stroke-width="0.7" opacity="0.6">
+        ${Array.from({length:9}).map((_,i)=>`<line x1="${110+i*20}" y1="105" x2="${110+i*20}" y2="235"/>`).join('')}
+      </g>
+      <!-- shaft -->
+      <rect x="50" y="165" width="60" height="12" fill="url(#steel)" stroke="#1a1208"/>
+      <rect x="290" y="165" width="60" height="12" fill="url(#steel)" stroke="#1a1208"/>
+      <circle cx="200" cy="170" r="32" fill="#1a1208"/>
+      <!-- 3 phase terminals -->
+      <g>
+        <circle cx="160" cy="100" r="8" fill="#c8a24a" stroke="#6e521e"/>
+        <text x="160" y="103" text-anchor="middle" fill="#1a1208" font-family="Playfair Display, serif" font-size="9" font-weight="bold">U</text>
+        <circle cx="200" cy="92" r="8" fill="#c8a24a" stroke="#6e521e"/>
+        <text x="200" y="95" text-anchor="middle" fill="#1a1208" font-family="Playfair Display, serif" font-size="9" font-weight="bold">V</text>
+        <circle cx="240" cy="100" r="8" fill="#c8a24a" stroke="#6e521e"/>
+        <text x="240" y="103" text-anchor="middle" fill="#1a1208" font-family="Playfair Display, serif" font-size="9" font-weight="bold">W</text>
+      </g>
+      <!-- spinning hint -->
+      <g fill="none" stroke="#f4dd8a" stroke-width="1" opacity="0.6" stroke-dasharray="4 3">
+        <circle cx="200" cy="170" r="55"/>
+        <circle cx="200" cy="170" r="42"/>
+      </g>
+      <!-- label -->
+      <text x="200" y="290" text-anchor="middle" fill="#c8a24a" font-family="Playfair Display, serif" font-style="italic" font-size="13">3-Phase Induction Motor</text>
+    </svg>`,
+
+    portrait: `<svg viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <defs>
+        <linearGradient id="canv" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#efe4c4"/><stop offset="100%" stop-color="#c9b885"/>
+        </linearGradient>
+        <radialGradient id="bg8" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#1a2a5e"/><stop offset="100%" stop-color="#070a18"/>
+        </radialGradient>
+      </defs>
+      <rect width="400" height="320" fill="url(#bg8)"/>
+      <!-- frame -->
+      <rect x="60" y="40" width="280" height="240" fill="#c8a24a" stroke="#6e521e" stroke-width="2"/>
+      <rect x="72" y="52" width="256" height="216" fill="url(#canv)" stroke="#8e6a2c"/>
+      <!-- abstract figure (graduate w/ trophy) -->
+      <g>
+        <!-- background wash -->
+        <rect x="72" y="52" width="256" height="216" fill="url(#canv)"/>
+        <!-- sun -->
+        <circle cx="270" cy="100" r="20" fill="#e7c97a" opacity="0.7"/>
+        <!-- horizon -->
+        <rect x="72" y="200" width="256" height="68" fill="#7a8a6e" opacity="0.6"/>
+        <!-- figure body -->
+        <path d="M180 240 L180 170 Q200 150 220 170 L220 240 Z" fill="#561a23"/>
+        <!-- head -->
+        <circle cx="200" cy="150" r="18" fill="#e9c896"/>
+        <!-- mortarboard -->
+        <rect x="178" y="130" width="44" height="6" fill="#1a1208"/>
+        <rect x="186" y="124" width="28" height="8" fill="#1a1208"/>
+        <line x1="222" y1="133" x2="232" y2="120" stroke="#c8a24a" stroke-width="1.5"/>
+        <circle cx="232" cy="120" r="3" fill="#c8a24a"/>
+        <!-- certificate -->
+        <g transform="rotate(-12 230 200)">
+          <rect x="215" y="190" width="30" height="22" fill="#f3ead4" stroke="#561a23"/>
+          <line x1="218" y1="196" x2="241" y2="196" stroke="#561a23" stroke-width="0.5"/>
+          <line x1="218" y1="200" x2="241" y2="200" stroke="#561a23" stroke-width="0.5"/>
+          <line x1="218" y1="204" x2="235" y2="204" stroke="#561a23" stroke-width="0.5"/>
+        </g>
+        <!-- bolt -->
+        <path d="M150 80 L160 110 L152 110 L160 140 L145 105 L155 105 Z" fill="#e7c97a" stroke="#8e6a2c" stroke-width="0.6"/>
+      </g>
+      <!-- signature -->
+      <text x="318" y="262" text-anchor="end" fill="#561a23" font-family="Cormorant Garamond, serif" font-style="italic" font-size="11">— J. Park, 2025</text>
+      <!-- placard -->
+      <text x="200" y="305" text-anchor="middle" fill="#c8a24a" font-family="Playfair Display, serif" font-style="italic" font-size="13">"Graduation Under Voltage"</text>
+    </svg>`
+  };
+
+  // -------- DATA --------
+  const LOTS = [
+    {
+      no: 1, art: 'bulb',
+      title: '에디슨 백열전구 모형',
+      subtitle: '"Edison Filament Bulb, Replica c.1879" · 19세기 백열전구 복각',
+      cat: '조명', era: '19c 후기', cond: 'A+', auth: '인증 완료',
+      donor: '故 H. 라이덴 컬렉션 (가상)',
+      start: 12000, current: 480000, est: [800000, 1200000],
+      stars: 5,
+      prov: '가상 라이덴 가문의 3대에 걸친 컬렉션에서 출품된 복각 모형. 황동 베이스에 손으로 감은 탄소 필라멘트, 1879년 오리지널 패턴의 정밀 복제.'
+    },
+    {
+      no: 2, art: 'manuscript',
+      title: '옴의 법칙 친필 노트 (모조품)',
+      subtitle: '"V = IR — Annotated Manuscript" · 19세기 양식 모조 필사본',
+      cat: '문서', era: '19c 중기 양식', cond: 'A', auth: '모조품',
+      donor: 'Spark Archive (가상)',
+      start: 80000, current: 320000, est: [400000, 700000],
+      stars: 4,
+      prov: '옴(G. S. Ohm)이 1827년 발표한 법칙을 19세기 양식으로 재현한 모조 필사본. 황동 잉크와 양피지에 봉인을 추가. 학습 자료로 위탁됨.'
+    },
+    {
+      no: 3, art: 'coil',
+      title: '패러데이 코일 모형',
+      subtitle: '"Faraday Induction Coil Replica" · 유도 현상 시연용 모형',
+      cat: '기계', era: '20c 초', cond: 'A', auth: '인증 완료',
+      donor: 'Dr. A. Resistor (가상)',
+      start: 60000, current: 1850000, est: [1500000, 2200000],
+      stars: 5,
+      prov: '패러데이의 1831년 실험을 시연하기 위해 가상 컬렉터가 의뢰 제작한 정밀 모형. 동선 14턴, 연철 코어, 황동 단자.'
+    },
+    {
+      no: 4, art: 'circuit',
+      title: '테슬라 회로도 (인쇄품)',
+      subtitle: '"Tesla High-Voltage Schematic" · 인쇄품',
+      cat: '문서', era: '20c 초 양식', cond: 'B+', auth: '인쇄품',
+      donor: 'Voltaire-Kim 패밀리 (가상)',
+      start: 25000, current: 180000, est: [200000, 350000],
+      stars: 4,
+      prov: '테슬라 양식의 고전압 코일 회로도를 양피지에 활판 인쇄한 학습용 인쇄품. 가상 컬렉터의 위탁.'
+    },
+    {
+      no: 5, art: 'transformer',
+      title: '변압기 미니어처',
+      subtitle: '"220V/24V Miniature Transformer" · 교육용 미니어처',
+      cat: '기계', era: '20c 중', cond: 'A', auth: '인증 완료',
+      donor: 'Spark Educational Trust (가상)',
+      start: 18000, current: 142000, est: [180000, 260000],
+      stars: 4,
+      prov: '교육용으로 제작된 정밀 미니어처. 1차 220V, 2차 24V 권선. 실리콘 강판 적층 철심. 단자판에 황동 명판.'
+    },
+    {
+      no: 6, art: 'radio',
+      title: 'RLC 공진 골동품 라디오',
+      subtitle: '"1958 RLC Resonance Radio" · 진공관 시대 골동품 라디오',
+      cat: '기계', era: '20c 중', cond: 'A-', auth: '인증 완료',
+      donor: '故 M. 캐퍼시터 (가상)',
+      start: 90000, current: 720000, est: [600000, 950000],
+      stars: 4,
+      prov: '월넛 케이스, 진공관 5구, 88—108 MHz 튜닝 다이얼. RLC 공진 회로 학습용으로 손꼽히는 가상 모델.'
+    },
+    {
+      no: 7, art: 'motor',
+      title: '3상 모터 모형',
+      subtitle: '"3-Phase Induction Motor Cutaway" · 단면 모형',
+      cat: '기계', era: '20c 말', cond: 'A+', auth: '인증 완료',
+      donor: '스파크 산업기술관 (가상)',
+      start: 45000, current: 380000, est: [400000, 600000],
+      stars: 5,
+      prov: 'U-V-W 3상 단자, 회전자 단면을 보여주는 컷어웨이 모형. 가상 산업기술관에서 전시 후 위탁.'
+    },
+    {
+      no: 8, art: 'portrait',
+      title: '현대 작가 합격 그림',
+      subtitle: '"Graduation Under Voltage" · J. Park, 2025 (가상)',
+      cat: '현대', era: '21c', cond: 'New', auth: '작가 인증',
+      donor: '작가 직접 위탁 (가상)',
+      start: 50000, current: 215000, est: [250000, 400000],
+      stars: 5,
+      prov: '가상 신진 작가 J. Park의 2025년작. 캔버스에 유채. 전기기능사 합격의 환희를 표현한 인물화. 작가 직접 위탁.'
+    }
+  ];
+
+  // -------- PAST RESULTS --------
+  const PAST = [
+    { no: 'L-072', title: '에디슨 음각 백열전구 (1882 양식)', date: '2026.04.18', est: '600K–900K', hammer: '1.34M' },
+    { no: 'L-065', title: '키르히호프 법칙 친필 노트 (모조)', date: '2026.04.04', est: '300K–500K', hammer: '720K' },
+    { no: 'L-058', title: '진공관 5구 라디오 — 1962', date: '2026.03.22', est: '500K–800K', hammer: '880K' },
+    { no: 'L-051', title: '맥스웰 방정식 활판 인쇄 (1873 양식)', date: '2026.03.07', est: '900K–1.4M', hammer: '2.10M' },
+    { no: 'L-044', title: '3상 동기 발전기 미니어처', date: '2026.02.14', est: '400K–650K', hammer: '590K' },
+  ];
+
+  // -------- BIDDER NAMES (fictional) --------
+  const BIDDERS = [
+    '패럿_117','옴_의여운','볼타_드림','앙페르_42','테슬라애호가',
+    '키르히호프_3','맥스웰컬렉터','쥬울_의친구','쿨롱_벤처','코일러_88',
+    '리액턴스_K','회로의왕','컨덴서_매니아','임피던스_001','노드의방랑자',
+    '루프_트래블러','젠릴리스','전기장인_M','자기장수집가'
+  ];
+
+  // -------- STATE --------
+  let liveLotIdx = 0;
+  let totalBidCount = 0;
+  let autoBidEnabled = false;
+  let autoBidInterval = null;
+  const liveBids = [];
+
+  // -------- DOM --------
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => document.querySelectorAll(s);
+
+  // -------- TICKER --------
+  function renderTicker(){
+    const items = LOTS.map(l => `<span>LOT ${l.no} · ${esc(l.title)} <b>${krw(l.current)}</b></span>`);
+    items.push('<span>SPARK AUCTION HOUSE — Fictional Simulation</span>');
+    items.push('<span>다음 경매 · <b>2026.06.04 19:00 KST</b></span>');
+    items.push('<span>회원가입 · <b>무료 (가상)</b></span>');
+    const html = items.join('') + items.join(''); // duplicate for seamless loop
+    $('#ticker').innerHTML = html;
+  }
+
+  // -------- COUNTDOWN --------
+  // End time = now + ~4:30 for live lot
+  let endTs = Date.now() + (4*60 + 30) * 1000;
+  function renderClock(){
+    let ms = endTs - Date.now();
+    if (ms < 0) {
+      ms = 0;
+      handleSold();
+      // restart with next lot
+      liveLotIdx = (liveLotIdx + 1) % LOTS.length;
+      endTs = Date.now() + (3 + Math.floor(Math.random()*4)) * 60 * 1000;
+      liveBids.length = 0;
+      renderLive();
+    }
+    const total = Math.floor(ms/1000);
+    const d = Math.floor(total/86400);
+    const h = Math.floor((total%86400)/3600);
+    const m = Math.floor((total%3600)/60);
+    const s = total%60;
+    $('#cd-d').textContent = pad(d);
+    $('#cd-h').textContent = pad(h);
+    $('#cd-m').textContent = pad(m);
+    $('#cd-s').textContent = pad(s);
+  }
+  setInterval(renderClock, 1000);
+
+  // -------- INCR (next bid step) --------
+  function calcIncr(price){
+    if (price < 100000) return 10000;
+    if (price < 500000) return 30000;
+    if (price < 2000000) return 50000;
+    return 100000;
+  }
+
+  // -------- LIVE PANEL --------
+  function renderLive(){
+    const L = LOTS[liveLotIdx];
+    $('#liveLotNo').textContent = L.no;
+    $('#metaCurrentLot').textContent = L.no;
+    $('#metaCurrentTitle').textContent = L.title;
+    $('#liveArt').innerHTML = SVG[L.art];
+    $('#liveTitle').textContent = L.title;
+    $('#liveSubtitle').textContent = L.subtitle;
+    $('#liveCat').textContent = L.cat;
+    $('#liveEra').textContent = L.era;
+    $('#liveCondition').textContent = '상태 ' + L.cond;
+    $('#liveAuth').textContent = L.auth;
+    $('#startBid').textContent = krw(L.start);
+    $('#estimate').textContent = '₩ ' + Math.round(L.est[0]/1000) + 'K – ' + (L.est[1] >= 1_000_000 ? (L.est[1]/1_000_000).toFixed(1)+'M' : Math.round(L.est[1]/1000)+'K');
+    updateBidUI();
+    renderBidList();
+  }
+
+  function updateBidUI(){
+    const L = LOTS[liveLotIdx];
+    const incr = calcIncr(L.current);
+    $('#currentBid').textContent = krw(L.current);
+    $('#nextIncr').textContent = '+ ' + krw(incr);
+    $('#bidBtn').textContent = '입찰 +' + krw(incr).replace('₩ ','₩');
+    $('#topBidder').textContent = liveBids.length ? liveBids[0].who : '시작가';
+    $('#bidCount').textContent = liveBids.length + ' bids';
+    $('#totalBids').textContent = totalBidCount;
+  }
+
+  function renderBidList(){
+    const html = liveBids.slice(0, 30).map(b => {
+      const isYou = b.who === '나(VIP)';
+      return `<div class="bid-row ${isYou?'you':''}">
+        <span class="who">${esc(b.who)}</span>
+        <span class="amt">${krw(b.amt)}</span>
+        <span class="ts">${esc(b.ts)}</span>
+      </div>`;
+    }).join('');
+    $('#bidList').innerHTML = html || `<div class="bid-row"><span class="who text-spark-parch/60 italic">아직 입찰 내역이 없습니다.</span><span></span><span></span></div>`;
+  }
+
+  // -------- AUCTIONEER SPEECH --------
+  const SPEECHES = [
+    '"현재 입찰가에서 한 단위 더 받겠습니다. 신사 숙녀 여러분."',
+    '"이 작품의 역사적 가치는 누구도 부정할 수 없습니다."',
+    '"한 번 더, 두 번 더, 마지막 기회입니다."',
+    '"훌륭한 입찰입니다. 다음 분 계신가요?"',
+    '"낙찰 예상가의 절반에도 미치지 못합니다. 더 받겠습니다."',
+    '"이 가격이 마지막이라면 큰 손해입니다."',
+    '"황금률에 따라 입찰을 받겠습니다."',
+    '"현재 입찰자는 패럿 회원님입니다."',
+    '"카탈로그 23페이지의 그 작품입니다."',
+    '"세 번 부르겠습니다. 하나… 둘…"'
+  ];
+  function rotateSpeech(){
+    const s = SPEECHES[Math.floor(Math.random()*SPEECHES.length)];
+    $('#auctioneerSpeech').textContent = s;
+  }
+  setInterval(rotateSpeech, 8000);
+
+  // -------- BID ACTION --------
+  function placeBid(amount, who){
+    const L = LOTS[liveLotIdx];
+    if (amount <= L.current) return false;
+    L.current = amount;
+    totalBidCount++;
+    liveBids.unshift({ who, amt: amount, ts: now() });
+    if (liveBids.length > 40) liveBids.length = 40;
+    updateBidUI();
+    renderBidList();
+    // flash
+    const wrap = $('#currentBidWrap');
+    wrap.classList.remove('bid-flash');
+    void wrap.offsetWidth;
+    wrap.classList.add('bid-flash');
+    // extend countdown if <30s
+    const remain = endTs - Date.now();
+    if (remain < 30000) endTs = Date.now() + 30000;
+    rotateSpeech();
+    renderTicker();
+    return true;
+  }
+
+  function myBid(extraMultiplier=1){
+    const L = LOTS[liveLotIdx];
+    const incr = calcIncr(L.current) * extraMultiplier;
+    placeBid(L.current + incr, '나(VIP)');
+    pushToast(`Lot ${L.no} 입찰 성공 — ${krw(L.current)}`);
+  }
+
+  // Other bidders auto-bid every few seconds
+  function rivalBid(){
+    if (Math.random() < 0.35) return; // sometimes nobody
+    const L = LOTS[liveLotIdx];
+    const incr = calcIncr(L.current);
+    const who = BIDDERS[Math.floor(Math.random()*BIDDERS.length)];
+    placeBid(L.current + incr, who);
+  }
+  setInterval(rivalBid, 4500);
+
+  // -------- AUTOBID --------
+  function toggleAutobid(){
+    autoBidEnabled = !autoBidEnabled;
+    const btn = $('#autobidBtn');
+    if (autoBidEnabled){
+      btn.textContent = '자동 입찰 해제 (현재 ON)';
+      btn.classList.add('bg-spark-wine/40');
+      autoBidInterval = setInterval(()=>{
+        const L = LOTS[liveLotIdx];
+        // If we're not top bidder, bid one step
+        if (!liveBids.length || liveBids[0].who !== '나(VIP)'){
+          if (L.current < L.est[1]) myBid(1);
+        }
+      }, 6500);
+    } else {
+      btn.textContent = '자동 입찰 설정 (시뮬)';
+      btn.classList.remove('bg-spark-wine/40');
+      clearInterval(autoBidInterval);
+    }
+  }
+
+  // -------- TOAST --------
+  function pushToast(msg){
+    const t = document.createElement('div');
+    t.className = 't-card';
+    t.innerHTML = `<div class="text-spark-champ font-display italic text-xs">SPARK NOTICE</div>
+      <div class="mt-1">${esc(msg)}</div>`;
+    $('#toast').appendChild(t);
+    setTimeout(()=> t.remove(), 5200);
+  }
+
+  function handleSold(){
+    const L = LOTS[liveLotIdx];
+    const winner = liveBids.length ? liveBids[0].who : '유찰';
+    if (winner === '유찰'){
+      pushToast(`Lot ${L.no} "${L.title}" — 유찰 (Pass)`);
+    } else if (winner === '나(VIP)'){
+      pushToast(`낙찰 축하합니다 — Lot ${L.no} "${L.title}" · ${krw(L.current)}`);
+    } else {
+      pushToast(`Lot ${L.no} "${L.title}" 낙찰 — ${esc(winner)} · ${krw(L.current)}`);
+    }
+  }
+
+  // -------- CATALOG --------
+  function lotCardHTML(L){
+    const star = '★'.repeat(L.stars) + `<span class="off">${'★'.repeat(5-L.stars)}</span>`;
+    return `<div class="lot-card rounded-md p-4" data-no="${L.no}" data-cat="${esc(L.cat)}" tabindex="0" role="button" aria-label="Lot ${L.no} ${esc(L.title)}">
+      <div class="flex items-center justify-between text-xs font-sans tracking-wider2 text-spark-parch/80">
+        <span class="lot-no font-display text-base">Lot ${L.no}</span>
+        <span class="chip">${esc(L.cat)}</span>
+      </div>
+      <div class="art-mat rounded mt-3 p-2">
+        <div class="aspect-[4/3] w-full">${SVG[L.art]}</div>
+      </div>
+      <h4 class="font-display text-lg text-spark-ivory mt-3 leading-snug">${esc(L.title)}</h4>
+      <p class="font-kr text-xs text-spark-parch/80 italic mt-1 line-clamp-2">${esc(L.subtitle)}</p>
+      <div class="mt-3 grid grid-cols-2 gap-2 text-xs font-sans">
+        <div>
+          <div class="text-spark-gold smallcaps text-[0.6rem]">Start</div>
+          <div class="text-spark-ivory">${krwK(L.start)}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-spark-gold smallcaps text-[0.6rem]">Current</div>
+          <div class="gold-text font-bold">${krwK(L.current)}</div>
+        </div>
+      </div>
+      <div class="mt-2 flex items-center justify-between text-[0.7rem] font-sans">
+        <span class="stars">${star}</span>
+        <span class="text-spark-parch/70">예상 ${krwK(L.est[0])}–${krwK(L.est[1])}</span>
+      </div>
+    </div>`;
+  }
+
+  function renderCatalog(filter='all'){
+    const grid = $('#catalogGrid');
+    const list = LOTS.filter(L => filter==='all' || L.cat===filter);
+    grid.innerHTML = list.map(lotCardHTML).join('');
+    grid.querySelectorAll('.lot-card').forEach(card => {
+      card.addEventListener('click', () => openModal(+card.dataset.no));
+      card.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal(+card.dataset.no); }
+      });
+    });
+  }
+
+  // -------- FILTERS --------
+  $('#filters').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.filter-chip');
+    if (!btn) return;
+    $$('#filters .filter-chip').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    renderCatalog(btn.dataset.filter);
+  });
+
+  // -------- MODAL --------
+  let modalLotNo = null;
+  function openModal(no){
+    const L = LOTS.find(x => x.no === no);
+    if (!L) return;
+    modalLotNo = no;
+    $('#m-no').textContent = L.no;
+    $('#m-title').textContent = L.title;
+    $('#m-subtitle').textContent = L.subtitle;
+    $('#m-art').innerHTML = SVG[L.art];
+    $('#m-cat').textContent = L.cat;
+    $('#m-era').textContent = L.era;
+    $('#m-cond').textContent = L.cond;
+    $('#m-donor').textContent = L.donor;
+    $('#m-start').textContent = krw(L.start);
+    $('#m-est').textContent = krw(L.est[0]) + ' – ' + krw(L.est[1]);
+    $('#m-current').textContent = krw(L.current);
+    $('#m-prov').textContent = L.prov;
+    $('#m-stars').innerHTML = '★'.repeat(L.stars) + `<span class="off">${'★'.repeat(5-L.stars)}</span>`;
+
+    // build a mini bid list for this lot (simulated)
+    const sample = [];
+    let p = L.start;
+    while (p < L.current){
+      const step = calcIncr(p);
+      p = Math.min(p + step, L.current);
+      sample.push({ who: BIDDERS[Math.floor(Math.random()*BIDDERS.length)], amt: p, ts: now() });
+    }
+    sample.reverse();
+    $('#m-bidlist').innerHTML = sample.length
+      ? sample.slice(0,12).map(b => `<div class="bid-row"><span class="who">${esc(b.who)}</span><span class="amt">${krw(b.amt)}</span><span class="ts">${esc(b.ts)}</span></div>`).join('')
+      : `<div class="bid-row"><span class="who text-spark-parch/60 italic">아직 입찰 없음</span><span></span><span></span></div>`;
+
+    const modal = $('#modal');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    const modal = $('#modal');
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    modalLotNo = null;
+  }
+  $('#modalClose').addEventListener('click', closeModal);
+  $('#modal').addEventListener('click', (e)=>{ if (e.target === $('#modal')) closeModal(); });
+  document.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') closeModal(); });
+
+  // Modal bid actions
+  $('#m-bid').addEventListener('click', ()=>{
+    if (modalLotNo == null) return;
+    const L = LOTS.find(x=>x.no===modalLotNo);
+    const incr = calcIncr(L.current);
+    L.current += incr;
+    totalBidCount++;
+    $('#m-current').textContent = krw(L.current);
+    renderTicker();
+    renderCatalog(getActiveFilter());
+    if (modalLotNo === LOTS[liveLotIdx].no){
+      liveBids.unshift({ who:'나(VIP)', amt:L.current, ts:now() });
+      updateBidUI();
+      renderBidList();
+    }
+    pushToast(`Lot ${L.no} 입찰 성공 — ${krw(L.current)}`);
+  });
+  $('#m-bid2').addEventListener('click', ()=>{
+    if (modalLotNo == null) return;
+    const L = LOTS.find(x=>x.no===modalLotNo);
+    pushToast(`Lot ${L.no} "${L.title}" 관심 등록됨`);
+  });
+
+  function getActiveFilter(){
+    const on = document.querySelector('#filters .filter-chip.on');
+    return on ? on.dataset.filter : 'all';
+  }
+
+  // -------- PAST RESULTS --------
+  function renderPast(){
+    const html = PAST.map(p => `
+      <div class="grid grid-cols-12 px-4 py-3 text-sm border-b border-spark-gold/15 last:border-b-0 hover:bg-spark-gold/5 transition-colors">
+        <div class="col-span-1 lot-no font-display">${esc(p.no)}</div>
+        <div class="col-span-5 font-kr text-spark-ivory">${esc(p.title)}</div>
+        <div class="col-span-2 font-sans text-xs text-spark-parch/80 tracking-wider2">${esc(p.date)}</div>
+        <div class="col-span-2 text-right font-sans text-xs text-spark-parch/80">${esc(p.est)}</div>
+        <div class="col-span-2 text-right font-display gold-text font-bold">₩ ${esc(p.hammer)}</div>
+      </div>`).join('');
+    $('#pastResults').innerHTML = html;
+  }
+
+  // -------- NAV ACTIVE --------
+  const navLinks = $$('.nav-pill a');
+  function setActiveNav(){
+    const sections = ['live','catalog','history','consign','about'];
+    let active = 'live';
+    const y = window.scrollY + 200;
+    for (const id of sections){
+      const el = document.getElementById(id);
+      if (!el) continue;
+      if (el.offsetTop <= y) active = id;
+    }
+    navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#'+active));
+  }
+  window.addEventListener('scroll', setActiveNav, { passive:true });
+
+  // -------- BUTTON EVENTS --------
+  $('#bidBtn').addEventListener('click', ()=> myBid(1));
+  $('#bidBtn2').addEventListener('click', ()=> myBid(3));
+  $('#autobidBtn').addEventListener('click', toggleAutobid);
+
+  // -------- INIT --------
+  function init(){
+    // seed initial bids for live lot
+    const L = LOTS[liveLotIdx];
+    let p = L.start;
+    const seed = [];
+    while (p < L.current){
+      p = Math.min(p + calcIncr(p), L.current);
+      seed.push({ who: BIDDERS[Math.floor(Math.random()*BIDDERS.length)], amt: p, ts: now() });
+    }
+    seed.reverse();
+    liveBids.push(...seed);
+    totalBidCount = seed.length;
+
+    renderTicker();
+    renderLive();
+    renderCatalog();
+    renderPast();
+    renderClock();
+    setActiveNav();
+
+    pushToast('스파크 옥션 라이브 경매에 입장하셨습니다.');
+  }
+  init();
+})();
+</script>
+</body>
+</html>

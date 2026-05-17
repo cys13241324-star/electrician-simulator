@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>어스 테스터 (접지저항계) 시뮬레이터 — 전위 강하법 / 3극·2극</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(251, 191, 36, 0.14), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(217, 119, 6, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.45), rgba(217,119,6,0.40), rgba(248,113,113,0.45));
+    box-shadow: 0 30px 100px -20px rgba(251, 191, 36, 0.28), 0 0 40px rgba(217, 119, 6, 0.16);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 680px;
+    border-radius: 17px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.5), transparent);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #fbbf24; box-shadow: 0 0 12px #fbbf24;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #fbbf24; opacity: 0.6;
+    animation: pulseRing 1.5s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.85 } 100% { transform: scale(1.9); opacity: 0 } }
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(251,191,36,0.4), rgba(217,119,6,0.4), rgba(248,113,113,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fde68a, #fbbf24, #f59e0b);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+.chip {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.chip-mode { background: linear-gradient(135deg, rgba(251,191,36,0.20), rgba(251,191,36,0.06)); border-color: rgba(251,191,36,0.5); color: #fde68a; }
+.chip-r { background: linear-gradient(135deg, rgba(110,231,183,0.22), rgba(110,231,183,0.06)); border-color: rgba(110,231,183,0.55); color: #6ee7b7; }
+.chip-soil { background: linear-gradient(135deg, rgba(217,119,6,0.22), rgba(217,119,6,0.06)); border-color: rgba(217,119,6,0.55); color: #fcd34d; }
+.chip-err { background: linear-gradient(135deg, rgba(248,113,113,0.22), rgba(248,113,113,0.06)); border-color: rgba(248,113,113,0.55); color: #fca5a5; }
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(251, 191, 36, 0.7);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45);
+}
+.live-pill.good {
+    border-color: rgba(110, 231, 183, 0.85);
+    box-shadow: 0 0 28px rgba(110, 231, 183, 0.5);
+    background: linear-gradient(135deg, rgba(110,231,183,0.16), rgba(15,23,42,0.85));
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #fde68a, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(251, 191, 36, 0.4);
+}
+.math-card {
+    background: linear-gradient(135deg, rgba(251,191,36,0.16), rgba(217,119,6,0.10)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(251, 191, 36, 0.32);
+}
+.math-container { font-size: 1.05rem; color: #fef3c7; }
+.mode-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.mode-btn:hover { background: rgba(148, 163, 184, 0.15); }
+.mode-btn.active {
+    background: linear-gradient(135deg, rgba(251,191,36,0.30), rgba(217,119,6,0.22));
+    border-color: rgba(251, 191, 36, 0.75);
+    color: #fef9c3;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.45);
+}
+.preset-btn {
+    background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(217,119,6,0.18));
+    border: 1px solid rgba(251,191,36,0.45);
+    color: #fde68a;
+    transition: all 200ms;
+    cursor: pointer;
+}
+.preset-btn:hover {
+    background: linear-gradient(135deg, rgba(251,191,36,0.32), rgba(217,119,6,0.32));
+    transform: translateY(-1px);
+    box-shadow: 0 0 22px rgba(251,191,36,0.45);
+}
+.soil-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 250ms;
+    cursor: pointer;
+}
+.soil-card.active {
+    background: linear-gradient(135deg, rgba(217,119,6,0.22), rgba(15,23,42,0.75));
+    border-color: rgba(251,191,36,0.7);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.35);
+    transform: translateY(-2px);
+}
+.info-banner {
+    background: linear-gradient(90deg, rgba(110,231,183,0.16), rgba(110,231,183,0.04), rgba(110,231,183,0.16));
+    border: 1px solid rgba(110, 231, 183, 0.55);
+    color: #a7f3d0;
+}
+.warn-banner {
+    background: linear-gradient(90deg, rgba(248,113,113,0.18), rgba(248,113,113,0.04), rgba(248,113,113,0.18));
+    border: 1px solid rgba(248, 113, 113, 0.55);
+    color: #fecaca;
+    animation: alarmPulse 1.4s ease-in-out infinite;
+}
+@keyframes alarmPulse { 0%,100% { box-shadow: 0 0 12px rgba(248,113,113,0.30); } 50% { box-shadow: 0 0 26px rgba(248,113,113,0.6); } }
+.legend-swatch { display: inline-block; width: 14px; height: 4px; border-radius: 2px; vertical-align: middle; }
+.legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-amber-300">
+            <span class="pulse-dot"></span>
+            EARTH TESTER · FALL-OF-POTENTIAL · 62% RULE · KEC 142
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-200 to-orange-200 bg-clip-text text-transparent">
+            어스 테스터 (접지저항계) 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">
+            전위 강하법(Fall-of-Potential)으로 접지저항 R<sub>E</sub>를 측정합니다.
+            <span class="text-amber-300 font-semibold">E(접지극)·P(전위)·C(전류) 3극을 일직선 배치</span>하고,
+            P극을 EC 거리의 <span class="text-yellow-300 font-semibold">62% 지점</span>에 두면 두 반구 전위 분포가 분리되어 참값을 얻습니다.
+        </p>
+    </header>
+
+    <!-- 라이브 4칩 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-r">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">측정 저항 R</p>
+            <p class="mt-1 text-lg font-bold"><span id="rDisp" class="live-num">0.0</span> <span class="text-xs opacity-60 font-normal">Ω</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-r0">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">참값 R₀</p>
+            <p class="mt-1 text-lg font-bold"><span id="r0Disp" class="live-num">0.0</span> <span class="text-xs opacity-60 font-normal">Ω</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-err">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">측정 오차</p>
+            <p class="mt-1 text-lg font-bold"><span id="errDisp" class="live-num">0.0</span> <span class="text-xs opacity-60 font-normal">%</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-mode">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">측정 모드</p>
+            <p class="mt-1 text-lg font-bold"><span id="modeDisp" class="live-num">3극법</span></p>
+        </div>
+    </div>
+
+    <!-- 배너 -->
+    <div id="goodBanner" class="info-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ● 62% 평탄 영역 — 측정값이 참값에 수렴 (오차 &lt; 5%)
+    </div>
+    <div id="warnBanner" class="warn-banner rounded-xl px-4 py-2.5 mb-4 text-sm font-bold tracking-wide hidden">
+        ▲ P극이 평탄 영역을 벗어남 — 두 반구 전위가 간섭, 측정값에 오차 발생
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <!-- 캔버스 영역 (sticky) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">EARTH-TESTER · 측면 단면 + 전위강하 곡선 · P극을 좌우로 이동</span>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="p62">P → 62% (최적)</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="sweep">P 자동 스윕</button>
+                        <button class="preset-btn rounded-md px-2.5 py-1.5 text-[11px] font-bold" data-preset="reset">RESET</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+                <!-- 색상 범례 -->
+                <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-400">
+                    <span><span class="legend-dot" style="background:#fbbf24"></span> E (접지극)</span>
+                    <span><span class="legend-dot" style="background:#6ee7b7"></span> P (전위)</span>
+                    <span><span class="legend-dot" style="background:#93c5fd"></span> C (전류)</span>
+                    <span><span class="legend-swatch" style="background:#fda4af"></span> 전류 I (E→C)</span>
+                    <span><span class="legend-swatch" style="background:rgba(251,191,36,0.6)"></span> 등전위면</span>
+                    <span><span class="legend-swatch" style="background:#a7f3d0"></span> 62% 평탄 영역</span>
+                </div>
+            </div>
+
+            <!-- 토양 비교 카드 -->
+            <div class="glass rounded-2xl p-5" id="soilCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">⛰</span>
+                    <span class="bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent">토양별 대지 저항률 ρ (참고값)</span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[11px]" id="soilGrid">
+                    <div class="soil-card rounded-lg p-3" data-soil="wet">
+                        <p class="font-bold text-emerald-300">습지/논</p>
+                        <p class="text-slate-400 mt-0.5">ρ ≈ 30 Ω·m</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">함수율 ↑ · 저항 최소</p>
+                    </div>
+                    <div class="soil-card rounded-lg p-3" data-soil="loam">
+                        <p class="font-bold text-amber-300">점토/롬</p>
+                        <p class="text-slate-400 mt-0.5">ρ ≈ 100 Ω·m</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">표준 시공 기준</p>
+                    </div>
+                    <div class="soil-card rounded-lg p-3 active" data-soil="sand">
+                        <p class="font-bold text-yellow-300">사질토</p>
+                        <p class="text-slate-400 mt-0.5">ρ ≈ 300 Ω·m</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">건조 시 저항 상승</p>
+                    </div>
+                    <div class="soil-card rounded-lg p-3" data-soil="rock">
+                        <p class="font-bold text-rose-300">암반/자갈</p>
+                        <p class="text-slate-400 mt-0.5">ρ ≈ 1500 Ω·m</p>
+                        <p class="text-slate-500 mt-1 text-[10px]">시공 어려움 · 보강 필요</p>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-3">
+                    토양 저항률 ρ는 함수율·온도·염분에 따라 크게 변동합니다. 측정은 통상 <strong>건조한 날·강우 후 7일 이내 회피</strong>가 원칙.
+                </p>
+            </div>
+
+            <div class="math-card rounded-2xl p-5" id="formulaCard">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-amber-200 to-orange-200 bg-clip-text text-transparent">전위 강하법 · 62% 규칙</span>
+                </h3>
+                <div class="math-container mt-3">
+                    $$R_E = \frac{V_{PE}}{I_{EC}} \quad\text{(테스터가 인가한 교류 I로 P-E간 전압 V 측정)}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$R_0 = \frac{\rho}{2\pi L_E}\left(\ln\frac{4L_E}{d} - 1\right) \quad\text{(단주식 접지극 이론 저항)}$$
+                </div>
+                <div class="math-container mt-2">
+                    $$x_{P,\text{opt}} \approx 0.618\,D_{EC}\quad\Leftrightarrow\quad \text{P극을 EC의 61.8% 지점에 배치}$$
+                </div>
+                <div class="neon-divider my-3"></div>
+                <p class="text-[11px] text-slate-400">
+                    E와 C 주위에는 반구 형태의 전위 분포가 형성됩니다. P극이 E의 영향권에 있으면 측정값이 <span class="text-emerald-300 font-semibold">과소</span>,
+                    C의 영향권에 있으면 <span class="text-rose-300 font-semibold">과대</span>로 나옵니다.
+                    두 분포가 만나지 않는 <span class="text-amber-300 font-semibold">중립 평탄 영역(약 52~72%)</span>에서만 정확한 R<sub>E</sub>를 얻습니다.
+                </p>
+                <p class="text-[11px] text-slate-400 mt-2">
+                    <strong>2극법</strong>은 C-P를 한 단자로 통합 — 간이 측정 가능하나 보조 접지 저항이 직렬로 합산되어 항상 <span class="text-rose-300 font-semibold">참값보다 큰 값</span>이 나옵니다.
+                </p>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-amber-200">변수 조절</h2>
+
+            <div class="chip-mode chip rounded-lg p-3">
+                <p class="text-[11px] font-bold tracking-wider">측정 모드</p>
+                <div class="grid grid-cols-2 gap-1.5 mt-2">
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold active" data-mode="3pole">3극법</button>
+                    <button class="mode-btn rounded-md px-2 py-1.5 text-[11px] font-bold" data-mode="2pole">2극법</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2">3극: E·P·C 분리 / 2극: C+P 통합 (간이)</p>
+            </div>
+
+            <div class="chip-soil chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>P극 위치 (EC %)</span>
+                    <span id="pxVal" class="font-mono text-base">62</span>
+                </label>
+                <input type="range" id="px" min="10" max="90" step="1" value="62" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">% · 0=E, 100=C</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>EC 거리 D</span>
+                    <span id="dVal" class="font-mono text-base">20</span>
+                </label>
+                <input type="range" id="d" min="5" max="40" step="1" value="20" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">m · 통상 접지극 길이의 10배 이상</p>
+            </div>
+
+            <div class="chip-r chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>접지극 길이 L</span>
+                    <span id="lVal" class="font-mono text-base">2.0</span>
+                </label>
+                <input type="range" id="l" min="0.5" max="3.0" step="0.1" value="2.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">m · 매설 깊이</p>
+            </div>
+
+            <div class="chip-soil chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider">
+                    <span>대지 저항률 ρ</span>
+                    <span id="rhoVal" class="font-mono text-base">300</span>
+                </label>
+                <input type="range" id="rho" min="20" max="2000" step="10" value="300" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω·m · 토양 카드 클릭으로 프리셋</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-emerald-300">52~72%</span> · P극 평탄 영역 (오차 &lt; 5%)</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-amber-300">61.8%</span> · 황금비 — 이상 측정 지점</p>
+            </div>
+            <div class="feature-row rounded-lg p-3 text-[11px] text-slate-300">
+                <p><span class="font-bold text-rose-300">D &lt; 10L</span> · 거리 부족 시 항상 오차 발생</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+
+const FIELD_H = 440;
+const CURVE_H = 240;
+const TOTAL_H = FIELD_H + CURVE_H;
+
+const state = {
+    mode: '3pole',  // '3pole' or '2pole'
+    pxPct: 62,      // P극 위치 % of D
+    D: 20,          // EC 거리 (m)
+    L: 2.0,         // 접지극 매설 길이 (m)
+    rho: 300,       // 토양 저항률 (Ω·m)
+    soil: 'sand',
+    t: 0,
+    sweep: false,
+    sweepT: 0,
+    R: 0, R0: 0, errPct: 0
+};
+
+let geo = {};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = TOTAL_H;
+    buildGeo();
+}
+window.addEventListener('resize', resize);
+
+function buildGeo() {
+    const W = canvas.width;
+    // 측면도: E 왼쪽, C 오른쪽, P 사이
+    const marginL = 80;
+    const marginR = 80;
+    const xE = marginL;
+    const xC = W - marginR;
+    const ySurface = 130;   // 지표면 y
+    const yBot = FIELD_H - 16;
+    geo = { W, xE, xC, ySurface, yBot, marginL, marginR };
+}
+
+// ========== 계산 ==========
+// 단주식 접지극 이론 저항 R0 (Dwight 공식 근사)
+function calcR0() {
+    const rho = state.rho;
+    const L = state.L;
+    const d = 0.014; // 봉 직경 14mm
+    return (rho / (2 * Math.PI * L)) * (Math.log(4 * L / d) - 1);
+}
+
+// 반구 전위 분포 모델
+// E극은 r에서 V_E = (I * rho) / (2π r)  (반구 가정, r은 E로부터 거리)
+// C극은 V_C = -(I * rho) / (2π r')      (전류 반대 부호)
+// I를 1A 정규화하면 P점 전위 V_P = (rho/2π)(1/r_E - 1/r_C)
+// 그리고 E의 전위 = I * R0 (실효 저항으로 모델)
+// 측정 R = V_PE / I = R0 + (rho/2π)(-1/x_E + 1/x_C)
+// 여기서 x_E = P극과 E 거리, x_C = P극과 C 거리
+// (x_E가 충분히 멀면 1/x_E → 0, x_C도 충분히 멀면 보정 0 → R ≈ R0)
+
+function calcMeasuredR(pxPct) {
+    const R0 = state.R0;
+    const rho = state.rho;
+    const D = state.D;
+    const xE = (pxPct / 100) * D;  // P-E 거리 (m)
+    const xC = D - xE;             // P-C 거리 (m)
+    if (xE < 0.3 || xC < 0.3) return R0 * 3;  // 너무 가까우면 발산
+    // P점 전위 보정 (반구 모델 기반)
+    // 정확한 식: R = (rho/2π) * (1/r_E_to_P - 1/r_C_to_P) + R0의 차이항
+    // 근사: R = R0 * f(xE, xC, L, D)
+    // 표준 Tagg 공식: R_meas = (rho/2π) * (1/L_eq - 1/xE_eff + 1/xC_eff - 1/(D))
+    // 간단히는: R_meas ≈ R0 * (1 - (L/xE) + (L/xC) - (L/D)) 형태로 모델링
+    // 더 정확한 모델: P점 전위는 두 반구 전위 합
+    // V(x_E) = (I·rho)/(2π)·(1/x_E - 1/x_C)  (단, x_E≥L 가정)
+    // E점 자체 전위(접지 표면) ≈ I·R0
+    // 따라서 V_PE = V_E - V_P = I·R0 - (I·rho)/(2π)·(1/x_E - 1/x_C)
+    // R_meas = R0 - (rho/2π)·(1/max(x_E,L) - 1/max(x_C,L)) + 큰D 보정
+    // 그래도 P가 E 가까이 가면 1/xE 항이 커서 R↓, C 가까이 가면 R↑
+    const xEeff = Math.max(xE, state.L * 0.5);
+    const xCeff = Math.max(xC, state.L * 0.5);
+    const Dval = Math.max(D, 1);
+    // E 영향: P가 E에 가까울수록 V_PE가 작아짐(R↓)
+    // C 영향: P가 C에 가까울수록 V_PE가 커짐(R↑)
+    const correction = (rho / (2 * Math.PI)) * (1/xEeff - 1/xCeff - 1/Dval);
+    // 거리 부족 (D < 10L) 페널티
+    const distanceFactor = Math.min(1, D / (10 * state.L));
+    const R = R0 - correction * (1 - distanceFactor * 0.6);
+    return Math.max(0.5, R);
+}
+
+function computeState() {
+    state.R0 = calcR0();
+    if (state.mode === '2pole') {
+        // 2극법: C-P 통합 → 보조 접지 저항이 직렬로 항상 추가됨
+        const aux = state.rho * 0.05; // 보조 접지 등가 저항 (대충 ρ*0.05 Ω)
+        state.R = state.R0 + aux;
+    } else {
+        state.R = calcMeasuredR(state.pxPct);
+    }
+    state.errPct = ((state.R - state.R0) / state.R0) * 100;
+}
+
+// ========== 디스플레이 ==========
+function updateDisplays() {
+    $('pxVal').textContent = state.pxPct;
+    $('dVal').textContent = state.D;
+    $('lVal').textContent = state.L.toFixed(1);
+    $('rhoVal').textContent = state.rho;
+
+    $('rDisp').textContent = fmt(state.R);
+    $('r0Disp').textContent = fmt(state.R0);
+    $('errDisp').textContent = (state.errPct >= 0 ? '+' : '') + state.errPct.toFixed(1);
+    $('modeDisp').textContent = state.mode === '3pole' ? '3극법' : '2극법';
+
+    const absErr = Math.abs(state.errPct);
+    const pillR = $('pill-r');
+    pillR.classList.toggle('good', absErr < 5 && state.mode === '3pole');
+
+    $('goodBanner').classList.toggle('hidden', !(absErr < 5 && state.mode === '3pole'));
+    $('warnBanner').classList.toggle('hidden', !(absErr >= 15));
+
+    // 토양 카드
+    document.querySelectorAll('#soilGrid .soil-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.soil === state.soil);
+    });
+    // 모드 버튼
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === state.mode);
+    });
+}
+
+function fmt(v) {
+    if (Math.abs(v) >= 1000) return (v/1000).toFixed(2) + 'k';
+    if (Math.abs(v) >= 100) return v.toFixed(1);
+    return v.toFixed(2);
+}
+
+// ========== 그리기 헬퍼 ==========
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function strokeLine(x1, y1, x2, y2, color, lw, glow, dash) {
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    if (glow) { ctx.shadowBlur = glow; ctx.shadowColor = color; }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function strokePath(points, color, lw, glow, dash) {
+    if (points.length < 2) return;
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    if (glow) { ctx.shadowBlur = glow; ctx.shadowColor = color; }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ========== 측면도 그리기 ==========
+function drawFieldBg() {
+    const W = canvas.width;
+    ctx.save();
+    // 하늘
+    const skyG = ctx.createLinearGradient(0, 0, 0, geo.ySurface);
+    skyG.addColorStop(0, '#0a0e1e');
+    skyG.addColorStop(1, '#1e293b');
+    ctx.fillStyle = skyG;
+    ctx.fillRect(0, 0, W, geo.ySurface);
+
+    // 대지
+    const soilColors = {
+        wet:  ['#365314', '#1c1917'],
+        loam: ['#78350f', '#1c1410'],
+        sand: ['#a16207', '#3f2c0a'],
+        rock: ['#57534e', '#1c1917']
+    };
+    const sc = soilColors[state.soil] || soilColors.sand;
+    const soilG = ctx.createLinearGradient(0, geo.ySurface, 0, FIELD_H);
+    soilG.addColorStop(0, sc[0]);
+    soilG.addColorStop(1, sc[1]);
+    ctx.fillStyle = soilG;
+    ctx.fillRect(0, geo.ySurface, W, FIELD_H - geo.ySurface);
+
+    // 지표면 라인
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, geo.ySurface); ctx.lineTo(W, geo.ySurface);
+    ctx.stroke();
+
+    // 잔디/돌 점들
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    for (let i = 0; i < W; i += 6) {
+        const h = (Math.sin(i * 0.13 + state.t * 0.01) + 1) * 1.2 + 0.3;
+        ctx.fillRect(i, geo.ySurface - h, 2, h);
+    }
+
+    // 헤더 라벨
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.75)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('▮ FALL-OF-POTENTIAL · ' + (state.mode==='3pole'?'3극법':'2극법') + ' · ρ=' + state.rho + ' Ω·m · D=' + state.D + ' m', 12, 10);
+    ctx.restore();
+}
+
+function xAt(pct) {
+    return geo.xE + (geo.xC - geo.xE) * (pct / 100);
+}
+
+// 등전위 반원 (E와 C 주변)
+function drawEquipotentials() {
+    const ySurf = geo.ySurface;
+    ctx.save();
+    // E 주변 (전류 출력)
+    const rings = 7;
+    for (let i = 1; i <= rings; i++) {
+        const r = i * 28;
+        const op = 0.6 - i * 0.07;
+        // E
+        ctx.strokeStyle = `rgba(251, 191, 36, ${op})`;
+        ctx.lineWidth = 1.3;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(geo.xE, ySurf, r, 0, Math.PI, false);
+        ctx.stroke();
+        // C (역방향 전위라서 색 다르게)
+        if (state.mode === '3pole') {
+            ctx.strokeStyle = `rgba(147, 197, 253, ${op})`;
+            ctx.beginPath();
+            ctx.arc(geo.xC, ySurf, r, 0, Math.PI, false);
+            ctx.stroke();
+        }
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+}
+
+// 전극(봉) 그리기
+function drawElectrode(x, ySurf, depth, color, label, subLabel) {
+    ctx.save();
+    // 봉
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(x - 3, ySurf, 6, depth);
+    // 상부 단자
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, ySurf - 8, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // 라벨
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, ySurf - 20);
+    if (subLabel) {
+        ctx.font = '9px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillText(subLabel, x, ySurf - 34);
+    }
+    // 봉 끝 표시
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(x - 3, ySurf + depth);
+    ctx.lineTo(x + 3, ySurf + depth);
+    ctx.lineTo(x, ySurf + depth + 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+// 테스터 본체
+function drawTester() {
+    const W = canvas.width;
+    const x = W / 2 - 50;
+    const y = 22;
+    const w = 100, h = 70;
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.55)';
+    const g = ctx.createLinearGradient(x, y, x, y + h);
+    g.addColorStop(0, '#1c1917');
+    g.addColorStop(1, '#0f0e0c');
+    ctx.fillStyle = g;
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 디스플레이
+    roundRect(ctx, x + 8, y + 8, w - 16, 26, 4);
+    ctx.fillStyle = 'rgba(110, 231, 183, 0.12)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    // 수치
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillStyle = '#6ee7b7';
+    ctx.shadowBlur = 8; ctx.shadowColor = '#6ee7b7';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(fmt(state.R) + ' Ω', x + w/2, y + 21);
+    ctx.shadowBlur = 0;
+
+    // 단자
+    const tColors = { E: '#fbbf24', P: '#6ee7b7', C: '#93c5fd' };
+    const terminals = ['E', 'P', 'C'];
+    terminals.forEach((t, i) => {
+        const tx = x + 18 + i * 32;
+        const ty = y + h - 8;
+        ctx.fillStyle = tColors[t];
+        ctx.beginPath(); ctx.arc(tx, ty, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#e5e7eb';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(t, tx, ty - 16);
+    });
+
+    // 라벨
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.8)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('EARTH TESTER', x + w/2, y + 40);
+
+    // 단자에서 각 전극으로 연결선
+    const ySurf = geo.ySurface;
+    const xP = xAt(state.pxPct);
+    const pulse = (Math.sin(state.t * 0.08) + 1) / 2;
+    // E선 (노란)
+    drawCable(x + 18, y + h, geo.xE, ySurf - 14, '#fbbf24', pulse, 0);
+    // P선 (녹색) — 3극일 때만, 2극은 C단자와 통합
+    if (state.mode === '3pole') {
+        drawCable(x + 50, y + h, xP, ySurf - 14, '#6ee7b7', pulse, 0.3);
+    }
+    // C선 (파랑)
+    drawCable(x + 82, y + h, geo.xC, ySurf - 14, '#93c5fd', pulse, 0.6);
+
+    // 2극법은 C와 P를 같은 곳으로 (C극 자리에 통합)
+    if (state.mode === '2pole') {
+        // P단자에서 C단자로 점프 (내부 결선)
+        ctx.save();
+        ctx.strokeStyle = 'rgba(147, 197, 253, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(x + 50, y + h - 8); ctx.lineTo(x + 82, y + h - 8);
+        ctx.stroke();
+        ctx.restore();
+        // 안내
+        ctx.font = 'bold 8px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(147, 197, 253, 0.8)';
+        ctx.textAlign = 'center';
+        ctx.fillText('P=C 결선', x + 66, y + h + 12);
+    }
+
+    ctx.restore();
+}
+
+function drawCable(x1, y1, x2, y2, color, pulse, phase) {
+    // 곡선 케이블
+    const cx = (x1 + x2) / 2;
+    const cy = y1 - 18;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 1.8;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = color;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.quadraticCurveTo(cx, cy, x2, y2);
+    ctx.stroke();
+    // 펄스 표시
+    const t = (pulse + phase) % 1;
+    const bx = (1-t)*(1-t)*x1 + 2*(1-t)*t*cx + t*t*x2;
+    const by = (1-t)*(1-t)*y1 + 2*(1-t)*t*cy + t*t*y2;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(bx, by, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+// 전류 경로 (E→C 지중 흐름)
+function drawCurrentFlow() {
+    if (state.mode !== '3pole' && state.mode !== '2pole') return;
+    const ySurf = geo.ySurface;
+    // 두 전극 사이의 곡선 다발
+    const arcsN = 5;
+    ctx.save();
+    for (let k = 0; k < arcsN; k++) {
+        const depth = 30 + k * 18;
+        const t = state.t * 0.04;
+        const op = 0.5 - k * 0.07;
+        ctx.strokeStyle = `rgba(248, 113, 113, ${op})`;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        const steps = 50;
+        for (let s = 0; s <= steps; s++) {
+            const u = s / steps;
+            const x = geo.xE + (geo.xC - geo.xE) * u;
+            // 원호로 내려감
+            const y = ySurf + Math.sin(u * Math.PI) * depth;
+            if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        // 흐르는 입자
+        for (let j = 0; j < 3; j++) {
+            const u = ((t + j * 0.33 + k * 0.1) % 1);
+            const px = geo.xE + (geo.xC - geo.xE) * u;
+            const py = ySurf + Math.sin(u * Math.PI) * depth;
+            ctx.fillStyle = `rgba(252, 165, 165, ${op + 0.2})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#fda4af';
+            ctx.beginPath();
+            ctx.arc(px, py, 2.4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+    // I 라벨
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(248, 113, 113, 0.9)';
+    ctx.textAlign = 'center';
+    const midX = (geo.xE + geo.xC) / 2;
+    ctx.fillText('I (E → C)', midX, ySurf + 120);
+    // 화살표
+    ctx.strokeStyle = 'rgba(248, 113, 113, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(midX + 30, ySurf + 100);
+    ctx.lineTo(midX + 50, ySurf + 100);
+    ctx.lineTo(midX + 44, ySurf + 96);
+    ctx.moveTo(midX + 50, ySurf + 100);
+    ctx.lineTo(midX + 44, ySurf + 104);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 거리 자/표시
+function drawScale() {
+    const ySurf = geo.ySurface;
+    const yScale = FIELD_H - 24;
+    ctx.save();
+    // 가로 거리 자
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(geo.xE, yScale); ctx.lineTo(geo.xC, yScale);
+    ctx.stroke();
+    // tick
+    for (let i = 0; i <= 10; i++) {
+        const x = geo.xE + (geo.xC - geo.xE) * i / 10;
+        ctx.beginPath();
+        ctx.moveTo(x, yScale - 4); ctx.lineTo(x, yScale + 4);
+        ctx.stroke();
+        ctx.font = '8px ui-monospace, monospace';
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.7)';
+        ctx.textAlign = 'center';
+        ctx.fillText((state.D * i / 10).toFixed(0) + 'm', x, yScale + 16);
+    }
+    // 62% 표시
+    if (state.mode === '3pole') {
+        const x62 = xAt(62);
+        ctx.strokeStyle = 'rgba(110, 231, 183, 0.85)';
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(x62, ySurf - 50); ctx.lineTo(x62, yScale);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#6ee7b7';
+        ctx.textAlign = 'center';
+        ctx.fillText('62% (이상)', x62, ySurf - 56);
+    }
+    ctx.restore();
+}
+
+// ========== 전위 강하 곡선 ==========
+function drawCurvePanel() {
+    const W = canvas.width;
+    const top0 = FIELD_H;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, top0, 0, top0 + CURVE_H);
+    grad.addColorStop(0, '#070a18');
+    grad.addColorStop(1, '#0a0e1e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, top0, W, CURVE_H);
+
+    const divGrad = ctx.createLinearGradient(0, top0, W, top0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.5, 'rgba(251, 191, 36, 0.55)');
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top0); ctx.lineTo(W, top0);
+    ctx.stroke();
+
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.75)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('◯ POTENTIAL FALL CURVE · P 위치(% of D) → 측정값 R', 12, top0 + 10);
+    ctx.restore();
+
+    drawCurve(top0);
+}
+
+function drawCurve(top0) {
+    const W = canvas.width;
+    const padL = geo.xE;       // x좌표를 측면도와 일치
+    const padR = W - geo.xC;
+    const plotL = padL;
+    const plotR = W - padR;
+    const plotW = plotR - plotL;
+    const plotT = top0 + 36;
+    const plotB = top0 + CURVE_H - 30;
+    const plotH = plotB - plotT;
+
+    // 데이터 생성: pct 5~95에서 R 계산
+    const data = [];
+    let rMin = Infinity, rMax = -Infinity;
+    for (let p = 5; p <= 95; p++) {
+        const r = calcMeasuredR(p);
+        data.push({ p, r });
+        if (r < rMin) rMin = r;
+        if (r > rMax) rMax = r;
+    }
+    // y 범위 - R0 기준으로 대칭 확장
+    const R0 = state.R0;
+    const span = Math.max(rMax - R0, R0 - rMin, R0 * 0.5);
+    const yMax = R0 + span * 1.2;
+    const yMin = Math.max(0, R0 - span * 1.2);
+
+    ctx.save();
+    // 플롯 영역 박스
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    roundRect(ctx, plotL - 6, plotT - 6, plotW + 12, plotH + 12, 6);
+    ctx.fill();
+
+    // 62% 평탄 영역 (52~72%) 음영
+    if (state.mode === '3pole') {
+        const x52 = plotL + plotW * (52 - 5) / 90;
+        const x72 = plotL + plotW * (72 - 5) / 90;
+        ctx.fillStyle = 'rgba(110, 231, 183, 0.10)';
+        ctx.fillRect(x52, plotT, x72 - x52, plotH);
+        ctx.strokeStyle = 'rgba(110, 231, 183, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(x52, plotT, x72 - x52, plotH);
+        ctx.setLineDash([]);
+    }
+
+    // 그리드 + y 라벨
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const yy = plotT + plotH * i / 4;
+        const val = yMax - (yMax - yMin) * i / 4;
+        ctx.beginPath();
+        ctx.moveTo(plotL, yy); ctx.lineTo(plotR, yy); ctx.stroke();
+        ctx.fillText(fmt(val), plotL - 8, yy);
+    }
+    // x grid
+    for (let p = 10; p <= 90; p += 10) {
+        const xx = plotL + plotW * (p - 5) / 90;
+        ctx.beginPath();
+        ctx.moveTo(xx, plotT); ctx.lineTo(xx, plotB); ctx.stroke();
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.font = '8px ui-monospace, monospace';
+        ctx.fillText(p + '%', xx, plotB + 4);
+    }
+
+    // R0 수평선
+    const yR0 = plotT + plotH * (yMax - R0) / (yMax - yMin);
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.8)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(plotL, yR0); ctx.lineTo(plotR, yR0);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = '#fbbf24';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('R₀ (참값) = ' + fmt(R0) + ' Ω', plotL + 4, yR0 - 2);
+
+    // 곡선
+    ctx.strokeStyle = 'rgba(110, 231, 183, 0.95)';
+    ctx.lineWidth = 2.4;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(110, 231, 183, 0.8)';
+    ctx.beginPath();
+    data.forEach((d, i) => {
+        const x = plotL + plotW * (d.p - 5) / 90;
+        const y = plotT + plotH * (yMax - d.r) / (yMax - yMin);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 현재 P 위치 마커
+    if (state.mode === '3pole') {
+        const px = plotL + plotW * (state.pxPct - 5) / 90;
+        const py = plotT + plotH * (yMax - state.R) / (yMax - yMin);
+        // 수직선
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(px, plotT); ctx.lineTo(px, plotB);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // 점
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#fde68a';
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // 외곽
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.stroke();
+        // 라벨
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = '#fde68a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(state.pxPct + '% · ' + fmt(state.R) + ' Ω', px, py - 10);
+
+        // 62% 평탄 영역 라벨
+        const x62 = plotL + plotW * (62 - 5) / 90;
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillStyle = '#6ee7b7';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText('평탄 영역 (52~72%)', x62, plotT + 12);
+    } else {
+        // 2극법: 곡선과 무관, 항상 동일값 — 곡선 위에 별도 마커
+        const px = plotL + plotW * 0.5;
+        const py = plotT + plotH * (yMax - state.R) / (yMax - yMin);
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#93c5fd';
+        ctx.fillStyle = '#93c5fd';
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillStyle = '#bfdbfe';
+        ctx.textAlign = 'center';
+        ctx.fillText('2극법 R = ' + fmt(state.R) + ' Ω (보조 R 합산)', px, py - 10);
+    }
+
+    // 축 라벨
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(203, 213, 225, 0.7)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('R (Ω)', plotL - 8, plotT - 6);
+    ctx.textAlign = 'center';
+    ctx.fillText('P 극 위치 (% of EC)', plotL + plotW / 2, plotB + 22);
+
+    ctx.restore();
+}
+
+// ========== 메인 그리기 ==========
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawFieldBg();
+    drawEquipotentials();
+    drawCurrentFlow();
+    drawScale();
+
+    // 전극
+    const depthPx = Math.max(30, state.L * 22);
+    drawElectrode(geo.xE, geo.ySurface, depthPx, '#fbbf24', 'E', 'L=' + state.L.toFixed(1) + 'm');
+    if (state.mode === '3pole') {
+        const xP = xAt(state.pxPct);
+        drawElectrode(xP, geo.ySurface, 28, '#6ee7b7', 'P', state.pxPct + '%');
+    }
+    drawElectrode(geo.xC, geo.ySurface, 28, '#93c5fd', state.mode === '2pole' ? 'P+C' : 'C', state.mode === '2pole' ? '통합' : '');
+
+    drawTester();
+    drawCurvePanel();
+}
+
+// ========== 메인 루프 ==========
+function frame() {
+    state.t++;
+    // 자동 스윕
+    if (state.sweep) {
+        state.sweepT += 0.6;
+        state.pxPct = Math.round(15 + (Math.sin(state.sweepT * 0.02) + 1) * 35); // 15~85 oscil
+        $('px').value = state.pxPct;
+    }
+    computeState();
+    updateDisplays();
+    draw();
+    requestAnimationFrame(frame);
+}
+
+// ========== 인터랙션 ==========
+function flashPanel(id) {
+    const pill = document.getElementById(id);
+    if (pill) {
+        pill.classList.add('flash');
+        setTimeout(() => pill.classList.remove('flash'), 380);
+    }
+}
+
+$('px').addEventListener('input', (e) => {
+    state.pxPct = +e.target.value;
+    state.sweep = false;
+    flashPanel('pill-r');
+});
+$('d').addEventListener('input', (e) => { state.D = +e.target.value; flashPanel('pill-r0'); });
+$('l').addEventListener('input', (e) => { state.L = +e.target.value; flashPanel('pill-r0'); });
+$('rho').addEventListener('input', (e) => {
+    state.rho = +e.target.value;
+    flashPanel('pill-r0');
+});
+
+document.querySelectorAll('.mode-btn[data-mode]').forEach(b => {
+    b.addEventListener('click', () => {
+        state.mode = b.dataset.mode;
+        document.querySelectorAll('.mode-btn[data-mode]').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        flashPanel('pill-mode');
+        if (window.gsap) {
+            gsap.fromTo('#canvasCard', { scale: 0.98 }, { scale: 1, duration: 0.4, ease: 'back.out(1.5)' });
+        }
+    });
+});
+
+// 토양 카드
+const soilPresets = {
+    wet: 30, loam: 100, sand: 300, rock: 1500
+};
+document.querySelectorAll('#soilGrid .soil-card').forEach(el => {
+    el.addEventListener('click', () => {
+        state.soil = el.dataset.soil;
+        state.rho = soilPresets[state.soil];
+        $('rho').value = state.rho;
+        flashPanel('pill-r0');
+    });
+});
+
+// 프리셋
+document.querySelectorAll('.preset-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        const p = b.dataset.preset;
+        if (p === 'p62') {
+            state.pxPct = 62;
+            $('px').value = 62;
+            state.sweep = false;
+            flashPanel('pill-r');
+        }
+        if (p === 'sweep') {
+            state.sweep = !state.sweep;
+            flashPanel('pill-mode');
+        }
+        if (p === 'reset') {
+            state.pxPct = 62;
+            state.D = 20;
+            state.L = 2.0;
+            state.rho = 300;
+            state.soil = 'sand';
+            state.mode = '3pole';
+            state.sweep = false;
+            $('px').value = 62; $('d').value = 20; $('l').value = 2.0; $('rho').value = 300;
+            flashPanel('pill-r');
+        }
+    });
+});
+
+window.addEventListener('load', () => {
+    resize();
+    computeState();
+    updateDisplays();
+    requestAnimationFrame(frame);
+
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#soilCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.35, ease: 'power3.out' });
+        gsap.from('#formulaCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+});
+</script>
+</body>
+</html>

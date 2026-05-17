@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DC 발전기/전동기 종류 시뮬레이터 — 타여자·분권·직권·복권</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+body {
+    background:
+        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
+        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
+        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
+        #060814;
+    color: #e5e7eb;
+    font-family: 'Pretendard', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+.stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+    opacity: 0.6;
+}
+@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+
+.canvas-wrap {
+    position: relative;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
+    box-shadow:
+        0 30px 100px -20px rgba(99, 102, 241, 0.45),
+        0 0 40px rgba(244, 114, 182, 0.15);
+}
+canvas#main {
+    display: block;
+    width: 100%;
+    height: 560px;
+    border-radius: 17px;
+    background: #050714;
+}
+canvas#tnCanvas {
+    display: block;
+    width: 100%;
+    height: 260px;
+    border-radius: 12px;
+    background: #050714;
+}
+.glass {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.pulse-dot {
+    position: relative; display: inline-block;
+    width: 8px; height: 8px; border-radius: 9999px;
+    background: #34d399; box-shadow: 0 0 12px #34d399;
+}
+.pulse-dot::after {
+    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+    border: 2px solid #34d399; opacity: 0.6;
+    animation: pulseRing 1.8s ease-out infinite;
+}
+@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
+
+input[type=range] {
+    -webkit-appearance: none;
+    height: 5px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fda4af, #c4b5fd, #67e8f9);
+    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.95);
+}
+
+.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
+.chip-v { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
+.chip-i { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
+.chip-t { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip-n { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
+
+.live-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: border-color 200ms, box-shadow 200ms;
+}
+.live-pill.flash {
+    border-color: rgba(244, 114, 182, 0.6);
+    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+}
+.live-pill.warn {
+    border-color: rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+}
+.live-num {
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.formula-card {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(168,139,250,0.35);
+}
+.feature-row {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transition: transform 220ms, background 220ms, border-color 220ms;
+}
+.feature-row:hover {
+    transform: translateX(2px);
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(168, 139, 250, 0.4);
+}
+.preset-btn {
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    transition: all 200ms;
+}
+.preset-btn:hover {
+    background: rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+.type-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(168, 139, 250, 0.25);
+    color: #c4b5fd;
+    transition: all 200ms;
+    position: relative;
+    overflow: hidden;
+}
+.type-btn .lbl-en { display: block; font-size: 9px; color: rgba(148, 163, 184, 0.7); letter-spacing: 0.08em; }
+.type-btn.active {
+    background: linear-gradient(135deg, rgba(168,85,247,0.45), rgba(99,102,241,0.45));
+    border-color: rgba(216, 180, 254, 0.85);
+    color: #fff;
+    box-shadow: 0 0 22px rgba(168, 139, 250, 0.55);
+}
+.type-btn.active .lbl-en { color: rgba(226, 232, 240, 0.85); }
+.cmp-btn {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    transition: all 200ms;
+}
+.cmp-btn.active {
+    background: linear-gradient(135deg, rgba(168,85,247,0.35), rgba(34,211,238,0.25));
+    border-color: rgba(216, 180, 254, 0.8);
+    color: #fff;
+}
+.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+}
+.type-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 9999px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+}
+.bd-sep { background: rgba(168, 139, 250, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 139, 250, 0.5); }
+.bd-shu { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.5); }
+.bd-ser { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5); }
+.bd-cmp { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.5); }
+</style>
+</head>
+<body class="p-4 md:p-8">
+<div class="stars"></div>
+
+<div class="max-w-6xl mx-auto relative">
+    <header class="mb-6" id="hdr">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <span class="pulse-dot"></span>
+            INTERACTIVE · DC MACHINE TYPES · SEPARATELY · SHUNT · SERIES · COMPOUND
+        </div>
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+            🧲 DC 기기 종류 시뮬레이터
+        </h1>
+        <p class="mt-2 text-slate-400 text-sm">계자 권선을 어떻게 연결하느냐에 따라 직류기는 4가지로 나뉩니다. 결선도와 T-N 곡선을 비교해 보세요.</p>
+    </header>
+
+    <!-- 라이브 패널 -->
+    <div id="livePanel" class="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="live-pill rounded-xl p-3" id="pill-v">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">단자 전압 V</p>
+            <p class="mt-1 text-lg font-bold"><span id="vVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-ia">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">전기자 전류 Iₐ</p>
+            <p class="mt-1 text-lg font-bold"><span id="iaVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-t">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">토크 T</p>
+            <p class="mt-1 text-lg font-bold"><span id="tVal" class="live-num">—</span></p>
+        </div>
+        <div class="live-pill rounded-xl p-3" id="pill-n">
+            <p class="text-[10px] tracking-widest text-slate-500 font-bold">회전속도 N</p>
+            <p class="mt-1 text-lg font-bold"><span id="nVal" class="live-num">—</span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div class="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+            <!-- 메인 캔버스 -->
+            <div class="glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide" id="diagramTitle">결선도 · 분권 (Shunt)</span>
+                    <div class="flex items-center gap-2">
+                        <button id="presetLight" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">경부하</button>
+                        <button id="presetRated" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">정격</button>
+                        <button id="presetHeavy" class="preset-btn rounded-md px-3 py-1.5 text-xs font-bold">중부하</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap">
+                    <canvas id="main"></canvas>
+                </div>
+            </div>
+
+            <!-- T-N 곡선 -->
+            <div class="glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-slate-400 tracking-wide">전동기 T-N 특성 곡선 비교</span>
+                    <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                        <button data-cmp="sep" class="cmp-btn active rounded px-2 py-1">타여자</button>
+                        <button data-cmp="shu" class="cmp-btn active rounded px-2 py-1">분권</button>
+                        <button data-cmp="ser" class="cmp-btn active rounded px-2 py-1">직권</button>
+                        <button data-cmp="cmp" class="cmp-btn active rounded px-2 py-1">복권(가동)</button>
+                    </div>
+                </div>
+                <div class="canvas-wrap" style="background: linear-gradient(135deg, rgba(168,139,250,0.4), rgba(34,211,238,0.4), rgba(244,114,182,0.4));">
+                    <canvas id="tnCanvas"></canvas>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-2 font-mono">가로축 토크 T · 세로축 회전속도 N · 현재 동작점은 ◉ 마커</p>
+            </div>
+
+            <!-- 공식 카드 -->
+            <div class="glass rounded-2xl p-5">
+                <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
+                    <span class="text-lg">📐</span>
+                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">DC 기기 핵심 공식</span>
+                </h3>
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">역기전력</p>
+                        <div class="math-container mt-2">\(E_b = K\,\Phi\,N\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">토크</p>
+                        <div class="math-container mt-2">\(T = K\,\Phi\,I_a\)</div>
+                    </div>
+                    <div class="formula-card rounded-xl p-3">
+                        <p class="text-[10px] uppercase tracking-widest text-indigo-200">회전속도</p>
+                        <div class="math-container mt-2">\(N = \dfrac{V - I_a R_a}{K\,\Phi}\)</div>
+                    </div>
+                </div>
+                <div class="neon-divider my-4"></div>
+                <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <li class="feature-row rounded-lg p-3"><span class="type-badge bd-sep">타여자</span> <span class="ml-1">계자 외부 전원 → Φ 일정 → 속도 매우 안정</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="type-badge bd-shu">분권</span> <span class="ml-1">계자 V에 병렬 → Φ 거의 일정 → 정속 특성</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="type-badge bd-ser">직권</span> <span class="ml-1">계자 직렬 → Φ ∝ Iₐ → 큰 기동토크, 무부하 폭주</span></li>
+                    <li class="feature-row rounded-lg p-3"><span class="type-badge bd-cmp">복권</span> <span class="ml-1">분권+직권 (가동: 보강, 차동: 상쇄)</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 컨트롤 -->
+        <div class="glass rounded-2xl p-5 space-y-4 h-fit" id="controlPanel">
+            <h2 class="font-bold text-sm tracking-wider text-indigo-200">변수 조절</h2>
+
+            <div class="chip rounded-lg p-3">
+                <label class="block text-[11px] font-bold tracking-wider mb-2 text-slate-300">결선 종류</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button data-type="sep" class="type-btn rounded-md py-2 text-xs font-bold">타여자<span class="lbl-en">SEPARATELY</span></button>
+                    <button data-type="shu" class="type-btn rounded-md py-2 text-xs font-bold active">분권<span class="lbl-en">SHUNT</span></button>
+                    <button data-type="ser" class="type-btn rounded-md py-2 text-xs font-bold">직권<span class="lbl-en">SERIES</span></button>
+                    <button data-type="cmp" class="type-btn rounded-md py-2 text-xs font-bold">복권<span class="lbl-en">COMPOUND</span></button>
+                </div>
+                <div id="cmpSubWrap" class="mt-2 grid grid-cols-2 gap-2 hidden">
+                    <button data-cmpsub="cumulative" class="type-btn rounded-md py-1.5 text-[10px] font-bold active">가동복권<span class="lbl-en">CUMULATIVE</span></button>
+                    <button data-cmpsub="differential" class="type-btn rounded-md py-1.5 text-[10px] font-bold">차동복권<span class="lbl-en">DIFFERENTIAL</span></button>
+                </div>
+            </div>
+
+            <div class="chip-v chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>전원 전압 V</span><span id="vDisp" class="font-mono text-base">220</span></label>
+                <input type="range" id="v" min="50" max="400" step="10" value="220" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">V</p>
+            </div>
+
+            <div class="chip-t chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>부하 토크 T<sub>L</sub></span><span id="tlDisp" class="font-mono text-base">1.0</span></label>
+                <input type="range" id="tl" min="0" max="5" step="0.05" value="1.0" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">p.u.</p>
+            </div>
+
+            <div class="chip-i chip rounded-lg p-3">
+                <label class="flex justify-between text-[11px] font-bold tracking-wider"><span>전기자 저항 R<sub>a</sub></span><span id="raDisp" class="font-mono text-base">0.5</span></label>
+                <input type="range" id="ra" min="0.1" max="3.0" step="0.05" value="0.5" class="w-full mt-2 cursor-pointer">
+                <p class="text-[10px] text-slate-500 mt-1 text-right">Ω</p>
+            </div>
+
+            <div class="neon-divider"></div>
+
+            <div class="space-y-2 text-[11px] text-slate-300">
+                <p class="font-bold text-indigo-200 tracking-wider mb-2">학습 포인트</p>
+                <p class="feature-row rounded-md p-2"><span class="text-rose-300 font-bold">직권</span>은 무부하 시 Iₐ→0 이므로 Φ→0 → <span class="text-amber-300 font-bold">N → ∞</span> (위험!)</p>
+                <p class="feature-row rounded-md p-2"><span class="text-sky-300 font-bold">분권</span>은 V 일정이면 Φ 일정 → 부하 변화에도 <span class="text-emerald-300 font-bold">속도 거의 일정</span></p>
+                <p class="feature-row rounded-md p-2"><span class="text-purple-300 font-bold">복권(가동)</span> 기동토크 ↑ + 무부하 폭주 방지 (가장 안전)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const canvas = $('main');
+const ctx = canvas.getContext('2d');
+const tnCv = $('tnCanvas');
+const tctx = tnCv.getContext('2d');
+
+// 표준 머신 파라미터 (단순화된 무차원 모델)
+// E_b = K Φ N, T = K Φ I_a, V = E_b + I_a R_a (+ I_a R_s 직권/복권의 직권권선)
+// 분권/타여자: Φ ≈ Φ0 일정
+// 직권: Φ = c·I_a (포화 전): 간단화 위해 Φ = min(Φsat, c·I_a)
+// 복권(가동): Φ = Φ_sh + c·I_a, (차동): Φ = Φ_sh − c·I_a
+// 단위: K = 1, Φ0 = 1 (분권 기준), Rf_shunt = 일정 가정 (시각화용)
+let state = {
+    type: 'shu',         // sep / shu / ser / cmp
+    cmpSub: 'cumulative',// cmp일 때만 의미: cumulative / differential
+    V: 220,
+    TL: 1.0,             // 부하 토크 (p.u.)
+    Ra: 0.5,
+    Rs: 0.15,            // 직권/복권 직권권선 저항 (Ω)
+    Rf: 110,             // 분권 계자 저항 (Ω) — 시각용
+    // 계산 결과
+    Ia: 0, If: 0, IL: 0,
+    Eb: 0, N: 0, T: 0, Phi: 1,
+    // 비교에 포함
+    cmp: { sep: true, shu: true, ser: true, cmp: true },
+    // 애니메이션
+    rotorAngle: 0,
+    flowPhase: 0,
+    t: 0
+};
+
+const TYPE_LABEL = {
+    sep: { ko: '타여자', en: 'Separately Excited', cls: 'bd-sep', color: '#d8b4fe' },
+    shu: { ko: '분권',   en: 'Shunt',              cls: 'bd-shu', color: '#93c5fd' },
+    ser: { ko: '직권',   en: 'Series',             cls: 'bd-ser', color: '#fca5a5' },
+    cmp: { ko: '복권',   en: 'Compound',           cls: 'bd-cmp', color: '#d8b4fe' },
+};
+
+function resize() {
+    canvas.width = canvas.parentElement.clientWidth - 2;
+    canvas.height = 560;
+    tnCv.width = tnCv.parentElement.clientWidth - 2;
+    tnCv.height = 260;
+}
+window.addEventListener('resize', resize);
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+// ========================================
+// 계산: 부하 토크 → I_a → N
+// ========================================
+// 정상상태 가정. T_dev = K Φ I_a = T_L
+// 직권: Φ = c·I_a (포화 전), T = K c I_a^2  → I_a = sqrt(T/(Kc))
+// 분권/타여자: Φ = Φ0 일정, I_a = T / (K Φ0)
+// 복권(가동): Φ = Φ_sh + c I_a → T = K(Φ_sh + c I_a) I_a
+// 복권(차동): Φ = Φ_sh − c I_a → 위와 부호 반대 (불안정 영역 발생 가능)
+// 보조: V = E_b + I_a (R_a + R_s_eff), N = E_b / (K Φ)
+// R_s_eff: sep/shu = 0, ser = Rs, cmp = Rs
+function compute() {
+    const V = state.V;
+    const Ra = state.Ra;
+    const Rs = state.Rs;
+    const TL = state.TL;
+    const K = 1.0;
+    const Phi0 = 1.0;    // 분권/타여자 기준 자속 (정규화)
+    const c = 0.6;       // 직권 권선 강도 (Φ/A)
+    const Phisat = 1.6;  // 포화 자속 한계
+
+    let Phi, Ia, Eb, N, Rs_eff;
+
+    if (state.type === 'sep' || state.type === 'shu') {
+        // Φ는 V에 거의 비례 (실제로는 분권은 If = V/Rf 로 결정되어 Φ ≈ Φ0·V/220)
+        // 시각화 위해 단순히 V/220 스케일 적용 (포화 클립)
+        Phi = Math.min(Phisat, Phi0 * (state.type === 'shu' ? V / 220 : 1.0));
+        Rs_eff = 0;
+        Ia = TL / (K * Phi);                  // 정상상태
+        Eb = V - Ia * (Ra + Rs_eff);
+        N = Eb / (K * Phi);
+    } else if (state.type === 'ser') {
+        // T = K c I_a^2 (포화 전), Ia = sqrt(TL / (Kc))
+        Rs_eff = Rs;
+        // 우선 포화 전 가정
+        Ia = Math.sqrt(Math.max(0, TL) / (K * c));
+        Phi = Math.min(Phisat, c * Ia);
+        // 포화 시 재계산: T = K Phisat * Ia → Ia = TL/(K Phisat)
+        if (c * Ia > Phisat) {
+            Phi = Phisat;
+            Ia = TL / (K * Phi);
+        }
+        Eb = V - Ia * (Ra + Rs_eff);
+        N = Eb / (K * Math.max(Phi, 0.001));
+    } else {
+        // cmp
+        Rs_eff = Rs;
+        const sign = state.cmpSub === 'differential' ? -1 : 1;
+        const Phi_sh = Phi0 * (V / 220);
+        // T = K (Phi_sh + sign c Ia) Ia
+        // → sign c Ia^2 + Phi_sh Ia - TL/K = 0
+        const a = sign * c;
+        const b = Phi_sh;
+        const cc = -TL / K;
+        let root;
+        if (Math.abs(a) < 1e-6) {
+            root = -cc / b;
+        } else {
+            const disc = b * b - 4 * a * cc;
+            if (disc < 0) root = 0;
+            else {
+                // 양수 해 선택
+                const r1 = (-b + Math.sqrt(disc)) / (2 * a);
+                const r2 = (-b - Math.sqrt(disc)) / (2 * a);
+                root = (r1 > 0 ? r1 : (r2 > 0 ? r2 : 0));
+            }
+        }
+        Ia = Math.max(0, root);
+        Phi = Phi_sh + sign * c * Ia;
+        Phi = Math.max(0.05, Math.min(Phisat, Phi));
+        Eb = V - Ia * (Ra + Rs_eff);
+        N = Eb / (K * Phi);
+    }
+
+    // 회전 속도 (rpm 스케일) — 시각 단위
+    // E_b = K Φ N 에서 N의 절대 단위를 rpm으로 매핑: 시각화 위해 ×1000
+    const Nrpm = N * 1000;
+
+    // 음수/비현실적 값 클립
+    state.Ia = Math.max(0, Ia);
+    state.Phi = Phi;
+    state.Eb = Eb;
+    state.N = Math.max(0, Nrpm);
+    state.T = K * Phi * state.Ia; // 발생 토크 (정상상태에서 ≈ TL)
+
+    // 분권/타여자 → If 표시용
+    state.If = state.type === 'shu' ? V / state.Rf
+             : state.type === 'sep' ? 0.5     // 외부 정격
+             : 0;
+    state.IL = state.type === 'shu' ? (state.Ia + state.If) : state.Ia;
+
+    // UI 갱신
+    $('vVal').textContent = `${V.toFixed(0)} V`;
+    $('iaVal').textContent = `${state.Ia.toFixed(2)} A`;
+    $('tVal').textContent = `${state.T.toFixed(2)} pu`;
+    $('nVal').textContent = state.N > 9999 ? '∞ ↑' : `${state.N.toFixed(0)} rpm`;
+
+    $('vDisp').textContent = V.toFixed(0);
+    $('tlDisp').textContent = TL.toFixed(2);
+    $('raDisp').textContent = Ra.toFixed(2);
+
+    // 경고: 직권 무부하 폭주
+    $('pill-n').classList.toggle('warn', state.N > 4500);
+    $('pill-ia').classList.toggle('warn', state.Ia > 8);
+    $('pill-t').classList.toggle('flash', state.T > 2.5);
+
+    // 회전 속도 매핑 (시각용: 너무 빠르면 cap)
+    state.visSpin = Math.min(0.32, state.N / 6000 * 0.32);
+
+    // 타이틀 갱신
+    const lbl = TYPE_LABEL[state.type];
+    let suffix = '';
+    if (state.type === 'cmp') suffix = ` · ${state.cmpSub === 'cumulative' ? '가동복권' : '차동복권'}`;
+    $('diagramTitle').textContent = `결선도 · ${lbl.ko} (${lbl.en})${suffix}`;
+}
+
+// ========================================
+// 메인 캔버스 그리기
+// ========================================
+function drawMain() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
+    bg.addColorStop(0, 'rgba(30, 27, 75, 0.35)');
+    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
+    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 격자
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
+    for (let i = 0; i < H; i += 40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
+    ctx.restore();
+
+    // 상단 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const t = TYPE_LABEL[state.type];
+    ctx.fillText(`▮ ${t.en.toUpperCase()} EXCITED DC MACHINE`, 12, 10);
+    ctx.restore();
+
+    drawDiagram(W, H);
+
+    // 우상단 정보
+    ctx.save();
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    roundRect(ctx, W - 220, 8, 210, 58, 8);
+    ctx.fill();
+    ctx.fillStyle = '#c4b5fd';
+    ctx.fillText(`Φ = ${state.Phi.toFixed(2)} pu`, W - 16, 16);
+    ctx.fillStyle = '#67e8f9';
+    ctx.fillText(`Eb = ${state.Eb.toFixed(1)} V`, W - 16, 32);
+    ctx.fillStyle = '#fcd34d';
+    ctx.fillText(`If = ${state.If.toFixed(2)} A  IL = ${state.IL.toFixed(2)} A`, W - 16, 48);
+    ctx.restore();
+}
+
+// ====== 결선도 (4종 토글) ======
+function drawDiagram(W, H) {
+    // 공통 레이아웃: 좌측 전원, 중앙 전기자(회전원), 우측 필드/연결
+    const cx = W * 0.5;
+    const cy = H * 0.52;
+    const armR = 60;
+
+    // 좌측 전원 (V) 위치
+    const srcX = W * 0.10;
+    const srcY = cy;
+
+    // 단자 박스 위/아래
+    const topY = H * 0.18;
+    const botY = H * 0.86;
+    const leftX = srcX + 50;
+    const rightX = W * 0.86;
+
+    // 1) 전원 박스
+    drawSource(srcX, srcY, state.V);
+
+    // 와이어 좌측: 전원 +단자 → 위 → 우측 회로로
+    // 메인 외부 회로: 위(가로) + 우측(세로) + 아래(가로) — 분권/직권에 따라 분기 다름
+    ctx.save();
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.7)';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+
+    // 전원 → 단자
+    line(srcX + 22, srcY - 26, leftX, srcY - 26);
+    line(leftX, srcY - 26, leftX, topY);
+    line(srcX + 22, srcY + 26, leftX, srcY + 26);
+    line(leftX, srcY + 26, leftX, botY);
+
+    // 상단 가로
+    line(leftX, topY, rightX, topY);
+    // 하단 가로
+    line(leftX, botY, rightX, botY);
+    ctx.restore();
+
+    // 전기자 원 (가운데 회전)
+    drawArmature(cx, cy, armR, state.rotorAngle);
+
+    // 브러시
+    drawBrush(cx - armR - 8, cy);
+    drawBrush(cx + armR + 8, cy);
+
+    // 전기자 단자 → 위/아래 와이어 (좌측 브러시 = A1, 우측 브러시 = A2)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.7)';
+    ctx.lineWidth = 2.2;
+    line(cx - armR - 14, cy, cx - armR - 32, cy);
+    line(cx - armR - 32, cy, cx - armR - 32, topY); // A1 ↑
+    line(cx + armR + 14, cy, cx + armR + 32, cy);
+    line(cx + armR + 32, cy, cx + armR + 32, botY); // A2 ↓
+    // 상단/하단 메인 라인 연결
+    line(cx - armR - 32, topY, cx + armR + 32, topY); // 중간 점프 (보조)
+    ctx.restore();
+
+    // 단자 라벨 A1/A2
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(252, 211, 77, 0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText('A1', cx - armR - 32, topY - 8);
+    ctx.fillText('A2', cx + armR + 32, botY + 18);
+    ctx.restore();
+
+    // 타입별 계자 권선 그리기
+    if (state.type === 'sep') {
+        drawSeparatelyField(W, H, cx, cy, armR);
+    } else if (state.type === 'shu') {
+        drawShuntField(W, H, cx, cy, armR, leftX, rightX, topY, botY);
+    } else if (state.type === 'ser') {
+        drawSeriesField(W, H, cx, cy, armR, leftX, rightX, topY, botY);
+    } else if (state.type === 'cmp') {
+        drawCompoundField(W, H, cx, cy, armR, leftX, rightX, topY, botY);
+    }
+
+    // 전류 방향 (메인 외부 루프)
+    drawCurrentDots(leftX, rightX, topY, botY, cx, armR);
+
+    // 단자 +/- 표시 (좌측 +)
+    ctx.save();
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fca5a5';
+    ctx.shadowBlur = 8; ctx.shadowColor = '#ef4444';
+    ctx.fillText('+', srcX + 12, srcY - 38);
+    ctx.fillStyle = '#93c5fd';
+    ctx.shadowColor = '#3b82f6';
+    ctx.fillText('−', srcX + 12, srcY + 50);
+    ctx.restore();
+}
+
+function line(x0, y0, x1, y1) {
+    ctx.beginPath();
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    ctx.stroke();
+}
+
+function drawSource(x, y, V) {
+    // 배터리 박스
+    ctx.save();
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(99, 102, 241, 0.55)';
+    const grad = ctx.createLinearGradient(x - 20, y - 30, x + 20, y + 30);
+    grad.addColorStop(0, '#3730a3');
+    grad.addColorStop(0.5, '#6366f1');
+    grad.addColorStop(1, '#312e81');
+    ctx.fillStyle = grad;
+    roundRect(ctx, x - 22, y - 30, 44, 60, 8);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(196, 181, 253, 0.7)';
+    ctx.stroke();
+
+    // V 라벨
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 13px ui-monospace, monospace';
+    ctx.fillStyle = '#e0e7ff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('V', x, y - 8);
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillStyle = '#a5b4fc';
+    ctx.fillText(`${V.toFixed(0)}V`, x, y + 10);
+    ctx.restore();
+}
+
+// 자속의 부호에 따라 전기자 원 안의 N/S 위치도 가변
+function drawArmature(cx, cy, R, theta) {
+    // 원반
+    ctx.save();
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.5)';
+    const coreGrad = ctx.createRadialGradient(cx - R*0.2, cy - R*0.25, 4, cx, cy, R * 0.95);
+    coreGrad.addColorStop(0, '#cbd5e1');
+    coreGrad.addColorStop(0.4, '#94a3b8');
+    coreGrad.addColorStop(0.75, '#475569');
+    coreGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = coreGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.stroke();
+    ctx.restore();
+
+    // 회전 도체 표시 (8개 슬롯) — theta로 회전
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(theta);
+    const slots = 8;
+    for (let i = 0; i < slots; i++) {
+        const a = (i / slots) * Math.PI * 2;
+        const x = Math.cos(a) * R * 0.7;
+        const y = Math.sin(a) * R * 0.7;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#fbbf24';
+        ctx.fillStyle = i % 2 === 0 ? '#fde68a' : '#fb923c';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // 회전축
+    ctx.save();
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.85)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+
+    // 가운데 A 라벨
+    ctx.save();
+    ctx.font = 'bold 14px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(226, 232, 240, 0.85)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('A', cx, cy - R - 14);
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.fillText('ARMATURE', cx, cy + R + 16);
+    ctx.restore();
+}
+
+function drawBrush(x, y) {
+    ctx.save();
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(148, 163, 184, 0.55)';
+    const grad = ctx.createLinearGradient(x - 6, y, x + 6, y);
+    grad.addColorStop(0, '#cbd5e1');
+    grad.addColorStop(0.5, '#94a3b8');
+    grad.addColorStop(1, '#475569');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x - 6, y - 10, 12, 20);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.strokeRect(x - 6, y - 10, 12, 20);
+    ctx.restore();
+}
+
+// ============= 4종 결선 =============
+
+// 타여자: 계자 권선은 별도 외부 전원 V_f
+function drawSeparatelyField(W, H, cx, cy, armR) {
+    // 별도 전원 박스 (오른쪽 위)
+    const fx = W * 0.86;
+    const fy = H * 0.18;
+    // 별도 전원 라벨
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = 'rgba(216, 180, 254, 0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText('SEPARATE V_f', fx, fy - 60);
+    ctx.restore();
+
+    // 별도 배터리
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = 'rgba(168, 139, 250, 0.5)';
+    const g = ctx.createLinearGradient(-16, -22, 16, 22);
+    g.addColorStop(0, '#6b21a8');
+    g.addColorStop(0.5, '#a855f7');
+    g.addColorStop(1, '#581c87');
+    ctx.fillStyle = g;
+    roundRect(ctx, -18, -22, 36, 44, 6);
+    ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(216, 180, 254, 0.8)';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Vf', 0, 0);
+    ctx.restore();
+
+    // 계자 권선 (F1-F2) — 별도 전원에 연결
+    const f1x = fx - 60, f1y = fy + 50;
+    const f2x = fx + 30, f2y = fy + 110;
+    drawFieldCoil(f1x, f1y, f2x, f2y, '#d8b4fe', 'F1', 'F2', 'SHUNT FIELD (SEPARATE)');
+
+    // 연결 와이어 (별도 전원 → 계자)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(216, 180, 254, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    line(fx - 12, fy + 22, fx - 12, f1y);
+    line(fx - 12, f1y, f1x, f1y);
+    line(fx + 12, fy + 22, fx + 12, f2y + 6);
+    line(fx + 12, f2y + 6, f2x, f2y + 6);
+    line(f2x, f2y + 6, f2x, f2y);
+    ctx.setLineDash([]);
+    ctx.restore();
+}
+
+// 분권: 계자 권선이 단자 V에 병렬
+function drawShuntField(W, H, cx, cy, armR, leftX, rightX, topY, botY) {
+    // 분권 계자: 단자 좌측에서 위→아래로 병렬 분기
+    const fx = leftX + 70;
+    const fcoilY0 = topY + 20;
+    const fcoilY1 = botY - 20;
+    drawFieldCoil(fx, fcoilY0, fx, fcoilY1, '#93c5fd', 'F1', 'F2', 'SHUNT FIELD');
+
+    // 단자에서 분기 (탭)
+    ctx.save();
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.arc(fx, topY, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(fx, botY, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+// 직권: 계자 권선이 전기자와 직렬 (큰 전류 흐름)
+function drawSeriesField(W, H, cx, cy, armR, leftX, rightX, topY, botY) {
+    // 직권 계자: 상단 라인 사이 (A1 → S1-S2 → 전원+)
+    const fy0 = topY;
+    const fx0 = cx - armR - 32 - 20;  // A1 약간 좌측
+    const fx1 = leftX + 50;
+    // 위 라인 사이에 코일 (수평 권선)
+    drawFieldCoilH(fx1, fy0, fx0, fy0, '#fca5a5', 'S1', 'S2', 'SERIES FIELD');
+}
+
+function drawCompoundField(W, H, cx, cy, armR, leftX, rightX, topY, botY) {
+    // 복권: 분권 + 직권 둘 다
+    // 분권 (단자 사이 병렬)
+    const fxSh = leftX + 70;
+    drawFieldCoil(fxSh, topY + 20, fxSh, botY - 20, '#93c5fd', 'F1', 'F2', 'SHUNT FIELD');
+    ctx.save();
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.arc(fxSh, topY, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(fxSh, botY, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // 직권 (상단 와이어 위 일부 구간)
+    const fy0 = topY;
+    const fx0 = cx - armR - 32 - 20;
+    const fx1 = fxSh + 60;
+    drawFieldCoilH(fx1, fy0, fx0, fy0, '#fca5a5', 'S1', 'S2', 'SERIES FIELD');
+
+    // 가동/차동 표시
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = state.cmpSub === 'cumulative' ? 'rgba(134, 239, 172, 0.95)' : 'rgba(252, 165, 165, 0.95)';
+    ctx.textAlign = 'left';
+    ctx.fillText(state.cmpSub === 'cumulative' ? '⊕ CUMULATIVE (가동: Φsh + Φse)' : '⊖ DIFFERENTIAL (차동: Φsh − Φse)',
+        leftX + 8, botY - 28);
+    ctx.restore();
+}
+
+// 세로 방향 계자 권선 (분권/타여자 시각화 — 코일 모양 4-6턴 곡선)
+function drawFieldCoil(x0, y0, x1, y1, color, lbl1, lbl2, sub) {
+    const dx = x1 - x0, dy = y1 - y0;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const ang = Math.atan2(dy, dx);
+    // 코일 막대
+    ctx.save();
+    ctx.translate((x0 + x1)/2, (y0 + y1)/2);
+    ctx.rotate(ang);
+
+    // 와이어 좌우 길이 (코일 본체 외)
+    const coilLen = Math.min(len * 0.5, 90);
+    const halfLen = len / 2;
+
+    // 본체 외 연결선
+    ctx.strokeStyle = 'rgba(203, 213, 225, 0.7)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-halfLen, 0); ctx.lineTo(-coilLen/2, 0);
+    ctx.moveTo(coilLen/2, 0); ctx.lineTo(halfLen, 0);
+    ctx.stroke();
+
+    // 코일 자체 (6 루프)
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    const loops = 6;
+    for (let i = 0; i < loops; i++) {
+        const sx = -coilLen/2 + (coilLen / loops) * i;
+        ctx.moveTo(sx, 0);
+        ctx.arc(sx + coilLen / loops / 2, 0, coilLen / loops / 2, Math.PI, 0, false);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 라벨
+    const lblX = (x0 + x1)/2;
+    const lblY = (y0 + y1)/2;
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left';
+    // 세로 코일이면 라벨을 오른쪽에
+    if (Math.abs(dy) > Math.abs(dx)) {
+        ctx.fillText(lbl1, x0 + 14, y0 + 4);
+        ctx.fillText(lbl2, x1 + 14, y1 + 4);
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillText(sub, lblX + 14, lblY);
+    } else {
+        ctx.fillText(lbl1, x0 - 18, y0 - 8);
+        ctx.fillText(lbl2, x1 + 4, y1 - 8);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.font = 'bold 9px ui-monospace, monospace';
+        ctx.fillText(sub, lblX, lblY - 18);
+    }
+    ctx.restore();
+}
+
+// 수평 방향용 (직권)
+function drawFieldCoilH(x0, y, x1, yEnd, color, lbl1, lbl2, sub) {
+    drawFieldCoil(x0, y, x1, yEnd, color, lbl1, lbl2, sub);
+}
+
+// 전류 방향 점 (메인 외부 회로 위)
+function drawCurrentDots(leftX, rightX, topY, botY, cx, armR) {
+    // 전류 흐름 경로: 전원+ → 위(leftX,topY) → 오른쪽(rightX,topY) → 아래(rightX,botY) → 왼쪽(leftX,botY) → 전원−
+    // 분권은 분기 지점 처리 단순화 (전체 메인 루프에 빛나는 점)
+    const speed = Math.max(0.5, state.Ia * 0.4);
+    state.flowPhase += speed * 0.05;
+    const phase = state.flowPhase;
+
+    const path = [
+        { x0: leftX, y0: topY, x1: rightX, y1: topY },
+        { x0: rightX, y0: topY, x1: rightX, y1: botY },
+        { x0: rightX, y0: botY, x1: leftX, y1: botY },
+        { x0: leftX, y0: botY, x1: leftX, y1: topY }
+    ];
+
+    ctx.save();
+    ctx.fillStyle = '#fde68a';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#fbbf24';
+
+    for (let k = 0; k < path.length; k++) {
+        const seg = path[k];
+        const len = Math.hypot(seg.x1 - seg.x0, seg.y1 - seg.y0);
+        const count = Math.max(2, Math.floor(len / 40));
+        for (let i = 0; i < count; i++) {
+            const tFrac = ((i / count) + phase * 0.1) % 1;
+            const px = seg.x0 + (seg.x1 - seg.x0) * tFrac;
+            const py = seg.y0 + (seg.y1 - seg.y0) * tFrac;
+            ctx.beginPath();
+            ctx.arc(px, py, 2.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+// ========================================
+// T-N 곡선 캔버스
+// ========================================
+function computeTNPoint(type, cmpSub, TL, V, Ra, Rs) {
+    // 위의 compute()를 임의 TL에 대해 풀기
+    const K = 1.0, Phi0 = 1.0, c = 0.6, Phisat = 1.6;
+    let Phi, Ia, Eb, N, Rs_eff;
+    if (type === 'sep' || type === 'shu') {
+        Phi = Math.min(Phisat, Phi0 * (type === 'shu' ? V / 220 : 1.0));
+        Rs_eff = 0;
+        Ia = TL / (K * Phi);
+        Eb = V - Ia * (Ra + Rs_eff);
+        N = Eb / (K * Phi);
+    } else if (type === 'ser') {
+        Rs_eff = Rs;
+        Ia = Math.sqrt(Math.max(0, TL) / (K * c));
+        Phi = Math.min(Phisat, c * Ia);
+        if (c * Ia > Phisat) { Phi = Phisat; Ia = TL / (K * Phi); }
+        Eb = V - Ia * (Ra + Rs_eff);
+        N = Eb / (K * Math.max(Phi, 0.001));
+    } else {
+        Rs_eff = Rs;
+        const sign = cmpSub === 'differential' ? -1 : 1;
+        const Phi_sh = Phi0 * (V / 220);
+        const a = sign * c, b = Phi_sh, cc = -TL / K;
+        let root;
+        if (Math.abs(a) < 1e-6) root = -cc / b;
+        else {
+            const disc = b * b - 4 * a * cc;
+            if (disc < 0) root = 0;
+            else {
+                const r1 = (-b + Math.sqrt(disc)) / (2 * a);
+                const r2 = (-b - Math.sqrt(disc)) / (2 * a);
+                root = (r1 > 0 ? r1 : (r2 > 0 ? r2 : 0));
+            }
+        }
+        Ia = Math.max(0, root);
+        Phi = Phi_sh + sign * c * Ia;
+        Phi = Math.max(0.05, Math.min(Phisat, Phi));
+        Eb = V - Ia * (Ra + Rs_eff);
+        N = Eb / (K * Phi);
+    }
+    return { T: TL, N: N * 1000 };
+}
+
+function drawTN() {
+    const W = tnCv.width, H = tnCv.height;
+    tctx.clearRect(0, 0, W, H);
+
+    // 배경
+    const bg = tctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0e1e');
+    bg.addColorStop(1, '#070a18');
+    tctx.fillStyle = bg;
+    tctx.fillRect(0, 0, W, H);
+
+    // 축 영역
+    const padL = 60, padR = 30, padT = 24, padB = 36;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const Tmin = 0, Tmax = 5;
+    const Nmin = 0, Nmax = 7000;
+
+    // 격자
+    tctx.save();
+    tctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+    tctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+        const x = padL + (i / 5) * plotW;
+        tctx.beginPath(); tctx.moveTo(x, padT); tctx.lineTo(x, padT + plotH); tctx.stroke();
+    }
+    for (let i = 0; i <= 7; i++) {
+        const y = padT + (i / 7) * plotH;
+        tctx.beginPath(); tctx.moveTo(padL, y); tctx.lineTo(padL + plotW, y); tctx.stroke();
+    }
+    tctx.restore();
+
+    // 축
+    tctx.save();
+    tctx.strokeStyle = 'rgba(203, 213, 225, 0.5)';
+    tctx.lineWidth = 1.4;
+    tctx.beginPath();
+    tctx.moveTo(padL, padT); tctx.lineTo(padL, padT + plotH); tctx.lineTo(padL + plotW, padT + plotH);
+    tctx.stroke();
+    tctx.restore();
+
+    // 라벨
+    tctx.save();
+    tctx.font = 'bold 10px ui-monospace, monospace';
+    tctx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+    tctx.textAlign = 'right';
+    for (let i = 0; i <= 7; i++) {
+        const y = padT + (i / 7) * plotH;
+        const val = Nmax - (i / 7) * (Nmax - Nmin);
+        tctx.fillText(`${val.toFixed(0)}`, padL - 6, y + 4);
+    }
+    tctx.textAlign = 'center';
+    for (let i = 0; i <= 5; i++) {
+        const x = padL + (i / 5) * plotW;
+        const val = Tmin + (i / 5) * (Tmax - Tmin);
+        tctx.fillText(`${val.toFixed(1)}`, x, padT + plotH + 16);
+    }
+    tctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+    tctx.textAlign = 'left';
+    tctx.fillText('N [rpm]', padL - 50, padT - 8);
+    tctx.fillText('T [pu] →', padL + plotW - 30, padT + plotH + 28);
+    tctx.restore();
+
+    const xMap = T => padL + (T - Tmin) / (Tmax - Tmin) * plotW;
+    const yMap = N => padT + plotH - Math.max(0, Math.min(1, (N - Nmin) / (Nmax - Nmin))) * plotH;
+
+    const curves = [
+        { type: 'sep', sub: null,           color: '#d8b4fe', label: '타여자',   dash: [4, 3] },
+        { type: 'shu', sub: null,           color: '#93c5fd', label: '분권',     dash: [] },
+        { type: 'ser', sub: null,           color: '#fca5a5', label: '직권',     dash: [] },
+        { type: 'cmp', sub: 'cumulative',   color: '#d8b4fe', label: '복권(가동)', dash: [6, 4] }
+    ];
+
+    for (const cu of curves) {
+        if (!state.cmp[cu.type]) continue;
+        tctx.save();
+        tctx.strokeStyle = cu.color;
+        tctx.shadowBlur = 10;
+        tctx.shadowColor = cu.color;
+        tctx.lineWidth = 2.4;
+        tctx.setLineDash(cu.dash);
+        tctx.beginPath();
+        const steps = 100;
+        let started = false;
+        for (let i = 0; i <= steps; i++) {
+            const T = Tmin + 0.02 + (Tmax - Tmin) * (i / steps);
+            const pt = computeTNPoint(cu.type, cu.sub, T, state.V, state.Ra, state.Rs);
+            if (pt.N > Nmax * 1.4 || pt.N < 0) continue;
+            const x = xMap(pt.T), y = yMap(pt.N);
+            if (!started) { tctx.moveTo(x, y); started = true; }
+            else tctx.lineTo(x, y);
+        }
+        tctx.stroke();
+        tctx.setLineDash([]);
+        tctx.restore();
+
+        // 곡선 라벨 (오른쪽 끝)
+        const lastT = Tmax - 0.2;
+        const ptL = computeTNPoint(cu.type, cu.sub, lastT, state.V, state.Ra, state.Rs);
+        const yEnd = Math.min(Nmax * 1.05, ptL.N);
+        tctx.save();
+        tctx.font = 'bold 10px ui-monospace, monospace';
+        tctx.fillStyle = cu.color;
+        tctx.textAlign = 'left';
+        tctx.fillText(cu.label, xMap(lastT) + 4, yMap(yEnd) + 4);
+        tctx.restore();
+    }
+
+    // 현재 동작점
+    const ptNow = { T: state.T, N: state.N };
+    if (ptNow.T > 0 && ptNow.N >= 0 && ptNow.N < Nmax * 1.4) {
+        const px = xMap(Math.min(Tmax, ptNow.T));
+        const py = yMap(Math.min(Nmax * 1.1, ptNow.N));
+        tctx.save();
+        tctx.shadowBlur = 18;
+        tctx.shadowColor = TYPE_LABEL[state.type].color;
+        tctx.fillStyle = TYPE_LABEL[state.type].color;
+        tctx.beginPath();
+        tctx.arc(px, py, 7, 0, Math.PI * 2);
+        tctx.fill();
+        tctx.lineWidth = 2;
+        tctx.strokeStyle = 'white';
+        tctx.stroke();
+        tctx.restore();
+    }
+}
+
+// ========================================
+// 이벤트
+// ========================================
+function flashCard() {
+    if (window.gsap) gsap.fromTo('#canvasCard',
+        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+}
+
+$('v').addEventListener('input', () => { state.V = +$('v').value; compute(); flashCard(); });
+$('tl').addEventListener('input', () => { state.TL = +$('tl').value; compute(); flashCard(); });
+$('ra').addEventListener('input', () => { state.Ra = +$('ra').value; compute(); flashCard(); });
+
+document.querySelectorAll('[data-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.type = btn.dataset.type;
+        $('cmpSubWrap').classList.toggle('hidden', state.type !== 'cmp');
+        compute();
+        flashCard();
+    });
+});
+document.querySelectorAll('[data-cmpsub]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cmpsub]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.cmpSub = btn.dataset.cmpsub;
+        compute();
+        flashCard();
+    });
+});
+document.querySelectorAll('[data-cmp]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const key = btn.dataset.cmp;
+        state.cmp[key] = !state.cmp[key];
+        btn.classList.toggle('active', state.cmp[key]);
+    });
+});
+
+$('presetLight').addEventListener('click', () => animatePreset({ tl: 0.3 }));
+$('presetRated').addEventListener('click', () => animatePreset({ tl: 1.0 }));
+$('presetHeavy').addEventListener('click', () => animatePreset({ tl: 3.0 }));
+
+function animatePreset(target) {
+    if (window.gsap && target.tl !== undefined) {
+        gsap.to($('tl'), {
+            value: target.tl, duration: 0.7, ease: 'power3.out',
+            onUpdate: () => { state.TL = +$('tl').value; compute(); }
+        });
+    } else {
+        if (target.tl !== undefined) { $('tl').value = target.tl; state.TL = target.tl; }
+        compute();
+    }
+    flashCard();
+}
+
+// ========================================
+// 애니메이션 루프
+// ========================================
+function animate() {
+    state.t++;
+    state.rotorAngle += state.visSpin || 0;
+    if (state.rotorAngle > Math.PI * 200) state.rotorAngle -= Math.PI * 200;
+
+    drawMain();
+    drawTN();
+    requestAnimationFrame(animate);
+}
+
+window.onload = () => {
+    resize();
+    compute();
+    animate();
+    if (window.gsap) {
+        gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('#livePanel > *', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
+        gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
+        gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
+    }
+};
+</script>
+</body>
+</html>
