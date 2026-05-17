@@ -276,6 +276,21 @@ export default function ReviewView({ exam }: { exam: Exam }) {
                       <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
                         [{q.subject}] {q.topic}
                       </span>
+                      {q.frequency === "high" && (
+                        <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">
+                          🔥 빈출
+                        </span>
+                      )}
+                      {q.difficulty === "hard" && (
+                        <span className="rounded-md bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
+                          어려움
+                        </span>
+                      )}
+                      {q.difficulty === "easy" && (
+                        <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                          쉬움
+                        </span>
+                      )}
                       {isChecked && (
                         <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                           ★ 체크 문항

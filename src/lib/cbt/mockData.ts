@@ -1,5 +1,47 @@
 import { curriculum, findSubject, findTopic, findSubtopic } from "./curriculum";
-import type { Choice, Exam, ExamSummary, Question, Subject } from "./types";
+import type {
+  Choice,
+  Difficulty,
+  Exam,
+  ExamSummary,
+  Frequency,
+  Question,
+  Subject,
+} from "./types";
+
+/**
+ * subtopic 별 출제 빈도·난이도 메타. 시험 출제 경향 기반의 휴리스틱.
+ * 표에 없으면 frequency=medium, difficulty=medium 으로 간주.
+ */
+const SUBTOPIC_META: Record<string, { freq?: Frequency; diff?: Difficulty }> = {
+  // 전기이론 — 직류회로 (가장 빈출)
+  ohm: { freq: "high", diff: "easy" },
+  kirchhoff: { freq: "high", diff: "medium" },
+  series_parallel: { freq: "high", diff: "medium" },
+  power: { freq: "high", diff: "medium" },
+  // 전기이론 — 교류회로
+  sine_wave: { freq: "medium", diff: "medium" },
+  rlc: { freq: "high", diff: "hard" },
+  resonance: { freq: "medium", diff: "hard" },
+  // 전기이론 — 전자기
+  magnetic_field: { freq: "high", diff: "medium" },
+  induction: { freq: "high", diff: "medium" },
+  mutual_induction: { freq: "medium", diff: "hard" },
+  // 전기기기 — 변압기
+  principle: { freq: "medium", diff: "easy" },
+  turn_ratio: { freq: "high", diff: "medium" },
+  efficiency: { freq: "high", diff: "hard" },
+  connection: { freq: "medium", diff: "medium" },
+  // 전기기기 — 회전기
+  dc_machine: { freq: "medium", diff: "medium" },
+  induction_motor: { freq: "high", diff: "medium" },
+  synchronous: { freq: "medium", diff: "hard" },
+};
+
+function metaFor(subtopicId: string): { freq: Frequency; diff: Difficulty } {
+  const m = SUBTOPIC_META[subtopicId] ?? {};
+  return { freq: m.freq ?? "medium", diff: m.diff ?? "medium" };
+}
 
 type SlotMeta = {
   subjectId: string;
@@ -101,6 +143,7 @@ function buildSharedQuestions(): Question[] {
     }
 
     const real = realPlacements[number];
+    const { freq, diff } = metaFor(slot.subtopicId);
 
     result.push({
       number,
@@ -125,6 +168,8 @@ function buildSharedQuestions(): Question[] {
       explanation:
         real?.explanation ??
         `[${slot.subject}] ${slot.topic} - ${slot.subtopic}\n${slot.subtopic}에 대한 핵심 개념을 정리한 해설입니다. 실제 콘텐츠 입력 전 임시 데이터입니다.`,
+      frequency: freq,
+      difficulty: diff,
     });
   }
   return result;
@@ -235,11 +280,104 @@ function buildPracticeExam(filter: PracticeFilter): Exam | undefined {
   };
 }
 
+export type FocusFilter = {
+  frequency?: Frequency;
+  difficulty?: Difficulty;
+};
+
+function parseFocusId(id: string): FocusFilter | null {
+  if (!id.startsWith("focus-")) return null;
+  const rest = id.slice("focus-".length);
+  const parts = rest.split("-");
+  const filter: FocusFilter = {};
+  for (let i = 0; i < parts.length; i += 2) {
+    const key = parts[i];
+    const value = parts[i + 1];
+    if (key === "freq" && (value === "high" || value === "medium" || value === "low")) {
+      filter.frequency = value;
+    } else if (
+      key === "diff" &&
+      (value === "easy" || value === "medium" || value === "hard")
+    ) {
+      filter.difficulty = value;
+    }
+  }
+  return filter;
+}
+
+export function buildFocusId(f: FocusFilter): string {
+  const parts: string[] = [];
+  if (f.frequency) parts.push("freq", f.frequency);
+  if (f.difficulty) parts.push("diff", f.difficulty);
+  return `focus-${parts.join("-")}`;
+}
+
+const FREQ_KO: Record<Frequency, string> = {
+  high: "빈출",
+  medium: "보통",
+  low: "저빈출",
+};
+
+const DIFF_KO: Record<Difficulty, string> = {
+  easy: "쉬움",
+  medium: "보통",
+  hard: "어려움",
+};
+
+function buildFocusExam(filter: FocusFilter): Exam | undefined {
+  const matched = sharedQuestions.filter((q) => {
+    if (filter.frequency && (q.frequency ?? "medium") !== filter.frequency)
+      return false;
+    if (filter.difficulty && (q.difficulty ?? "medium") !== filter.difficulty)
+      return false;
+    return true;
+  });
+
+  if (matched.length === 0) return undefined;
+
+  const renumbered: Question[] = matched.map((q, i) => ({ ...q, number: i + 1 }));
+
+  const titleParts: string[] = [];
+  if (filter.frequency) titleParts.push(`${FREQ_KO[filter.frequency]} 문항`);
+  if (filter.difficulty) titleParts.push(`${DIFF_KO[filter.difficulty]}`);
+  const title = titleParts.length > 0 ? `집중 응시 — ${titleParts.join(" · ")}` : "집중 응시";
+
+  // 1.5분/문항, 최소 10분, 최대 60분
+  const durationMinutes = Math.min(
+    60,
+    Math.max(10, Math.round(matched.length * 1.5)),
+  );
+
+  return {
+    id: buildFocusId(filter),
+    round: 0,
+    title,
+    totalQuestions: matched.length,
+    durationMinutes,
+    questions: renumbered,
+  };
+}
+
+export function countByFocus(filter: FocusFilter): number {
+  return sharedQuestions.filter((q) => {
+    if (filter.frequency && (q.frequency ?? "medium") !== filter.frequency)
+      return false;
+    if (filter.difficulty && (q.difficulty ?? "medium") !== filter.difficulty)
+      return false;
+    return true;
+  }).length;
+}
+
 export function getExamById(id: string): Exam | undefined {
   if (id.startsWith("practice-")) {
     const filter = parsePracticeId(id);
     if (!filter) return undefined;
     return buildPracticeExam(filter);
+  }
+  if (id.startsWith("focus-")) {
+    const filter = parseFocusId(id);
+    if (!filter) return undefined;
+    return buildFocusExam(filter);
   }
   return getMockExam(id);
 }

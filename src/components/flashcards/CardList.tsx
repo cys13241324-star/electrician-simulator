@@ -189,9 +189,11 @@ function ChapterSection({
             const isFav = favorites.has(card.id);
             const p = progress[card.id];
             return (
-              <div
+              <button
                 key={card.id}
-                className={`group relative rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 ring-1 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md ${style.ring}`}
+                type="button"
+                onClick={() => onPick(card)}
+                className={`group relative block w-full rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4 text-left ring-1 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-400 ${style.ring}`}
               >
                 {/* 상태 표시 점 */}
                 <span
@@ -211,33 +213,41 @@ function ChapterSection({
                   }
                   aria-hidden
                 />
-                <button
-                  type="button"
-                  onClick={() => onToggleFavorite(card.id)}
+                {/* 별표 버튼은 외부에 띄워 카드 클릭 영역과 분리 */}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(card.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onToggleFavorite(card.id);
+                    }
+                  }}
                   aria-label={isFav ? "별 표시 해제" : "별 표시"}
-                  className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full transition hover:scale-110 ${
+                  className={`absolute right-2 top-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
                     isFav
                       ? "bg-amber-100 text-amber-500"
                       : "bg-white text-zinc-300 opacity-0 group-hover:opacity-100"
                   }`}
                 >
                   {isFav ? "★" : "☆"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onPick(card)}
-                  className="block w-full pl-3 pr-8 text-left"
-                >
+                </span>
+                <div className="pl-3 pr-8">
                   <p className="line-clamp-3 text-sm font-bold leading-6 text-zinc-900 group-hover:text-blue-700">
                     <MathText>{card.front}</MathText>
                   </p>
                   {card.hint && (
-                    <p className="mt-2 line-clamp-1 text-[11px] text-zinc-400">
+                    <p className="mt-2 line-clamp-1 text-[11px] text-zinc-500">
                       💡 {card.hint}
                     </p>
                   )}
-                </button>
-              </div>
+                </div>
+              </button>
             );
           })}
         </div>
