@@ -60,6 +60,8 @@ function formatDate(ts: number): string {
 export default function ResultView({ exam }: { exam: Exam }) {
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [loading, setLoading] = useState(true);
+  // 마운트 시 1회만 캡처해서 렌더 순도 유지 (Date.now()를 렌더 본문에서 직접 호출 금지)
+  const [nowAtMount] = useState(() => Date.now());
 
   useEffect(() => {
     try {
@@ -104,8 +106,10 @@ export default function ResultView({ exam }: { exam: Exam }) {
     );
   }
 
-  const elapsedMs = (attempt.submittedAt ?? Date.now()) - attempt.startedAt;
-  const submittedDisplay = formatDate(attempt.submittedAt ?? Date.now());
+  // submittedAt이 null인 경우(미제출) "지금"을 한 번만 캡처해 렌더 순도 유지
+  const submittedAt = attempt.submittedAt ?? nowAtMount;
+  const elapsedMs = submittedAt - attempt.startedAt;
+  const submittedDisplay = formatDate(submittedAt);
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -398,7 +402,6 @@ function SubjectRadar({ subjects }: { subjects: SubjectStat[] }) {
     ] as const;
   });
 
-  const outerPath = outerPoints.map((p) => p.join(",")).join(" ");
   const innerPath = innerPoints.map((p) => p.join(",")).join(" ");
 
   return (

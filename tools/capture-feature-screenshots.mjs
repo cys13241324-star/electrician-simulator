@@ -4,7 +4,8 @@
  * 결과: public/screenshots/feature-popup/*.png
  */
 import { chromium } from "playwright";
-import { mkdir } from "node:fs/promises";
+import sharp from "sharp";
+import { mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 
 const BASE = "http://localhost:3000";
@@ -39,9 +40,13 @@ async function main() {
       await page.goto(BASE + shot.url, { waitUntil: "networkidle", timeout: 30000 });
       // 이미지·폰트 렌더 안정화
       await page.waitForTimeout(800);
-      const outPath = join(OUT_DIR, `${shot.name}.png`);
-      await page.screenshot({ path: outPath, fullPage: false });
-      console.log(`  ✓ ${shot.name}.png`);
+      const pngPath = join(OUT_DIR, `${shot.name}.png`);
+      const webpPath = join(OUT_DIR, `${shot.name}.webp`);
+      await page.screenshot({ path: pngPath, fullPage: false });
+      // PNG → WebP 변환 (82% 평균 절감) 후 PNG 삭제
+      await sharp(pngPath).webp({ quality: 82, effort: 6 }).toFile(webpPath);
+      await unlink(pngPath);
+      console.log(`  ✓ ${shot.name}.webp`);
     } catch (err) {
       console.log(`  ✗ ${shot.name}: ${err.message}`);
     } finally {

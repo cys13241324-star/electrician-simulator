@@ -14,12 +14,12 @@ const CONTENT: Record<string, FeatureModalContent> = {
       "전기력선·RLC 공진·회전 자계·변압기까지 — 슬라이더를 움직이면 수식과 파형이 실시간으로 반응합니다. 글로만 외우던 전기 이론을 눈으로 확인하세요. 총 98개 시뮬, 전기이론·전기기기·전기설비 전 과목 커버.",
     shots: [
       {
-        src: `${SHOTS}/simulator-list.png`,
+        src: `${SHOTS}/simulator-list.webp`,
         alt: "시뮬레이터 목록 화면",
         caption: "98개 시뮬을 과목별로 탐색 + 검색",
       },
       {
-        src: `${SHOTS}/simulator-detail.png`,
+        src: `${SHOTS}/simulator-detail.webp`,
         alt: "옴의 법칙 시뮬 상세 화면",
         caption: "예: 옴의 법칙 — 슬라이더로 V/R 조절, I·P 실시간 계산",
       },
@@ -40,7 +40,7 @@ const CONTENT: Record<string, FeatureModalContent> = {
       "전기기능사 핵심 343장. 앞면 문제 → 뒷면 해설로 빠르게 회독하세요. 진도 추적·과목 필터·복습 큐가 자동으로 관리됩니다.",
     shots: [
       {
-        src: `${SHOTS}/flashcards-deck.png`,
+        src: `${SHOTS}/flashcards-deck.webp`,
         alt: "플립카드 학습 화면",
         caption: "진도 0% → 343장 시작, 과목/카테고리 필터 지원",
       },
@@ -61,12 +61,12 @@ const CONTENT: Record<string, FeatureModalContent> = {
       "실전 시험과 동일한 환경에서 60문항 · 60분 타이머로 풀어보세요. 자동 채점·해설·약점 분석·오답 노트까지 한 자리에서. 시험장에 가기 전 실전 감각 점검.",
     shots: [
       {
-        src: `${SHOTS}/cbt-landing.png`,
+        src: `${SHOTS}/cbt-landing.webp`,
         alt: "CBT 메인 화면",
         caption: "CBT 허브 — 모의고사·학습·오답노트로 분기",
       },
       {
-        src: `${SHOTS}/cbt-exams.png`,
+        src: `${SHOTS}/cbt-exams.webp`,
         alt: "모의고사 목록 화면",
         caption: "회차별 모의고사 선택 → 응시·재응시·결과 확인",
       },
@@ -87,7 +87,7 @@ const CONTENT: Record<string, FeatureModalContent> = {
       "같은 학습 내용을 인스타 피드·유튜브 채널·신문·잡지 등 50가지 친숙한 콘셉트로 재구성한 보조 채널. 딱딱한 이론을 친근한 매체로 한 번 더 만나며 자연스럽게 익숙해지세요.",
     shots: [
       {
-        src: `${SHOTS}/news-list.png`,
+        src: `${SHOTS}/news-list.webp`,
         alt: "소식지 목록 화면",
         caption: "50개 콘셉트를 카드로 — 끌리는 것부터 클릭",
       },

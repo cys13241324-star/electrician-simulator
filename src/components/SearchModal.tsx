@@ -71,8 +71,8 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
           {q.trim() ? (
             <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center">
               <p className="text-sm text-zinc-600">
-                "<strong className="text-zinc-900">{q}</strong>" 검색 기능은
-                곧 출시됩니다.
+                &ldquo;<strong className="text-zinc-900">{q}</strong>&rdquo; 검색
+                기능은 곧 출시됩니다.
               </p>
               <p className="mt-2 text-xs text-zinc-500">
                 현재는 인기 키워드 / 빠른 이동만 사용 가능합니다.

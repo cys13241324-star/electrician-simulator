@@ -58,10 +58,6 @@ function getRecentAttempts() {
     .slice(0, 5);
 }
 
-function getWeakTopics(_attempts: LearnerSnapshot["recentAttempts"]): string[] {
-  return [];
-}
-
 export function snapshotToPrompt(snap: LearnerSnapshot): string {
   const lines: string[] = [];
   if (snap.recentAttempts.length > 0) {

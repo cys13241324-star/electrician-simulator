@@ -1,4 +1,4 @@
-import type { Attempt, Exam, Subject } from "./types";
+import type { Attempt, Subject } from "./types";
 import { mockExams } from "./mockData";
 
 export type SubjectAggregate = {

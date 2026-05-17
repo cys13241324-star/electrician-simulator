@@ -27,29 +27,39 @@ type Props = {
   content: FeatureModalContent;
 };
 
+// 상위에서 open 토글로 마운트/언마운트 — 내부 state(shotIndex 등)는
+// 재오픈 시 자동 리셋. (setState in effect 안티패턴 회피)
 export default function FeatureModal({ open, onClose, content }: Props) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  if (!open) return null;
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <ModalBody onClose={onClose} content={content} />,
+    document.body,
+  );
+}
+
+function ModalBody({
+  onClose,
+  content,
+}: Pick<Props, "onClose" | "content">) {
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousActiveRef = useRef<HTMLElement | null>(null);
   const [shotIndex, setShotIndex] = useState(0);
 
-  // 열릴 때 포커스 이동·바디 스크롤 락·이전 포커스 저장
+  // 마운트 시 1회: 포커스 이동·바디 스크롤 락·이전 포커스 저장
   useEffect(() => {
-    if (!open) return;
     previousActiveRef.current = document.activeElement as HTMLElement | null;
     closeBtnRef.current?.focus();
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    setShotIndex(0);
     return () => {
       document.body.style.overflow = prevOverflow;
       previousActiveRef.current?.focus?.();
     };
-  }, [open]);
+  }, []);
 
   // ESC 닫기 + 좌우 화살표로 스샷 넘기기
   useEffect(() => {
-    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -62,7 +72,7 @@ export default function FeatureModal({ open, onClose, content }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose, content.shots.length]);
+  }, [onClose, content.shots.length]);
 
   const onBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -71,21 +81,17 @@ export default function FeatureModal({ open, onClose, content }: Props) {
     [onClose],
   );
 
-  if (!open) return null;
-  if (typeof document === "undefined") return null;
-
   const titleId = `feature-modal-title-${content.badge.toLowerCase()}`;
   const descId = `feature-modal-desc-${content.badge.toLowerCase()}`;
   const shot = content.shots[shotIndex];
 
-  return createPortal(
+  return (
     <div
       onClick={onBackdropClick}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-900/60 px-4 py-8 backdrop-blur-sm sm:py-12"
       aria-hidden="false"
     >
       <div
-        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -257,7 +263,6 @@ export default function FeatureModal({ open, onClose, content }: Props) {
           </Link>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }
