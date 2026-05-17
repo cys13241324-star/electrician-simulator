@@ -1,0 +1,37 @@
+# 시뮬레이터 품질 점검 (QA) 진행 현황
+
+자가 진행 루프가 관리하는 파일. 매 iteration마다 갱신·커밋.
+
+## 점검 항목
+1. `simulators.ts` 등록부 ↔ 실제 HTML 파일 일치 (htmlPath 연결, 고아 파일)
+2. HTML 구문/렌더 동작
+3. 공식·계산 정확성
+4. 발견 이슈 수정
+
+## 진행 로그
+
+### Iteration 1 — 2026-05-17 — 등록부 일치 일괄 점검 ✅
+- 발견: `available` 상태인데 `htmlPath` 누락된 항목 다수 (HTML은 존재하나 사이트에서 깨짐)
+- 조치: **20개 항목에 `htmlPath` 연결** (capacitor, current-divider, faraday-law,
+  inductor, lenz-law, norton, rc-transient, rl-transient, rms-average,
+  solenoid-field, superposition, thevenin, three-phase-power, toroidal-field,
+  voltage-divider, eddy-current, hysteresis, impedance-vector,
+  capacitor-series-parallel, inductor-series-parallel)
+- 도구: `tools/qa_wire_htmlpath.py` (UTF-8 안전, 멱등)
+- 검증: diff=20삽입만, 한글 무결, U+FFFD 0, 중괄호 1508/1508 균형
+- 상태: 완료
+
+### ⚠️ 다음 iteration 대상 — 등록부 항목 자체가 없는 고아 HTML 5개
+HTML 파일은 있으나 simulators.ts 에 id 항목이 아예 없어 완전 접근 불가:
+- `simulator-arc-furnace.html`
+- `simulator-electroplating.html`
+- `simulator-hall-effect.html`
+- `simulator-single-phase-induction.html`
+- `simulator-transformer-inrush.html`
+→ 각 HTML 내용을 읽어 제목·과목·토픽·공식·예제 메타데이터를 채운
+  완전한 등록부 엔트리를 신규 추가해야 함 (iteration당 1개 권장).
+
+## 남은 작업
+- [ ] 위 고아 5개 → 등록부 엔트리 신규 추가 (iteration 2~6)
+- [ ] 이후 시뮬레이터별 심층 점검(HTML 렌더·공식 검증) 순차 진행
+- [ ] `flashcards.html` 은 시뮬레이터 아님 — 점검 대상 제외

@@ -302,6 +302,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "직류회로",
     status: "available",
+    htmlPath: "/samples/simulator-voltage-divider.html",
     emoji: "📊",
     formula: [
       {
@@ -335,6 +336,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "직류회로",
     status: "available",
+    htmlPath: "/samples/simulator-current-divider.html",
     emoji: "🔀",
     formula: [
       {
@@ -368,6 +370,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "정전기",
     status: "available",
+    htmlPath: "/samples/simulator-capacitor.html",
     emoji: "🔋",
     formula: [
       {
@@ -401,6 +404,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "자기·자기회로",
     status: "available",
+    htmlPath: "/samples/simulator-inductor.html",
     emoji: "🌀",
     formula: [
       {
@@ -438,6 +442,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "회로망 정리",
     status: "available",
+    htmlPath: "/samples/simulator-rc-transient.html",
     emoji: "📉",
     formula: [
       {
@@ -476,6 +481,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "회로망 정리",
     status: "available",
+    htmlPath: "/samples/simulator-rl-transient.html",
     emoji: "📈",
     formula: [
       {
@@ -510,6 +516,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "교류회로",
     status: "available",
+    htmlPath: "/samples/simulator-rms-average.html",
     emoji: "〰️",
     formula: [
       {
@@ -549,6 +556,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "교류회로",
     status: "available",
+    htmlPath: "/samples/simulator-impedance-vector.html",
     emoji: "📐",
     formula: [
       {
@@ -587,6 +595,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "전자기 유도",
     status: "available",
+    htmlPath: "/samples/simulator-faraday-law.html",
     emoji: "🧲",
     formula: [
       {
@@ -620,6 +629,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "교류회로",
     status: "available",
+    htmlPath: "/samples/simulator-three-phase-power.html",
     emoji: "⚡",
     formula: [
       {
@@ -659,6 +669,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "회로망 정리",
     status: "available",
+    htmlPath: "/samples/simulator-thevenin.html",
     emoji: "🧩",
   },
   {
@@ -669,6 +680,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "회로망 정리",
     status: "available",
+    htmlPath: "/samples/simulator-norton.html",
     emoji: "🔁",
   },
   {
@@ -679,6 +691,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "회로망 정리",
     status: "available",
+    htmlPath: "/samples/simulator-superposition.html",
     emoji: "🪞",
   },
   {
@@ -689,6 +702,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "정전기",
     status: "available",
+    htmlPath: "/samples/simulator-capacitor-series-parallel.html",
     emoji: "🔋",
   },
   {
@@ -699,6 +713,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "자기·자기회로",
     status: "available",
+    htmlPath: "/samples/simulator-inductor-series-parallel.html",
     emoji: "🌀",
   },
   {
@@ -709,6 +724,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "자기·자기회로",
     status: "available",
+    htmlPath: "/samples/simulator-solenoid-field.html",
     emoji: "🧲",
   },
   {
@@ -719,6 +735,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "자기·자기회로",
     status: "available",
+    htmlPath: "/samples/simulator-toroidal-field.html",
     emoji: "🍩",
   },
   {
@@ -729,6 +746,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "전자기 유도",
     status: "available",
+    htmlPath: "/samples/simulator-lenz-law.html",
     emoji: "↩️",
   },
   {
@@ -739,6 +757,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "전자기 유도",
     status: "available",
+    htmlPath: "/samples/simulator-eddy-current.html",
     emoji: "🌪️",
   },
   {
@@ -749,6 +768,7 @@ export const simulators: Simulator[] = [
     subject: "전기이론",
     topic: "자기·자기회로",
     status: "available",
+    htmlPath: "/samples/simulator-hysteresis.html",
     emoji: "🔄",
   },
   // 전기기기
