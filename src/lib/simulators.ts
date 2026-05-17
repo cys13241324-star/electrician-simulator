@@ -3659,6 +3659,40 @@ export const simulators: Simulator[] = [
       answer: "$N_s = 1800$ rpm",
     },
   },
+  {
+    id: "transformer-inrush",
+    title: "변압기 여자 돌입 전류 (Inrush)",
+    description:
+      "무부하 변압기 투입 순간, 코어 잔류 자속과 투입 위상이 만드는 자속 포화로 정격의 5~12배 비대칭 돌입 전류가 흐릅니다. 투입 위상·잔류 자속·용량을 조절하며 제2 고조파 억제 보호 원리를 학습합니다.",
+    subject: "전기기기",
+    topic: "변압기",
+    status: "available",
+    htmlPath: "/samples/simulator-transformer-inrush.html",
+    emoji: "⚡",
+    formula: [
+      {
+        name: "자속 적분 (Faraday)",
+        expression: "$\\Phi(t) = \\Phi_r - \\Phi_m\\cos(\\omega t + \\theta)\\,e^{-t/\\tau}$",
+        meaning: "전압 $v = V_m\\sin(\\omega t+\\theta)$ 를 적분하면 자속은 cos 항. 잔류 자속 $\\Phi_r$ 가 오프셋으로 더해짐",
+      },
+      {
+        name: "최악 위상 (θ=0°) 최대 자속",
+        expression: "$\\Phi_{max} \\approx 2\\Phi_m + \\Phi_r$",
+        meaning: "전압 영점에서 투입하면 정상 진폭의 2배에 잔류 자속까지 더해져 깊은 포화 → 큰 돌입 전류",
+      },
+    ],
+    example: {
+      question:
+        "정상 자속 진폭 $\\Phi_m = 1.0$ pu 변압기를 전압 영점($\\theta=0°$)에서, 잔류 자속 $\\Phi_r = 0.6$ pu 인 상태로 투입했다. 코어가 받는 최대 자속은? (포화 한계 ≈ 1.15 pu)",
+      given: ["$\\Phi_m = 1.0$ pu", "$\\theta = 0°$ (최악 위상)", "$\\Phi_r = 0.6$ pu"],
+      solution: [
+        "$\\Phi_{max} \\approx 2\\Phi_m + \\Phi_r$",
+        "$\\Phi_{max} \\approx 2 \\times 1.0 + 0.6$",
+        "$\\Phi_{max} \\approx 2.6$ pu (포화 한계 1.15 pu 대비 약 2.3배 → 깊은 포화)",
+      ],
+      answer: "$\\Phi_{max} \\approx 2.6$ pu — 깊은 포화로 정격의 5~12배 돌입 전류 발생",
+    },
+  },
 ];
 
 export function getSimulator(id: string): Simulator | undefined {

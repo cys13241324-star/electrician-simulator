@@ -71,15 +71,40 @@
 - 검증: htmlPath 실파일 존재, U+FFFD 0, 중괄호 1567/1567, tsc 통과
 - 상태: 완료. 남은 고아 1개(transformer-inrush).
 
-### ⚠️ 남은 고아 HTML 1개 (등록부 항목 없음)
-HTML 파일은 있으나 simulators.ts 에 id 항목이 아예 없어 완전 접근 불가:
-- `simulator-hall-effect.html`
-- `simulator-single-phase-induction.html`
-- `simulator-transformer-inrush.html`
-→ 각 HTML 내용을 읽어 제목·과목·토픽·공식·예제 메타데이터를 채운
-  완전한 등록부 엔트리를 신규 추가해야 함 (iteration당 1개 권장).
+### Iteration 6 — 2026-05-17 — 고아 HTML 등록부 추가 (5/5, 완료) ✅
+- 대상: `simulator-transformer-inrush.html` (마지막 남은 고아)
+- 조치: `transformer-inrush` 엔트리 신규 추가
+  (전기기기/변압기, subject·topic 기존 변압기 시뮬 군과 일관 —
+  transformer-ratio/connection/tap/efficiency 와 동일 분류)
+  - 메타: emoji ⚡, "변압기 여자 돌입 전류 (Inrush)"
+  - formula 2개: 자속 적분 $\Phi(t)=\Phi_r-\Phi_m\cos(\omega t+\theta)e^{-t/\tau}$,
+    최악 위상(θ=0°) $\Phi_{max}\approx 2\Phi_m+\Phi_r$ — HTML 본문 공식과 일치
+  - example: $\Phi_m=1.0$pu, $\Phi_r=0.6$pu, θ=0° → $\Phi_{max}\approx 2.6$pu
+    (HTML에 명시된 관계식 기반, 창작 수치 아님)
+  - htmlPath `/samples/simulator-transformer-inrush.html` 연결, 실파일 존재 확인
+- 검증: U+FFFD 0, 중괄호 1577/1577 균형,
+  `tsc --noEmit` — simulators.ts 본인 변경분 오류 0
+  (FlashcardApp.tsx 오류는 타 에이전트 동시작업 노이즈, 본 작업 무관)
+- 상태: **고아 5/5 전부 처리 완료. 남은 고아 0.**
+
+### Iteration 6b — 2026-05-17 — 등록부↔HTML 전수 일치 점검 ✅
+- 방법: `public/samples/simulator-*.html` 실파일 목록 vs simulators.ts
+  모든 htmlPath 를 `comm` 으로 양방향 대조
+- 결과:
+  - 실파일(simulator-*.html): **98개**
+  - 등록부 htmlPath: **98개 (전부 unique, 중복 0)**
+  - 등록부 id 엔트리: **98개**
+  - **고아 HTML(등록 안 됨): 0**
+  - **끊긴 참조(파일 없는 htmlPath): 0**
+  - → 완전 1:1 일치. 수정 불필요.
+  - `flashcards.html` 은 시뮬레이터 아님 — 대상 제외(정상)
+- 공식 스팟 점검: ohms-law(I=3A,P=72W), parallel-wires(F/L=4e-5 N/m),
+  arc-furnace(70V), electroplating(0.635g), hall-effect(0.5V),
+  single-phase-induction(1800rpm) 등 검토 — 전부 물리적으로 정확,
+  정정 대상 발견 없음.
 
 ## 남은 작업
-- [ ] 위 고아 5개 → 등록부 엔트리 신규 추가 (iteration 2~6)
-- [ ] 이후 시뮬레이터별 심층 점검(HTML 렌더·공식 검증) 순차 진행
+- [x] 고아 5개 → 등록부 엔트리 신규 추가 (iteration 2~6) — **완료**
+- [x] 등록부↔HTML 전수 일치 점검 — **완료 (0 고아 / 0 끊긴참조)**
+- [ ] 이후 시뮬레이터별 심층 점검(HTML 렌더·공식 전수 검증) 순차 진행
 - [ ] `flashcards.html` 은 시뮬레이터 아님 — 점검 대상 제외
