@@ -8,198 +8,130 @@
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
+:root {
+    --bg-0: #0d1117;
+    --bg-1: #11161d;
+    --panel: #131922;
+    --panel-2: #161d27;
+    --border: rgba(148, 163, 184, 0.16);
+    --border-soft: rgba(148, 163, 184, 0.10);
+    --teal: #5eddd6;
+    --amber: #e0a458;
+    --slate-txt: #c4ccd6;
+    --ink: #aab4c0;
+}
 body {
-    background:
-        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
-        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
-        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
-        #060814;
-    color: #e5e7eb;
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    color: #d3dae3;
     font-family: 'Pretendard', system-ui, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
 }
-.stars {
-    position: fixed; inset: 0; pointer-events: none;
-    background-image:
-        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
-        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
-    background-size: 600px 600px;
-    animation: twinkle 6s ease-in-out infinite alternate;
-    opacity: 0.6;
-}
-@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
-
+.stars { display: none; }
 .canvas-wrap {
     position: relative;
-    border-radius: 18px;
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(168,139,250,0.45), rgba(34,211,238,0.45));
-    box-shadow:
-        0 30px 100px -20px rgba(244, 114, 182, 0.40),
-        0 0 40px rgba(168, 139, 250, 0.15);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #0b0f15;
+    overflow: hidden;
 }
 canvas#main {
     display: block;
     width: 100%;
     height: 500px;
-    border-radius: 17px;
-    background: #050714;
+    background: #0b0f15;
 }
 canvas#viCurve, canvas#alphaWave {
     display: block;
     width: 100%;
     height: 260px;
-    border-radius: 12px;
-    background: #050714;
+    border-radius: 8px;
+    background: #0b0f15;
 }
-
 .glass {
-    background: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.7);
 }
 .pulse-dot {
-    position: relative; display: inline-block;
-    width: 8px; height: 8px; border-radius: 9999px;
-    background: #34d399; box-shadow: 0 0 12px #34d399;
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 9999px;
+    background: var(--teal);
+    box-shadow: 0 0 5px rgba(94, 221, 214, 0.55);
 }
-.pulse-dot::after {
-    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
-    border: 2px solid #34d399; opacity: 0.6;
-    animation: pulseRing 1.8s ease-out infinite;
-}
-@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
-.pulse-dot.warn { background: #f59e0b; box-shadow: 0 0 12px #f59e0b; }
-.pulse-dot.warn::after { border-color: #f59e0b; }
-.pulse-dot.cap { background: #67e8f9; box-shadow: 0 0 12px #67e8f9; }
-.pulse-dot.cap::after { border-color: #67e8f9; }
-.pulse-dot.ind { background: #c4b5fd; box-shadow: 0 0 12px #c4b5fd; }
-.pulse-dot.ind::after { border-color: #c4b5fd; }
-
+.pulse-dot.warn { background: #e0a458; box-shadow: 0 0 5px rgba(224,164,88,0.55); }
+.pulse-dot.cap { background: #7fc3d8; box-shadow: 0 0 5px rgba(127,195,216,0.55); }
+.pulse-dot.ind { background: #a9b0c8; box-shadow: 0 0 5px rgba(169,176,200,0.55); }
 input[type=range] {
     -webkit-appearance: none;
-    height: 5px;
+    height: 4px;
     border-radius: 9999px;
-    background: linear-gradient(90deg, rgba(244,114,182,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+    background: rgba(148, 163, 184, 0.22);
 }
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 20px; height: 20px;
+    width: 15px; height: 15px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
-    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    background: #cdd5df;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
     cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.95);
+    border: 3px solid #2a3340;
 }
-.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
-.chip-vg  { background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06)); border-color: rgba(168,139,250,0.5); color: #c4b5fd; }
-.chip-alpha { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
-.chip-tsc { background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06)); border-color: rgba(34,211,238,0.5); color: #67e8f9; }
-.chip-load{ background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
-
+input[type=range]:focus { outline: none; }
+input[type=range]:focus::-webkit-slider-thumb { background: var(--teal); }
+.chip { background: var(--panel-2); border: 1px solid var(--border-soft); }
+.chip-vg  { background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(169,176,200,0.55); color: #a9b0c8; }
+.chip-alpha { background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(216,167,169,0.55); color: #d8a7a9; }
+.chip-tsc { background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(127,195,216,0.55); color: #bcd3dd; }
+.chip-load{ background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(224,164,88,0.55); color: #d8c19a; }
 .live-pill {
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    transition: border-color 200ms, box-shadow 200ms, background 200ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    transition: border-color 200ms;
 }
-.live-pill.flash {
-    border-color: rgba(244, 114, 182, 0.6);
-    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
-}
-.live-pill.warn {
-    border-color: rgba(245, 158, 11, 0.7);
-    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
-}
-.live-pill.cap {
-    border-color: rgba(103, 232, 249, 0.8);
-    box-shadow: 0 0 24px rgba(103, 232, 249, 0.5);
-}
-.live-pill.ind {
-    border-color: rgba(196, 181, 253, 0.8);
-    box-shadow: 0 0 24px rgba(196, 181, 253, 0.5);
-}
+.live-pill.flash { border-color: rgba(94, 221, 214, 0.45); }
+.live-pill.warn { border-color: rgba(224, 164, 88, 0.55); }
+.live-pill.cap { border-color: rgba(127, 195, 216, 0.55); }
+.live-pill.ind { border-color: rgba(169, 176, 200, 0.55); }
 .live-num {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums;
-    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #d8f3f0;
+    letter-spacing: 0.01em;
 }
-.live-num.cap {
-    background: linear-gradient(135deg, #67e8f9, #22d3ee, #06b6d4);
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-.live-num.ind {
-    background: linear-gradient(135deg, #c4b5fd, #a78bfa, #8b5cf6);
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-.live-num.warn {
-    background: linear-gradient(135deg, #fef3c7, #fcd34d, #f59e0b);
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
+.live-num.cap { color: #9fdce8; }
+.live-num.ind { color: #b9bfd6; }
+.live-num.warn { color: #e0c98a; }
 .formula-card {
-    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(168,139,250,0.08)), rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(244,114,182,0.35);
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    border-top: 2px solid rgba(94, 221, 214, 0.30);
 }
 .feature-row {
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(148, 163, 184, 0.08);
-    transition: transform 220ms, background 220ms, border-color 220ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    transition: border-color 180ms;
 }
-.feature-row:hover {
-    transform: translateX(2px);
-    background: rgba(30, 41, 59, 0.7);
-    border-color: rgba(244, 114, 182, 0.4);
-}
+.feature-row:hover { border-color: rgba(94, 221, 214, 0.30); }
 .preset-btn {
-    background: rgba(34, 211, 238, 0.18);
-    border: 1px solid rgba(34, 211, 238, 0.45);
-    color: #a5f3fc;
-    transition: all 200ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    color: var(--ink);
+    transition: border-color 160ms, color 160ms;
 }
-.preset-btn:hover {
-    background: rgba(34, 211, 238, 0.35);
-    transform: translateY(-1px);
-    box-shadow: 0 0 24px rgba(34, 211, 238, 0.4);
-}
-.preset-btn.ind {
-    background: rgba(168, 139, 250, 0.18);
-    border-color: rgba(168, 139, 250, 0.5);
-    color: #ddd6fe;
-}
-.preset-btn.ind:hover {
-    background: rgba(168, 139, 250, 0.35);
-    box-shadow: 0 0 24px rgba(168, 139, 250, 0.4);
-}
-.preset-btn.float {
-    background: rgba(244, 114, 182, 0.18);
-    border-color: rgba(244, 114, 182, 0.5);
-    color: #fbcfe8;
-}
-.preset-btn.float:hover {
-    background: rgba(244, 114, 182, 0.35);
-    box-shadow: 0 0 24px rgba(244, 114, 182, 0.4);
-}
-.math-container { font-size: 1.05rem; color: #fde6f3; }
+.preset-btn:hover { border-color: rgba(94, 221, 214, 0.4); color: #d8f3f0; }
+.preset-btn.ind { background: var(--panel-2); border-color: var(--border-soft); color: #b9bfd6; }
+.preset-btn.ind:hover { border-color: rgba(169, 176, 200, 0.5); }
+.preset-btn.float { background: var(--panel-2); border-color: var(--border-soft); color: #d8a7a9; }
+.preset-btn.float:hover { border-color: rgba(216, 167, 169, 0.5); }
+.math-container { font-size: 1.05rem; color: #cdd5df; }
 .neon-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), transparent);
+    background: var(--border-soft);
 }
 .legend-dot {
     display: inline-block; width: 10px; height: 10px; border-radius: 9999px;
-    margin-right: 6px; box-shadow: 0 0 10px currentColor;
+    margin-right: 6px;
 }
 .tsc-cell {
     display: inline-block;
@@ -210,29 +142,27 @@ input[type=range]::-webkit-slider-thumb {
     font-family: ui-monospace, monospace;
     font-size: 11px;
     font-weight: 700;
-    border: 1px solid rgba(148,163,184,0.25);
-    background: rgba(15,23,42,0.7);
+    border: 1px solid var(--border-soft);
+    background: var(--panel-2);
     color: #94a3b8;
-    transition: all 220ms;
+    transition: border-color 220ms, color 220ms;
 }
 .tsc-cell.on {
-    background: linear-gradient(135deg, rgba(34,211,238,0.6), rgba(103,232,249,0.4));
-    border-color: rgba(165, 243, 252, 0.85);
-    color: #fff;
-    box-shadow: 0 0 14px rgba(103,232,249,0.55);
+    background: rgba(127,195,216,0.12);
+    border-color: rgba(127,195,216,0.55);
+    color: #bcd3dd;
 }
 .compare-card {
-    background: rgba(15, 23, 42, 0.55);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
     border-radius: 12px;
     padding: 10px 12px;
 }
-.compare-card.svc { border-color: rgba(244, 114, 182, 0.45); }
-.compare-card.statcom { border-color: rgba(103, 232, 249, 0.45); }
+.compare-card.svc { border-color: rgba(216, 167, 169, 0.45); }
+.compare-card.statcom { border-color: rgba(127, 195, 216, 0.45); }
 </style>
 </head>
 <body class="p-4 md:p-8">
-<div class="stars"></div>
 
 <div class="max-w-6xl mx-auto relative">
     <header class="mb-6" id="hdr">
@@ -240,8 +170,8 @@ input[type=range]::-webkit-slider-thumb {
             <span id="hdrDot" class="pulse-dot"></span>
             INTERACTIVE · SVC · TCR + TSC HYBRID COMPENSATOR
         </div>
-        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-violet-200 to-cyan-300 bg-clip-text text-transparent">
-            ⚡ SVC 시뮬레이터 (TCR + TSC)
+        <h1 style="color:#e3e9f0">
+            SVC 시뮬레이터 (TCR + TSC)
         </h1>
         <p class="mt-2 text-slate-400 text-sm">사이리스터 발화각 <span class="text-pink-300 font-bold">α</span>로 TCR 등가 인덕턴스 가변 + TSC 콘덴서 단계 투입. <span class="text-cyan-300 font-bold">진상(콘덴서)</span> · <span class="text-violet-300 font-bold">지상(리액터)</span> 무효전력 연속 제어. STATCOM 대비 응답은 느리지만 비용·신뢰성 우수.</p>
     </header>
@@ -317,7 +247,7 @@ input[type=range]::-webkit-slider-thumb {
             <div class="glass rounded-2xl p-5">
                 <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
                     <span class="text-lg">📐</span>
-                    <span class="bg-gradient-to-r from-pink-300 via-violet-200 to-cyan-300 bg-clip-text text-transparent">SVC 핵심 공식</span>
+                    <span style="color:#5eddd6">SVC 핵심 공식</span>
                 </h3>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="formula-card rounded-xl p-3">
@@ -467,7 +397,7 @@ function drawTagLabel(c, text, x, y, color) {
     c.save();
     c.font = 'bold 11px ui-monospace, monospace';
     const tw = c.measureText(text).width;
-    c.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    c.fillStyle = 'rgba(19,25,34, 0.92)';
     roundRect(c, x - tw/2 - 6, y - 10, tw + 12, 20, 10);
     c.fill();
     c.strokeStyle = 'rgba(148, 163, 184, 0.25)';
@@ -496,19 +426,26 @@ function drawMain() {
 
     const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
     bg.addColorStop(0, 'rgba(60, 27, 75, 0.32)');
-    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.18)');
-    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    bg.addColorStop(0.5, 'rgba(19,25,34, 0.18)');
+    bg.addColorStop(1, 'rgba(11,15,21, 0.85)');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
     // 격자
     ctx.save();
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+    ctx.strokeStyle = 'rgba(125,211,252,0.055)';
     ctx.lineWidth = 1;
-    for (let i = 0; i < W; i += 40) {
+    for (let i = 0; i < W; i += 20) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
     }
-    for (let i = 0; i < H; i += 40) {
+    for (let i = 0; i < H; i += 20) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(125,211,252,0.10)';
+    for (let i = 0; i < W; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke();
+    }
+    for (let i = 0; i < H; i += 100) {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke();
     }
     ctx.restore();
@@ -559,10 +496,10 @@ function drawMain() {
 
 function drawGrid(x, y) {
     ctx.save();
-    ctx.shadowBlur = 16;
-    ctx.shadowColor = '#a78bfa';
-    ctx.strokeStyle = 'rgba(196, 181, 253, 0.9)';
-    ctx.fillStyle = 'rgba(67, 56, 132, 0.45)';
+    ctx.shadowBlur = 3;
+    ctx.shadowColor = '#a9b0c8';
+    ctx.strokeStyle = 'rgba(169,176,200, 0.9)';
+    ctx.fillStyle = 'rgba(40,48,60, 0.45)';
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(x, y, 26, 0, Math.PI * 2);
     ctx.fill(); ctx.stroke();
@@ -577,7 +514,7 @@ function drawGrid(x, y) {
     }
     ctx.stroke();
     ctx.restore();
-    drawTagLabel(ctx, `GRID  Vg=${state.Vg.toFixed(3)} pu`, x, y - 50, '#c4b5fd');
+    drawTagLabel(ctx, `GRID  Vg=${state.Vg.toFixed(3)} pu`, x, y - 50, '#a9b0c8');
 
     // 송전탑
     ctx.save();
@@ -598,7 +535,7 @@ function drawGrid(x, y) {
 
 function drawBusLine(x0, y, x1, y1, color, label) {
     ctx.save();
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 2;
     ctx.shadowColor = color;
     ctx.strokeStyle = color;
     ctx.lineWidth = 3;
@@ -610,8 +547,8 @@ function drawBusLine(x0, y, x1, y1, color, label) {
     // 흐름
     ctx.save();
     ctx.fillStyle = 'rgba(252, 211, 230, 0.85)';
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = '#f9a8d4';
+    ctx.shadowBlur = 2;
+    ctx.shadowColor = '#d8a7a9';
     const n = 5;
     for (let i = 0; i < n; i++) {
         const u = ((state.flowPhase * 0.5 + i / n) % 1);
@@ -625,35 +562,35 @@ function drawBusLine(x0, y, x1, y1, color, label) {
 
     if (label) {
         const mx = (x0 + x1) / 2;
-        drawTagLabel(ctx, label, mx, y - 18, '#cbd5e1');
+        drawTagLabel(ctx, label, mx, y - 18, '#c4ccd6');
     }
 }
 
 function drawPCCBus(x, y) {
     ctx.save();
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = '#f9a8d4';
-    ctx.strokeStyle = 'rgba(244, 114, 182, 0.95)';
+    ctx.shadowBlur = 3;
+    ctx.shadowColor = '#d8a7a9';
+    ctx.strokeStyle = 'rgba(216,167,169, 0.95)';
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(x, y - 32); ctx.lineTo(x, y + 32);
     ctx.stroke();
     ctx.restore();
-    drawTagLabel(ctx, `PCC  V=${state.Vpcc.toFixed(3)} pu`, x, y - 52, '#f9a8d4');
+    drawTagLabel(ctx, `PCC  V=${state.Vpcc.toFixed(3)} pu`, x, y - 52, '#d8a7a9');
 }
 
 function drawLoad(x, y) {
     ctx.save();
-    ctx.shadowBlur = 14;
-    ctx.shadowColor = '#fbbf24';
-    ctx.strokeStyle = 'rgba(252, 211, 77, 0.9)';
-    ctx.fillStyle = 'rgba(120, 53, 15, 0.4)';
+    ctx.shadowBlur = 2;
+    ctx.shadowColor = '#e0a458';
+    ctx.strokeStyle = 'rgba(224,164,88, 0.9)';
+    ctx.fillStyle = 'rgba(42,32,20, 0.4)';
     ctx.lineWidth = 2.5;
     roundRect(ctx, x - 26, y - 22, 52, 44, 6);
     ctx.fill(); ctx.stroke();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fde68a';
+    ctx.fillStyle = '#e0c98a';
     ctx.font = 'bold 18px ui-monospace, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(state.QL >= 0 ? '↘' : '↗', x, y);
@@ -662,15 +599,15 @@ function drawLoad(x, y) {
     const lbl = state.QL >= 0
         ? `LOAD  Q_L=+${state.QL.toFixed(2)} (지상)`
         : `LOAD  Q_L=${state.QL.toFixed(2)} (진상)`;
-    drawTagLabel(ctx, lbl, x, y - 50, '#fcd34d');
+    drawTagLabel(ctx, lbl, x, y - 50, '#e0a458');
 }
 
 function drawDropLine(x0, y0, x1, y1, mode) {
     let col = '#94a3b8';
-    if (mode === 'cap') col = '#67e8f9';
-    if (mode === 'ind') col = '#c4b5fd';
+    if (mode === 'cap') col = '#7fc3d8';
+    if (mode === 'ind') col = '#a9b0c8';
     ctx.save();
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 2;
     ctx.shadowColor = col;
     ctx.strokeStyle = col;
     ctx.lineWidth = 3;
@@ -678,17 +615,17 @@ function drawDropLine(x0, y0, x1, y1, mode) {
     ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
     ctx.stroke();
     ctx.restore();
-    drawTagLabel(ctx, 'PCC tap', x0 + 32, (y0 + y1) / 2, '#cbd5e1');
+    drawTagLabel(ctx, 'PCC tap', x0 + 32, (y0 + y1) / 2, '#c4ccd6');
 }
 
 function drawIFlow(x0, y0, x1, y1, mode) {
     if (mode === 'standby') return;
     const upward = (mode === 'cap');
-    const col = upward ? '#67e8f9' : '#c4b5fd';
+    const col = upward ? '#7fc3d8' : '#a9b0c8';
 
     ctx.save();
     ctx.fillStyle = col;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 2;
     ctx.shadowColor = col;
     const n = 3;
     for (let i = 0; i < n; i++) {
@@ -709,15 +646,15 @@ function drawIFlow(x0, y0, x1, y1, mode) {
 // SVC 외곽 + TCR + TSC + Filter (3개 병렬 블록)
 function drawSVC(cx, cy, mode) {
     let frameCol = '#94a3b8', glow = '#94a3b8';
-    if (mode === 'cap') { frameCol = '#67e8f9'; glow = '#22d3ee'; }
-    if (mode === 'ind') { frameCol = '#c4b5fd'; glow = '#a78bfa'; }
+    if (mode === 'cap') { frameCol = '#7fc3d8'; glow = '#7fc3d8'; }
+    if (mode === 'ind') { frameCol = '#a9b0c8'; glow = '#a9b0c8'; }
 
     // 외곽 박스
     ctx.save();
-    ctx.shadowBlur = 24;
+    ctx.shadowBlur = 4;
     ctx.shadowColor = glow;
     ctx.strokeStyle = frameCol;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+    ctx.fillStyle = 'rgba(19,25,34, 0.65)';
     ctx.lineWidth = 2.5;
     roundRect(ctx, cx - 200, cy - 65, 400, 130, 14);
     ctx.fill(); ctx.stroke();
@@ -733,9 +670,9 @@ function drawSVC(cx, cy, mode) {
 
     // 위쪽 공통 모선
     ctx.save();
-    ctx.strokeStyle = 'rgba(244, 114, 182, 0.7)';
+    ctx.strokeStyle = 'rgba(216,167,169, 0.7)';
     ctx.shadowBlur = 6;
-    ctx.shadowColor = '#f9a8d4';
+    ctx.shadowColor = '#d8a7a9';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(cx - 170, cy - 28); ctx.lineTo(cx + 170, cy - 28);
@@ -775,7 +712,7 @@ function drawTCRBlock(x, cy) {
     // 라벨
     ctx.save();
     ctx.font = 'bold 10px ui-monospace, monospace';
-    ctx.fillStyle = '#c4b5fd';
+    ctx.fillStyle = '#a9b0c8';
     ctx.textAlign = 'center';
     ctx.fillText('TCR', x, top - 4);
     ctx.restore();
@@ -785,14 +722,14 @@ function drawTCRBlock(x, cy) {
     const offX = 8;
     // α에 따라 도통 표시 (90°=완전 도통, 180°=차단)
     const conduction = (180 - state.alpha) / 90; // 0~1
-    const thyrColor = conduction > 0.1 ? '#f9a8d4' : '#475569';
+    const thyrColor = conduction > 0.1 ? '#d8a7a9' : '#475569';
 
     ctx.save();
     ctx.strokeStyle = thyrColor;
     ctx.lineWidth = 1.8;
     if (conduction > 0.1) {
         ctx.shadowBlur = 8 + 8 * conduction;
-        ctx.shadowColor = '#f9a8d4';
+        ctx.shadowColor = '#d8a7a9';
     }
     // 위 사이리스터 (↓)
     ctx.beginPath();
@@ -817,7 +754,7 @@ function drawTCRBlock(x, cy) {
         ctx.fill();
     }
     // 게이트선
-    ctx.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+    ctx.strokeStyle = 'rgba(224,164,88, 0.7)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x - offX + 6, thyY); ctx.lineTo(x - offX + 12, thyY);
@@ -825,9 +762,9 @@ function drawTCRBlock(x, cy) {
     ctx.stroke();
     // 게이트 펄스 깜빡임
     if (conduction > 0.1 && Math.sin(state.t * 0.3) > 0.6) {
-        ctx.fillStyle = '#fcd34d';
+        ctx.fillStyle = '#e0a458';
         ctx.shadowBlur = 6;
-        ctx.shadowColor = '#fbbf24';
+        ctx.shadowColor = '#e0a458';
         ctx.beginPath(); ctx.arc(x - offX + 12, thyY, 2, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(x + offX - 12, thyY, 2, 0, Math.PI*2); ctx.fill();
     }
@@ -844,10 +781,10 @@ function drawTCRBlock(x, cy) {
 
     // 인덕터 (지그재그 4개 작은 반원)
     ctx.save();
-    ctx.strokeStyle = conduction > 0.1 ? 'rgba(196, 181, 253, 0.95)' : 'rgba(148,163,184,0.5)';
+    ctx.strokeStyle = conduction > 0.1 ? 'rgba(169,176,200, 0.95)' : 'rgba(148,163,184,0.5)';
     if (conduction > 0.1) {
         ctx.shadowBlur = 6 + 6 * conduction;
-        ctx.shadowColor = '#a78bfa';
+        ctx.shadowColor = '#a9b0c8';
     }
     ctx.lineWidth = 1.8;
     const indStartY = thyY + 16;
@@ -874,7 +811,7 @@ function drawTCRBlock(x, cy) {
     // α 표시
     ctx.save();
     ctx.font = '9px ui-monospace, monospace';
-    ctx.fillStyle = '#c4b5fd';
+    ctx.fillStyle = '#a9b0c8';
     ctx.textAlign = 'center';
     ctx.fillText(`α=${state.alpha}°`, x, bot + 14);
     ctx.restore();
@@ -888,7 +825,7 @@ function drawTSCBlock(x, cy) {
     // 라벨
     ctx.save();
     ctx.font = 'bold 10px ui-monospace, monospace';
-    ctx.fillStyle = '#67e8f9';
+    ctx.fillStyle = '#7fc3d8';
     ctx.textAlign = 'center';
     ctx.fillText('TSC', x, top - 4);
     ctx.restore();
@@ -897,14 +834,14 @@ function drawTSCBlock(x, cy) {
     const thyY = top + 12;
     const offX = 8;
     const on = n > 0;
-    const thyCol = on ? '#67e8f9' : '#475569';
+    const thyCol = on ? '#7fc3d8' : '#475569';
 
     ctx.save();
     ctx.strokeStyle = thyCol;
     ctx.lineWidth = 1.8;
     if (on) {
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#67e8f9';
+        ctx.shadowBlur = 2;
+        ctx.shadowColor = '#7fc3d8';
     }
     ctx.beginPath();
     ctx.moveTo(x - offX - 6, thyY - 5);
@@ -912,14 +849,14 @@ function drawTSCBlock(x, cy) {
     ctx.lineTo(x - offX, thyY + 5);
     ctx.closePath();
     ctx.stroke();
-    if (on) { ctx.fillStyle = 'rgba(103,232,249,0.35)'; ctx.fill(); }
+    if (on) { ctx.fillStyle = 'rgba(127,195,216,0.35)'; ctx.fill(); }
     ctx.beginPath();
     ctx.moveTo(x + offX - 6, thyY + 5);
     ctx.lineTo(x + offX + 6, thyY + 5);
     ctx.lineTo(x + offX, thyY - 5);
     ctx.closePath();
     ctx.stroke();
-    if (on) { ctx.fillStyle = 'rgba(103,232,249,0.35)'; ctx.fill(); }
+    if (on) { ctx.fillStyle = 'rgba(127,195,216,0.35)'; ctx.fill(); }
     ctx.restore();
 
     // 세로 라인
@@ -953,11 +890,11 @@ function drawTSCBlock(x, cy) {
         const active = (idx + 1) <= n;
         ctx.save();
         // 위에서 콘덴서 상단으로
-        ctx.strokeStyle = active ? 'rgba(103,232,249,0.85)' : 'rgba(148,163,184,0.35)';
+        ctx.strokeStyle = active ? 'rgba(127,195,216,0.85)' : 'rgba(148,163,184,0.35)';
         ctx.lineWidth = 1.4;
         if (active) {
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#22d3ee';
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = '#7fc3d8';
         }
         // 작은 콘덴서: 두 평행선
         ctx.beginPath();
@@ -983,7 +920,7 @@ function drawTSCBlock(x, cy) {
     // n / 4 표시
     ctx.save();
     ctx.font = '9px ui-monospace, monospace';
-    ctx.fillStyle = '#67e8f9';
+    ctx.fillStyle = '#7fc3d8';
     ctx.textAlign = 'center';
     ctx.fillText(`n=${n}/4`, x, gy + 18);
     ctx.restore();
@@ -995,7 +932,7 @@ function drawFilterBlock(x, cy) {
 
     ctx.save();
     ctx.font = 'bold 10px ui-monospace, monospace';
-    ctx.fillStyle = '#fcd34d';
+    ctx.fillStyle = '#e0a458';
     ctx.textAlign = 'center';
     ctx.fillText('FILTER', x, top - 4);
     ctx.restore();
@@ -1006,7 +943,7 @@ function drawFilterBlock(x, cy) {
         const fx = x + off;
         // 인덕터 (작은 1개)
         ctx.save();
-        ctx.strokeStyle = 'rgba(252, 211, 77, 0.85)';
+        ctx.strokeStyle = 'rgba(224,164,88, 0.85)';
         ctx.lineWidth = 1.3;
         ctx.beginPath();
         ctx.arc(fx, top + 14, 3, Math.PI, 0, false);
@@ -1051,7 +988,7 @@ function drawFilterBlock(x, cy) {
 
     ctx.save();
     ctx.font = '9px ui-monospace, monospace';
-    ctx.fillStyle = '#fcd34d';
+    ctx.fillStyle = '#e0a458';
     ctx.textAlign = 'center';
     ctx.fillText('5·7th HF', x, gy + 18);
     ctx.restore();
@@ -1060,16 +997,16 @@ function drawFilterBlock(x, cy) {
 function drawStatusBox(W, H, mode) {
     const bx = W - 196, by = 32;
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fillStyle = 'rgba(19,25,34, 0.85)';
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
     ctx.lineWidth = 1;
     roundRect(ctx, bx, by, 180, 92, 10);
     ctx.fill(); ctx.stroke();
 
-    let tagColor = '#cbd5e1', tagBg = 'rgba(148,163,184,0.18)';
+    let tagColor = '#c4ccd6', tagBg = 'rgba(148,163,184,0.18)';
     let tagText = 'FLOATING';
-    if (mode === 'cap') { tagColor = '#67e8f9'; tagBg = 'rgba(34,211,238,0.20)'; tagText = 'CAPACITIVE (진상)'; }
-    if (mode === 'ind') { tagColor = '#c4b5fd'; tagBg = 'rgba(168,139,250,0.20)'; tagText = 'INDUCTIVE (지상)'; }
+    if (mode === 'cap') { tagColor = '#7fc3d8'; tagBg = 'rgba(127,195,216,0.20)'; tagText = 'CAPACITIVE (진상)'; }
+    if (mode === 'ind') { tagColor = '#a9b0c8'; tagBg = 'rgba(169,176,200,0.20)'; tagText = 'INDUCTIVE (지상)'; }
 
     ctx.fillStyle = tagBg;
     roundRect(ctx, bx + 10, by + 10, 160, 22, 10);
@@ -1080,7 +1017,7 @@ function drawStatusBox(W, H, mode) {
     ctx.fillText(tagText, bx + 90, by + 21);
 
     ctx.font = '10px ui-monospace, monospace';
-    ctx.fillStyle = '#cbd5e1';
+    ctx.fillStyle = '#c4ccd6';
     ctx.textAlign = 'left';
     ctx.fillText(`Q   = ${(state.Q*100).toFixed(1)} % Sb`, bx + 14, by + 48);
     ctx.fillText(`I    = ${(state.I*100).toFixed(1)} % In`, bx + 14, by + 64);
@@ -1095,11 +1032,11 @@ function drawVI() {
     const W = viCv.width, H = viCv.height;
     vctx.clearRect(0, 0, W, H);
 
-    vctx.fillStyle = 'rgba(5, 7, 20, 0.95)';
+    vctx.fillStyle = 'rgba(11,15,21, 0.95)';
     vctx.fillRect(0, 0, W, H);
 
     vctx.save();
-    vctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    vctx.strokeStyle = 'rgba(125,211,252,0.055)';
     for (let i = 0; i < W; i += 40) {
         vctx.beginPath(); vctx.moveTo(i, 0); vctx.lineTo(i, H); vctx.stroke();
     }
@@ -1174,7 +1111,7 @@ function drawVI() {
 
     // 영역 채우기 (진상)
     vctx.save();
-    vctx.fillStyle = 'rgba(34, 211, 238, 0.10)';
+    vctx.fillStyle = 'rgba(127,195,216, 0.10)';
     vctx.beginPath();
     vctx.moveTo(cx0, padT);
     vctx.lineTo(cx0 + Math.min(plotW/2, BcMax * iPx * (1.10)), padT);
@@ -1191,7 +1128,7 @@ function drawVI() {
 
     // 영역 채우기 (지상)
     vctx.save();
-    vctx.fillStyle = 'rgba(168, 139, 250, 0.10)';
+    vctx.fillStyle = 'rgba(169,176,200, 0.10)';
     vctx.beginPath();
     vctx.moveTo(cx0, padT);
     vctx.lineTo(cx0 - BlMax * iPx * 1.10, padT);
@@ -1203,9 +1140,9 @@ function drawVI() {
 
     // 진상 한계선 (V * Bc_max)
     vctx.save();
-    vctx.shadowBlur = 10;
-    vctx.shadowColor = '#22d3ee';
-    vctx.strokeStyle = 'rgba(34, 211, 238, 0.85)';
+    vctx.shadowBlur = 2;
+    vctx.shadowColor = '#7fc3d8';
+    vctx.strokeStyle = 'rgba(127,195,216, 0.85)';
     vctx.lineWidth = 2.5;
     vctx.beginPath();
     for (let v = 0.85; v <= 1.15; v += 0.01) {
@@ -1219,9 +1156,9 @@ function drawVI() {
 
     // 지상 한계선 (-V * Bl_max)
     vctx.save();
-    vctx.shadowBlur = 10;
-    vctx.shadowColor = '#a78bfa';
-    vctx.strokeStyle = 'rgba(168, 139, 250, 0.85)';
+    vctx.shadowBlur = 2;
+    vctx.shadowColor = '#a9b0c8';
+    vctx.strokeStyle = 'rgba(169,176,200, 0.85)';
     vctx.lineWidth = 2.5;
     vctx.beginPath();
     for (let v = 0.85; v <= 1.15; v += 0.01) {
@@ -1236,7 +1173,7 @@ function drawVI() {
     // V 한계 (수평 점선 ±10%)
     vctx.save();
     vctx.setLineDash([4, 3]);
-    vctx.strokeStyle = 'rgba(244, 114, 182, 0.4)';
+    vctx.strokeStyle = 'rgba(216,167,169, 0.4)';
     vctx.lineWidth = 1.2;
     const yHi = padT + plotH/2 - 0.10 * (plotH / 0.32);
     const yLo = padT + plotH/2 + 0.10 * (plotH / 0.32);
@@ -1245,7 +1182,7 @@ function drawVI() {
     vctx.moveTo(padL, yLo); vctx.lineTo(padL + plotW, yLo);
     vctx.stroke();
     vctx.setLineDash([]);
-    vctx.fillStyle = 'rgba(244, 114, 182, 0.6)';
+    vctx.fillStyle = 'rgba(216,167,169, 0.6)';
     vctx.font = '9px ui-monospace, monospace';
     vctx.textAlign = 'right';
     vctx.fillText('+10%', padL + plotW - 4, yHi - 4);
@@ -1260,9 +1197,9 @@ function drawVI() {
     const cpy = padT + plotH/2 - (Vcur - 1.0) * (plotH / 0.32);
 
     vctx.save();
-    vctx.shadowBlur = 18;
-    vctx.shadowColor = '#f9a8d4';
-    vctx.fillStyle = '#f9a8d4';
+    vctx.shadowBlur = 3;
+    vctx.shadowColor = '#d8a7a9';
+    vctx.fillStyle = '#d8a7a9';
     const pulse = 5 + 2.5 * (0.5 + 0.5 * Math.sin(state.t * 0.15));
     vctx.beginPath();
     vctx.arc(cpx, cpy, pulse, 0, Math.PI * 2);
@@ -1277,7 +1214,7 @@ function drawVI() {
     // 동작점 텍스트
     vctx.save();
     vctx.font = 'bold 11px ui-monospace, monospace';
-    vctx.fillStyle = '#fce7f3';
+    vctx.fillStyle = '#e6c4c5';
     vctx.textAlign = Icur >= 0 ? 'right' : 'left';
     const tx = cpx + (Icur >= 0 ? -12 : 12);
     vctx.fillText(`(I=${Icur.toFixed(2)}, V=${Vcur.toFixed(3)})`, tx, cpy - 8);
@@ -1287,9 +1224,9 @@ function drawVI() {
     vctx.save();
     vctx.font = 'bold 10px ui-monospace, monospace';
     vctx.textAlign = 'left';
-    vctx.fillStyle = '#67e8f9';
+    vctx.fillStyle = '#7fc3d8';
     vctx.fillText('TSC 한계  (B=' + BcMax.toFixed(1) + ')', cx0 + 14, padT + 28);
-    vctx.fillStyle = '#c4b5fd';
+    vctx.fillStyle = '#a9b0c8';
     vctx.fillText('TCR 한계  (B=' + BlMax.toFixed(1) + ')', padL + 8, padT + 28);
     vctx.restore();
 }
@@ -1301,11 +1238,11 @@ function drawAlphaWave() {
     const W = awCv.width, H = awCv.height;
     actx.clearRect(0, 0, W, H);
 
-    actx.fillStyle = 'rgba(5, 7, 20, 0.95)';
+    actx.fillStyle = 'rgba(11,15,21, 0.95)';
     actx.fillRect(0, 0, W, H);
 
     actx.save();
-    actx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+    actx.strokeStyle = 'rgba(125,211,252,0.055)';
     for (let i = 0; i < W; i += 40) {
         actx.beginPath(); actx.moveTo(i, 0); actx.lineTo(i, H); actx.stroke();
     }
@@ -1358,9 +1295,9 @@ function drawAlphaWave() {
 
     // V_g 파형
     actx.save();
-    actx.strokeStyle = '#c4b5fd';
-    actx.shadowBlur = 8;
-    actx.shadowColor = '#a78bfa';
+    actx.strokeStyle = '#a9b0c8';
+    actx.shadowBlur = 2;
+    actx.shadowColor = '#a9b0c8';
     actx.lineWidth = 2.2;
     actx.beginPath();
     for (let px = padL; px <= padL + plotW; px++) {
@@ -1376,8 +1313,8 @@ function drawAlphaWave() {
     // 0~π 양의 반파: α부터 (2π - α)까지 도통 (대칭)
     // 정확한 도통 전류: i(t) = (V/ωL) * (cos α − cos ωt)  for α ≤ ωt ≤ 2π−α
     actx.save();
-    actx.strokeStyle = '#f9a8d4';
-    actx.shadowBlur = 10;
+    actx.strokeStyle = '#d8a7a9';
+    actx.shadowBlur = 2;
     actx.shadowColor = '#ec4899';
     actx.lineWidth = 2.4;
     actx.beginPath();
@@ -1449,12 +1386,12 @@ function drawAlphaWave() {
 
     // 발화 시점 표시 (수직선 + 점)
     actx.save();
-    actx.strokeStyle = 'rgba(252, 211, 77, 0.7)';
+    actx.strokeStyle = 'rgba(224,164,88, 0.7)';
     actx.setLineDash([3, 3]);
     actx.lineWidth = 1.5;
-    actx.fillStyle = '#fcd34d';
-    actx.shadowBlur = 10;
-    actx.shadowColor = '#fbbf24';
+    actx.fillStyle = '#e0a458';
+    actx.shadowBlur = 2;
+    actx.shadowColor = '#e0a458';
     // 양반파 4개 (720° 내 4번) — 한 반파에 1개씩
     for (let halfIdx = 0; halfIdx < 4; halfIdx++) {
         // 반파 시작 phase = halfIdx * π
@@ -1479,7 +1416,7 @@ function drawAlphaWave() {
     actx.save();
     actx.font = 'bold 10px ui-monospace, monospace';
     actx.textAlign = 'right';
-    actx.fillStyle = '#f9a8d4';
+    actx.fillStyle = '#d8a7a9';
     const sigmaDeg = 2 * (180 - state.alpha);
     actx.fillText(`σ = ${sigmaDeg.toFixed(0)}°  (도통)`, padL + plotW - 6, padT + 14);
     actx.restore();
@@ -1565,8 +1502,8 @@ function updateUI() {
 // ============================================================
 function flashCard() {
     if (window.gsap) gsap.fromTo('#canvasCard',
-        { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
-        { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+        { boxShadow: '0 0 0 0 rgba(216,167,169,0.6)' },
+        { boxShadow: '0 0 60px 4px rgba(216,167,169,0)', duration: 0.6 });
 }
 
 ['vg', 'alpha', 'tsc', 'ql'].forEach(id => {

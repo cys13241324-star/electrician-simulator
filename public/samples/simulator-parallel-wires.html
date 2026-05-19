@@ -16,173 +16,152 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
+        :root {
+            --bg-0: #0d1117;
+            --bg-1: #11161d;
+            --panel: #131922;
+            --panel-2: #161d27;
+            --border: rgba(148, 163, 184, 0.16);
+            --border-soft: rgba(148, 163, 184, 0.10);
+            --teal: #5eddd6;
+            --amber: #e0a458;
+            --slate-txt: #c4ccd6;
+            --ink: #aab4c0;
+        }
         body {
-            background:
-                radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
-                radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
-                radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
-                #060814;
-            color: #e5e7eb;
+            background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+            color: #d3dae3;
             min-height: 100vh;
             overflow-x: hidden;
             font-family: 'Pretendard', system-ui, sans-serif;
         }
-        .stars {
-            position: fixed; inset: 0; pointer-events: none;
-            background-image:
-                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
-                radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
-            background-size: 600px 600px;
-            animation: twinkle 6s ease-in-out infinite alternate;
-            opacity: 0.65;
-        }
-        @keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
         .canvas-wrap {
             position: relative;
-            border-radius: 18px;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
-            box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45), 0 0 40px rgba(244, 114, 182, 0.15);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #0b0f15;
+            overflow: hidden;
         }
         canvas#simCanvas {
             display: block;
             width: 100%;
             height: 760px;
-            border-radius: 17px;
-            background: #050714;
+            background: #0b0f15;
             cursor: crosshair;
             touch-action: none;
         }
         .glass {
-            background: rgba(15, 23, 42, 0.55);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.7);
         }
         .neon-divider {
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+            background: var(--border-soft);
         }
         .pulse-dot {
-            position: relative; display: inline-block;
-            width: 8px; height: 8px; border-radius: 9999px;
-            background: #34d399; box-shadow: 0 0 12px #34d399;
-        }
-        .pulse-dot::after {
-            content: ''; position: absolute; inset: -6px;
-            border-radius: 9999px; border: 2px solid #34d399;
-            opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
-        }
-        @keyframes pulseRing {
-            0% { transform: scale(0.6); opacity: 0.8 }
-            100% { transform: scale(1.8); opacity: 0 }
+            display: inline-block;
+            width: 7px; height: 7px; border-radius: 9999px;
+            background: var(--teal);
+            box-shadow: 0 0 5px rgba(94, 221, 214, 0.55);
         }
         input[type=range] {
             -webkit-appearance: none;
-            height: 5px;
+            height: 4px;
             border-radius: 9999px;
-            background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(59,130,246,0.4));
+            background: rgba(148, 163, 184, 0.22);
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px; height: 20px;
+            width: 15px; height: 15px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
-            box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+            background: #cdd5df;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
             cursor: pointer;
-            border: 2px solid rgba(255,255,255,0.95);
+            border: 3px solid #2a3340;
         }
+        input[type=range]:focus { outline: none; }
+        input[type=range]:focus::-webkit-slider-thumb { background: var(--teal); }
         .chip-positive {
-            background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06));
-            border: 1px solid rgba(244, 63, 94, 0.5);
-            color: #fda4af;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(224,164,88,0.7);
+            color: var(--slate-txt);
         }
         .chip-negative {
-            background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.06));
-            border: 1px solid rgba(59, 130, 246, 0.5);
-            color: #93c5fd;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(94,221,214,0.55);
+            color: var(--slate-txt);
         }
         .chip-distance {
-            background: linear-gradient(135deg, rgba(168,139,250,0.18), rgba(99,102,241,0.06));
-            border: 1px solid rgba(168, 139, 250, 0.45);
-            color: #ddd6fe;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(148,163,184,0.5);
+            color: var(--slate-txt);
         }
         .math-card {
-            background:
-                linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
-                rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(168, 139, 250, 0.35);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-top: 2px solid rgba(94, 221, 214, 0.35);
         }
-        .math-container { font-size: 1.05rem; color: #e0e7ff; }
+        .math-container { font-size: 1.0rem; color: #cdd5df; }
         .feature-row {
-            background: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.08);
-            transition: transform 220ms, background 220ms, border-color 220ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            transition: border-color 180ms;
         }
         .feature-row:hover {
-            transform: translateX(2px);
-            background: rgba(30, 41, 59, 0.7);
-            border-color: rgba(168, 139, 250, 0.4);
+            border-color: rgba(94, 221, 214, 0.30);
         }
         .dir-btn {
-            background: rgba(148, 163, 184, 0.1);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            color: #cbd5e1;
-            transition: all 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            color: var(--ink);
+            transition: border-color 160ms, color 160ms, background 160ms;
         }
         .dir-btn.active-red {
-            background: linear-gradient(135deg, #ef4444, #b91c1c);
-            border-color: rgba(244, 63, 94, 0.7);
-            color: white;
-            box-shadow: 0 0 24px rgba(244, 63, 94, 0.5);
+            background: rgba(224, 164, 88, 0.10);
+            border-color: rgba(224, 164, 88, 0.55);
+            color: #f0c89a;
         }
         .dir-btn.active-blue {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            border-color: rgba(59, 130, 246, 0.7);
-            color: white;
-            box-shadow: 0 0 24px rgba(59, 130, 246, 0.5);
+            background: rgba(94, 221, 214, 0.10);
+            border-color: rgba(94, 221, 214, 0.55);
+            color: #d8f3f0;
         }
         .dir-btn:hover:not(.active-red):not(.active-blue) {
-            background: rgba(148, 163, 184, 0.2);
-            transform: translateY(-1px);
+            border-color: var(--border);
+            color: var(--slate-txt);
         }
         .live-pill {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            transition: border-color 200ms, box-shadow 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            transition: border-color 200ms;
         }
         .live-pill.flash {
-            border-color: rgba(244, 114, 182, 0.6);
-            box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+            border-color: rgba(94, 221, 214, 0.40);
         }
         .live-num {
+            font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
             font-variant-numeric: tabular-nums;
-            background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #d8f3f0;
+            letter-spacing: 0.01em;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="stars"></div>
 
     <div class="max-w-6xl mx-auto relative">
         <header class="mb-6" id="hdr">
-            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest" style="color:#7d8a97">
                 <span class="pulse-dot"></span>
-                INTERACTIVE · PARALLEL WIRES · DUAL VIEW
+                PARALLEL WIRES · DUAL VIEW
             </div>
-            <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
-                🧲 평행도선 전자력 시뮬레이터
+            <h1 class="mt-2 text-3xl md:text-4xl font-bold" style="color:#e3e9f0">
+                평행도선 전자력 시뮬레이터
             </h1>
-            <p class="mt-2 text-slate-400 text-sm">위 — 측면 뷰(입체 원통·전류 흐름) · 아래 — 단면 뷰(합성 자기력선·자기장 벡터). 마우스로 단면 뷰의 |B| 측정.</p>
+            <p class="mt-2 text-sm" style="color:#8b97a4">위 — 측면 뷰(입체 원통·전류 흐름) · 아래 — 단면 뷰(합성 자기력선·자기장 벡터). 마우스로 단면 뷰의 |B| 측정.</p>
         </header>
 
         <!-- 라이브 데이터 패널 -->
@@ -220,12 +199,12 @@
                 <div class="glass rounded-2xl p-5" id="guideCard">
                     <h3 class="font-bold text-base flex items-center gap-2">
                         <span class="text-lg">📐</span>
-                        <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">물리학 가이드 및 공식</span>
+                        <span style="color:#e3e9f0">물리학 가이드 및 공식</span>
                     </h3>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <ul class="text-xs text-slate-300 space-y-2">
-                            <li class="feature-row rounded-lg p-3"><strong class="text-rose-300">흡인</strong> · 전류 방향 같음 → 두 도선 사이 자기장 상쇄 → 외부 강화 → 서로 끌림</li>
-                            <li class="feature-row rounded-lg p-3"><strong class="text-blue-300">반발</strong> · 전류 방향 반대 → 두 도선 사이 자기장 강화 → 서로 밀어냄</li>
+                            <li class="feature-row rounded-lg p-3"><strong style="color:#e0a458">흡인</strong> · 전류 방향 같음 → 두 도선 사이 자기장 상쇄 → 외부 강화 → 서로 끌림</li>
+                            <li class="feature-row rounded-lg p-3"><strong style="color:#5eddd6">반발</strong> · 전류 방향 반대 → 두 도선 사이 자기장 강화 → 서로 밀어냄</li>
                             <li class="feature-row rounded-lg p-3"><strong class="text-indigo-300">⊙ ⊗</strong> · 단면 뷰에서 ⊙는 평면 밖(↑), ⊗는 평면 안(↓)</li>
                             <li class="feature-row rounded-lg p-3"><strong class="text-indigo-300">합성 자기력선</strong> · 두 도선 자기장이 벡터로 합성되어 폐곡선을 그림</li>
                         </ul>
@@ -250,12 +229,12 @@
             <div class="glass rounded-2xl p-5 flex flex-col gap-6 h-fit" id="controlPanel">
                 <div class="space-y-3">
                     <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
-                        <span class="inline-block w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span>
-                        <span class="text-rose-300">도선 1 (왼쪽)</span>
+                        <span class="inline-block w-2 h-2 rounded-full" style="background:#e0a458"></span>
+                        <span style="color:#e0a458">도선 1 (왼쪽)</span>
                     </h2>
                     <div class="chip-positive rounded-lg p-3">
                         <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
-                            전류 \(I_1\) <span id="val1" class="font-mono text-base text-rose-200">50</span>
+                            전류 \(I_1\) <span id="val1" class="font-mono text-base" style="color:#e0a458">50</span>
                         </label>
                         <input type="range" id="current1" min="0" max="100" value="50" class="w-full cursor-pointer">
                     </div>
@@ -267,12 +246,12 @@
 
                 <div class="space-y-3">
                     <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
-                        <span class="inline-block w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_10px_#60a5fa]"></span>
-                        <span class="text-blue-300">도선 2 (오른쪽)</span>
+                        <span class="inline-block w-2 h-2 rounded-full" style="background:#5eddd6"></span>
+                        <span style="color:#5eddd6">도선 2 (오른쪽)</span>
                     </h2>
                     <div class="chip-negative rounded-lg p-3">
                         <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
-                            전류 \(I_2\) <span id="val2" class="font-mono text-base text-blue-200">50</span>
+                            전류 \(I_2\) <span id="val2" class="font-mono text-base" style="color:#5eddd6">50</span>
                         </label>
                         <input type="range" id="current2" min="0" max="100" value="50" class="w-full cursor-pointer">
                     </div>
@@ -283,10 +262,10 @@
                 </div>
 
                 <div class="space-y-3">
-                    <h2 class="font-bold text-sm tracking-wider text-indigo-200">거리 조절</h2>
+                    <h2 class="font-bold text-sm tracking-wider" style="color:#9aa6b3">거리 조절</h2>
                     <div class="chip-distance rounded-lg p-3">
                         <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
-                            도선 간 거리 \(d\) <span id="valD" class="font-mono text-base text-indigo-100">180</span>
+                            도선 간 거리 \(d\) <span id="valD" class="font-mono text-base" style="color:#c4ccd6">180</span>
                         </label>
                         <input type="range" id="distance" min="80" max="400" value="180" class="w-full cursor-pointer">
                     </div>
@@ -378,8 +357,8 @@
 
         function flashCard() {
             if (window.gsap) gsap.fromTo('#canvasCard',
-                { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
-                { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+                { borderColor: 'rgba(94,221,214,0.35)' },
+                { borderColor: 'rgba(148,163,184,0.16)', duration: 0.7, ease: 'power2.out' });
         }
 
         function updateUI() {
@@ -431,10 +410,10 @@
                     const bmag = getBmagCross(cx, cy);
                     const n = Math.min(1, bmag / norm);
                     const a = Math.pow(n, 0.55);
-                    // 보라/인디고 → 핫핑크 그라데이션
-                    const r = Math.round(20 + 200 * a);
-                    const g = Math.round(15 + 60 * a);
-                    const b = Math.round(60 + 180 * a);
+                    // 그래파이트 → 차분한 청록 그라데이션 (계측 톤)
+                    const r = Math.round(13 + 50 * a);
+                    const g = Math.round(17 + 140 * a);
+                    const b = Math.round(23 + 130 * a);
                     data[idx++] = r;
                     data[idx++] = g;
                     data[idx++] = b;
@@ -474,9 +453,9 @@
             for (let k = 0; k < numLines; k++) startAngles.push((k / numLines) * Math.PI * 2);
 
             ctx.save();
-            ctx.shadowBlur = 8;
-            for (const wire of [{ x: crossWire1X, y: crossWire1Y, I: state.wire1.current, color: 'rgba(248,180,217,', glow: '#f472b6' },
-                                 { x: crossWire2X, y: crossWire2Y, I: state.wire2.current, color: 'rgba(186,230,253,', glow: '#60a5fa' }]) {
+            ctx.shadowBlur = 2;
+            for (const wire of [{ x: crossWire1X, y: crossWire1Y, I: state.wire1.current, color: 'rgba(224,164,88,', glow: 'rgba(224,164,88,0.4)' },
+                                 { x: crossWire2X, y: crossWire2Y, I: state.wire2.current, color: 'rgba(94,221,214,', glow: 'rgba(94,221,214,0.4)' }]) {
                 if (wire.I < 1) continue;
                 for (const a of startAngles) {
                     const sx = wire.x + Math.cos(a) * 22;
@@ -549,10 +528,10 @@
                 const ratio = p.life / p.maxLife;
                 const alpha = Math.sin(ratio * Math.PI) * 0.95;
                 ctx.fillStyle = p.wire === 0
-                    ? `rgba(252, 165, 165, ${alpha})`
-                    : `rgba(147, 197, 253, ${alpha})`;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = p.wire === 0 ? '#f87171' : '#60a5fa';
+                    ? `rgba(224, 164, 88, ${alpha})`
+                    : `rgba(94, 221, 214, ${alpha})`;
+                ctx.shadowBlur = 2;
+                ctx.shadowColor = p.wire === 0 ? 'rgba(224,164,88,0.4)' : 'rgba(94,221,214,0.4)';
                 ctx.beginPath();
                 ctx.arc(x, y, p.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -574,9 +553,9 @@
             ctx.stroke();
             ctx.restore();
 
-            // 외광 글로우
+            // 외광 글로우 (절제)
             ctx.save();
-            ctx.shadowBlur = 32;
+            ctx.shadowBlur = 4;
             ctx.shadowColor = glowColor;
             ctx.fillStyle = baseColor;
             ctx.beginPath();
@@ -586,24 +565,24 @@
 
             // 본체 (구체 그라데이션)
             const grad = ctx.createRadialGradient(cx - 7, cy - 8, 3, cx, cy, radius);
-            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0, '#e3e9f0');
             grad.addColorStop(0.35, baseColor);
-            grad.addColorStop(1, '#1f2937');
+            grad.addColorStop(1, '#161d27');
             ctx.fillStyle = grad;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // 흰 테두리
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            // 테두리
+            ctx.lineWidth = 1.6;
+            ctx.strokeStyle = 'rgba(212,220,230,0.75)';
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.stroke();
 
             // ⊙ / ⊗ 기호
-            ctx.fillStyle = 'white';
-            ctx.strokeStyle = 'white';
+            ctx.fillStyle = '#e3e9f0';
+            ctx.strokeStyle = '#e3e9f0';
             ctx.lineWidth = 2;
             if (direction === 1) {
                 // ⊙: 점
@@ -621,7 +600,7 @@
             // 라벨
             ctx.font = 'bold 11px ui-monospace, monospace';
             const tw = ctx.measureText(label).width;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.92)';
             roundRect(ctx, cx - tw/2 - 6, cy + radius + 6, tw + 12, 18, 9);
             ctx.fill();
             ctx.fillStyle = baseColor;
@@ -643,10 +622,10 @@
 
             // 작은 링
             ctx.save();
-            ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+            ctx.strokeStyle = 'rgba(212,220,230,0.75)';
             ctx.lineWidth = 1.4;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#fef9c3';
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(148,163,184,0.3)';
             ctx.beginPath();
             ctx.arc(x, y, 10, 0, Math.PI * 2);
             ctx.stroke();
@@ -657,10 +636,10 @@
             const ux = f.bx / m, uy = f.by / m;
             const tx = x + ux * arrowLen, ty = y + uy * arrowLen;
             ctx.save();
-            ctx.shadowBlur = 14;
-            ctx.shadowColor = '#fde047';
-            ctx.strokeStyle = 'rgba(253, 224, 71, 0.95)';
-            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(94,221,214,0.4)';
+            ctx.strokeStyle = 'rgba(94, 221, 214, 0.95)';
+            ctx.lineWidth = 1.8;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -670,7 +649,7 @@
             ctx.translate(tx, ty); ctx.rotate(ang);
             ctx.beginPath();
             ctx.moveTo(0, 0); ctx.lineTo(-10, -5); ctx.lineTo(-10, 5); ctx.closePath();
-            ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.fillStyle = 'rgba(94, 221, 214, 0.95)';
             ctx.fill();
             ctx.restore();
 
@@ -681,10 +660,10 @@
             ctx.font = 'bold 11px ui-monospace, monospace';
             const tw = ctx.measureText(text).width;
             const lx = x + 14, ly = y - 14;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.92)';
             roundRect(ctx, lx - 6, ly - 12, tw + 12, 18, 9);
             ctx.fill();
-            ctx.fillStyle = '#fde047';
+            ctx.fillStyle = '#7fd6d0';
             ctx.fillText(text, lx, ly + 2);
             ctx.restore();
             probeEl.innerText = mag;
@@ -697,23 +676,27 @@
             // 측면 뷰 영역 배경 (살짝 어두운 grid + 분할선)
             ctx.save();
             // 영역 자체
-            const sideGrad = ctx.createLinearGradient(0, 0, 0, SIDE_H);
-            sideGrad.addColorStop(0, '#0a0e1e');
-            sideGrad.addColorStop(1, '#070a18');
-            ctx.fillStyle = sideGrad;
+            ctx.fillStyle = '#0b0f15';
             ctx.fillRect(0, 0, canvas.width, SIDE_H);
-            // grid
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+            // 오실로스코프 모눈
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.055)';
             ctx.lineWidth = 1;
-            for (let i = 0; i < canvas.width; i += 40) {
+            for (let i = 0; i < canvas.width; i += 20) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, SIDE_H); ctx.stroke();
             }
-            for (let i = 0; i < SIDE_H; i += 40) {
+            for (let i = 0; i < SIDE_H; i += 20) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.10)';
+            for (let i = 0; i < canvas.width; i += 100) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, SIDE_H); ctx.stroke();
+            }
+            for (let i = 0; i < SIDE_H; i += 100) {
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
             // 라벨 (왼쪽 위)
             ctx.font = 'bold 10px ui-monospace, monospace';
-            ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
+            ctx.fillStyle = 'rgba(116, 128, 141, 0.8)';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
             ctx.fillText('▮ SIDE VIEW', 12, 10);
@@ -723,7 +706,7 @@
             ctx.save();
             const grad = ctx.createLinearGradient(0, SIDE_H - 1, canvas.width, SIDE_H - 1);
             grad.addColorStop(0, 'transparent');
-            grad.addColorStop(0.5, 'rgba(168, 139, 250, 0.6)');
+            grad.addColorStop(0.5, 'rgba(148, 163, 184, 0.35)');
             grad.addColorStop(1, 'transparent');
             ctx.strokeStyle = grad;
             ctx.lineWidth = 1;
@@ -735,7 +718,7 @@
         function drawCrossViewBg() {
             ctx.save();
             ctx.font = 'bold 10px ui-monospace, monospace';
-            ctx.fillStyle = 'rgba(244, 114, 182, 0.5)';
+            ctx.fillStyle = 'rgba(116, 128, 141, 0.8)';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
             ctx.fillText('◯ CROSS-SECTION VIEW · 합성 자기력선', 12, SIDE_H + 10);
@@ -749,21 +732,21 @@
 
             // 그림자
             ctx.save();
-            ctx.shadowBlur = 24;
+            ctx.shadowBlur = 4;
             ctx.shadowColor = glowColor;
             // 본체: 좌→우 그라데이션 (어둠-밝음-어둠) 으로 원통 입체감
             const cylGrad = ctx.createLinearGradient(x - halfW, 0, x + halfW, 0);
-            cylGrad.addColorStop(0, '#1f2937');
+            cylGrad.addColorStop(0, '#161d27');
             cylGrad.addColorStop(0.18, baseColor);
-            cylGrad.addColorStop(0.5, '#fef3c7');
+            cylGrad.addColorStop(0.5, '#d8dee6');
             cylGrad.addColorStop(0.82, baseColor);
-            cylGrad.addColorStop(1, '#1f2937');
+            cylGrad.addColorStop(1, '#161d27');
             ctx.fillStyle = cylGrad;
             roundRect(ctx, x - halfW, yTop, halfW * 2, yBot - yTop, halfW);
             ctx.fill();
             // 외곽 라인
             ctx.lineWidth = 1.2;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+            ctx.strokeStyle = 'rgba(212, 220, 230, 0.18)';
             ctx.stroke();
             ctx.restore();
 
@@ -771,21 +754,21 @@
             // 위쪽 캡 (살짝 위에서 본 듯)
             ctx.save();
             const capGradTop = ctx.createRadialGradient(x, yTop, 1, x, yTop, halfW + 4);
-            capGradTop.addColorStop(0, '#fef9c3');
+            capGradTop.addColorStop(0, '#d8dee6');
             capGradTop.addColorStop(0.5, baseColor);
-            capGradTop.addColorStop(1, '#0f172a');
+            capGradTop.addColorStop(1, '#0d1117');
             ctx.fillStyle = capGradTop;
             ctx.beginPath();
             ctx.ellipse(x, yTop, halfW, 6, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.lineWidth = 1;
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.strokeStyle = 'rgba(212,220,230,0.3)';
             ctx.stroke();
             ctx.restore();
 
             // 아래 캡 (살짝 어둡게)
             ctx.save();
-            ctx.fillStyle = '#0a0e1e';
+            ctx.fillStyle = '#0b0f15';
             ctx.beginPath();
             ctx.ellipse(x, yBot, halfW, 6, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -796,9 +779,9 @@
 
             // 라벨 (위쪽)
             ctx.save();
-            ctx.font = 'bold 11px sans-serif';
+            ctx.font = 'bold 11px ui-monospace, monospace';
             const tw = ctx.measureText(label).width;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.92)';
             roundRect(ctx, x - tw/2 - 6, yTop - 28, tw + 12, 18, 9);
             ctx.fill();
             ctx.fillStyle = baseColor;
@@ -812,7 +795,7 @@
                 const speed = (current / 50) * 2.2;
                 const offset = (state.time * speed * -direction) % 36;
                 ctx.save();
-                ctx.shadowBlur = 12;
+                ctx.shadowBlur = 2;
                 ctx.shadowColor = glowColor;
                 for (let py = yTop + 12 + offset; py < yBot - 14; py += 36) {
                     if (py > yTop + 8 && py < yBot - 14) {
@@ -842,10 +825,10 @@
             const arrowLen = Math.min(magnitude * 1.3, state.distance / 2 - 14);
             const y = SIDE_H / 2 + 10;
             ctx.save();
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur = 2;
             ctx.shadowColor = glowColor;
             ctx.strokeStyle = color;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 3;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -856,7 +839,7 @@
             ctx.save();
             ctx.translate(x + dir * arrowLen, y);
             ctx.rotate(dir === 1 ? 0 : Math.PI);
-            ctx.shadowBlur = 12;
+            ctx.shadowBlur = 2;
             ctx.shadowColor = glowColor;
             ctx.beginPath();
             ctx.moveTo(0, 0); ctx.lineTo(-11, -6); ctx.lineTo(-11, 6); ctx.closePath();
@@ -868,7 +851,7 @@
             ctx.save();
             ctx.font = 'italic bold 14px serif';
             const labelX = x + dir * (arrowLen / 2);
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.92)';
             const lw = ctx.measureText('F').width;
             roundRect(ctx, labelX - lw/2 - 5, y - 24, lw + 10, 18, 9);
             ctx.fill();
@@ -918,18 +901,18 @@
 
             // ---------- 측면 뷰 ----------
             drawSideViewBg();
-            drawWireCylinder(sideWire1X, '#ef4444', '#f43f5e', state.wire1.current, state.wire1.direction, '도선 1');
-            drawWireCylinder(sideWire2X, '#3b82f6', '#60a5fa', state.wire2.current, state.wire2.direction, '도선 2');
+            drawWireCylinder(sideWire1X, '#e0a458', 'rgba(224,164,88,0.4)', state.wire1.current, state.wire1.direction, '도선 1');
+            drawWireCylinder(sideWire2X, '#5eddd6', 'rgba(94,221,214,0.4)', state.wire2.current, state.wire2.direction, '도선 2');
             // 측면 힘 벡터
             const forceMag = (state.wire1.current * state.wire2.current) / (state.distance / 12);
             const isAttract = state.wire1.direction === state.wire2.direction;
             if (forceMag > 0.5) {
                 if (isAttract) {
-                    drawSideForceArrow(sideWire1X, 1, forceMag, '#fda4af', '#f87171');
-                    drawSideForceArrow(sideWire2X, -1, forceMag, '#93c5fd', '#60a5fa');
+                    drawSideForceArrow(sideWire1X, 1, forceMag, '#e0a458', 'rgba(224,164,88,0.4)');
+                    drawSideForceArrow(sideWire2X, -1, forceMag, '#5eddd6', 'rgba(94,221,214,0.4)');
                 } else {
-                    drawSideForceArrow(sideWire1X, -1, forceMag, '#fda4af', '#f87171');
-                    drawSideForceArrow(sideWire2X, 1, forceMag, '#93c5fd', '#60a5fa');
+                    drawSideForceArrow(sideWire1X, -1, forceMag, '#e0a458', 'rgba(224,164,88,0.4)');
+                    drawSideForceArrow(sideWire2X, 1, forceMag, '#5eddd6', 'rgba(94,221,214,0.4)');
                 }
             }
 
@@ -965,11 +948,11 @@
             requestAnimationFrame(animate);
 
             if (window.gsap) {
-                gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
-                gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
-                gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
-                gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
-                gsap.from('#guideCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+                gsap.from('#hdr', { y: -10, opacity: 0, duration: 0.5, ease: 'power2.out' });
+                gsap.from('#livePanel .live-pill', { y: 8, opacity: 0, duration: 0.45, stagger: 0.05, delay: 0.1, ease: 'power2.out' });
+                gsap.from('#canvasCard', { opacity: 0, duration: 0.55, delay: 0.15, ease: 'power2.out' });
+                gsap.from('#controlPanel', { y: 10, opacity: 0, duration: 0.45, delay: 0.25, ease: 'power2.out' });
+                gsap.from('#guideCard', { y: 10, opacity: 0, duration: 0.45, delay: 0.35, ease: 'power2.out' });
             }
         }
 

@@ -8,173 +8,161 @@
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
+:root {
+    --bg-0: #0d1117;
+    --bg-1: #11161d;
+    --panel: #131922;
+    --panel-2: #161d27;
+    --border: rgba(148, 163, 184, 0.16);
+    --border-soft: rgba(148, 163, 184, 0.10);
+    --grid: rgba(125, 211, 252, 0.055);
+    --grid-strong: rgba(125, 211, 252, 0.10);
+    --teal: #5eddd6;
+    --amber: #e0a458;
+    --slate-txt: #c4ccd6;
+    --ink: #aab4c0;
+}
 body {
-    background:
-        radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
-        radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
-        radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
-        #060814;
-    color: #e5e7eb;
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    color: #d3dae3;
     font-family: 'Pretendard', system-ui, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
 }
-.stars {
-    position: fixed; inset: 0; pointer-events: none;
-    background-image:
-        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
-        radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
-        radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
-        radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
-        radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
-    background-size: 600px 600px;
-    animation: twinkle 6s ease-in-out infinite alternate;
-    opacity: 0.6;
-}
-@keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
+.stars { display: none; }
 
 .canvas-wrap {
     position: relative;
-    border-radius: 18px;
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
-    box-shadow:
-        0 30px 100px -20px rgba(99, 102, 241, 0.45),
-        0 0 40px rgba(244, 114, 182, 0.15);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #0b0f15;
+    overflow: hidden;
 }
 canvas#main {
     display: block;
     width: 100%;
     height: 620px;
-    border-radius: 17px;
-    background: #050714;
+    border-radius: 9px;
+    background:
+        linear-gradient(var(--grid-strong) 1px, transparent 1px) 0 0 / 100px 100px,
+        linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px) 0 0 / 100px 100px,
+        linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+        #0b0f15;
 }
 canvas#waveCanvas {
     display: block;
     width: 100%;
     height: 180px;
-    border-radius: 12px;
-    background: #050714;
+    border-radius: 9px;
+    background:
+        linear-gradient(var(--grid-strong) 1px, transparent 1px) 0 0 / 100px 100px,
+        linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px) 0 0 / 100px 100px,
+        linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+        #0b0f15;
 }
 .glass {
-    background: rgba(15, 23, 42, 0.55);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(148, 163, 184, 0.15);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.7);
 }
 .pulse-dot {
-    position: relative; display: inline-block;
-    width: 8px; height: 8px; border-radius: 9999px;
-    background: #34d399; box-shadow: 0 0 12px #34d399;
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 9999px;
+    background: var(--teal);
+    box-shadow: 0 0 5px rgba(94, 221, 214, 0.55);
 }
-.pulse-dot::after {
-    content: ''; position: absolute; inset: -6px; border-radius: 9999px;
-    border: 2px solid #34d399; opacity: 0.6;
-    animation: pulseRing 1.8s ease-out infinite;
-}
-@keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.8 } 100% { transform: scale(1.8); opacity: 0 } }
 
 input[type=range] {
     -webkit-appearance: none;
-    height: 5px;
+    height: 4px;
     border-radius: 9999px;
-    background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+    background: rgba(148, 163, 184, 0.22);
 }
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 20px; height: 20px;
+    width: 15px; height: 15px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #fda4af, #c4b5fd, #67e8f9);
-    box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+    background: #cdd5df;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
     cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.95);
+    border: 3px solid #2a3340;
 }
+input[type=range]:focus { outline: none; }
+input[type=range]:focus::-webkit-slider-thumb { background: var(--teal); }
 
-.chip { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); }
-.chip-n { background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06)); border-color: rgba(99,102,241,0.5); color: #a5b4fc; }
-.chip-b { background: linear-gradient(135deg, rgba(244,114,182,0.22), rgba(244,114,182,0.06)); border-color: rgba(244,114,182,0.5); color: #f9a8d4; }
-.chip-r { background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(245,158,11,0.06)); border-color: rgba(245,158,11,0.5); color: #fcd34d; }
+.chip { background: var(--panel-2); border: 1px solid var(--border-soft); }
+.chip-n { background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(94,221,214,0.55); color: var(--slate-txt); }
+.chip-b { background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(224,164,88,0.7); color: var(--slate-txt); }
+.chip-r { background: var(--panel-2); border: 1px solid var(--border-soft); border-left: 2px solid rgba(224,164,88,0.55); color: var(--slate-txt); }
 
 .live-pill {
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    transition: border-color 200ms, box-shadow 200ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    transition: border-color 200ms;
 }
-.live-pill.flash {
-    border-color: rgba(244, 114, 182, 0.6);
-    box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
-}
-.live-pill.warn {
-    border-color: rgba(245, 158, 11, 0.7);
-    box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
-}
+.live-pill.flash { border-color: rgba(94, 221, 214, 0.40); }
+.live-pill.warn  { border-color: rgba(224, 164, 88, 0.55); }
 .live-num {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
     font-variant-numeric: tabular-nums;
-    background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #d8f3f0;
+    letter-spacing: 0.01em;
 }
 .formula-card {
-    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.08)), rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(168,139,250,0.35);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid rgba(94, 221, 214, 0.35);
 }
 .feature-row {
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(148, 163, 184, 0.08);
-    transition: transform 220ms, background 220ms, border-color 220ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    transition: border-color 180ms;
 }
-.feature-row:hover {
-    transform: translateX(2px);
-    background: rgba(30, 41, 59, 0.7);
-    border-color: rgba(168, 139, 250, 0.4);
-}
+.feature-row:hover { border-color: rgba(94, 221, 214, 0.30); }
 .preset-btn {
-    background: rgba(99, 102, 241, 0.18);
-    border: 1px solid rgba(99, 102, 241, 0.45);
-    color: #c7d2fe;
-    transition: all 200ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    color: var(--ink);
+    transition: border-color 160ms, color 160ms;
 }
 .preset-btn:hover {
-    background: rgba(99, 102, 241, 0.35);
-    transform: translateY(-1px);
-    box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+    border-color: rgba(94, 221, 214, 0.45);
+    color: var(--slate-txt);
 }
 .toggle-btn {
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(168, 139, 250, 0.25);
-    color: #c4b5fd;
-    transition: all 200ms;
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+    color: var(--ink);
+    transition: border-color 160ms, color 160ms, background 160ms;
 }
 .toggle-btn.active {
-    background: linear-gradient(135deg, rgba(168,85,247,0.4), rgba(99,102,241,0.4));
-    border-color: rgba(216, 180, 254, 0.8);
-    color: #fff;
-    box-shadow: 0 0 18px rgba(168, 139, 250, 0.5);
+    background: rgba(94, 221, 214, 0.10);
+    border-color: rgba(94, 221, 214, 0.55);
+    color: #d8f3f0;
 }
-.math-container { font-size: 1.05rem; color: #e0e7ff; }
+.math-container { font-size: 1.05rem; color: #cdd5df; }
 .neon-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+    background: var(--border-soft);
 }
+.eyebrow { color: #74808d; }
+.mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
 </style>
 </head>
 <body class="p-4 md:p-8">
-<div class="stars"></div>
 
 <div class="max-w-6xl mx-auto relative">
     <header class="mb-6" id="hdr">
-        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+        <div class="flex items-center gap-2 text-xs font-semibold tracking-widest" style="color:#7d8a97">
             <span class="pulse-dot"></span>
             INTERACTIVE · DC MACHINE · COMMUTATOR & BRUSH
         </div>
-        <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
-            ⚙️ 직류기 동작 원리 시뮬레이터
+        <h1 class="mt-2 text-3xl md:text-4xl font-bold" style="color:#e3e9f0">
+            직류기 동작 원리 시뮬레이터
         </h1>
-        <p class="mt-2 text-slate-400 text-sm">N-S 자기장 속에서 전기자(코일)가 회전하면 e = BLv·sinθ로 유기 기전력 발생. 정류자가 매 반회전마다 극성을 뒤집어 펄스 직류를 만들어냅니다.</p>
+        <p class="mt-2 text-sm" style="color:#8b97a4">N-S 자기장 속에서 전기자(코일)가 회전하면 e = BLv·sinθ로 유기 기전력 발생. 정류자가 매 반회전마다 극성을 뒤집어 펄스 직류를 만들어냅니다.</p>
     </header>
 
     <!-- 라이브 패널 -->
@@ -228,7 +216,7 @@ input[type=range]::-webkit-slider-thumb {
             <div class="glass rounded-2xl p-5">
                 <h3 class="font-bold text-sm flex items-center gap-2 tracking-wider">
                     <span class="text-lg">📐</span>
-                    <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">직류기 핵심 공식</span>
+                    <span style="color:#e3e9f0">직류기 핵심 공식</span>
                 </h3>
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="formula-card rounded-xl p-3">
@@ -357,9 +345,9 @@ function drawMain() {
 
     // 배경 그라데이션
     const bg = ctx.createRadialGradient(W/2, H/2, 40, W/2, H/2, Math.max(W, H) * 0.7);
-    bg.addColorStop(0, 'rgba(30, 27, 75, 0.35)');
-    bg.addColorStop(0.5, 'rgba(15, 23, 42, 0.2)');
-    bg.addColorStop(1, 'rgba(5, 7, 20, 0.85)');
+    bg.addColorStop(0, 'rgba(22, 29, 39, 0.30)');
+    bg.addColorStop(0.5, 'rgba(17, 22, 29, 0.16)');
+    bg.addColorStop(1, 'rgba(11, 15, 21, 0.78)');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
@@ -1041,8 +1029,8 @@ function drawWave() {
 
     // 배경
     const bg = wctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#0a0e1e');
-    bg.addColorStop(1, '#070a18');
+    bg.addColorStop(0, 'rgba(13,17,23,0.55)');
+    bg.addColorStop(1, 'rgba(11,15,21,0.78)');
     wctx.fillStyle = bg;
     wctx.fillRect(0, 0, W, H);
 

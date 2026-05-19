@@ -8,168 +8,139 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
+        :root {
+            --bg-0: #0d1117;
+            --bg-1: #11161d;
+            --panel: #131922;
+            --panel-2: #161d27;
+            --border: rgba(148, 163, 184, 0.16);
+            --border-soft: rgba(148, 163, 184, 0.10);
+            --grid: rgba(125, 211, 252, 0.055);
+            --grid-strong: rgba(125, 211, 252, 0.10);
+            --teal: #5eddd6;
+            --amber: #e0a458;
+            --slate-txt: #c4ccd6;
+            --ink: #aab4c0;
+        }
         body {
-            background:
-                radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
-                radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
-                radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
-                #060814;
-            color: #e5e7eb;
+            background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+            color: #d3dae3;
+            font-family: 'Pretendard', system-ui, sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
         }
-        /* 배경 별 입자 (깜빡임) */
-        .stars {
-            position: fixed; inset: 0; pointer-events: none;
-            background-image:
-                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
-                radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
-            background-size: 600px 600px;
-            animation: twinkle 6s ease-in-out infinite alternate;
-            opacity: 0.7;
-        }
-        @keyframes twinkle {
-            0% { opacity: 0.4; transform: translateY(0px); }
-            100% { opacity: 0.85; transform: translateY(-6px); }
-        }
+        .stars { display: none; }
 
         .canvas-wrap {
             position: relative;
-            border-radius: 18px;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
-            box-shadow:
-                0 30px 100px -20px rgba(99, 102, 241, 0.45),
-                0 0 40px rgba(244, 114, 182, 0.15);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #0b0f15;
+            overflow: hidden;
         }
         canvas#efCanvas {
             display: block;
             width: 100%;
             height: 540px;
-            border-radius: 17px;
-            background: #050714;
+            background: #0b0f15;
             cursor: crosshair;
             touch-action: none;
         }
-        /* bloom (filter blur 살짝) — 너무 흐려지지 않게 SVG filter 사용 */
-        .bloom { filter: drop-shadow(0 0 8px rgba(125,211,252,0.25)); }
+        .bloom { filter: none; }
 
         .glass {
-            background: rgba(15, 23, 42, 0.55);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.7);
         }
         .neon-divider {
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+            background: var(--border-soft);
         }
         .pulse-dot {
-            position: relative; display: inline-block;
-            width: 8px; height: 8px; border-radius: 9999px;
-            background: #34d399; box-shadow: 0 0 12px #34d399;
-        }
-        .pulse-dot::after {
-            content: ''; position: absolute; inset: -6px;
-            border-radius: 9999px; border: 2px solid #34d399;
-            opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
-        }
-        @keyframes pulseRing {
-            0% { transform: scale(0.6); opacity: 0.8; }
-            100% { transform: scale(1.8); opacity: 0; }
+            display: inline-block;
+            width: 7px; height: 7px; border-radius: 9999px;
+            background: var(--teal);
+            box-shadow: 0 0 5px rgba(94, 221, 214, 0.55);
         }
         input[type=range] {
             -webkit-appearance: none;
-            height: 5px;
+            height: 4px;
             border-radius: 9999px;
-            background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(59,130,246,0.4));
+            background: rgba(148, 163, 184, 0.22);
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px; height: 20px;
+            width: 15px; height: 15px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #fda4af, #c4b5fd, #93c5fd);
-            box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+            background: #cdd5df;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
             cursor: pointer;
-            border: 2px solid rgba(255,255,255,0.95);
+            border: 3px solid #2a3340;
         }
+        input[type=range]:focus { outline: none; }
+        input[type=range]:focus::-webkit-slider-thumb { background: var(--teal); }
         .chip-positive {
-            background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06));
-            border: 1px solid rgba(244, 63, 94, 0.5);
-            color: #fda4af;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(224,164,88,0.6);
+            color: var(--slate-txt);
         }
         .chip-negative {
-            background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.06));
-            border: 1px solid rgba(59, 130, 246, 0.5);
-            color: #93c5fd;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(94,221,214,0.55);
+            color: var(--slate-txt);
         }
         .math-card {
-            background:
-                linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
-                rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(168, 139, 250, 0.35);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-top: 2px solid rgba(94, 221, 214, 0.35);
         }
-        .math-container { font-size: 1.15rem; color: #e0e7ff; }
+        .math-container { font-size: 1.1rem; color: #cdd5df; }
         .feature-row {
-            background: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.08);
-            transition: transform 220ms, background 220ms, border-color 220ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            transition: border-color 180ms;
         }
-        .feature-row:hover {
-            transform: translateX(2px);
-            background: rgba(30, 41, 59, 0.7);
-            border-color: rgba(168, 139, 250, 0.4);
-        }
+        .feature-row:hover { border-color: rgba(94, 221, 214, 0.30); }
         .reset-btn {
-            background: rgba(99, 102, 241, 0.18);
-            border: 1px solid rgba(99, 102, 241, 0.45);
-            color: #c7d2fe;
-            transition: all 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            color: var(--slate-txt);
+            transition: border-color 160ms, color 160ms;
         }
-        .reset-btn:hover {
-            background: rgba(99, 102, 241, 0.35);
-            transform: translateY(-1px);
-            box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
-        }
+        .reset-btn:hover { border-color: rgba(94, 221, 214, 0.5); color: #d8f3f0; }
 
         /* 라이브 데이터 패널 */
         .live-pill {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            transition: border-color 200ms, box-shadow 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            transition: border-color 200ms;
         }
-        .live-pill.flash {
-            border-color: rgba(244, 114, 182, 0.6);
-            box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
-        }
+        .live-pill.flash { border-color: rgba(94, 221, 214, 0.40); }
         .live-num {
+            font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
             font-variant-numeric: tabular-nums;
-            background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #d8f3f0;
+            letter-spacing: 0.01em;
         }
+        .mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+        .eyebrow { color: #74808d; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="stars"></div>
 
     <div class="max-w-6xl mx-auto relative">
         <header class="mb-6" id="hdr">
-            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest" style="color:#7d8a97">
                 <span class="pulse-dot"></span>
-                INTERACTIVE · ELECTRIC FIELD
+                ELECTRIC FIELD
             </div>
-            <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
-                ⚡ 전기장 시뮬레이터
+            <h1 class="mt-2 text-3xl md:text-4xl font-bold" style="color:#e3e9f0">
+                전기장 시뮬레이터
             </h1>
-            <p class="mt-2 text-slate-400 text-sm">두 점전하의 전하량을 조절하고, 점을 드래그하면 전위·전기력선·입자 흐름이 모두 실시간으로 반응합니다.</p>
+            <p class="mt-2 text-sm" style="color:#8b97a4">두 점전하의 전하량을 조절하고, 점을 드래그하면 전위·전기력선·입자 흐름이 모두 실시간으로 반응합니다.</p>
         </header>
 
         <!-- 라이브 데이터 패널 -->
@@ -196,7 +167,7 @@
             <!-- 캔버스 영역 -->
             <div class="lg:col-span-2 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto glass rounded-2xl p-4 shadow-2xl" id="canvasCard">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs font-semibold text-slate-400 tracking-wide">DRAG · 전하를 끌어 이동 · MOVE · 마우스로 전기장 측정</span>
+                    <span class="text-xs font-semibold eyebrow tracking-wide mono">DRAG · 전하를 끌어 이동 · MOVE · 마우스로 전기장 측정</span>
                     <button id="resetBtn" class="reset-btn rounded-md px-3 py-1.5 text-xs font-bold">초기화</button>
                 </div>
                 <div class="canvas-wrap">
@@ -221,25 +192,24 @@
             <div class="space-y-4" id="sideCol">
                 <div class="glass rounded-2xl p-5">
                     <h2 class="text-base font-bold flex items-center gap-2">
-                        <span class="text-lg">💡</span>
-                        <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">전기력선 핵심 5</span>
+                        <span style="color:#9fb0c0">전기력선 핵심 5</span>
                     </h2>
-                    <ul class="mt-4 space-y-2 text-xs text-slate-300">
-                        <li class="feature-row rounded-lg p-3"><span class="font-bold text-rose-300">1. 시작·끝</span> · <span class="text-rose-300 font-bold">양(+)</span>에서 시작 → <span class="text-blue-300 font-bold">음(-)</span>에서 끝</li>
-                        <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">2. 밀도</span> · 전기력선의 밀도 = 전기장 세기</li>
-                        <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">3. 교차 금지</span> · 서로 교차하거나 굴절하지 않는다</li>
-                        <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">4. 전위 방향</span> · 높은 전위 → 낮은 전위</li>
-                        <li class="feature-row rounded-lg p-3"><span class="font-bold text-indigo-300">5. 수직 출입</span> · 전하 표면에 항상 수직</li>
+                    <ul class="mt-4 space-y-2 text-xs" style="color:#9aa6b3">
+                        <li class="feature-row rounded-lg p-3"><span class="font-bold" style="color:#e0a458">1. 시작·끝</span> · <span class="font-bold" style="color:#e0a458">양(+)</span>에서 시작 → <span class="font-bold" style="color:#5eddd6">음(-)</span>에서 끝</li>
+                        <li class="feature-row rounded-lg p-3"><span class="font-bold" style="color:#9fb0c0">2. 밀도</span> · 전기력선의 밀도 = 전기장 세기</li>
+                        <li class="feature-row rounded-lg p-3"><span class="font-bold" style="color:#9fb0c0">3. 교차 금지</span> · 서로 교차하거나 굴절하지 않는다</li>
+                        <li class="feature-row rounded-lg p-3"><span class="font-bold" style="color:#9fb0c0">4. 전위 방향</span> · 높은 전위 → 낮은 전위</li>
+                        <li class="feature-row rounded-lg p-3"><span class="font-bold" style="color:#9fb0c0">5. 수직 출입</span> · 전하 표면에 항상 수직</li>
                     </ul>
                 </div>
 
                 <div class="math-card rounded-2xl p-5">
-                    <h3 class="font-bold text-sm mb-3 tracking-wider text-indigo-200">📐 전기장의 세기</h3>
+                    <h3 class="font-bold text-sm mb-3 tracking-wider" style="color:#9fb0c0">전기장의 세기</h3>
                     <div class="math-container">
                         $$E = \frac{Q}{4\pi\epsilon_0 r^2} \;\;[\text{V/m}]$$
                     </div>
                     <div class="neon-divider my-3"></div>
-                    <p class="text-[11px] text-slate-400">진공 중 유전율 \(\epsilon_0 \approx 8.854 \times 10^{-12}\) F/m</p>
+                    <p class="text-[11px]" style="color:#8b97a4">진공 중 유전율 \(\epsilon_0 \approx 8.854 \times 10^{-12}\) F/m</p>
                 </div>
             </div>
         </div>
@@ -358,7 +328,7 @@
 
         function flashCanvasCard() {
             const cc = document.getElementById('canvasCard');
-            if (window.gsap) gsap.fromTo(cc, { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' }, { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+            if (window.gsap) gsap.fromTo(cc, { borderColor: 'rgba(94,221,214,0.35)' }, { borderColor: 'rgba(148,163,184,0.16)', duration: 0.6, ease: 'power2.out' });
         }
 
         function getFieldAt(x, y) {
@@ -399,22 +369,22 @@
                     const n = Math.max(-1, Math.min(1, v / 1.5));
                     let r, g, b;
                     if (n >= 0) {
-                        // 양전위: 핑크/마젠타
+                        // 양전위: 호박 (계측 톤)
                         const a = Math.pow(n, 0.6);
-                        r = Math.round(40 + 220 * a);
-                        g = Math.round(8 + 30 * a);
-                        b = Math.round(70 + 100 * a);
+                        r = Math.round(20 + 200 * a);
+                        g = Math.round(16 + 124 * a);
+                        b = Math.round(24 + 40 * a);
                     } else {
-                        // 음전위: 시안/블루
+                        // 음전위: 청록 (계측 톤)
                         const a = Math.pow(-n, 0.6);
-                        r = Math.round(8 + 20 * a);
-                        g = Math.round(20 + 100 * a);
-                        b = Math.round(60 + 200 * a);
+                        r = Math.round(16 + 30 * a);
+                        g = Math.round(22 + 160 * a);
+                        b = Math.round(28 + 150 * a);
                     }
                     data[idx++] = r;
                     data[idx++] = g;
                     data[idx++] = b;
-                    data[idx++] = 200; // 살짝 투명
+                    data[idx++] = 130; // 더 절제된 투명도
                 }
             }
             // 작은 buffer를 큰 canvas에 stretch
@@ -445,25 +415,25 @@
                     let r, g, b;
                     if (n >= 0) {
                         const a = Math.pow(n, 0.55);
-                        r = Math.round(35 + 220 * a);
-                        g = Math.round(10 + 30 * a);
-                        b = Math.round(70 + 110 * a);
+                        r = Math.round(20 + 200 * a);
+                        g = Math.round(16 + 124 * a);
+                        b = Math.round(24 + 40 * a);
                     } else {
                         const a = Math.pow(-n, 0.55);
-                        r = Math.round(10 + 20 * a);
-                        g = Math.round(25 + 110 * a);
-                        b = Math.round(70 + 200 * a);
+                        r = Math.round(16 + 30 * a);
+                        g = Math.round(22 + 160 * a);
+                        b = Math.round(28 + 150 * a);
                     }
                     data[idx++] = r;
                     data[idx++] = g;
                     data[idx++] = b;
-                    data[idx++] = 220;
+                    data[idx++] = 150;
                 }
             }
             offCtx.putImageData(buf, 0, 0);
             ctx.save();
             ctx.imageSmoothingEnabled = true;
-            ctx.globalAlpha = 0.85;
+            ctx.globalAlpha = 0.55;
             ctx.drawImage(offCanvas, 0, 0, canvas.width, canvas.height);
             ctx.restore();
         }
@@ -499,13 +469,10 @@
         }
         function drawParticles() {
             ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
             for (const p of particles) {
                 const ratio = p.life / p.maxLife;
-                const alpha = Math.sin(ratio * Math.PI) * 0.95;
-                ctx.fillStyle = `rgba(186, 230, 253, ${alpha})`;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = '#7dd3fc';
+                const alpha = Math.sin(ratio * Math.PI) * 0.65;
+                ctx.fillStyle = `rgba(207, 238, 236, ${alpha})`;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -540,14 +507,12 @@
             }
             if (pts.length < 2) return;
             ctx.save();
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = isPositive ? '#f472b6' : '#60a5fa';
             const last = pts[pts.length - 1];
             const grad = ctx.createLinearGradient(startX, startY, last[0], last[1]);
-            grad.addColorStop(0, isPositive ? 'rgba(252, 165, 165, 0.9)' : 'rgba(125, 211, 252, 0.55)');
-            grad.addColorStop(1, isPositive ? 'rgba(196, 181, 253, 0.5)' : 'rgba(125, 211, 252, 0.9)');
+            grad.addColorStop(0, isPositive ? 'rgba(224, 164, 88, 0.85)' : 'rgba(94, 221, 214, 0.5)');
+            grad.addColorStop(1, isPositive ? 'rgba(224, 164, 88, 0.5)' : 'rgba(94, 221, 214, 0.85)');
             ctx.strokeStyle = grad;
-            ctx.lineWidth = 1.6;
+            ctx.lineWidth = 1.5;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(startX, startY);
@@ -559,11 +524,9 @@
         function drawArrowhead(x, y, angle, isPositive) {
             ctx.save();
             ctx.translate(x, y); ctx.rotate(angle);
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = isPositive ? '#f472b6' : '#60a5fa';
             ctx.beginPath();
             ctx.moveTo(3, 0); ctx.lineTo(-7, -4); ctx.lineTo(-7, 4); ctx.closePath();
-            ctx.fillStyle = isPositive ? 'rgba(254, 205, 211, 0.95)' : 'rgba(207, 250, 254, 0.95)';
+            ctx.fillStyle = isPositive ? 'rgba(233, 192, 138, 0.95)' : 'rgba(159, 233, 228, 0.95)';
             ctx.fill();
             ctx.restore();
         }
@@ -571,12 +534,19 @@
         // ---------- 격자 (전위 위에 덧대기) ----------
         function drawGrid() {
             ctx.save();
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
             ctx.lineWidth = 1;
-            for (let i = 0; i < canvas.width; i += 40) {
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.055)';
+            for (let i = 0; i < canvas.width; i += 20) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
             }
-            for (let i = 0; i < canvas.height; i += 40) {
+            for (let i = 0; i < canvas.height; i += 20) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.10)';
+            for (let i = 0; i < canvas.width; i += 100) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 100) {
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
             ctx.restore();
@@ -596,10 +566,8 @@
 
             // 작은 링
             ctx.save();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.strokeStyle = 'rgba(170, 180, 192, 0.7)';
             ctx.lineWidth = 1.4;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#fef9c3';
             ctx.beginPath();
             ctx.arc(x, y, 10, 0, Math.PI * 2);
             ctx.stroke();
@@ -610,10 +578,8 @@
             const ux = f.ex / m, uy = f.ey / m;
             const tx = x + ux * len, ty = y + uy * len;
             ctx.save();
-            ctx.shadowBlur = 14;
-            ctx.shadowColor = '#fde047';
-            ctx.strokeStyle = 'rgba(253, 224, 71, 0.95)';
-            ctx.lineWidth = 2.4;
+            ctx.strokeStyle = 'rgba(224, 164, 88, 0.95)';
+            ctx.lineWidth = 2.2;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(x, y);
@@ -624,7 +590,7 @@
             ctx.translate(tx, ty); ctx.rotate(ang);
             ctx.beginPath();
             ctx.moveTo(0, 0); ctx.lineTo(-9, -5); ctx.lineTo(-9, 5); ctx.closePath();
-            ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.fillStyle = 'rgba(224, 164, 88, 0.95)';
             ctx.fill();
             ctx.restore();
 
@@ -635,10 +601,10 @@
             const text = `|E| ≈ ${mag}`;
             const tw = ctx.measureText(text).width;
             const lx = x + 14, ly = y - 14;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-            roundRect(ctx, lx - 6, ly - 12, tw + 12, 18, 9);
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.85)';
+            roundRect(ctx, lx - 6, ly - 12, tw + 12, 18, 6);
             ctx.fill();
-            ctx.fillStyle = '#fde047';
+            ctx.fillStyle = '#e9c08a';
             ctx.fillText(text, lx, ly + 2);
             ctx.restore();
 
@@ -648,73 +614,45 @@
         // ---------- 전하 ----------
         function drawCharge(c) {
             if (c.q === 0) {
-                ctx.fillStyle = '#64748b';
+                ctx.fillStyle = '#3a4654';
                 ctx.beginPath(); ctx.arc(c.x, c.y, 20, 0, Math.PI * 2); ctx.fill();
                 return;
             }
             const isPos = c.q > 0;
-            const baseColor = isPos ? '#ef4444' : '#3b82f6';
-            const accent = isPos ? '#fda4af' : '#93c5fd';
+            const baseColor = isPos ? '#e0a458' : '#5eddd6';
+            const accent = isPos ? '#e9c08a' : '#9fe9e4';
 
-            // 펄스 링 2개 (어긋난 위상)
-            for (let k = 0; k < 2; k++) {
-                const phase = k * Math.PI;
-                const pulseR = 32 + Math.sin(t * 2.2 + phase) * 10;
-                const pulseAlpha = 0.35 + Math.sin(t * 2.2 + phase) * 0.18;
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, pulseAlpha);
-                ctx.strokeStyle = baseColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, pulseR + k * 8, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
-            }
-
-            // 외곽 글로우 (drag/hover 시 강하게)
-            const glow = (draggingCharge === c || hoverCharge === c) ? 70 : 42;
+            // 본체 (계측 톤 솔리드)
             ctx.save();
-            ctx.shadowBlur = glow;
-            ctx.shadowColor = baseColor;
-            ctx.fillStyle = baseColor;
+            ctx.fillStyle = '#1a212b';
             ctx.beginPath();
             ctx.arc(c.x, c.y, 22, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
 
-            // 본체 그라데이션
-            const g = ctx.createRadialGradient(c.x - 6, c.y - 7, 2, c.x, c.y, 23);
-            g.addColorStop(0, '#ffffff');
-            g.addColorStop(0.25, accent);
-            g.addColorStop(0.6, baseColor);
-            g.addColorStop(1, isPos ? '#7f1d1d' : '#1e3a8a');
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(c.x, c.y, 22, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 흰 테두리
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+            // 테두리 (drag/hover 시 약간 강조)
+            const hot = (draggingCharge === c || hoverCharge === c);
+            ctx.lineWidth = hot ? 2.6 : 1.8;
+            ctx.strokeStyle = baseColor;
             ctx.beginPath();
             ctx.arc(c.x, c.y, 22, 0, Math.PI * 2);
             ctx.stroke();
 
             // 부호
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 22px Arial';
+            ctx.fillStyle = accent;
+            ctx.font = 'bold 22px ui-monospace, monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(isPos ? '+' : '−', c.x, c.y + 1);
 
             // 라벨
             const label = `${c.q} μC`;
-            ctx.font = 'bold 11px Arial';
+            ctx.font = 'bold 11px ui-monospace, monospace';
             const tw = ctx.measureText(label).width;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.85)';
             const ly = c.y + 40;
             const padX = 6;
-            roundRect(ctx, c.x - tw/2 - padX, ly - 9, tw + padX*2, 18, 9);
+            roundRect(ctx, c.x - tw/2 - padX, ly - 9, tw + padX*2, 18, 6);
             ctx.fill();
             ctx.fillStyle = accent;
             ctx.fillText(label, c.x, ly + 1);

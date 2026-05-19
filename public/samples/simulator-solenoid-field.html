@@ -16,179 +16,158 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
+        :root {
+            --bg-0: #0d1117;
+            --bg-1: #11161d;
+            --panel: #131922;
+            --panel-2: #161d27;
+            --border: rgba(148, 163, 184, 0.16);
+            --border-soft: rgba(148, 163, 184, 0.10);
+            --teal: #5eddd6;
+            --amber: #e0a458;
+            --slate-txt: #c4ccd6;
+            --ink: #aab4c0;
+        }
         body {
-            background:
-                radial-gradient(1400px 700px at 18% -10%, rgba(99, 102, 241, 0.12), transparent),
-                radial-gradient(1100px 600px at 90% 110%, rgba(244, 114, 182, 0.12), transparent),
-                radial-gradient(800px 800px at 50% 50%, rgba(20, 30, 60, 0.6), transparent),
-                #060814;
-            color: #e5e7eb;
+            background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+            color: #d3dae3;
             min-height: 100vh;
             overflow-x: hidden;
             font-family: 'Pretendard', system-ui, sans-serif;
         }
-        .stars {
-            position: fixed; inset: 0; pointer-events: none;
-            background-image:
-                radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,0.4), transparent),
-                radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.6), transparent),
-                radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.7), transparent),
-                radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent);
-            background-size: 600px 600px;
-            animation: twinkle 6s ease-in-out infinite alternate;
-            opacity: 0.65;
-        }
-        @keyframes twinkle { 0% { opacity: 0.4 } 100% { opacity: 0.85 } }
 
         .canvas-wrap {
             position: relative;
-            border-radius: 18px;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(244,114,182,0.45), rgba(99,102,241,0.45), rgba(34,211,238,0.45));
-            box-shadow: 0 30px 100px -20px rgba(99, 102, 241, 0.45), 0 0 40px rgba(244, 114, 182, 0.15);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #0b0f15;
+            overflow: hidden;
         }
         canvas#solCanvas {
             display: block;
             width: 100%;
             height: 560px;
-            border-radius: 17px;
-            background: #050714;
+            background: #0b0f15;
             cursor: crosshair;
             touch-action: none;
         }
         .glass {
-            background: rgba(15, 23, 42, 0.55);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px -16px rgba(0,0,0,0.7);
         }
         .neon-divider {
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(168, 139, 250, 0.5), transparent);
+            background: var(--border-soft);
         }
         .pulse-dot {
-            position: relative; display: inline-block;
-            width: 8px; height: 8px; border-radius: 9999px;
-            background: #34d399; box-shadow: 0 0 12px #34d399;
-        }
-        .pulse-dot::after {
-            content: ''; position: absolute; inset: -6px;
-            border-radius: 9999px; border: 2px solid #34d399;
-            opacity: 0.6; animation: pulseRing 1.8s ease-out infinite;
-        }
-        @keyframes pulseRing {
-            0% { transform: scale(0.6); opacity: 0.8 }
-            100% { transform: scale(1.8); opacity: 0 }
+            display: inline-block;
+            width: 7px; height: 7px; border-radius: 9999px;
+            background: var(--teal);
+            box-shadow: 0 0 5px rgba(94, 221, 214, 0.55);
         }
         input[type=range] {
             -webkit-appearance: none;
-            height: 5px;
+            height: 4px;
             border-radius: 9999px;
-            background: linear-gradient(90deg, rgba(244,63,94,0.4), rgba(168,139,250,0.4), rgba(34,211,238,0.4));
+            background: rgba(148, 163, 184, 0.22);
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px; height: 20px;
+            width: 15px; height: 15px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #fda4af, #c4b5fd, #67e8f9);
-            box-shadow: 0 0 22px rgba(196, 181, 253, 0.9);
+            background: #cdd5df;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
             cursor: pointer;
-            border: 2px solid rgba(255,255,255,0.95);
+            border: 3px solid #2a3340;
         }
+        input[type=range]:focus { outline: none; }
+        input[type=range]:focus::-webkit-slider-thumb { background: var(--teal); }
         .chip-current {
-            background: linear-gradient(135deg, rgba(244,63,94,0.22), rgba(244,63,94,0.06));
-            border: 1px solid rgba(244, 63, 94, 0.5);
-            color: #fda4af;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(224,164,88,0.7);
+            color: var(--slate-txt);
         }
         .chip-turns {
-            background: linear-gradient(135deg, rgba(168,139,250,0.22), rgba(168,139,250,0.06));
-            border: 1px solid rgba(168, 139, 250, 0.5);
-            color: #ddd6fe;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(94,221,214,0.55);
+            color: var(--slate-txt);
         }
         .chip-length {
-            background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(34,211,238,0.06));
-            border: 1px solid rgba(34, 211, 238, 0.5);
-            color: #a5f3fc;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            border-left: 2px solid rgba(148,163,184,0.5);
+            color: var(--slate-txt);
         }
         .dir-btn {
-            background: rgba(148, 163, 184, 0.1);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            color: #cbd5e1;
-            transition: all 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            color: var(--ink);
+            transition: border-color 160ms, color 160ms, background 160ms;
         }
         .dir-btn.active {
-            background: linear-gradient(135deg, #ef4444, #b91c1c);
-            border-color: rgba(244, 63, 94, 0.7);
-            color: white;
-            box-shadow: 0 0 24px rgba(244, 63, 94, 0.5);
+            background: rgba(94, 221, 214, 0.10);
+            border-color: rgba(94, 221, 214, 0.55);
+            color: #d8f3f0;
         }
         .dir-btn:hover:not(.active) {
-            background: rgba(148, 163, 184, 0.2);
-            transform: translateY(-1px);
+            border-color: var(--border);
+            color: var(--slate-txt);
         }
         .math-card {
-            background:
-                linear-gradient(135deg, rgba(99,102,241,0.20), rgba(168,85,247,0.10)),
-                rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(168, 139, 250, 0.35);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-top: 2px solid rgba(94, 221, 214, 0.35);
         }
-        .math-container { font-size: 1.08rem; color: #e0e7ff; }
+        .math-container { font-size: 1.0rem; color: #cdd5df; }
         .feature-row {
-            background: rgba(30, 41, 59, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.08);
-            transition: transform 220ms, background 220ms, border-color 220ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            transition: border-color 180ms;
         }
         .feature-row:hover {
-            transform: translateX(2px);
-            background: rgba(30, 41, 59, 0.7);
-            border-color: rgba(168, 139, 250, 0.4);
+            border-color: rgba(94, 221, 214, 0.30);
         }
         .reset-btn {
-            background: rgba(99, 102, 241, 0.18);
-            border: 1px solid rgba(99, 102, 241, 0.45);
-            color: #c7d2fe;
-            transition: all 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            color: var(--slate-txt);
+            transition: border-color 160ms, color 160ms;
         }
         .reset-btn:hover {
-            background: rgba(99, 102, 241, 0.35);
-            transform: translateY(-1px);
-            box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+            border-color: rgba(94, 221, 214, 0.5);
+            color: #d8f3f0;
         }
         .live-pill {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            transition: border-color 200ms, box-shadow 200ms;
+            background: var(--panel-2);
+            border: 1px solid var(--border-soft);
+            transition: border-color 200ms;
         }
         .live-pill.flash {
-            border-color: rgba(244, 114, 182, 0.6);
-            box-shadow: 0 0 22px rgba(244, 114, 182, 0.35);
+            border-color: rgba(94, 221, 214, 0.40);
         }
         .live-num {
+            font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
             font-variant-numeric: tabular-nums;
-            background: linear-gradient(135deg, #f9a8d4, #c4b5fd, #67e8f9);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #d8f3f0;
+            letter-spacing: 0.01em;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <div class="stars"></div>
 
     <div class="max-w-6xl mx-auto relative">
         <header class="mb-6" id="hdr">
-            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest text-indigo-300">
+            <div class="flex items-center gap-2 text-xs font-semibold tracking-widest" style="color:#7d8a97">
                 <span class="pulse-dot"></span>
-                INTERACTIVE · SOLENOID MAGNETIC FIELD
+                SOLENOID MAGNETIC FIELD
             </div>
-            <h1 class="mt-2 text-3xl md:text-4xl font-bold bg-gradient-to-r from-pink-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
-                🧲 솔레노이드 자기장 시뮬레이터
+            <h1 class="mt-2 text-3xl md:text-4xl font-bold" style="color:#e3e9f0">
+                솔레노이드 자기장 시뮬레이터
             </h1>
-            <p class="mt-2 text-slate-400 text-sm">전류 · 권수 밀도 · 코일 길이를 조절하면 내부 균일 자기장과 외부 폐곡선 자기력선이 실시간으로 반응합니다. 마우스로 |B| 측정.</p>
+            <p class="mt-2 text-sm" style="color:#8b97a4">전류 · 권수 밀도 · 코일 길이를 조절하면 내부 균일 자기장과 외부 폐곡선 자기력선이 실시간으로 반응합니다. 마우스로 |B| 측정.</p>
         </header>
 
         <!-- 라이브 데이터 4칩 -->
@@ -227,7 +206,7 @@
                 <div class="glass rounded-2xl p-5" id="guideCard">
                     <h3 class="font-bold text-base flex items-center gap-2">
                         <span class="text-lg">📐</span>
-                        <span class="bg-gradient-to-r from-pink-300 to-indigo-200 bg-clip-text text-transparent">물리학 가이드 및 공식</span>
+                        <span style="color:#e3e9f0">물리학 가이드 및 공식</span>
                     </h3>
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <ul class="text-xs text-slate-300 space-y-2">
@@ -262,8 +241,8 @@
             <div class="glass rounded-2xl p-5 flex flex-col gap-5 h-fit" id="controlPanel">
                 <div class="space-y-3">
                     <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
-                        <span class="inline-block w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_10px_#fb7185]"></span>
-                        <span class="text-rose-300">전류 I</span>
+                        <span class="inline-block w-2 h-2 rounded-full" style="background:#e0a458"></span>
+                        <span style="color:#e0a458">전류 I</span>
                     </h2>
                     <div class="chip-current rounded-lg p-3">
                         <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
@@ -279,8 +258,8 @@
 
                 <div class="space-y-3">
                     <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
-                        <span class="inline-block w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_10px_#a78bfa]"></span>
-                        <span class="text-violet-300">권수 밀도 n</span>
+                        <span class="inline-block w-2 h-2 rounded-full" style="background:#5eddd6"></span>
+                        <span style="color:#5eddd6">권수 밀도 n</span>
                     </h2>
                     <div class="chip-turns rounded-lg p-3">
                         <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
@@ -292,8 +271,8 @@
 
                 <div class="space-y-3">
                     <h2 class="font-bold text-sm flex items-center gap-2 tracking-wider">
-                        <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></span>
-                        <span class="text-cyan-300">코일 길이 ℓ</span>
+                        <span class="inline-block w-2 h-2 rounded-full" style="background:#9aa6b3"></span>
+                        <span style="color:#9aa6b3">코일 길이 ℓ</span>
                     </h2>
                     <div class="chip-length rounded-lg p-3">
                         <label class="flex justify-between text-[11px] font-bold mb-2 tracking-wider">
@@ -436,19 +415,19 @@
                     const { mag, inside } = getBmag(cx, cy);
                     let r, g, b;
                     if (inside) {
-                        // 내부: 밝은 핫핑크 → 마젠타 그라데이션
+                        // 내부: 차분한 청록 그라데이션 (계측 톤)
                         const n = Math.min(1, mag / norm);
                         const a = Math.pow(n, 0.35);
-                        r = Math.round(60 + 200 * a);
-                        g = Math.round(20 + 60 * a);
-                        b = Math.round(110 + 130 * a);
+                        r = Math.round(14 + 60 * a);
+                        g = Math.round(22 + 150 * a);
+                        b = Math.round(28 + 140 * a);
                     } else {
-                        // 외부: 어두운 보라/인디고 → 약하게 빛남
+                        // 외부: 그래파이트 → 아주 약한 청록
                         const n = Math.min(1, mag / (norm * 0.18));
                         const a = Math.pow(n, 0.5);
-                        r = Math.round(10 + 60 * a);
-                        g = Math.round(12 + 30 * a);
-                        b = Math.round(35 + 150 * a);
+                        r = Math.round(13 + 20 * a);
+                        g = Math.round(17 + 45 * a);
+                        b = Math.round(23 + 50 * a);
                     }
                     data[idx++] = r;
                     data[idx++] = g;
@@ -467,12 +446,19 @@
         // ===== 격자 =====
         function drawGrid() {
             ctx.save();
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.055)';
             ctx.lineWidth = 1;
-            for (let i = 0; i < canvas.width; i += 40) {
+            for (let i = 0; i < canvas.width; i += 20) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
             }
-            for (let i = 0; i < canvas.height; i += 40) {
+            for (let i = 0; i < canvas.height; i += 20) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.10)';
+            for (let i = 0; i < canvas.width; i += 100) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 100) {
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
             ctx.restore();
@@ -508,8 +494,8 @@
             const offsets = [-50, -30, -12, 12, 30, 50];
 
             ctx.save();
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#a78bfa';
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(94, 221, 214, 0.4)';
             for (const dy of offsets) {
                 // N극에서 바깥쪽으로 trace (자기장 방향대로)
                 const startNx = nx + (dir === 1 ? 8 : -8);
@@ -517,7 +503,7 @@
                 const fwd = traceFieldLine(startNx, startNy, +1);
                 if (fwd.length < 3) continue;
 
-                ctx.strokeStyle = 'rgba(196, 181, 253, 0.7)';
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
                 ctx.lineWidth = 1.3;
                 ctx.lineCap = 'round';
                 ctx.beginPath();
@@ -531,7 +517,7 @@
                     const [px, py] = fwd[idx];
                     const [nxp, nyp] = fwd[idx + 1];
                     const ang = Math.atan2(nyp - py, nxp - px);
-                    drawArrowhead(px, py, ang, 'rgba(196, 181, 253, 0.9)', '#a78bfa', 6);
+                    drawArrowhead(px, py, ang, 'rgba(170, 180, 192, 0.9)', 'rgba(148,163,184,0.4)', 6);
                 }
             }
             ctx.restore();
@@ -557,8 +543,8 @@
             const arrowLen = 22 + intensity * 28;
 
             ctx.save();
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#f9a8d4';
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(94, 221, 214, 0.4)';
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     const cx = startX + c * stepX;
@@ -567,17 +553,17 @@
                     const x1 = cx + dir * arrowLen / 2;
 
                     const grad = ctx.createLinearGradient(x0, cy, x1, cy);
-                    grad.addColorStop(0, 'rgba(252, 165, 165, 0.35)');
-                    grad.addColorStop(1, `rgba(253, 224, 71, ${0.55 + intensity * 0.4})`);
+                    grad.addColorStop(0, 'rgba(94, 221, 214, 0.35)');
+                    grad.addColorStop(1, `rgba(94, 221, 214, ${0.55 + intensity * 0.4})`);
                     ctx.strokeStyle = grad;
-                    ctx.lineWidth = 2.4 + intensity * 1.2;
+                    ctx.lineWidth = 1.6 + intensity * 0.6;
                     ctx.lineCap = 'round';
                     ctx.beginPath();
                     ctx.moveTo(x0, cy);
                     ctx.lineTo(x1, cy);
                     ctx.stroke();
 
-                    drawArrowhead(x1, cy, dir === 1 ? 0 : Math.PI, 'rgba(253, 224, 71, 0.95)', '#fde047', 7);
+                    drawArrowhead(x1, cy, dir === 1 ? 0 : Math.PI, 'rgba(94, 221, 214, 0.95)', 'rgba(94,221,214,0.4)', 7);
                 }
             }
             ctx.restore();
@@ -586,7 +572,7 @@
         function drawArrowhead(x, y, angle, color, glow, size) {
             ctx.save();
             ctx.translate(x, y); ctx.rotate(angle);
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 2;
             ctx.shadowColor = glow;
             ctx.beginPath();
             ctx.moveTo(0, 0); ctx.lineTo(-size, -size * 0.65); ctx.lineTo(-size, size * 0.65); ctx.closePath();
@@ -613,9 +599,9 @@
                 // 뒷쪽 반원 (위쪽: ⊗ 즉 전류 들어감)
                 // 실제로는 코일이 반시계 감김 또는 시계 감김에 따라 다르지만,
                 // 시각 단순화 — 위 반원 = 뒷면, 아래 반원 = 앞면
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.25)';
-                ctx.shadowBlur = 4;
-                ctx.shadowColor = 'rgba(168, 139, 250, 0.4)';
+                ctx.strokeStyle = 'rgba(224, 164, 88, 0.22)';
+                ctx.shadowBlur = 2;
+                ctx.shadowColor = 'rgba(148, 163, 184, 0.3)';
                 ctx.beginPath();
                 ctx.ellipse(cx, solCY, ellipseRx, ellipseRy, 0, Math.PI, 0, false); // 위쪽 반원
                 ctx.stroke();
@@ -629,12 +615,12 @@
             for (let i = 0; i < visualTurns; i++) {
                 const cx = solX1 + i * coilSpacing;
                 const grad = ctx.createLinearGradient(cx - ellipseRx, solCY, cx + ellipseRx, solCY);
-                grad.addColorStop(0, '#c2a047');
-                grad.addColorStop(0.5, '#fde68a');
-                grad.addColorStop(1, '#b8860b');
+                grad.addColorStop(0, '#a07a38');
+                grad.addColorStop(0.5, '#e0a458');
+                grad.addColorStop(1, '#8a6526');
                 ctx.strokeStyle = grad;
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = '#fbbf24';
+                ctx.shadowBlur = 2;
+                ctx.shadowColor = 'rgba(224, 164, 88, 0.4)';
                 ctx.beginPath();
                 ctx.ellipse(cx, solCY, ellipseRx, ellipseRy, 0, 0, Math.PI, false); // 아래쪽 반원
                 ctx.stroke();
@@ -653,12 +639,12 @@
             ctx.font = 'bold 16px ui-monospace, monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#fbbf24';
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(224, 164, 88, 0.4)';
             for (let i = 0; i < visualTurns; i++) {
                 const cx = solX1 + i * coilSpacing;
                 // 위쪽 기호
-                ctx.fillStyle = '#fef3c7';
+                ctx.fillStyle = '#d8c4a0';
                 ctx.fillText(topSym, cx, solCY - ellipseRy - 12);
                 // 아래쪽 기호
                 ctx.fillText(botSym, cx, solCY + ellipseRy + 12);
@@ -667,17 +653,17 @@
 
             // 4) 양 끝 N/S 극 라벨
             const nIsRight = dir === 1;
-            drawPoleLabel(nIsRight ? solX2 + 16 : solX1 - 16, solCY - solHalfH - 28, 'N', '#fda4af', '#f43f5e');
-            drawPoleLabel(nIsRight ? solX1 - 16 : solX2 + 16, solCY - solHalfH - 28, 'S', '#93c5fd', '#60a5fa');
+            drawPoleLabel(nIsRight ? solX2 + 16 : solX1 - 16, solCY - solHalfH - 28, 'N', '#e0a458', 'rgba(224,164,88,0.4)');
+            drawPoleLabel(nIsRight ? solX1 - 16 : solX2 + 16, solCY - solHalfH - 28, 'S', '#5eddd6', 'rgba(94,221,214,0.4)');
         }
         function drawPoleLabel(x, y, txt, color, glow) {
             ctx.save();
-            ctx.font = 'bold 16px sans-serif';
+            ctx.font = 'bold 16px ui-monospace, monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             const w = 28, h = 22;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-            ctx.shadowBlur = 12;
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.9)';
+            ctx.shadowBlur = 2;
             ctx.shadowColor = glow;
             roundRect(ctx, x - w/2, y - h/2, w, h, 8);
             ctx.fill();
@@ -767,13 +753,13 @@
                 const ratio = p.life / p.maxLife;
                 const alpha = Math.sin(ratio * Math.PI) * 0.9;
                 if (p.kind === 'in') {
-                    ctx.fillStyle = `rgba(254, 240, 138, ${alpha})`;
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = '#fde047';
+                    ctx.fillStyle = `rgba(94, 221, 214, ${alpha})`;
+                    ctx.shadowBlur = 2;
+                    ctx.shadowColor = 'rgba(94, 221, 214, 0.4)';
                 } else {
-                    ctx.fillStyle = `rgba(196, 181, 253, ${alpha * 0.85})`;
-                    ctx.shadowBlur = 8;
-                    ctx.shadowColor = '#a78bfa';
+                    ctx.fillStyle = `rgba(148, 163, 184, ${alpha * 0.85})`;
+                    ctx.shadowBlur = 2;
+                    ctx.shadowColor = 'rgba(148, 163, 184, 0.3)';
                 }
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -791,10 +777,10 @@
 
             // 작은 링
             ctx.save();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.strokeStyle = 'rgba(212, 220, 230, 0.75)';
             ctx.lineWidth = 1.4;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#fef9c3';
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(148, 163, 184, 0.3)';
             ctx.beginPath();
             ctx.arc(mouse.x, mouse.y, 10, 0, Math.PI * 2);
             ctx.stroke();
@@ -805,10 +791,10 @@
             const ux = f.bx / m, uy = f.by / m;
             const tx = mouse.x + ux * arrowLen, ty = mouse.y + uy * arrowLen;
             ctx.save();
-            ctx.shadowBlur = 14;
-            ctx.shadowColor = '#fde047';
-            ctx.strokeStyle = 'rgba(253, 224, 71, 0.95)';
-            ctx.lineWidth = 2.4;
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = 'rgba(94, 221, 214, 0.4)';
+            ctx.strokeStyle = 'rgba(94, 221, 214, 0.95)';
+            ctx.lineWidth = 1.8;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(mouse.x, mouse.y);
@@ -818,7 +804,7 @@
             ctx.translate(tx, ty); ctx.rotate(ang);
             ctx.beginPath();
             ctx.moveTo(0, 0); ctx.lineTo(-9, -5); ctx.lineTo(-9, 5); ctx.closePath();
-            ctx.fillStyle = 'rgba(253, 224, 71, 0.95)';
+            ctx.fillStyle = 'rgba(94, 221, 214, 0.95)';
             ctx.fill();
             ctx.restore();
 
@@ -829,10 +815,10 @@
             ctx.font = 'bold 11px ui-monospace, monospace';
             const tw = ctx.measureText(text).width;
             const lx = mouse.x + 14, ly = mouse.y - 14;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillStyle = 'rgba(19, 25, 34, 0.92)';
             roundRect(ctx, lx - 6, ly - 12, tw + 12, 18, 9);
             ctx.fill();
-            ctx.fillStyle = '#fde047';
+            ctx.fillStyle = '#7fd6d0';
             ctx.fillText(text, lx, ly + 2);
             ctx.restore();
         }
@@ -877,8 +863,8 @@
         // ===== 컨트롤 =====
         function flashCard() {
             if (window.gsap) gsap.fromTo('#canvasCard',
-                { boxShadow: '0 0 0 0 rgba(244,114,182,0.6)' },
-                { boxShadow: '0 0 60px 4px rgba(244,114,182,0)', duration: 0.6 });
+                { borderColor: 'rgba(94,221,214,0.35)' },
+                { borderColor: 'rgba(148,163,184,0.16)', duration: 0.7, ease: 'power2.out' });
         }
         currentRange.oninput = (e) => {
             state.current = parseFloat(e.target.value);
@@ -967,11 +953,11 @@
             animate();
 
             if (window.gsap) {
-                gsap.from('#hdr', { y: -20, opacity: 0, duration: 0.7, ease: 'power3.out' });
-                gsap.from('#livePanel .live-pill', { y: 14, opacity: 0, duration: 0.6, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
-                gsap.from('#canvasCard', { scale: 0.97, opacity: 0, duration: 0.8, delay: 0.2, ease: 'power3.out' });
-                gsap.from('#controlPanel', { x: 30, opacity: 0, duration: 0.7, delay: 0.3, ease: 'power3.out' });
-                gsap.from('#guideCard', { y: 20, opacity: 0, duration: 0.7, delay: 0.45, ease: 'power3.out' });
+                gsap.from('#hdr', { y: -10, opacity: 0, duration: 0.5, ease: 'power2.out' });
+                gsap.from('#livePanel .live-pill', { y: 8, opacity: 0, duration: 0.45, stagger: 0.05, delay: 0.1, ease: 'power2.out' });
+                gsap.from('#canvasCard', { opacity: 0, duration: 0.55, delay: 0.15, ease: 'power2.out' });
+                gsap.from('#controlPanel', { y: 10, opacity: 0, duration: 0.45, delay: 0.25, ease: 'power2.out' });
+                gsap.from('#guideCard', { y: 10, opacity: 0, duration: 0.45, delay: 0.35, ease: 'power2.out' });
             }
         });
     </script>
