@@ -65,12 +65,32 @@ export default function FlashcardApp() {
     });
   }, [subjectFilter, starredOnly, dueOnly, query, favorites, progress]);
 
+  // 덱을 새로 짜야 하는 "의도된" 조건만 모은 시그니처.
+  // 주의: filtered 자체(progress 의존)를 deps 로 쓰면 카드를 평가할 때마다
+  // progress 객체가 새로 생성 → filtered 재계산 → deck 교체 → CardStudy 가
+  // 첫 카드로 리셋되어 "다음 카드로 못 넘어가는" 회귀가 발생한다.
+  // 따라서 진도(progress)는 '복습 필요(dueOnly)' 필터가 켜진 경우에만 시그니처에 포함한다.
+  const deckKey = useMemo(() => {
+    const base = [
+      subjectFilter,
+      starredOnly ? "s" : "",
+      dueOnly ? "d" : "",
+      shuffleOn ? "x" : "",
+      query.trim().toLowerCase(),
+      [...favorites].sort().join(","),
+    ];
+    if (dueOnly) base.push(JSON.stringify(progress));
+    return base.join("|");
+  }, [subjectFilter, starredOnly, dueOnly, shuffleOn, query, favorites, progress]);
+
   // 필터가 바뀌면 학습 덱도 새로 짜기 (현재 학습 중이면 끊김 → 의도된 동작)
   useEffect(() => {
     // TODO(refactor): deck 을 useMemo 로 derived 처리하면 effect 불필요 (단 setDeck 다른 호출처 7곳 함께 정리 필요)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 필터 변경 시 deck 재생성 (shuffle 비결정성 때문에 useMemo 보다 useEffect 선택)
     setDeck(shuffleOn ? shuffle(filtered) : filtered);
-  }, [filtered, shuffleOn]);
+    // deckKey 만 의존: 카드 평가(progress 변경)로는 덱이 재생성되지 않게 한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckKey]);
 
   const stats = useMemo(
     () => summarize(progress, presetCards.map((c) => c.id)),
